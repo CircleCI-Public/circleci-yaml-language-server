@@ -38,10 +38,15 @@ func TestFindErrors(t *testing.T) {
 				URI:  uri.File(tt.args.filePath),
 				Text: string(content),
 			})
-			param := protocol.PublishDiagnosticsParams{URI: uri.File(tt.args.filePath)}
-			got := Diagnostic(param, cache)
-			if !reflect.DeepEqual(got.Diagnostics, tt.want) {
-				t.Errorf("FindErrors() = %v, want %v", got.Diagnostics, tt.want)
+			fileUri := uri.File(tt.args.filePath)
+			diagnostics, err := DiagnosticFile(fileUri, cache)
+
+			if err != nil {
+				t.Error("findErrors()", err)
+			}
+
+			if !reflect.DeepEqual(diagnostics, tt.want) {
+				t.Errorf("FindErrors() = %v, want %v", diagnostics, tt.want)
 			}
 		})
 	}

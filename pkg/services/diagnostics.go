@@ -13,11 +13,45 @@ type DiagnosticType struct {
 }
 
 func Diagnostic(params protocol.PublishDiagnosticsParams, cache *utils.Cache) protocol.PublishDiagnosticsParams {
-	yamlDocument, err := yamlparser.GetParsedYAMLWithCache(params.URI, cache)
+	diagnostics, _ := DiagnosticFile(params.URI, cache)
 
-	if yamlDocument.Version < 2.1 || err != nil {
+	diagnosticParams := protocol.PublishDiagnosticsParams{
+		URI:         params.URI,
+		Diagnostics: diagnostics,
+	}
+
+	return diagnosticParams
+}
+
+func DiagnosticFile(uri protocol.URI, cache *utils.Cache) ([]protocol.Diagnostic, error) {
+	yamlDocument, err := yamlparser.GetParsedYAMLWithCache(uri, cache)
+
+	if err != nil {
+		return []protocol.Diagnostic{}, err
+	}
+
+	if yamlDocument.Version < 2.1 {
 		// TODO: Handle error
-		return protocol.PublishDiagnosticsParams{}
+		return []protocol.Diagnostic{}, nil
+	}
+
+	return DiagnosticYAML(yamlDocument, cache), nil
+}
+
+func DiagnosticString(content string, cache *utils.Cache) ([]protocol.Diagnostic, error) {
+	yamlDocument, err := yamlparser.GetParsedYAMLWithContent([]byte(content))
+
+	if err != nil {
+		return []protocol.Diagnostic{}, err
+	}
+
+	return DiagnosticYAML(yamlDocument, cache), nil
+}
+
+func DiagnosticYAML(yamlDocument yamlparser.YamlDocument, cache *utils.Cache) []protocol.Diagnostic {
+	if yamlDocument.Version < 2.1 {
+		// TODO: Handle error
+		return []protocol.Diagnostic{}
 	}
 
 	diag := DiagnosticType{
@@ -41,12 +75,7 @@ func Diagnostic(params protocol.PublishDiagnosticsParams, cache *utils.Cache) pr
 	validateStruct.Validate()
 	diag.addDiagnostics(*validateStruct.Diagnostics)
 
-	diagnosticParams := protocol.PublishDiagnosticsParams{
-		URI:         params.URI,
-		Diagnostics: *diag.diagnostics,
-	}
-
-	return diagnosticParams
+	return *diag.diagnostics
 }
 
 func (diag *DiagnosticType) addDiagnostics(diagnostic []protocol.Diagnostic) {

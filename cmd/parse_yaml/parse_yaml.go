@@ -28,10 +28,8 @@ func main() {
 		Text: string(content),
 	})
 
-	param := protocol.PublishDiagnosticsParams{
-		URI: uri.File(filepath),
-	}
-	languageservice.Diagnostic(param, cache)
+	fileURI := uri.File(filepath)
+	languageservice.DiagnosticFile(fileURI, cache)
 
 	// fmt.Printf("S-expression:\n%v\n\n", node.RootNode)
 }
