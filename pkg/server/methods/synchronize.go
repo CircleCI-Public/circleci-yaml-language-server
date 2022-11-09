@@ -61,13 +61,14 @@ func (methods *Methods) DidClose(reply jsonrpc2.Replier, req jsonrpc2.Request) e
 }
 
 func (methods *Methods) notificationMethods(cache utils.FileCache, textDocument protocol.TextDocumentItem) {
-	diagnosticParams := lsp.Diagnostic(
-		protocol.PublishDiagnosticsParams{
-			URI: textDocument.URI,
-		},
-		methods.Cache,
-		methods.LsContext,
-	)
+	diagnostic, _ := lsp.DiagnosticFile(textDocument.URI, methods.Cache, methods.LsContext)
+
+	// TODO: Handle error
+
+	diagnosticParams := protocol.PublishDiagnosticsParams{
+		URI:         textDocument.URI,
+		Diagnostics: diagnostic,
+	}
 
 	original := cache.GetFile(textDocument.URI)
 

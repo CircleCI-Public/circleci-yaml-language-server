@@ -42,10 +42,15 @@ func TestFindErrors(t *testing.T) {
 			})
 			context := testHelpers.GetDefaultLsContext()
 			context.Api.Token = ""
-			param := protocol.PublishDiagnosticsParams{URI: uri.File(tt.args.filePath)}
-			got := Diagnostic(param, cache, context)
-			if !reflect.DeepEqual(got.Diagnostics, tt.want) {
-				t.Errorf("FindErrors() = %v, want %v", got.Diagnostics, tt.want)
+			fileUri := uri.File(tt.args.filePath)
+			diagnostics, err := DiagnosticFile(fileUri, cache, context)
+
+			if err != nil {
+				t.Error("findErrors()", err)
+			}
+
+			if !reflect.DeepEqual(diagnostics, tt.want) {
+				t.Errorf("FindErrors() = %v, want %v", diagnostics, tt.want)
 			}
 		})
 	}
