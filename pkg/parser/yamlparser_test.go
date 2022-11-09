@@ -26,18 +26,14 @@ jobs:
 	assert.Equal(t, err, nil)
 	assert.True(t, yamlDocument.Context.Api.UseDefaultInstance())
 
-	expect.ExpectDiagnosticInList(
-		t,
-		*yamlDocument.Diagnostics,
-		protocol.Diagnostic{
-			Range: protocol.Range{
-				Start: protocol.Position{Line: 3, Character: 4},
-				End:   protocol.Position{Line: 3, Character: 17},
-			},
-			Severity: protocol.DiagnosticSeverityWarning,
-			Message:  "Using `machine: true` is deprecated, please instead specify an image to use.",
+	expect.DiagnosticList(t, *yamlDocument.Diagnostics).To.Include(protocol.Diagnostic{
+		Range: protocol.Range{
+			Start: protocol.Position{Line: 3, Character: 4},
+			End:   protocol.Position{Line: 3, Character: 17},
 		},
-	)
+		Severity: protocol.DiagnosticSeverityWarning,
+		Message:  "Using `machine: true` is deprecated, please instead specify an image to use.",
+	})
 }
 
 func TestJobExecutorMachineFalseOnApp(t *testing.T) {
@@ -99,9 +95,7 @@ jobs:
 
 	assert.Equal(t, err, nil)
 	assert.True(t, yamlDocument.Context.Api.UseDefaultInstance())
-	expect.ExpectDiagnosticInList(
-		t,
-		*yamlDocument.Diagnostics,
+	expect.DiagnosticList(t, *yamlDocument.Diagnostics).To.Include(
 		protocol.Diagnostic{
 			Range: protocol.Range{
 				Start: protocol.Position{Line: 7, Character: 4},
@@ -178,9 +172,10 @@ jobs:
 
 	assert.Equal(t, err, nil)
 	assert.True(t, yamlDocument.Context.Api.UseDefaultInstance())
-	expect.ExpectDiagnosticInList(
+	expect.DiagnosticList(
 		t,
 		*yamlDocument.Diagnostics,
+	).To.Include(
 		protocol.Diagnostic{
 			Range: protocol.Range{
 				Start: protocol.Position{Line: 3, Character: 4},

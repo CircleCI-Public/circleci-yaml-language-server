@@ -59,7 +59,7 @@ testFinal:
 		},
 	}
 
-	expect.ExpectAllDiagnosticInList(t, actualDiagnostics, expectedDiagnostics)
+	expect.DiagnosticList(t, actualDiagnostics).To.IncludeAll(expectedDiagnostics)
 }
 
 func Test_HandleYamlError_UnknownAnchor(t *testing.T) {
@@ -88,5 +88,5 @@ test:
 		Message:  "yaml: unknown anchor 'unknownAnchor' referenced",
 	}
 
-	expect.ExpectDiagnosticInList(t, diagnostics, expected)
+	expect.DiagnosticList(t, diagnostics).To.Include(expected)
 }
