@@ -25,3 +25,8 @@ tasks:
 
   lint:
       - gofmt -w pkg
+
+  prepare:vscode:
+    cmds:
+      - cd editors/vscode && npm ci
+      - cd editors/vscode && npm run build

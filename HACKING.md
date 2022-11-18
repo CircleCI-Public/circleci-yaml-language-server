@@ -97,3 +97,15 @@ For example, I've the following in my `.emacs.d/init.el`:
 (add-hook 'before-save-hook 'gofmt-before-save)
 (require 'go-rename)
 ```
+
+## Testing within VSCode
+
+This repository embed a VSCode extension (located at `editors/vscode`) so you can test your code within the editor.
+In order to run the extension, you must first prepare installation:
+
+```
+task prepare:vscode
+```
+
+This command will install the necessary node packages and build the extension.
+Next, go in your VSCode, launch the `Run extension` debug configuration.
