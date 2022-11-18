@@ -1,0 +1,17 @@
+version: 2.1
+name: react_native
+# Simulates an orb that was published with a home_url that is now
+# invalid
+display:
+  home_url: "https://www.google.com/search?q=abc"
+jobs:
+  android:
+    docker:
+      - image: circleci/android
+    steps:
+      - checkout
+  node:
+    docker:
+      - image: circleci/node
+    steps:
+      - checkout

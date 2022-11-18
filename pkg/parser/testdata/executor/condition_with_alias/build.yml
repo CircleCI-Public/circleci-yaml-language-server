@@ -1,0 +1,33 @@
+version: 2.1
+
+executors:
+  linux-13:
+    docker:
+      - image: cimg/node:13.13
+  macos: &macos-executor
+    macos:
+      xcode: 11.4
+
+jobs:
+  test:
+    parameters:
+      os:
+        type: executor
+      node-version:
+        type: string
+    executor: << parameters.os >>
+    steps:
+      - checkout
+      - when:
+          condition:
+            equal: [ *macos-executor, << parameters.os >> ]
+          steps:
+            - run: echo << parameters.node-version >>
+      - run: echo 0
+
+workflows:
+  all-tests:
+    jobs:
+      - test:
+          os: macos
+          node-version: "13.13.0"

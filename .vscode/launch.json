@@ -1,0 +1,54 @@
+// A launch configuration that compiles the extension and then opens it inside a new window
+// Use IntelliSense to learn about possible attributes.
+// Hover to view descriptions of existing attributes.
+// For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "Run Extension",
+			"presentation": {
+				"hidden": false,
+				"group": "Run extension",
+				"order": 1
+			},
+			"type": "extensionHost",
+			"request": "launch",
+			"args": [
+				"--extensionDevelopmentPath=${workspaceFolder}/editors/vscode",
+				"--disable-extensions"
+			],
+			"outFiles": ["${workspaceFolder}/editors/vscode/dist/**/*.js"],
+			"preLaunchTask": "task: task build",
+			"env": {
+				"CCI_DEV": "true"
+			}
+		},
+
+		{
+			"name": "Run Extension (user extensions enabled)",
+			"presentation": {
+				"hidden": false,
+				"group": "Run extension",
+				"order": 2
+			},
+			"type": "extensionHost",
+			"request": "launch",
+			"args": [
+				"--extensionDevelopmentPath=${workspaceFolder}/editors/vscode"
+			],
+			"outFiles": ["${workspaceFolder}/editors/vscode/dist/**/*.js"],
+			"preLaunchTask": "task: task build",
+			"env": {
+				"CCI_DEV": "true"
+			}
+		},
+		{
+			"name": "Attach to Process",
+			"type": "go",
+			"request": "attach",
+			"mode": "local",
+			"processId": 0
+		}
+	]
+}

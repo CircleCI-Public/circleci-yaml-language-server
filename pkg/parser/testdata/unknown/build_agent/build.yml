@@ -1,0 +1,14 @@
+version: 2.1
+
+jobs:
+  bar:
+    machine: true
+    steps:
+      - run: echo hi
+
+workflows:
+  foo:
+    jobs:
+      - bar
+
+build_agent: "picard:0.0.21249-dev-9be1b480"

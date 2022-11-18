@@ -1,0 +1,63 @@
+version: 2.1
+
+# The install command and install job both have a parameter called `build` but
+# with incompatible types.
+orbs:
+  my-orb:
+    commands:
+      install:
+        parameters:
+          build:
+            type: steps
+            default: [{run: {command: "echo orb-command-build"}}]
+        steps:
+          - steps: << parameters.build >>
+
+    jobs:
+      install:
+        parameters:
+          build:
+            type: string
+            default: "orb-job-build <- this shouldn't show up"
+        machine: true
+        steps:
+          - install
+
+executors:
+  default:
+    parameters:
+      build:
+        type: string
+        default: "executor-build"
+    docker:
+      - image: << parameters.build >>
+
+commands:
+  gordons-command:
+    parameters:
+      build:
+        type: string
+        default: "command-build"
+    steps:
+      - run: echo << parameters.build >>
+
+jobs:
+  inline-job:
+    parameters:
+      build:
+        type: string
+        default: "job-build"
+    executor: default
+    steps:
+      - run: echo << parameters.build >>
+      - gordons-command
+
+workflows:
+  orb-workflow:
+    jobs:
+      - my-orb/install:
+          name: my-job
+
+  inline-workflow:
+    jobs:
+      - inline-job

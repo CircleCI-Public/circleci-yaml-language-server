@@ -1,0 +1,29 @@
+version: 2.1
+
+executors:
+  macos:
+    macos:
+      xcode: 11.4
+
+jobs:
+  test:
+    parameters:
+      os:
+        type: executor
+      node-version:
+        type: string
+    executor: << parameters.os >>
+    steps:
+      - checkout
+      - when:
+          condition: 12
+          steps:
+            - run: echo << parameters.node-version >>
+      - run: echo 0
+
+workflows:
+  all-tests:
+    jobs:
+      - test:
+          os: macos
+          node-version: "13.13.0"

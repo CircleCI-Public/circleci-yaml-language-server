@@ -1,0 +1,9 @@
+# First, ignore everything
+**/*
+
+!dist/
+!bin/
+!package.json
+!package-lock.json
+!schema.json
+!publicschema.json

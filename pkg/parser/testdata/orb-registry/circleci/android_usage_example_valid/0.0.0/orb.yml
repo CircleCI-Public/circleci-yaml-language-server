@@ -1,0 +1,42 @@
+version: 2.1
+jobs:
+  test:
+    parameters:
+      task:
+        type: string
+    docker:
+      - image: circleci/android:sdk-26-alpha
+    steps:
+      - checkout
+      - run: ./gradlew test
+      - run: ./gradlew << parameters.task >>
+
+examples:
+  simple_example:
+    description: A very good description of the example
+    usage:
+      version: 2.1
+      orbs:
+        android: bar/android@1.2.3
+      workflows:
+        my_workflow:
+          jobs:
+            - android/test:
+                task: build
+    result:
+      version: 2.1
+      jobs:
+        android/test:
+          docker:
+          - image: circleci/android:sdk-26-alpha
+          steps:
+          - checkout
+          - run:
+              command: ./gradlew test
+          - run:
+              command: ./gradlew build
+      workflows:
+        my_workflow:
+          jobs:
+          - android/test
+        version: 2

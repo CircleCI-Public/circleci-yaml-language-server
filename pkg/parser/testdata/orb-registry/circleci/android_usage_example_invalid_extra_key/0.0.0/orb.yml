@@ -1,0 +1,25 @@
+version: 2.1
+jobs:
+  test:
+    parameters:
+      task:
+        type: string
+    docker:
+      - image: circleci/android:sdk-26-alpha
+    steps:
+      - checkout
+      - run: ./gradlew test
+      - run: ./gradlew << parameters.task >>
+
+examples:
+  simple_example:
+    undefined_key: Not allowed by schema
+    usage:
+      version: 2.1
+      orbs:
+        android: bar/android@1.2.3
+      workflows:
+        my_workflow:
+          jobs:
+            - android/test:
+                task: build

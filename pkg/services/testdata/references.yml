@@ -1,0 +1,113 @@
+version: 2.1
+
+workflows:
+    version: 2
+    plan-approve-apply:
+        jobs:
+            - terraform-init-plan:
+                    tf_partition_path: "modules/base"
+                    context: ccits-infra
+            - request-approval:
+                    type: approval
+                    requires:
+                        - terraform-init-plan
+                    filters:
+                        branches:
+                            only:
+                                - master
+            - terraform-apply:
+                    tf_partition_path: "modules/base"
+                    context: ccits-infra
+                    requires:
+                        - request-approval
+                    filters:
+                        branches:
+                            only:
+                                - master
+
+executors:
+    default:
+        parameters:
+            dummyParameter:
+                type: string
+                default: large
+        docker:
+            - image: hashicorp/terraform:light
+        working_directory: ~/src
+        resource_class: << parameters.dummyParameter >>
+
+jobs:
+    terraform-init-plan:
+        # resource_class: small
+        parameters:
+            tf_partition_path:
+                type: string
+            extra_diff_paths:
+                type: string
+                default: ""
+            tf_plan_only:
+                type: string
+                default: "false"
+        executor: default
+        working_directory: ~/src
+        # shell: /bin/bash -eo pipefail -o nounset
+        steps:
+            - checkout
+            - run:
+                    name: Init
+                    environment:
+                        PARTITION: << parameters.tf_partition_path >>
+                        EXTRA_DIFF_PATHS: << parameters.extra_diff_paths >>
+                        TF_PLAN_ONLY: << parameters.tf_plan_only >>
+                    # command: ./scripts/run-terraform.sh
+                    command: cd $PARTITION && terraform init
+            - run:
+                    name: Plan
+                    environment:
+                        PARTITION: << parameters.tf_partition_path >>
+                    command: cd $PARTITION && terraform plan
+            - persist_to_workspace:
+                    root: ~/
+                    paths:
+                        - src
+
+    terraform-apply:
+        # resource_class: small
+        parameters:
+            tf_partition_path:
+                type: string
+        executor: default
+        working_directory: ~/src
+        steps:
+            - attach_workspace:
+                    at: ~/
+            - run:
+                    name: Apply
+                    environment:
+                        PARTITION: << parameters.tf_partition_path >>
+                    command: cd $PARTITION && terraform apply -auto-approve | tee ~/apply.log
+            - show-new-password
+
+commands:
+    show-new-password:
+        parameters:
+            tf_partition_path:
+                type: string
+        steps:
+            - run:
+                    name: Show new passwords
+                    environment:
+                        PARTITION: << parameters.tf_partition_path >>
+                    command: sh ./dump-new-passwd.sh
+            - superorb/supermethod:
+                superParam: << pipeline.parameters.dumb-param >>
+
+
+
+orbs:
+    superorb: superorb/superfunc@1.2.3
+
+parameters:
+    dumb-param:
+        type: string
+        default: "dumb"

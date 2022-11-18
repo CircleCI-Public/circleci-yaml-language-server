@@ -1,0 +1,37 @@
+version: 2.1
+
+description: Upload your coverage reports to Codecov without dealing with complex configurations.  This orb helps you get coverage results quickly so that you can breathe easier and commit your code with confidence.
+
+commands:
+  upload:
+    parameters:
+      conf:
+        description: Used to specify the location of the .codecov.yml config file
+        type: string
+        default: ".codecov.yml"
+      file:
+        description: Path to the code coverage data file to upload.
+        type: string
+      flags:
+        description: Flag the upload to group coverage metrics (e.g. unittests | integration | ui,chrome)
+        type: string
+        default: ""
+      token:
+        description: Set the private repository token (defaults to environment variable $CODECOV_TOKEN)
+        type: string
+        default: ${CODECOV_TOKEN}
+      upload_name:
+        description: Custom defined name of the upload. Visible in Codecov UI
+        type: string
+        default: ${CIRCLE_BUILD_NUM}
+    steps:
+      - run:
+          name: Upload Coverage Results
+          command: |
+            bash <(curl -s https://codecov.io/bash) \
+              -F << parameters.flags >> \
+              -f << parameters.file >> \
+              -n << parameters.upload_name >> \
+              -t << parameters.token >> \
+              -y << parameters.conf >> \
+

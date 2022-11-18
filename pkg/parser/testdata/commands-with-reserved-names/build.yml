@@ -1,0 +1,18 @@
+version: 2.1
+orbs:
+  foo:
+    commands:
+      deploy:
+        steps:
+          - run: "foo/deploy"
+      call-deploy:
+        steps:
+          - deploy
+jobs:
+  build:
+    machine: true
+    steps:
+      - deploy:
+          command: "builtin deploy"
+      - foo/deploy
+      - foo/call-deploy

@@ -1,0 +1,16 @@
+version: 2.1
+
+references:
+  stuff: &nonsense
+    machine: true
+
+jobs:
+  bar:
+    <<: *nonsense
+    steps:
+      - run: echo hi
+
+workflows:
+  foo:
+    jobs:
+      - bar
