@@ -1,0 +1,7 @@
+main
+bin
+sbom.generated.json
+licenses.csv
+licenses.errors
+.vscode/settings.json
+__pycache__

@@ -1,0 +1,15 @@
+version: 2.1
+name: android
+jobs:
+  test:
+    description: Supports top level description for a job
+    parameters:
+      task:
+        description: Supports description in parameters
+        type: string
+    docker:
+      - image: circleci/android:sdk-26-alpha
+    steps:
+      - checkout
+      - run: ./gradlew test
+      - run: ./gradlew << parameters.task >>

@@ -1,0 +1,19 @@
+version: 2.1
+
+orbs:
+  orb-name: foo/bar@1.2.3 #orb version
+
+commands:
+  sayhello:
+    description: "A very simple command for demonstration purposes"
+    steps:
+      - run: echo << parameters.to >>
+  otherCommand:
+    description: "ouioui"
+    steps:
+      - run: ls
+
+workflows:
+  deploy-step-workflow:
+    jobs:
+      - deploy-step-job

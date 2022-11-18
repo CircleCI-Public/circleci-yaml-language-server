@@ -1,0 +1,28 @@
+version: 2.1
+description: "A very basic Orb to introduce the concept"
+display:
+  home_url: "https://www.circleci.com"
+  source_url: "https://www.github.com/CircleCI-Public/myorb"
+commands:
+  say:
+    description: "A simple command that echoes whatever is passed"
+    parameters:
+      saywhat:
+        description: "What shall we say?"
+        type: string
+    steps:
+      # note: the interpolation syntax is subject to change
+      - run: echo << parameters.saywhat >>
+
+jobs:
+  sayhello:
+    description: A job that does very little other than demonstrate what a parameterized job looks like
+    parameters:
+      saywhat:
+        description: "To whom shall we say hello?"
+        type: string
+        default: "World"
+    machine: true
+    steps:
+      - say:
+          saywhat: Hello << parameters.saywhat >>

@@ -1,0 +1,7 @@
+version: 2.1
+
+parameters:
+  funny_looking_param:
+    type: boolean
+    default: false
+    extra: shouldn't be here

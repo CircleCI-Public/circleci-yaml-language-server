@@ -1,0 +1,44 @@
+version: 2.1
+
+orbs:
+  compass: atlassian-labs/compass@0.1.2
+  other: atlassian-labs/compass@0.1.2
+
+jobs:
+  build:
+    parameters:
+      myparam:
+        description: "A test parameter"
+        type: string
+    docker:
+      - image: cimg/node:17.2.0
+        auth:
+          username: mydockerhub-user
+          password: $DOCKERHUB_PASSWORD
+    steps:
+      - checkout
+      - run: echo "hello world"
+      - run: <<parameters.myparam>>
+    
+
+workflows:
+  test-build:
+    jobs:
+      - build:
+          matrix:
+            alias: "build-single"
+            parameters:
+              myparam: ["Hello There"]
+          pre-steps:
+            - compass/notify_deployment:
+                token_name: atoken
+                environment_type: something
+                environment: another thing
+
+      - build:
+          myparam: "Simple param here"
+          post-steps:
+            - other/notify_deployment:
+                token_name: atoken
+                environment_type: something
+                environment: another thing

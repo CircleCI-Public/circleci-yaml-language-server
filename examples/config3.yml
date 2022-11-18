@@ -1,0 +1,27 @@
+version: 2.1
+
+jobs:
+  deploy-step-job:
+    docker:
+      - image: cimg/base:stable
+    parallelism: 3
+    steps:
+      - checkout
+      - run: "ls"
+      - run:
+          name: "Say hello"
+          command: "echo Hello, World!"
+      - run:
+          name: "Write random data"
+          command: openssl rand -hex 4 > rand_${CIRCLE_NODE_INDEX}.txt
+      - run:
+          name: "Emulate doing things"
+          command: |
+            if [[ "$CIRCLE_NODE_INDEX" != "0" ]]; then
+              sleep 30
+            fi
+
+workflows:
+  deploy-step-workflow:
+    jobs:
+      - deploy-step-job

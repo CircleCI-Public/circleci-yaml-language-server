@@ -1,0 +1,33 @@
+version: 2.1
+
+orbs:
+  docker:
+    executors:
+      machine:
+        parameters:
+          image:
+            default: ubuntu-1604:201903-01
+            type: string
+        machine:
+          image: <<parameters.image>>
+
+    jobs:
+      publish:
+        executor: <<parameters.executor>>
+        parameters:
+          executor:
+            default: machine
+            type: executor
+          image:
+            type: string
+        steps:
+          - checkout
+
+workflows:
+  orb-workflow:
+    jobs:
+      - docker/publish:
+          name: build-docker
+          executor:
+            name: docker/machine
+          image: shouldnot/seethis
