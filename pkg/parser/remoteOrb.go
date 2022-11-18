@@ -8,9 +8,9 @@ import (
 	"path"
 	"time"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"github.com/adrg/xdg"
-	"github.com/circleci/circleci-yaml-language-server/pkg/ast"
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
 	"golang.org/x/mod/semver"
 )
 

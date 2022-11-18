@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"time"
 
+	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
+	lsp "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/services"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"github.com/bep/debounce"
-	yamlparser "github.com/circleci/circleci-yaml-language-server/pkg/parser"
-	lsp "github.com/circleci/circleci-yaml-language-server/pkg/services"
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
 	"github.com/segmentio/encoding/json"
 	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/protocol"

@@ -3,7 +3,7 @@ package hover
 import (
 	"fmt"
 
-	yamlparser "github.com/circleci/circleci-yaml-language-server/pkg/parser"
+	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
 )
 
 func HoverInCommands(doc yamlparser.YamlDocument, path []string) string {

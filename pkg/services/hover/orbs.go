@@ -1,8 +1,8 @@
 package hover
 
 import (
-	yamlparser "github.com/circleci/circleci-yaml-language-server/pkg/parser"
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
 func HoverInOrbs(doc yamlparser.YamlDocument, path []string, cache utils.Cache) string {

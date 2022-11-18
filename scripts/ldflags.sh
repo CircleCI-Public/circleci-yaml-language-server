@@ -2,7 +2,7 @@
 # Inspired by https://belief-driven-design.com/build-time-variables-in-go-51439b26ef9/
 
 
-PACKAGE="github.com/circleci/circleci-yaml-language-server/pkg/server/methods"
+PACKAGE="github.com/CircleCI-Public/circleci-yaml-language-server/pkg/server/methods"
 
 SCRIPT_PATH=$(cd $(dirname $0) && pwd)
 VERSION=$(cd $SCRIPT_PATH && go run ./get_next_release.go)

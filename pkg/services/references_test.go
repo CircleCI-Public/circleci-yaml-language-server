@@ -7,7 +7,7 @@ import (
 	"sort"
 	"testing"
 
-	utils "github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	utils "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 )

@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
 func main() {

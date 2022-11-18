@@ -3,8 +3,8 @@ package validate
 import (
 	"fmt"
 
-	"github.com/circleci/circleci-yaml-language-server/pkg/ast"
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
 func ValidateDockerImage(img *ast.DockerImage, cache *utils.DockerCache) (bool, string) {

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	yamlparser "github.com/circleci/circleci-yaml-language-server/pkg/parser"
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
 func HoverInJobs(doc yamlparser.YamlDocument, path []string, cache utils.Cache) string {

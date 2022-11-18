@@ -3,7 +3,7 @@ package methods
 import (
 	"fmt"
 
-	languageservice "github.com/circleci/circleci-yaml-language-server/pkg/services"
+	languageservice "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/services"
 	"github.com/segmentio/encoding/json"
 	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/protocol"
