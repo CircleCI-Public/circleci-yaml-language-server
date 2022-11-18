@@ -30,3 +30,8 @@ tasks:
       - go install github.com/automation-co/husky@latest
       - go get -d ./...
       - husky install
+
+  prepare:vscode:
+    cmds:
+      - cd editors/vscode && npm ci
+      - cd editors/vscode && npm run build
