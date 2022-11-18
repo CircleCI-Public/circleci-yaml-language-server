@@ -1,0 +1,355 @@
+version: 2.1
+parameters:
+  GHA_Event:
+    type: string
+    default: ""
+  GHA_Actor:
+    type: string
+    default: ""
+  GHA_Action:
+    type: string
+    default: ""
+  GHA_Meta:
+    type: string
+    default: ""
+orbs:
+    go: circleci/go@1.7.1
+    node: circleci/node@5.0.2
+    snyk: snyk/snyk@1.2.3
+
+commands:
+    install-zig:
+        steps:
+            - run: uname -a
+            - run:
+                  wget https://ziglang.org/download/0.9.1/zig-linux-x86_64-0.9.1.tar.xz
+            - run: tar -xf zig-linux-x86_64-0.9.1.tar.xz
+
+    install-vscode-extensions-deps:
+        steps:
+            - node/install-packages:
+                  app-dir: ~/project/editors/vscode
+
+jobs:
+    build-and-test:
+        environment:
+            SCHEMA_LOCATION: /home/circleci/project/schema.json
+        docker:
+            - image: cimg/go:1.19.1
+        steps:
+            - checkout
+            - go/mod-download-cached
+            - go/test
+            - run: go tool cover -html=cover-source.out -o coverage.html
+            - run: mv coverage.html /tmp/artifacts
+            - store_artifacts:
+                  path: /tmp/artifacts
+
+    build-linux:
+        docker:
+            - image: cimg/go:1.19.1
+        steps:
+            - checkout
+            - install-zig
+            - run:
+                  name: Build for Linux Amd 64
+                  command:
+                      sh -c "go build `~/project/scripts/ldflags.sh` -o ~/project/bin/linux-amd64-lsp ./cmd/start_server/start_server.go"
+
+            - run:
+                  name: Build for Linux Arm 64
+                  command: |
+                      export LDFLAGS=$(~/project/scripts/ldflags.sh)
+                      export CGO_ENABLED=1
+                      export GOOS=linux
+                      export GOARCH=arm64
+                      export CC='zig cc -target aarch64-linux'
+                      export CXX='zig c++ -target aarch64-linux'
+                      export PATH="$(pwd)/zig-linux-x86_64-0.9.1:$PATH"
+                      sh -c "go build $LDFLAGS -o ~/project/bin/linux-arm64-lsp ./cmd/start_server/start_server.go"
+
+            - store_artifacts:
+                  path: ~/project/bin
+
+            - persist_to_workspace:
+                  root: ~/
+                  paths:
+                      - project/bin
+
+    build-macos:
+        macos:
+            xcode: 14.0.0
+        environment:
+            HOMEBREW_NO_AUTO_UPDATE: 1
+        steps:
+            - checkout
+            - run: brew install golang
+            - run: brew install zig
+            - run:
+                  name: Build for mac os intel
+                  command:
+                      sh -c "go build `~/project/scripts/ldflags.sh` -o ~/project/bin/darwin-amd64-lsp ./cmd/start_server/start_server.go"
+            - run:
+                  name: Build for macos arm64
+                  command: |
+                      export LDFLAGS=$(SUFFIX='-s -w' ~/project/scripts/ldflags.sh)
+                      export CGO_ENABLED=1
+                      export GOOS=darwin
+                      export GOARCH=arm64
+                      export FRAMEWORKS="$(xcrun --show-sdk-path)/System/Library/Frameworks"
+                      export CC="zig cc -target aarch64-macos -F$FRAMEWORKS"
+                      export CXX="zig c++ -target aarch64-macos -F$FRAMEWORKS"
+                      sh -c "go build $LDFLAGS -o ~/project/bin/darwin-arm64-lsp ./cmd/start_server/start_server.go"
+
+            - store_artifacts:
+                  path: ~/project/bin
+
+            - persist_to_workspace:
+                  root: ~/
+                  paths:
+                      - project/bin
+
+    build-windows:
+        docker:
+            - image: cimg/go:1.19.1
+        steps:
+            - checkout
+            - install-zig
+
+            - run:
+                  name: Build for Windows x86_64 (64 bits)
+                  command: |
+                      export LDFLAGS=$(~/project/scripts/ldflags.sh)
+                      export CGO_ENABLED=1
+                      export GOOS=windows
+                      export GOARCH=amd64
+                      export CC='zig cc -target x86_64-windows'
+                      export CXX='zig c++ -target x86_64-windows'
+                      export PATH="$(pwd)/zig-linux-x86_64-0.9.1:$PATH"
+                      sh -c "go build $LDFLAGS -o ~/project/bin/windows-amd64-lsp.exe ./cmd/start_server/start_server.go"
+
+            - store_artifacts:
+                  path: ~/project/bin
+
+            - persist_to_workspace:
+                  root: ~/
+                  paths:
+                      - project/bin
+
+    build-vsix:
+        docker:
+            - image: cimg/node:14.19.0
+        steps:
+            - checkout
+            - attach_workspace:
+                  at: ~/
+
+            - install-vscode-extensions-deps
+
+            - run: cp schema.json editors/vscode
+            - run: cp publicschema.json editors/vscode
+
+            - run: cp -R bin editors/vscode/bin
+            - run:
+                  name: Build VSIX
+                  command: |
+                      # (yes ||:) forces command "yes" to exit with exit code 0 (if you don't do this it will exit with code 141)
+                      cd editors/vscode && (yes ||:) | npm run vsix-ci
+
+            - run: mkdir /tmp/vsix/
+
+            - run:
+                  name: Move VSIX to tmp
+                  command:
+                      mv editors/vscode/circleci-language-server-*.vsix
+                      /tmp/vsix/
+
+            - run:
+                  name: ZIP VSIX
+                  command: cd /tmp && zip -r circleci-lsp-vsix.zip vsix
+
+            - store_artifacts:
+                  path: /tmp/circleci-lsp-vsix.zip
+
+    lint-check:
+        docker:
+            - image: cimg/go:1.19.1
+        steps:
+            - checkout
+            - node/install:
+                node-version: '14.19'
+            - install-vscode-extensions-deps
+            - run:
+                name: Linter check for Go
+                command: if [[ $(gofmt -l pkg | wc -c) -ne 0 ]]; then exit 1; fi
+            - run:
+                name: Linter check for VSCE extension
+                command: cd editors/vscode && npm run lint-check
+
+    release:
+        parameters:
+            is_prerelease:
+                type: string
+                default: 'false'
+        docker:
+            - image: cimg/go:1.19.3
+        steps:
+            - checkout
+            - attach_workspace:
+                  at: ~/
+            - run:
+                name: Install ghr
+                command: go install github.com/tcnksm/ghr@latest
+            - run:
+                name: Clone the public repo
+                command: git clone https://${GITHUB_TOKEN}@github.com/CircleCI-Public/circleci-yaml-language-server.git /tmp/to-deploy
+            - run:
+                name: Set global user git config
+                command: |
+                    git config --global user.name "CircleCI"
+                    git config --global user.email "developer_experience@circleci.com"
+            - run:
+                name: Publish the binaries
+                command: |
+                    set -ex
+                    cd /tmp/to-deploy
+                    export TAG=$(cd ~/project && go run ~/project/scripts/get_next_release.go)
+                    if [[ << parameters.is_prerelease >> == "true" ]];
+                    then
+                        # This is a prerelease
+                        ghr -prerelease -delete -replace -c `git rev-parse HEAD` $TAG ~/project/bin/
+                    else
+                        # This is a standard release
+                        ghr -delete -replace -c `git rev-parse HEAD` $TAG ~/project/bin/
+                    fi
+
+    extract-licenses:
+        docker:
+            - image: cimg/go:1.19.1
+        steps:
+            - checkout
+            - run:
+                name: Install google license util
+                command: go install github.com/google/go-licenses@latest
+            - run:
+                # When go-licenses finds a license file in a project, it doesn't check its dependencies: the license file applies for the whole project
+                # When go-licenses finds unlicensed code, it checks all of its dependencies because it likely is source code
+                # We have a license for our project, but we still want to check the dependencies to make sure we are authorized to put that license
+                # Let's delete the license file so that go-licenses explores the whole project
+                # Alternative is to explicitly run go-licenses and sbom-generator in all subpackages of this repo
+                name: Delete license file
+                command: rm LICENSE.md
+            - run:
+                name: Extract go dependencies licenses
+                # possible improvement: run "task licenses" instead, requires task to be installed
+                command: go-licenses csv ./cmd/start_server >licenses.csv 2>licenses.errors
+            - persist_to_workspace:
+                  root: ~/
+                  paths:
+                      - project/licenses.csv
+                      - project/licenses.errors
+
+    check-licenses:
+        docker:
+            - image: cimg/node:14.19.0
+        steps:
+            - checkout
+
+            - attach_workspace:
+                  at: ~/
+
+            - run:
+                name: Install sbom-generator
+                command: sudo npm install -g ./assets/sbom-generator-0.0.2-trimmed.tgz
+
+            - install-vscode-extensions-deps
+
+            - run:
+                name: Extract dependencies
+                command: sbom extract
+
+            - store_artifacts:
+                path: ./sbom.generated.json
+
+            # To be uncommented when this ticket gets prioritized: https://circleci.atlassian.net/browse/DEVEX-334
+            # - run:
+            #     name: Verify licenses
+            #     command: sbom verify ./sbom.generated.json
+
+    security-scan:
+        docker:
+            - image: cimg/go:1.19.1
+        steps:
+            - checkout
+            - snyk/scan:
+                additional-arguments: --all-projects
+
+workflows:
+    build:
+        jobs:
+            - build-and-test
+            - lint-check
+            # - extract-licenses
+            - security-scan:
+                context:
+                    - org-global
+            # - check-licenses:
+            #     requires:
+            #         - extract-licenses
+            - build-linux:
+                filters:
+                    branches:
+                        only: master
+            - build-macos:
+                filters:
+                    branches:
+                        only: master
+            - build-windows:
+                filters:
+                    branches:
+                        only: master
+            - build-vsix:
+                requires:
+                    - build-linux
+                    - build-macos
+                    - build-windows
+            - release:
+                name: prerelease
+                is_prerelease: 'true'
+                requires:
+                    - build-linux
+                    - build-macos
+                    - build-windows
+    deploy:
+        jobs:
+            - build-linux:
+                filters:
+                    tags:
+                        only: /^.*/
+                    branches:
+                        ignore: /.*/
+            - build-macos:
+                filters:
+                    tags:
+                        only: /^.*/
+                    branches:
+                        ignore: /.*/
+            - build-windows:
+                filters:
+                    tags:
+                        only: /^.*/
+                    branches:
+                        ignore: /.*/
+            - release:
+                is_prerelease: 'false'
+                requires:
+                    - build-linux
+                    - build-macos
+                    - build-windows
+                filters:
+                    tags:
+                        only: /^.*/
+                    branches:
+                        ignore: /.*/
+
+# VS Code Extension Version: 1.1.1

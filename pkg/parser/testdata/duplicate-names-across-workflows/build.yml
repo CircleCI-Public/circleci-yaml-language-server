@@ -1,0 +1,25 @@
+version: 2.1
+
+orbs:
+  orb:
+    jobs:
+      build_test_push:
+        machine: true
+        steps:
+          - run:
+              command: "echo build_test_push"
+      build_test:
+        machine: true
+        steps:
+          - run:
+              command: "echo build_test"
+
+workflows:
+  build_master:
+    jobs:
+      - orb/build_test_push:
+          name: build_something
+  build_pull_request:
+    jobs:
+      - orb/build_test:
+          name: build_something

@@ -1,0 +1,19 @@
+version: 2.1
+jobs:
+  a:
+    parameters:
+      s:
+        type: string
+    machine: true
+    steps:
+      - run:
+          command:  "echo << parameters.s >>"
+workflows:
+  workflow:
+    jobs:
+      - a:
+          s: "hello world"
+      - a:
+          s: "hello world, again!"
+          requires:
+            - a

@@ -1,0 +1,45 @@
+version: 2.1
+
+jobs:
+    terraform-init-plan:
+
+        parameters:
+            tf_partition_path:
+                type: 
+            extra_diff_paths:
+                type: string
+                default: ""
+            tf_plan_only:
+                type: string
+                default: "false"
+        executor: 
+        working_directory: ~/src
+        # shell: /bin/bash -eo pipefail -o nounset
+        steps:
+            - checkout
+            - 
+
+    dummyJob:
+        steps:
+            - echo Dummy job
+
+commands:
+    dummyCommand:
+        steps:
+            - echo Hello world
+    super:        
+        
+executors:
+    autocompleteType:
+        #
+
+    machineExec:
+        machine:
+            image: 
+
+    resourceClass:
+        macos:
+        resource_class: 
+
+orbs:
+    superOrb: superorb/superfunc@1.2.3

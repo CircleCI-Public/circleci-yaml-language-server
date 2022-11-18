@@ -1,0 +1,27 @@
+version: "3"
+
+vars:
+  BIN_PATH: bin/start_server{{if eq OS "windows"}}'.exe'{{else}}''{{end}}
+
+tasks:
+  build:
+    cmds:
+      - bash -c "go build $(./scripts/ldflags.sh) -o {{.BIN_PATH}} cmd/start_server/start_server.go"
+
+  run:
+    cmds:
+      - go run cmd/start_server/start_server.go
+
+  start:
+    cmds:
+      - ./bin/start_server
+
+  test:
+    cmds:
+      - go test ./... -count=1
+
+  licenses:
+      - go-licenses csv ./cmd/start_server >licenses.csv 2>licenses.errors
+
+  lint:
+      - gofmt -w pkg

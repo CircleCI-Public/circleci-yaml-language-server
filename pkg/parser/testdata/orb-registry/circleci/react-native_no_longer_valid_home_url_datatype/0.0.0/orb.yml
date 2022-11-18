@@ -1,0 +1,19 @@
+version: 2.1
+name: react_native
+# Simulates an orb that was published with a home_url that is now
+# of invalid data type
+display:
+  home_url:
+    - "http://www.google.com"
+    - "http://www.github.com"
+jobs:
+  android:
+    docker:
+      - image: circleci/android
+    steps:
+      - checkout
+  node:
+    docker:
+      - image: circleci/node
+    steps:
+      - checkout

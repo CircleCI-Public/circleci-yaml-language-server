@@ -1,0 +1,37 @@
+version: 2.1
+
+commands:
+  command:
+    steps:
+      - when:
+          condition: false
+          steps:
+            - run: foo
+
+jobs:
+  build:
+    docker:
+    - image: ubuntu
+    parameters:
+      steps:
+        default: []
+        type: steps
+    steps:
+      - checkout
+      - steps: << parameters.steps >>
+
+workflows:
+  version: 2
+  smoke_test:
+    jobs:
+      - build:
+          steps:
+            - command
+            - when:
+                condition: true
+                steps:
+                  - run: foo
+            - when:
+                condition: false
+                steps:
+                  - run: foo

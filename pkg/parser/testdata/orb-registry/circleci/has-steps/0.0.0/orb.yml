@@ -1,0 +1,10 @@
+version: 2.1
+name: foo
+commands:
+  bar:
+    parameters:
+      bang:
+        type: steps
+        default: []
+    steps:
+      - steps: << parameters.bang >>

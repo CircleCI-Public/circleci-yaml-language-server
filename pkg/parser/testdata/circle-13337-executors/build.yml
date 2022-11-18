@@ -1,0 +1,11 @@
+version: 2.1
+orbs:
+  cli: circleci/circleci-cli@dev:volatile
+
+jobs:
+  build:
+    executor:
+      cli/default:
+        tag: 0.1.1640
+    steps:
+      - checkout

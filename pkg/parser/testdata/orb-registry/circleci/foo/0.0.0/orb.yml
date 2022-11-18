@@ -1,0 +1,48 @@
+version: 2.1
+orbs:
+  baz:
+    version: 2.1
+    commands:
+      bang:
+        parameters:
+          bazbool:
+            type: boolean
+          bazsteps:
+            type: steps
+            default: []
+        steps:
+          - unless:
+              condition: << parameters.bazbool >>
+              steps:
+                - checkout
+                - steps: << parameters.bazsteps >>
+          - when:
+              condition: << parameters.bazbool >>
+              steps:
+                - run: "do not checkout!"
+                - steps: << parameters.bazsteps >>
+jobs:
+  build:
+    parameters:
+      foobool:
+        type: boolean
+      foosteps:
+        type: steps
+    machine: << parameters.foobool >>
+    steps:
+      - baz/bang:
+          bazbool: << parameters.foobool >>
+          bazsteps: << parameters.foosteps >>
+
+commands:
+  foocommand:
+    steps:
+      - run:
+          command: i am a foocommand
+  bar:
+    parameters:
+      bang:
+        type: steps
+        default: []
+    steps:
+      - steps: << parameters.bang >>

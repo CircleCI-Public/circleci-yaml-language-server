@@ -1,0 +1,16 @@
+version: 2.1
+
+build_agent: 'picard:agent'
+
+workflows:
+  build:
+    jobs:
+      - build
+
+jobs:
+  build:
+    docker:
+      - image: alpine
+    steps:
+      - run: |
+          echo hi

@@ -1,0 +1,22 @@
+version: 2.1
+
+parameters:
+  build_agent:
+    type: string
+    default: 'picard:agent'
+
+
+build_agent: "<< pipeline.parameters.build_agent >>"
+
+workflows:
+  build:
+    jobs:
+      - build
+
+jobs:
+  build:
+    docker:
+      - image: alpine
+    steps:
+      - run: |
+          echo hi

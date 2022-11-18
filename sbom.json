@@ -1,0 +1,39 @@
+{
+    "name": "circleci-yaml-language-server",
+    "js": {
+        "include": ["./editors/vscode/package.json"],
+        "exclude": [],
+        "dependencies": []
+    },
+    "go": {
+        "projects": [
+            {
+                "path": "./cmd/start_server",
+                "subprojects": {
+                    "./pkg/server": "github.com/circleci/circleci-yaml-language-server/pkg/server",
+                    "./pkg/server/methods": "github.com/circleci/circleci-yaml-language-server/pkg/server/methods",
+                    "./pkg/utils": "github.com/circleci/circleci-yaml-language-server/pkg/utils",
+                    "./pkg/ast": "github.com/circleci/circleci-yaml-language-server/pkg/ast",
+                    "./pkg/parser": "github.com/circleci/circleci-yaml-language-server/pkg/parser",
+                    "./pkg/parser/validate": "github.com/circleci/circleci-yaml-language-server/pkg/parser/validate",
+                    "./pkg/services": "github.com/circleci/circleci-yaml-language-server/pkg/services",
+                    "./pkg/services/complete": "github.com/circleci/circleci-yaml-language-server/pkg/services/complete",
+                    "./pkg/services/definition": "github.com/circleci/circleci-yaml-language-server/pkg/services/definition"
+                },
+                "licenseFileType": "go-licenses",
+                "licenseFilePath": "./licenses.csv"
+            }
+        ],
+        "exclude": [
+            "./cmd/gql",
+            "./cmd/test_tree-sitter",
+            "./cmd/parse_yaml",
+            "./cmd/dockerhub",
+            "./pkg/services/hover",
+            "./pkg/expect",
+            "./scripts"
+        ]
+    },
+    "whitelisted_dependencies": {}
+}
+

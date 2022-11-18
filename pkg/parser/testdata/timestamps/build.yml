@@ -1,0 +1,8 @@
+version: 2.1
+jobs:
+  build:
+    machine: true
+    environment:
+      foo: 2019-01-01
+    steps:
+      - checkout

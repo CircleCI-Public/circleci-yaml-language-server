@@ -1,0 +1,22 @@
+version: 2.1
+description: "Orb owned by CCI RE that defines jobs for promotions through Scotty"
+
+executors:
+  ccc:
+    docker:
+      - image: circleci/command-convenience:0.1
+        auth:
+          username: $DOCKER_HUB_USER
+          password: $DOCKER_HUB_PASSWORD
+
+jobs:
+  promote-to-server:
+    parameters:
+      promotion_component_list:
+        type: string
+    executor: ccc
+    steps:
+      - checkout
+      - run: promote-to-server
+    environment:
+      PROMOTION_COMPONENT_LIST: << parameters.promotion_component_list >>

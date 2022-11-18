@@ -1,0 +1,13 @@
+version: 2.1
+name: react_native
+jobs:
+  android:
+    docker:
+      - image: circleci/android
+    steps:
+      - checkout
+  node:
+    docker:
+      - image: circleci/node
+    steps:
+      - checkout
