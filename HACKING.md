@@ -124,3 +124,61 @@ task prepare:vscode
 3. Next, open a VSCode instance at the root of the project, open the
    `Run and Debug` tab and run it via the `Run Extension` on the dropdown menu
    at the top of the tab.
+
+## Running End-2-End tests
+
+End-to-end tests are tests performed on a running LSP server.
+Tests are written in typescript (using Jest) and located in the `e2e` folder.
+
+### Prepare your environment
+You can run E2E tests, you will need NodeJS (16+) installed in your environment.
+
+Prepare the tests with the command:
+
+```
+task prepare:test:e2e
+```
+
+This command will install all NodeJS dependencies needed for the tests (see `e2e/package.json`).
+
+### Run tests
+
+
+(Re)-build the server binary using the command:
+```
+task build
+```
+
+You can now run the test at any time using the command:
+
+```
+task test:e2e
+```
+
+This will:
+* start a LSP server on port 10001 (update `PORT` env variable to change this)
+* run all tests in `e2e/src` folders
+* close the LSP server
+
+If you want your tests to reach a already running server, use the following command:
+```
+task test:e2e:standalone
+```
+
+You may have to set the `PORT`.
+
+### Update snapshots
+
+To update snapshots, run:
+
+```
+task test:e2e:update
+```
+
+Snapshots are located at `e2e/src/snapshots`.
+
+### Related environment variables
+* `SPAWN_LSP_SERVER`: (default: `yes`) If truthy, then the LSP server will be spawn for tests and stopped at the end. Accepted value: `true`, `false`, `on`, `off`, `yes`, `no`, `1`, `0`.
+* `PORT` (default: 10001) Port where to reach (and spawn if requested) the LSP server
+* `LSP_SERVER_HOST`: Default: `localhost`. Host address of the LSP server
+* `RPC_SERVER_BIN`: Default: `bin/start_server`. Name of the binary to use if the LSP server spawn has been requested.

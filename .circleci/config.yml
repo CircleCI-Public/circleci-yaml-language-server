@@ -31,6 +31,12 @@ commands:
                   app-dir: ~/project/editors/vscode
                   pkg-manager: yarn
 
+    install-e2e-tests-deps:
+        steps:
+            - node/install-packages:
+                  app-dir: ~/project/e2e
+                  pkg-manager: yarn
+
 jobs:
     build-and-test:
         environment:
@@ -181,12 +187,16 @@ jobs:
                 node-version: '14.19'
             - node/install-yarn
             - install-vscode-extensions-deps
+            - install-e2e-tests-deps
             - run:
                 name: Linter check for Go
                 command: if [[ $(gofmt -l pkg | wc -c) -ne 0 ]]; then exit 1; fi
             - run:
                 name: Linter check for VSCE extension
                 command: cd editors/vscode && npm run lint-check
+            - run:
+                name: "Linter check for E2E test"
+                command: cd e2e && npm run lint
 
     release:
         parameters:
@@ -286,6 +296,24 @@ jobs:
             - snyk/scan:
                 additional-arguments: --all-projects
 
+    test-e2e:
+      docker:
+        - image: cimg/node:16.18.1
+      environment:
+        RPC_SERVER_BIN: ~/project/bin/linux-amd64-lsp
+        PORT: 10001
+      steps:
+        - checkout
+        - attach_workspace:
+                at: ~/
+        - node/install-yarn
+        - install-e2e-tests-deps
+        - run:
+            name: Running tests
+            command: cd e2e && yarn start:ci
+        - store_test_results:
+            path: e2e/reports
+
 workflows:
     build:
         jobs:
@@ -299,10 +327,7 @@ workflows:
             # - check-licenses:
             #     requires:
             #         - extract-licenses
-            - build-linux:
-                filters:
-                    branches:
-                        only: master
+            - build-linux
             - build-macos:
                 filters:
                     branches:
@@ -316,6 +341,14 @@ workflows:
                     - build-linux
                     - build-macos
                     - build-windows
+                filters:
+                    branches:
+                        only: master
+
+            - test-e2e:
+                requires:
+                    - build-linux
+
             - release:
                 name: prerelease
                 is_prerelease: 'true'
@@ -323,6 +356,9 @@ workflows:
                     - build-linux
                     - build-macos
                     - build-windows
+                filters:
+                    branches:
+                        only: master
     deploy:
         jobs:
             - build-linux:

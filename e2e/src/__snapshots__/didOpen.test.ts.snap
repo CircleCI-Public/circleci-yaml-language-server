@@ -1,0 +1,77 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`DidOpen Job without steps 1`] = `
+{
+  "diagnostics": [
+    {
+      "message": "Invalid type. Expected: object, given: array",
+      "range": {
+        "end": {
+          "character": 31,
+          "line": 8,
+        },
+        "start": {
+          "character": 2,
+          "line": 6,
+        },
+      },
+      "severity": 1,
+      "source": "cci-language-server",
+    },
+    {
+      "message": "steps is required",
+      "range": {
+        "end": {
+          "character": 31,
+          "line": 5,
+        },
+        "start": {
+          "character": 2,
+          "line": 3,
+        },
+      },
+      "severity": 1,
+      "source": "cci-language-server",
+    },
+    {
+      "message": "Job is unused",
+      "range": {
+        "end": {
+          "character": 0,
+          "line": 0,
+        },
+        "start": {
+          "character": 0,
+          "line": 0,
+        },
+      },
+      "severity": 2,
+      "source": "cci-language-server",
+    },
+  ],
+  "uri": "file:///project/test-files/.circleci/invalid-files/job-without-steps.yml",
+}
+`;
+
+exports[`DidOpen Unused job 1`] = `
+{
+  "diagnostics": [
+    {
+      "message": "Job is unused",
+      "range": {
+        "end": {
+          "character": 6,
+          "line": 3,
+        },
+        "start": {
+          "character": 2,
+          "line": 3,
+        },
+      },
+      "severity": 2,
+      "source": "cci-language-server",
+    },
+  ],
+  "uri": "file:///project/test-files/.circleci/invalid-files/unused-job.yml",
+}
+`;
