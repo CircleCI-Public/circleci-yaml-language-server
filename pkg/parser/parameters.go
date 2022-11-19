@@ -290,6 +290,20 @@ func (doc *YamlDocument) parseParameterValue(child *sitter.Node) (ast.ParameterV
 	//   beginning of the string with "|"
 	keyNode, valueNode := getKeyValueNodes(child)
 	paramName := doc.GetNodeText(keyNode)
+
+	if keyNode == nil {
+		return ast.ParameterValue{}, fmt.Errorf("key not defined")
+	}
+
+	if valueNode == nil {
+		diag := utils.CreateWarningDiagnosticFromNode(
+			keyNode,
+			"No value defined for the parameter",
+		)
+		doc.addDiagnostic(diag)
+		return ast.ParameterValue{}, fmt.Errorf("no parameter value")
+	}
+
 	flowNodeChild := valueNode.Child(0)
 	if flowNodeChild == nil {
 		return ast.ParameterValue{}, fmt.Errorf("error while parsing parameter value")
@@ -484,14 +498,14 @@ func getDefaultRange(child *sitter.Node) protocol.Range {
 
 	if value != nil {
 		return NodeToRange(child)
-	} else {
-		defaultRange := NodeToRange(child)
-		return protocol.Range{
-			Start: defaultRange.Start,
-			End: protocol.Position{
-				Line:      defaultRange.End.Line,
-				Character: defaultRange.End.Character + 999,
-			},
-		}
+	}
+
+	defaultRange := NodeToRange(child)
+	return protocol.Range{
+		Start: defaultRange.Start,
+		End: protocol.Position{
+			Line:      defaultRange.End.Line,
+			Character: defaultRange.End.Character + 999,
+		},
 	}
 }
