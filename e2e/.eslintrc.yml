@@ -1,0 +1,30 @@
+root: true
+
+extends:
+  - eslint:recommended
+  - plugin:@typescript-eslint/recommended
+  - airbnb-base
+  - airbnb-typescript/base
+
+# env:
+#   jest/globals: true
+
+parser: "@typescript-eslint/parser"
+parserOptions:
+  ecmaVersion: 6
+  sourceType: module
+  project: tsconfig.json
+
+plugins:
+  - "@typescript-eslint"
+  - jest
+
+rules:
+  no-restricted-exports:
+    - off
+
+  no-use-before-define:
+    - off
+
+  "@typescript-eslint/no-use-before-define":
+    - off

@@ -1,0 +1,8 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Completion command Completion command 1`] = `
+{
+  "isIncomplete": true,
+  "items": [],
+}
+`;

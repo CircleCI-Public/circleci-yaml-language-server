@@ -6,3 +6,5 @@ licenses.errors
 .vscode/settings.json
 __pycache__
 node_modules
+coverage
+e2e/reports
