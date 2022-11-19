@@ -50,6 +50,9 @@ tasks:
   start:
     cmds:
       - ./bin/start_server
+    env:
+      PORT: '{{.PORT | default 10001}}'
+      SCHEMA_LOCATION: ./pubxlicschema.json
 
   test:
     cmds:
@@ -64,9 +67,45 @@ tasks:
       - go-licenses csv ./cmd/start_server >licenses.csv 2>licenses.errors
 
   lint:
+    cmds:
+      - task: lint:go
+      - task: lint:e2e
+
+  lint:e2e:
+    dir: e2e
+    cmds:
+      - yarn lint
+
+  lint:go:
+    cmds:
       - gofmt -w pkg
 
   prepare:vscode:
     cmds:
       - cd editors/vscode && yarn
       - cd editors/vscode && yarn run build
+
+  prepare:test:e2e:
+    dir: e2e
+    cmds:
+      - yarn install
+
+  test:e2e:
+    dir: e2e
+    env:
+      SPAWN_LSP_SERVER: '{{.SPAWN_LSP_SERVER | default true}}'
+      PORT: 10001
+    cmds:
+      - yarn start {{.JEST_ARGS}}
+
+  test:e2e:update:
+    cmds:
+      - task: test:e2e
+        vars:
+          JEST_ARGS: --updateSnapshot
+
+  test:e2e:standalone:
+    cmds:
+      - task: test:e2e
+        vars:
+          SPAWN_LSP_SERVER: false

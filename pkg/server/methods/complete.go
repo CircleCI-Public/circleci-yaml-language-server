@@ -11,12 +11,23 @@ import (
 
 func (methods *Methods) Complete(reply jsonrpc2.Replier, req jsonrpc2.Request) error {
 	params := protocol.CompletionParams{}
-	if err := json.Unmarshal(req.Params(), &params); err != nil {
+
+	reqParams := req.Params()
+	err := json.Unmarshal(reqParams, &params)
+
+	if err != nil {
 		return reply(methods.Ctx, nil, fmt.Errorf("%s: %w", jsonrpc2.ErrParse, err))
 	}
+
 	res, err := languageservice.Complete(params, methods.Cache)
+
 	if err != nil {
-		return reply(methods.Ctx, nil, err)
+		return reply(
+			methods.Ctx,
+			nil,
+			err,
+		)
 	}
+
 	return reply(methods.Ctx, res, nil)
 }

@@ -70,6 +70,7 @@ func (server JSONRPCServer) commandHandler(_ context.Context, reply jsonrpc2.Rep
 }
 
 func (server JSONRPCServer) ServeStream(_ context.Context, conn jsonrpc2.Conn) error {
+	fmt.Println("New client connection")
 	server.conn = conn
 	server.cache = utils.CreateCache()
 	server.methods = methods.Methods{

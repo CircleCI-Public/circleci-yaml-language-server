@@ -9,7 +9,11 @@ import (
 )
 
 func Complete(params protocol.CompletionParams, cache *utils.Cache) (protocol.CompletionList, error) {
-	yamlDocument, _ := yamlparser.ParseFileWithCache(params.TextDocument.URI, cache)
+	yamlDocument, err := yamlparser.ParseFileWithCache(params.TextDocument.URI, cache)
+
+	if err != nil {
+		return protocol.CompletionList{}, err
+	}
 
 	if yamlDocument.Version < 2.1 {
 		return protocol.CompletionList{
