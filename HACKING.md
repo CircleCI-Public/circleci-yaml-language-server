@@ -13,7 +13,7 @@ resources:
 
 ## Requirements
 
--   Go 1.18+
+-   Go 1.19+
 -   [Task](https://taskfile.dev/)
 -   [detect-secrets](https://github.com/Yelp/detect-secrets)
 
@@ -56,7 +56,7 @@ $ task test
 
 ## Managing Dependencies
 
-We use Go 1.18 Modules for managing our dependencies.
+We use Go 1.19 Modules for managing our dependencies.
 
 You can read more about it on the wiki:
 https://github.com/golang/go/wiki/Modules
