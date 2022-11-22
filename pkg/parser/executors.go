@@ -251,7 +251,7 @@ func (doc *YamlDocument) parseDockerImage(imageNode *sitter.Node) ast.DockerImag
 		valueNode := child.ChildByFieldName("value")
 		switch keyName {
 		case "image":
-			dockerImg.Image = parseDockerImageValue(doc.GetNodeText(valueNode))
+			dockerImg.Image = ParseDockerImageValue(doc.GetNodeText(valueNode))
 			dockerImg.ImageRange = NodeToRange(child)
 		case "name":
 			dockerImg.Name = doc.GetNodeText(valueNode)

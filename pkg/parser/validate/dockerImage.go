@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/circleci/circleci-yaml-language-server/pkg/ast"
+	"github.com/circleci/circleci-yaml-language-server/pkg/dockerhub"
 	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
 )
 
@@ -22,7 +23,7 @@ func ValidateDockerImage(img *ast.DockerImage, cache *utils.DockerCache) (bool, 
 	if cachedDockerImage == nil {
 		cache.Add(
 			img.Image.FullPath,
-			utils.DoesDockerImageExist(img.Image.Namespace, img.Image.Name, img.Image.Tag),
+			dockerhub.DoesImageExist(img.Image.Namespace, img.Image.Name, img.Image.Tag),
 		)
 
 		cachedDockerImage = cache.Get(img.Image.FullPath)
