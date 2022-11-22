@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/dockerhub"
 	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser/validate"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
@@ -57,30 +58,69 @@ func (ch *CompletionHandler) completeDockerExecutor(executor ast.DockerExecutor)
 	// Check if we are in an image's range
 	for _, img := range executor.Image {
 		if utils.PosInRange(img.ImageRange, ch.Params.Position) {
-			// Search the hub.
-			searchString := img.Image.FullPath
+			// Suggest docker images w/ dockerhub package to perform search
 
+			node, _, _ := utils.NodeAtPos(ch.Doc.RootNode, ch.Params.Position)
+
+			// The dockerhub searches are based on strings
+			// We need the string content of the current docker image but they are some things to consider
+			// - The current completion could run on an "altered document" (cf ModifyTextForAutocomplete)
+			//   in this case, we should strip any additional content
+			// - The user cursor position
+			//    "- image: cimg/node|" (| is caret) should search for cimg/node
+			//    "- image: cimg/n|ode" should search for cim/n
+			//	This help with suggesting tags after the current completion (cf: addDockerImageCompletion -> Command)
+			completionString := img.Image.FullPath
 			if ch.DocDiff != "" {
-				searchString = searchString[0 : len(searchString)-len(ch.DocDiff)]
+				completionString = completionString[0 : len(completionString)-len(ch.DocDiff)]
 			}
 
-			results := utils.SearchDockerHUB(searchString)
-			i := 0
+			diff := img.ImageRange.End.Character - ch.Params.Position.Character
+			completionString = completionString[0 : len(img.Image.FullPath)-int(diff)]
 
-			for i < 5 && results.HasNext() {
-				repo := results.Next()
-				completion := fmt.Sprintf("%s/%s", repo.Namespace, repo.Name)
+			// Based on the reduced string, extract image info
+			theImg := yamlparser.ParseDockerImageValue(completionString)
 
-				if repo.Namespace == "library" {
-					completion = repo.Name
+			if theImg.Tag == "" && completionString[len(completionString)-1:] != ":" {
+				// Search for repositories
+				results := dockerhub.Search(completionString)
+				i := 0
+
+				for i < 5 && results.HasNext() {
+					repo := results.Next()
+
+					ch.addDockerImageCompletion(
+						node,
+						repo.Namespace,
+						repo.Name,
+						"latest",
+						true,
+					)
+					i++
+				}
+			} else {
+				// Search for tags instead
+				results, err := dockerhub.SearchTags(img.Image.Namespace, img.Image.Name, theImg.Tag)
+
+				if err != nil {
+					return
 				}
 
-				node, _, _ := utils.NodeAtPos(ch.Doc.RootNode, ch.Params.Position)
-				ch.addDockerImageCompletion(
-					node,
-					completion,
-				)
-				i++
+				i := 0
+
+				for i < 10 && results.HasNext() {
+					tag := results.Next()
+
+					ch.addDockerImageCompletion(
+						node,
+						img.Image.Namespace,
+						img.Image.Name,
+						tag.Name,
+						false,
+					)
+
+					i++
+				}
 			}
 
 			break
@@ -152,7 +192,7 @@ func (ch *CompletionHandler) checkAndAddResourceClassFieldCompletion(executor as
 	}
 }
 
-func (ch *CompletionHandler) addDockerImageCompletion(node *sitter.Node, fullImageName string) {
+func (ch *CompletionHandler) addDockerImageCompletion(node *sitter.Node, namespace, name, tag string, retrigger bool) {
 	if node == nil {
 		return
 	}
@@ -166,7 +206,25 @@ func (ch *CompletionHandler) addDockerImageCompletion(node *sitter.Node, fullIma
 	if ch.DocTag == "edit-value" && len(ch.DocDiff) > 0 {
 		// Snip any diffs in value that could come from
 		// altering the document (see ModifyTextForAutoComplete)
-		ogText = ogText[0:len(ch.DocDiff)]
+		ogText = ogText[0 : len(ogText)-len(ch.DocDiff)]
+	}
+
+	fullImageName := name
+
+	if namespace != "library" {
+		fullImageName = namespace + "/" + fullImageName
+	}
+
+	if tag != "" {
+		fullImageName = fullImageName + ":" + tag
+	}
+
+	var command *protocol.Command = nil
+
+	if retrigger {
+		command = &protocol.Command{
+			Command: "circleci-language-server.selectTagAndComplete",
+		}
 	}
 
 	ch.Items = append(ch.Items, protocol.CompletionItem{
@@ -189,6 +247,8 @@ func (ch *CompletionHandler) addDockerImageCompletion(node *sitter.Node, fullIma
 			},
 			NewText: fullImageName,
 		},
+
+		Command: command,
 	})
 }
 
