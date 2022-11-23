@@ -25,9 +25,21 @@ func (val Validate) checkIfCommandIsUsed(command ast.Command) bool {
 			return true
 		}
 	}
+
 	for _, job := range val.Doc.Jobs {
 		if val.checkIfStepsContainStep(job.Steps, command.Name) {
 			return true
+		}
+	}
+
+	for _, workflow := range val.Doc.Workflows {
+		for _, jobRef := range workflow.JobRefs {
+			steps := jobRef.PostSteps
+			steps = append(steps, jobRef.PreSteps...)
+
+			if val.checkIfStepsContainStep(steps, command.Name) {
+				return true
+			}
 		}
 	}
 
