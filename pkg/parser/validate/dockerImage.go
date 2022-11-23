@@ -41,5 +41,6 @@ Unsuported syntaxes:
 */
 func isDockerImageCheckable(img *ast.DockerImage) bool {
 	// For now, just make the name & version mandatory
-	return img.Image.Name != "" && img.Auth == ast.DockerImageAuth{} && img.AwsAuth == ast.DockerImageAWSAuth{}
+	hasParamInTag, _ := utils.CheckIfParamIsPartiallyReferenced(img.Image.Tag)
+	return img.Image.Name != "" && img.Auth == ast.DockerImageAuth{} && img.AwsAuth == ast.DockerImageAWSAuth{} && !hasParamInTag
 }
