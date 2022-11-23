@@ -293,6 +293,7 @@ workflows:
             - security-scan:
                 context:
                     - org-global
+                    - org-global-employees
             # - check-licenses:
             #     requires:
             #         - extract-licenses
