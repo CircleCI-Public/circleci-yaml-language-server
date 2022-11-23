@@ -1,7 +1,7 @@
 package parser
 
 import (
-	"github.com/circleci/circleci-yaml-language-server/pkg/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	sitter "github.com/smacker/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )

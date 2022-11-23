@@ -3,7 +3,7 @@ package methods
 import (
 	"encoding/json"
 	"fmt"
-	lsp "github.com/circleci/circleci-yaml-language-server/pkg/services"
+	lsp "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/services"
 	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/protocol"
 )

@@ -8,9 +8,9 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/circleci/circleci-yaml-language-server/pkg/ast"
-	"github.com/circleci/circleci-yaml-language-server/pkg/parser"
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 )

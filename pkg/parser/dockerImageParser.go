@@ -3,8 +3,8 @@ package parser
 import (
 	"regexp"
 
-	"github.com/circleci/circleci-yaml-language-server/pkg/ast"
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
 var dockerImageRegex = regexp.MustCompile(`^([a-z0-9\-_]+\/)?([a-z0-9\-_]+)(:(.*))?$`)

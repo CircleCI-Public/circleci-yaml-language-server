@@ -10,8 +10,8 @@ import (
 	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/protocol"
 
-	methods "github.com/circleci/circleci-yaml-language-server/pkg/server/methods"
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	methods "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/server/methods"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
 type JSONRPCServer struct {

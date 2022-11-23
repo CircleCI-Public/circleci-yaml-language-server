@@ -3,8 +3,8 @@ package parser
 import (
 	"testing"
 
-	"github.com/circleci/circleci-yaml-language-server/pkg/expect"
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/expect"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"github.com/stretchr/testify/assert"
 	"go.lsp.dev/protocol"
 	"gopkg.in/yaml.v3"

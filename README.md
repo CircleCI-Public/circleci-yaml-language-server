@@ -5,7 +5,7 @@ This is CircleCI's YAML Language Server.
 [Code of Conduct](./CODE_OF_CONDUCT.md) |
 [Contribution Guidelines](./CONTRIBUTING.md) | [Hacking](./HACKING.md)
 
-[![CircleCI](https://dl.circleci.com/status-badge/img/gh/circleci/circleci-yaml-language-server/tree/master.svg?style=svg&circle-token=4f59ef1a4041930f4d07e37cb0b7ebd764f9689e)](https://dl.circleci.com/status-badge/redirect/gh/circleci/circleci-yaml-language-server/tree/master)
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/CircleCI-Public/circleci-yaml-language-server/tree/master.svg?style=svg&circle-token=4f59ef1a4041930f4d07e37cb0b7ebd764f9689e)](https://dl.circleci.com/status-badge/redirect/gh/CircleCI-Public/circleci-yaml-language-server/tree/master)
 [![GitHub release](https://img.shields.io/github/v/release/circleci-public/circleci-yaml-language-server)](https://github.com/circleci-public/circleci-yaml-language-server/releases)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE.md)
 

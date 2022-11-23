@@ -3,8 +3,8 @@ package complete
 import (
 	"fmt"
 
-	yamlparser "github.com/circleci/circleci-yaml-language-server/pkg/parser"
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	sitter "github.com/smacker/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )

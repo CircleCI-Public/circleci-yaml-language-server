@@ -3,7 +3,7 @@ package utils
 import (
 	"sync"
 
-	"github.com/circleci/circleci-yaml-language-server/pkg/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	"go.lsp.dev/protocol"
 )
 

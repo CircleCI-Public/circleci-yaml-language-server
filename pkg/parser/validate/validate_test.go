@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/circleci/circleci-yaml-language-server/pkg/parser"
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"github.com/stretchr/testify/assert"
 	"go.lsp.dev/protocol"
 )

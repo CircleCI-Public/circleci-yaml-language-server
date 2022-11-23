@@ -1,4 +1,4 @@
-module github.com/circleci/circleci-yaml-language-server
+module github.com/CircleCI-Public/circleci-yaml-language-server
 
 go 1.19
 

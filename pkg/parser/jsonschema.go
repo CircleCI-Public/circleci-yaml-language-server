@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	sitter "github.com/smacker/go-tree-sitter"
 	"github.com/xeipuuv/gojsonschema"
 	"go.lsp.dev/protocol"

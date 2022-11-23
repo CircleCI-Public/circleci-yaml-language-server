@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	lsp "github.com/circleci/circleci-yaml-language-server/pkg/server"
+	lsp "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/server"
 )
 
 func main() {

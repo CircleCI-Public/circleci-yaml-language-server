@@ -3,7 +3,7 @@ package definition
 import (
 	"fmt"
 
-	yamlparser "github.com/circleci/circleci-yaml-language-server/pkg/parser"
+	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
 	sitter "github.com/smacker/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )

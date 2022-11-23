@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/circleci/circleci-yaml-language-server/pkg/ast"
-	"github.com/circleci/circleci-yaml-language-server/pkg/dockerhub"
-	yamlparser "github.com/circleci/circleci-yaml-language-server/pkg/parser"
-	"github.com/circleci/circleci-yaml-language-server/pkg/parser/validate"
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/dockerhub"
+	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser/validate"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	sitter "github.com/smacker/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )

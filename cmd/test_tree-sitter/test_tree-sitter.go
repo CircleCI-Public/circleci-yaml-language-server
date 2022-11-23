@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	yamlparser "github.com/circleci/circleci-yaml-language-server/pkg/parser"
+	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
 )
 
 func main() {

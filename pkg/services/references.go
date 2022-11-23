@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/circleci/circleci-yaml-language-server/pkg/ast"
-	yamlparser "github.com/circleci/circleci-yaml-language-server/pkg/parser"
-	utils "github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
+	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
+	utils "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
 )
 
