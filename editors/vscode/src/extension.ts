@@ -18,26 +18,28 @@ export async function activate(context: vscode.ExtensionContext) {
             },
             'circleci-language-server.selectTagAndComplete': () => {
                 // Change editor selection to have a tag selected
-                const editor = vscode.window.activeTextEditor
-                const document = vscode.window.activeTextEditor?.document
+                const editor = vscode.window.activeTextEditor;
+                const document = vscode.window.activeTextEditor?.document;
 
-                if (!document || !editor) { return }
+                if (!document || !editor) {
+                    return;
+                }
 
-                const r = document.getWordRangeAtPosition(editor.selection.start, new RegExp("([A-Za-z0-9_]+[\.|\-]*)+"))
+                const r = document.getWordRangeAtPosition(
+                    editor.selection.start,
+                    new RegExp('([A-Za-z0-9_]+[.|-]*)+'),
+                );
 
                 if (r?.start) {
                     editor.selections = [
                         // Important to activate the cursor at the START of the selection. Has an importance when autocompleting in Language Server
-                        new vscode.Selection(
-                            r.end,
-                            r.start,
-                        )
-                    ]
+                        new vscode.Selection(r.end, r.start),
+                    ];
                 }
 
                 // Trigger completion again
-                vscode.commands.executeCommand("editor.action.triggerSuggest")
-            }
+                vscode.commands.executeCommand('editor.action.triggerSuggest');
+            },
         };
         const wrap = (
             name: CommandName,
