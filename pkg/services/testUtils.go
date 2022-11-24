@@ -53,7 +53,7 @@ func ExpectDiagnostic(t *testing.T) ExpDiag {
 
 // ExpectDiagnostic.File
 func (root ExpDiag) File(uri protocol.URI) ExpDiagStruct {
-	yamlDocument, err := parser.GetParsedYAMLWithURI(uri)
+	yamlDocument, err := parser.ParseFile(uri)
 
 	return buildExDiag(root.t, yamlDocument, err)
 }

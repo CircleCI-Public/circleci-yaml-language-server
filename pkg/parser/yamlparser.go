@@ -90,7 +90,7 @@ func (doc *YamlDocument) ValidateYAML() {
 	}
 }
 
-func GetParsedYAMLWithURI(URI protocol.URI) (YamlDocument, error) {
+func ParseFile(URI protocol.URI) (YamlDocument, error) {
 	content, err := os.ReadFile(URI.Filename())
 	if err != nil {
 		return YamlDocument{}, err
