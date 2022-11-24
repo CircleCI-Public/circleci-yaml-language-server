@@ -20,7 +20,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	yamlparser.ParseFile(content)
+	yamlparser.ToYamlDocument(content)
 
 	cache := utils.CreateCache()
 	cache.FileCache.SetFile(&protocol.TextDocumentItem{

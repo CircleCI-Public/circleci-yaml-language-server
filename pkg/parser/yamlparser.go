@@ -11,7 +11,7 @@ import (
 	"go.lsp.dev/protocol"
 )
 
-func ParseFile(content []byte) YamlDocument {
+func ToYamlDocument(content []byte) YamlDocument {
 	rootNode := GetRootNode(content)
 
 	doc := YamlDocument{
@@ -111,7 +111,7 @@ func GetParsedYAMLWithCache(URI protocol.URI, cache *utils.Cache) (YamlDocument,
 }
 
 func GetParsedYAMLWithContent(content []byte) (YamlDocument, error) {
-	doc := ParseFile([]byte(content))
+	doc := ToYamlDocument([]byte(content))
 
 	doc.ValidateYAML()
 	doc.ParseYAML()
