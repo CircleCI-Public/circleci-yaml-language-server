@@ -11,6 +11,12 @@ type Cache struct {
 	FileCache   FileCache
 	OrbCache    OrbCache
 	DockerCache DockerCache
+	TokenCache  TokenCache
+}
+
+type TokenCache struct {
+	cacheMutex *sync.Mutex
+	Token      string
 }
 
 type DockerCache struct {
@@ -42,6 +48,8 @@ func (c *Cache) init() {
 
 	c.DockerCache.cacheMutex = &sync.Mutex{}
 	c.DockerCache.dockerCache = make(map[string]*CachedDockerImage)
+	c.TokenCache.cacheMutex = &sync.Mutex{}
+	c.TokenCache.Token = ""
 }
 
 // FILE
@@ -81,6 +89,19 @@ func (c *OrbCache) SetOrb(orb *ast.CachedOrb, orbID string) ast.CachedOrb {
 	defer c.cacheMutex.Unlock()
 	c.orbsCache[orbID] = orb
 	return *orb
+}
+
+func (c *TokenCache) SetToken(token string) string {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	c.Token = token
+	return token
+}
+
+func (c *TokenCache) GetToken() string {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	return c.Token
 }
 
 func (c *OrbCache) GetOrb(orbID string) *ast.CachedOrb {
@@ -123,8 +144,8 @@ func (c *DockerCache) Remove(name string) {
 	delete(c.dockerCache, name)
 }
 
-func CreateCache() Cache {
+func CreateCache() *Cache {
 	cache := Cache{}
 	cache.init()
-	return cache
+	return &cache
 }

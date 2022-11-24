@@ -187,6 +187,14 @@ export class LSP {
 
         await client.start();
 
+        const token = process.env.TOKEN;
+
+        const registerCommand = {
+            command: 'setToken',
+            arguments: [token],
+        };
+        await client.sendRequest('workspace/executeCommand', registerCommand);
+
         return client;
     }
 }

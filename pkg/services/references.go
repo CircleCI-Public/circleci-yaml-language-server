@@ -10,7 +10,7 @@ import (
 	"go.lsp.dev/protocol"
 )
 
-func References(params protocol.ReferenceParams, cache utils.Cache) ([]protocol.Location, error) {
+func References(params protocol.ReferenceParams, cache *utils.Cache) ([]protocol.Location, error) {
 	yamlDocument, err := yamlparser.GetParsedYAMLWithCache(params.TextDocument.URI, cache)
 
 	if err != nil {
@@ -30,7 +30,7 @@ func References(params protocol.ReferenceParams, cache utils.Cache) ([]protocol.
 type ReferenceHandler struct {
 	Doc        yamlparser.YamlDocument
 	Params     protocol.ReferenceParams
-	Cache      utils.Cache
+	Cache      *utils.Cache
 	FoundSteps *[]StepRangeAndName
 }
 

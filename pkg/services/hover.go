@@ -9,7 +9,7 @@ import (
 	"go.lsp.dev/protocol"
 )
 
-func Hover(params protocol.HoverParams, cache utils.Cache) (protocol.Hover, error) {
+func Hover(params protocol.HoverParams, cache *utils.Cache) (protocol.Hover, error) {
 	doc, err := yamlparser.GetParsedYAMLWithCache(params.TextDocument.URI, cache)
 	if err != nil {
 		return protocol.Hover{}, nil
