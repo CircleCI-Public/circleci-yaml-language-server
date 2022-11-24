@@ -104,10 +104,26 @@ func ParseFile(URI protocol.URI) (YamlDocument, error) {
 func ParseFileWithCache(URI protocol.URI, cache *utils.Cache) (YamlDocument, error) {
 	textDocument := cache.FileCache.GetFile(URI)
 
-	doc, err := ParseContent([]byte(textDocument.Text))
-	doc.URI = URI
+	if textDocument != nil {
+		doc, err := ParseContent([]byte(textDocument.Text))
+		doc.URI = URI
 
-	return doc, err
+		return doc, err
+	}
+
+	// If the file doesn't exists within the cache, we search on the file system
+	doc, err := ParseFile(URI)
+
+	if err != nil {
+		return YamlDocument{}, err
+	}
+
+	cache.FileCache.SetFile(&protocol.TextDocumentItem{
+		URI:  URI,
+		Text: string(doc.Content),
+	})
+
+	return doc, nil
 }
 
 func ParseContent(content []byte) (YamlDocument, error) {
