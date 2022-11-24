@@ -67,6 +67,12 @@ func (c *FileCache) GetFile(uri protocol.URI) *protocol.TextDocumentItem {
 	return c.fileCache[uri]
 }
 
+func (c *FileCache) GetFiles() map[protocol.URI]*protocol.TextDocumentItem {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	return c.fileCache
+}
+
 func (c *FileCache) RemoveFile(uri protocol.URI) {
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()

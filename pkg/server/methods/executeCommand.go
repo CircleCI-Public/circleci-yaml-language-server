@@ -14,6 +14,11 @@ func (methods *Methods) ExecuteCommand(reply jsonrpc2.Replier, req jsonrpc2.Requ
 		return reply(methods.Ctx, nil, fmt.Errorf("%s: %w", jsonrpc2.ErrParse, err))
 	}
 
+	filesCache := methods.Cache.FileCache.GetFiles()
+	for _, file := range filesCache {
+		go methods.notificationMethods(methods.Cache.FileCache, *file)
+	}
+
 	token := params.Arguments[0].(string)
 	methods.Cache.TokenCache.SetToken(token)
 	return reply(methods.Ctx, nil, nil)
