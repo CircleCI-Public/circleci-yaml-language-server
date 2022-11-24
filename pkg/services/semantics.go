@@ -48,8 +48,8 @@ func SemanticTokens(params protocol.SemanticTokensParams, cache utils.Cache) pro
 			key, value := node.ChildByFieldName("key"), node.ChildByFieldName("value")
 
 			if key != nil {
-				semanticTokens.highlightBuiltInKeywords(key)
 				semanticTokens.highlightOrbs(key)
+				semanticTokens.highlightBuiltInKeywords(key)
 			}
 
 			if value != nil {
