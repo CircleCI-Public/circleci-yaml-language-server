@@ -8,7 +8,7 @@ import (
 	"go.lsp.dev/protocol"
 )
 
-func Complete(params protocol.CompletionParams, cache utils.Cache) (protocol.CompletionList, error) {
+func Complete(params protocol.CompletionParams, cache *utils.Cache) (protocol.CompletionList, error) {
 	yamlDocument, _ := yamlparser.GetParsedYAMLWithCache(params.TextDocument.URI, cache)
 
 	if yamlDocument.Version < 2.1 {

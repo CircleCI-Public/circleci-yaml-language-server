@@ -9,7 +9,7 @@ import (
 type Validate struct {
 	Diagnostics *[]protocol.Diagnostic
 	Doc         parser.YamlDocument
-	Cache       utils.Cache
+	Cache       *utils.Cache
 }
 
 func (val *Validate) Validate() {

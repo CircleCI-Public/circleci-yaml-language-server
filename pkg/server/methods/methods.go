@@ -10,5 +10,5 @@ import (
 type Methods struct {
 	Ctx   context.Context
 	Conn  jsonrpc2.Conn
-	Cache utils.Cache
+	Cache *utils.Cache
 }

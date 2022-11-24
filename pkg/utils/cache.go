@@ -123,8 +123,8 @@ func (c *DockerCache) Remove(name string) {
 	delete(c.dockerCache, name)
 }
 
-func CreateCache() Cache {
+func CreateCache() *Cache {
 	cache := Cache{}
 	cache.init()
-	return cache
+	return &cache
 }

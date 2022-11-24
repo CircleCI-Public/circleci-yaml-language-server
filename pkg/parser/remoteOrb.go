@@ -30,7 +30,7 @@ type OrbQuery struct {
 	Source string
 }
 
-func GetOrbInfo(orbVersionCode string, cache utils.Cache) (*ast.CachedOrb, error) {
+func GetOrbInfo(orbVersionCode string, cache *utils.Cache) (*ast.CachedOrb, error) {
 	// Returning cache if exists
 	if !cache.OrbCache.HasOrb(orbVersionCode) {
 		orb, err := fetchOrbInfo(orbVersionCode, cache)
@@ -40,7 +40,7 @@ func GetOrbInfo(orbVersionCode string, cache utils.Cache) (*ast.CachedOrb, error
 	return cache.OrbCache.GetOrb(orbVersionCode), nil
 }
 
-func ParseRemoteOrbs(orbs map[string]ast.Orb, cache utils.Cache) {
+func ParseRemoteOrbs(orbs map[string]ast.Orb, cache *utils.Cache) {
 	for _, orb := range orbs {
 		if orb.Url.Version != "volatile" && checkIfRemoteOrbAlreadyExistsInFSCache(orb.Url.GetOrbID()) {
 			err := addAlreadyExistingRemoteOrbsToFSCache(orb, cache)
@@ -56,7 +56,7 @@ func ParseRemoteOrbs(orbs map[string]ast.Orb, cache utils.Cache) {
 	}
 }
 
-func fetchOrbInfo(orbVersionCode string, cache utils.Cache) (*ast.CachedOrb, error) {
+func fetchOrbInfo(orbVersionCode string, cache *utils.Cache) (*ast.CachedOrb, error) {
 	orbQuery, err := GetRemoteOrb(orbVersionCode)
 
 	if err != nil {
@@ -243,7 +243,7 @@ func checkIfRemoteOrbAlreadyExistsInFSCache(orbId string) bool {
 	return err == nil
 }
 
-func addAlreadyExistingRemoteOrbsToFSCache(orb ast.Orb, cache utils.Cache) error {
+func addAlreadyExistingRemoteOrbsToFSCache(orb ast.Orb, cache *utils.Cache) error {
 	filePath := getOrbCacheFSPath(orb.Url.GetOrbID())
 
 	source, err := os.ReadFile(filePath)
