@@ -25,3 +25,7 @@ tasks:
 
   lint:
       - gofmt -w pkg
+  
+  init:
+      - go get -d ./...
+      - husky install
