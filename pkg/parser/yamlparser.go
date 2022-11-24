@@ -95,7 +95,7 @@ func GetParsedYAMLWithURI(URI protocol.URI) (YamlDocument, error) {
 	if err != nil {
 		return YamlDocument{}, err
 	}
-	doc, err := GetParsedYAMLWithContent([]byte(content))
+	doc, err := ParseContent([]byte(content))
 	doc.URI = URI
 
 	return doc, err
@@ -104,13 +104,13 @@ func GetParsedYAMLWithURI(URI protocol.URI) (YamlDocument, error) {
 func GetParsedYAMLWithCache(URI protocol.URI, cache *utils.Cache) (YamlDocument, error) {
 	textDocument := cache.FileCache.GetFile(URI)
 
-	doc, err := GetParsedYAMLWithContent([]byte(textDocument.Text))
+	doc, err := ParseContent([]byte(textDocument.Text))
 	doc.URI = URI
 
 	return doc, err
 }
 
-func GetParsedYAMLWithContent(content []byte) (YamlDocument, error) {
+func ParseContent(content []byte) (YamlDocument, error) {
 	doc := ToYamlDocument([]byte(content))
 
 	doc.ValidateYAML()
@@ -240,7 +240,7 @@ func (doc *YamlDocument) InsertText(pos protocol.Position, text string) (YamlDoc
 		newContent += string(r)
 	}
 
-	return GetParsedYAMLWithContent([]byte(newContent))
+	return ParseContent([]byte(newContent))
 }
 
 type ModifiedYamlDocument struct {

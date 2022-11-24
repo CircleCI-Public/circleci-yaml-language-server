@@ -64,7 +64,7 @@ func fetchOrbInfo(orbVersionCode string, cache *utils.Cache) (*ast.CachedOrb, er
 		return &ast.CachedOrb{}, err
 	}
 
-	parsedOrbSource, err := GetParsedYAMLWithContent([]byte(orbQuery.Source))
+	parsedOrbSource, err := ParseContent([]byte(orbQuery.Source))
 
 	if err != nil {
 		return &ast.CachedOrb{}, err
@@ -263,7 +263,7 @@ func addAlreadyExistingRemoteOrbsToFSCache(orb ast.Orb, cache *utils.Cache) erro
 		return err
 	}
 
-	parsedOrbSource, err := GetParsedYAMLWithContent(source)
+	parsedOrbSource, err := ParseContent(source)
 
 	if err != nil {
 		return err

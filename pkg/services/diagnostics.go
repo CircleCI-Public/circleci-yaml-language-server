@@ -39,7 +39,7 @@ func DiagnosticFile(uri protocol.URI, cache *utils.Cache) ([]protocol.Diagnostic
 }
 
 func DiagnosticString(content string, cache *utils.Cache) ([]protocol.Diagnostic, error) {
-	yamlDocument, err := yamlparser.GetParsedYAMLWithContent([]byte(content))
+	yamlDocument, err := yamlparser.ParseContent([]byte(content))
 
 	if err != nil {
 		return []protocol.Diagnostic{}, err

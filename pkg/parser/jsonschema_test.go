@@ -31,7 +31,7 @@ testFinal:
 
 	err := yaml.Unmarshal(content, m)
 
-	yamlDocument, _ := GetParsedYAMLWithContent(content)
+	yamlDocument, _ := ParseContent(content)
 
 	actualDiagnostics, err := handleYAMLErrors(err.Error(), content, yamlDocument.RootNode)
 
@@ -70,7 +70,7 @@ test:
 
 	err := yaml.Unmarshal(content, m)
 
-	yamlDocument, _ := GetParsedYAMLWithContent(content)
+	yamlDocument, _ := ParseContent(content)
 
 	diagnostics, err := handleYAMLErrors(err.Error(), content, yamlDocument.RootNode)
 

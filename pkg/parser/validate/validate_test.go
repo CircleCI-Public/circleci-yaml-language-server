@@ -21,7 +21,7 @@ func CheckYamlErrors(t *testing.T, testCases []ValidateTestCase) {
 	for _, tt := range testCases {
 		t.Run(tt.Name, func(t *testing.T) {
 			content := tt.YamlContent
-			doc, err := parser.GetParsedYAMLWithContent([]byte(content))
+			doc, err := parser.ParseContent([]byte(content))
 			assert.Nil(t, err)
 			val := Validate{
 				Diagnostics: &[]protocol.Diagnostic{},

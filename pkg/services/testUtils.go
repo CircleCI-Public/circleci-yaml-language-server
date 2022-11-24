@@ -60,7 +60,7 @@ func (root ExpDiag) File(uri protocol.URI) ExpDiagStruct {
 
 // ExpectDiagnostic.String
 func (root ExpDiag) String(content string) ExpDiagStruct {
-	yamlDocument, err := parser.GetParsedYAMLWithContent([]byte(content))
+	yamlDocument, err := parser.ParseContent([]byte(content))
 
 	return buildExDiag(root.t, yamlDocument, err)
 }
