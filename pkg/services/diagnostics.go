@@ -24,7 +24,7 @@ func Diagnostic(params protocol.PublishDiagnosticsParams, cache *utils.Cache) pr
 }
 
 func DiagnosticFile(uri protocol.URI, cache *utils.Cache) ([]protocol.Diagnostic, error) {
-	yamlDocument, err := yamlparser.GetParsedYAMLWithCache(uri, cache)
+	yamlDocument, err := yamlparser.ParseFileWithCache(uri, cache)
 
 	if err != nil {
 		return []protocol.Diagnostic{}, err

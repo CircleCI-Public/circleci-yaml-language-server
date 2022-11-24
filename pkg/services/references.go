@@ -11,7 +11,7 @@ import (
 )
 
 func References(params protocol.ReferenceParams, cache *utils.Cache) ([]protocol.Location, error) {
-	yamlDocument, err := yamlparser.GetParsedYAMLWithCache(params.TextDocument.URI, cache)
+	yamlDocument, err := yamlparser.ParseFileWithCache(params.TextDocument.URI, cache)
 
 	if err != nil {
 		return nil, err
