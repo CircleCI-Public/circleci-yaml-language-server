@@ -27,5 +27,6 @@ tasks:
       - gofmt -w pkg
   
   init:
+      - go install github.com/automation-co/husky@latest
       - go get -d ./...
       - husky install
