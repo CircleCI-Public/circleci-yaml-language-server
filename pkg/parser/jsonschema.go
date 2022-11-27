@@ -2,7 +2,6 @@ package parser
 
 import (
 	"fmt"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -19,24 +18,20 @@ type JSONSchemaValidator struct {
 	schema *gojsonschema.Schema
 }
 
-func (validator *JSONSchemaValidator) LoadJsonSchema() (*gojsonschema.Schema, error) {
-	schemaLocation := os.Getenv("SCHEMA_LOCATION")
-
-	if schemaLocation == "" {
-		return nil, fmt.Errorf("could not load JSON Schema: SCHEMA_LOCATION not set")
-	}
-
+func (validator *JSONSchemaValidator) LoadJsonSchema(schemaLocation string) error {
 	URI := uri.New(schemaLocation)
 	loader := gojsonschema.NewReferenceLoader(string(URI))
 
 	schema, err := gojsonschema.NewSchema(loader)
 	if err != nil {
-		return nil, err
+		fmt.Printf("Error while loading JSON Schema \"%s\"\n", schemaLocation)
+		fmt.Println(err.Error())
+		return err
 	}
 
 	validator.schema = schema
 
-	return schema, err
+	return nil
 }
 
 func handleYAMLErrors(err string, content []byte, node *sitter.Node) ([]protocol.Diagnostic, error) {
@@ -130,10 +125,13 @@ func (validator *JSONSchemaValidator) ValidateWithJSONSchema(rootNode *sitter.No
 		// Should never happen
 		return []protocol.Diagnostic{utils.CreateErrorDiagnosticFromNode(rootNode, err.Error())}
 	}
+
 	yaml.Unmarshal(tmpYML, &file)
 
 	yamlloader := gojsonschema.NewGoLoader(file)
+
 	result, err := validator.schema.Validate(yamlloader)
+
 	if err != nil {
 		// Should never happen
 		return []protocol.Diagnostic{utils.CreateErrorDiagnosticFromNode(rootNode, err.Error())}
