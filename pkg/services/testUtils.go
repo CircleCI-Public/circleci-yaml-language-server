@@ -6,6 +6,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/expect"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
+	"github.com/stretchr/testify/assert"
 	"go.lsp.dev/protocol"
 )
 
@@ -74,10 +75,12 @@ func (root ExpDiag) Yaml(yamlDocument parser.YamlDocument) ExpDiagStruct {
 func (exp ExpDiagTo) Include(expected protocol.Diagnostic) {
 	exp.info.ensureNoError()
 
-	diagnostics := DiagnosticYAML(
+	diagnostics, err := DiagnosticYAML(
 		exp.info.content,
 		utils.CreateCache(),
 	)
+
+	assert.Nil(exp.info.t, err)
 
 	expect.DiagnosticList(exp.info.t, diagnostics).To.Include(expected)
 }
@@ -86,10 +89,12 @@ func (exp ExpDiagTo) Include(expected protocol.Diagnostic) {
 func (exp ExpDiagToNot) Include(expected protocol.Diagnostic) {
 	exp.info.ensureNoError()
 
-	diagnostics := DiagnosticYAML(
+	diagnostics, err := DiagnosticYAML(
 		exp.info.content,
 		utils.CreateCache(),
 	)
+
+	assert.Nil(exp.info.t, err)
 
 	expect.DiagnosticList(exp.info.t, diagnostics).To.Not.Include(expected)
 }
@@ -98,7 +103,9 @@ func (exp ExpDiagToNot) Include(expected protocol.Diagnostic) {
 func (exp ExpDiagTo) IncludeAll(expected []protocol.Diagnostic) {
 	exp.info.ensureNoError()
 
-	diagnostics := DiagnosticYAML(exp.info.content, utils.CreateCache())
+	diagnostics, err := DiagnosticYAML(exp.info.content, utils.CreateCache())
+
+	assert.Nil(exp.info.t, err)
 
 	expect.DiagnosticList(exp.info.t, diagnostics).To.IncludeAll(expected)
 }
@@ -107,10 +114,12 @@ func (exp ExpDiagTo) IncludeAll(expected []protocol.Diagnostic) {
 func (exp ExpDiagToNot) IncludeAll(expected []protocol.Diagnostic) {
 	exp.info.ensureNoError()
 
-	diagnostics := DiagnosticYAML(
+	diagnostics, err := DiagnosticYAML(
 		exp.info.content,
 		utils.CreateCache(),
 	)
+
+	assert.Nil(exp.info.t, err)
 
 	expect.DiagnosticList(exp.info.t, diagnostics).To.Not.IncludeAll(expected)
 }

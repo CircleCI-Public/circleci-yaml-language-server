@@ -31,6 +31,9 @@ func TestFindErrors(t *testing.T) {
 			want: make([]protocol.Diagnostic, 0),
 		},
 	}
+
+	schemaLocation := os.Getenv("SCHEMA_LOCATION")
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			content, _ := os.ReadFile(tt.args.filePath)
@@ -39,7 +42,7 @@ func TestFindErrors(t *testing.T) {
 				Text: string(content),
 			})
 			fileUri := uri.File(tt.args.filePath)
-			diagnostics, err := DiagnosticFile(fileUri, cache)
+			diagnostics, err := DiagnosticFile(fileUri, cache, schemaLocation)
 
 			if err != nil {
 				t.Error("findErrors()", err)

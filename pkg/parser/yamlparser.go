@@ -142,12 +142,13 @@ type YamlAnchor struct {
 }
 
 type YamlDocument struct {
-	Content     []byte
-	RootNode    *sitter.Node
-	Version     float32
-	Description string
-	URI         protocol.URI
-	Diagnostics *[]protocol.Diagnostic
+	Content        []byte
+	RootNode       *sitter.Node
+	Version        float32
+	Description    string
+	URI            protocol.URI
+	Diagnostics    *[]protocol.Diagnostic
+	SchemaLocation string
 
 	Orbs                map[string]ast.Orb
 	Executors           map[string]ast.Executor

@@ -12,8 +12,8 @@ type DiagnosticType struct {
 	yamlDocument yamlparser.YamlDocument
 }
 
-func Diagnostic(params protocol.PublishDiagnosticsParams, cache *utils.Cache) protocol.PublishDiagnosticsParams {
-	diagnostics, _ := DiagnosticFile(params.URI, cache)
+func Diagnostic(params protocol.PublishDiagnosticsParams, cache *utils.Cache, schemaLocation string) protocol.PublishDiagnosticsParams {
+	diagnostics, _ := DiagnosticFile(params.URI, cache, schemaLocation)
 
 	diagnosticParams := protocol.PublishDiagnosticsParams{
 		URI:         params.URI,
@@ -23,8 +23,9 @@ func Diagnostic(params protocol.PublishDiagnosticsParams, cache *utils.Cache) pr
 	return diagnosticParams
 }
 
-func DiagnosticFile(uri protocol.URI, cache *utils.Cache) ([]protocol.Diagnostic, error) {
+func DiagnosticFile(uri protocol.URI, cache *utils.Cache, schemaLocation string) ([]protocol.Diagnostic, error) {
 	yamlDocument, err := yamlparser.ParseFileWithCache(uri, cache)
+	yamlDocument.SchemaLocation = schemaLocation
 
 	if err != nil {
 		return []protocol.Diagnostic{}, err
@@ -35,23 +36,24 @@ func DiagnosticFile(uri protocol.URI, cache *utils.Cache) ([]protocol.Diagnostic
 		return []protocol.Diagnostic{}, nil
 	}
 
-	return DiagnosticYAML(yamlDocument, cache), nil
+	return DiagnosticYAML(yamlDocument, cache)
 }
 
-func DiagnosticString(content string, cache *utils.Cache) ([]protocol.Diagnostic, error) {
+func DiagnosticString(content string, cache *utils.Cache, schemaLocation string) ([]protocol.Diagnostic, error) {
 	yamlDocument, err := yamlparser.ParseContent([]byte(content))
+	yamlDocument.SchemaLocation = schemaLocation
 
 	if err != nil {
 		return []protocol.Diagnostic{}, err
 	}
 
-	return DiagnosticYAML(yamlDocument, cache), nil
+	return DiagnosticYAML(yamlDocument, cache)
 }
 
-func DiagnosticYAML(yamlDocument yamlparser.YamlDocument, cache *utils.Cache) []protocol.Diagnostic {
+func DiagnosticYAML(yamlDocument yamlparser.YamlDocument, cache *utils.Cache) ([]protocol.Diagnostic, error) {
 	if yamlDocument.Version < 2.1 {
 		// TODO: Handle error
-		return []protocol.Diagnostic{}
+		return []protocol.Diagnostic{}, nil
 	}
 
 	diag := DiagnosticType{
@@ -63,9 +65,15 @@ func DiagnosticYAML(yamlDocument yamlparser.YamlDocument, cache *utils.Cache) []
 	diag.addDiagnostics(*yamlDocument.Diagnostics)
 
 	validator := yamlparser.JSONSchemaValidator{}
-	validator.LoadJsonSchema()
+	err := validator.LoadJsonSchema(yamlDocument.SchemaLocation)
 
-	diag.addDiagnostics(validator.ValidateWithJSONSchema(diag.yamlDocument.RootNode, diag.yamlDocument.Content))
+	if err != nil {
+		return []protocol.Diagnostic{}, err
+	}
+
+	diag.addDiagnostics(
+		validator.ValidateWithJSONSchema(diag.yamlDocument.RootNode, diag.yamlDocument.Content),
+	)
 
 	validateStruct := validate.Validate{
 		Doc:         diag.yamlDocument,
@@ -75,7 +83,7 @@ func DiagnosticYAML(yamlDocument yamlparser.YamlDocument, cache *utils.Cache) []
 	validateStruct.Validate()
 	diag.addDiagnostics(*validateStruct.Diagnostics)
 
-	return *diag.diagnostics
+	return *diag.diagnostics, nil
 }
 
 func (diag *DiagnosticType) addDiagnostics(diagnostic []protocol.Diagnostic) {

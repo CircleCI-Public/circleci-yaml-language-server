@@ -15,10 +15,11 @@ import (
 )
 
 type JSONRPCServer struct {
-	ctx     context.Context
-	conn    jsonrpc2.Conn
-	methods methods.Methods
-	cache   *utils.Cache
+	ctx            context.Context
+	conn           jsonrpc2.Conn
+	methods        methods.Methods
+	cache          *utils.Cache
+	SchemaLocation string
 }
 
 func (server JSONRPCServer) commandHandler(_ context.Context, reply jsonrpc2.Replier, req jsonrpc2.Request) error {
@@ -72,16 +73,17 @@ func (server JSONRPCServer) ServeStream(_ context.Context, conn jsonrpc2.Conn) e
 	server.conn = conn
 	server.cache = utils.CreateCache()
 	server.methods = methods.Methods{
-		Ctx:   server.ctx,
-		Conn:  server.conn,
-		Cache: server.cache,
+		Ctx:            server.ctx,
+		Conn:           server.conn,
+		Cache:          server.cache,
+		SchemaLocation: server.SchemaLocation,
 	}
 	conn.Go(server.ctx, server.commandHandler)
 	<-conn.Done()
 	return conn.Err()
 }
 
-func StartServer(port int, host string) {
+func StartServer(port int, host string, schema string) {
 	ctx := context.Background()
 	// The LSP client waits that the server prints "Server started" on stdout to connect. The best
 	// solution would be to make this the "express way" and give a callback to ListenAndServe that
@@ -91,6 +93,7 @@ func StartServer(port int, host string) {
 	go func() {
 		time.Sleep(1 * time.Second)
 		fmt.Printf("Server started on port %d, version %s\n", port, methods.ServerVersion)
+		fmt.Printf("   JSON Schema: %s", schema)
 	}()
 
 	err := jsonrpc2.ListenAndServe(
@@ -98,7 +101,8 @@ func StartServer(port int, host string) {
 		"tcp",
 		fmt.Sprintf("%s:%d", host, port),
 		JSONRPCServer{
-			ctx: ctx,
+			ctx:            ctx,
+			SchemaLocation: schema,
 		},
 		0,
 	)
@@ -115,12 +119,15 @@ type StdioReadWriteCloser struct {
 
 func (s *StdioReadWriteCloser) Close() error { return nil }
 
-func StartServerStdio() {
+func StartServerStdio(schema string) {
 	ctx := context.Background()
 
 	stdioStream := jsonrpc2.NewStream(&StdioReadWriteCloser{os.Stdin, os.Stdout})
 	stdioConn := jsonrpc2.NewConn(stdioStream)
-	server := JSONRPCServer{ctx: ctx}
+	server := JSONRPCServer{
+		ctx:            ctx,
+		SchemaLocation: schema,
+	}
 
 	if err := server.ServeStream(ctx, stdioConn); err != nil {
 		panic(err)
