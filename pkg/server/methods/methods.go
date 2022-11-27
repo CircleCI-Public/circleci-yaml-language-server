@@ -8,8 +8,9 @@ import (
 )
 
 type Methods struct {
-	Ctx       context.Context
-	Conn      jsonrpc2.Conn
-	Cache     *utils.Cache
-	LsContext *utils.LsContext
+	Ctx            context.Context
+	Conn           jsonrpc2.Conn
+	Cache          *utils.Cache
+	LsContext      *utils.LsContext
+	SchemaLocation string
 }

@@ -43,7 +43,7 @@ func TestFindErrors(t *testing.T) {
 			context := testHelpers.GetDefaultLsContext()
 			context.Api.Token = ""
 			fileUri := uri.File(tt.args.filePath)
-			diagnostics, err := DiagnosticFile(fileUri, cache, context)
+			diagnostics, err := DiagnosticFile(fileUri, cache, context, schemaPath)
 
 			if err != nil {
 				t.Error("findErrors()", err)

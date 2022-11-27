@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path"
 	"strconv"
 
 	lsp "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/server"
@@ -12,6 +13,7 @@ import (
 func main() {
 	hostRef := flag.String("host", "", "Hostname of the server")
 	portRef := flag.Int("port", -1, "port number")
+	schemaRef := flag.String("schema", "", "Location of the schema")
 	versionRef := flag.Bool("version", false, "display version")
 	flag.Parse()
 
@@ -22,9 +24,30 @@ func main() {
 		return
 	}
 
+	// Parameter: schema
+	schema := *schemaRef
+	if schema == "" {
+		schema = os.Getenv("SCHEMA_LOCATION")
+
+		if schema == "" {
+			fmt.Print("No schema defined")
+			return
+		}
+
+		if !path.IsAbs(schema) {
+			cwd, err := os.Getwd()
+
+			if err != nil {
+				fmt.Printf("Error while resolving schema path \"%s\"", schema)
+				panic(err)
+			}
+			schema = path.Join(cwd, schema)
+		}
+	}
+
 	// Command: stdio
 	if len(os.Args) > 1 && os.Args[1] == "stdio" {
-		lsp.StartServerStdio()
+		lsp.StartServerStdio(schema)
 		return
 	}
 
@@ -68,5 +91,5 @@ func main() {
 		}
 	}
 
-	lsp.StartServer(port, host)
+	lsp.StartServer(port, host, schema)
 }
