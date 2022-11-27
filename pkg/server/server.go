@@ -81,11 +81,7 @@ func (server JSONRPCServer) ServeStream(_ context.Context, conn jsonrpc2.Conn) e
 	return conn.Err()
 }
 
-func StartServer() {
-	port := os.Getenv("PORT")
-	if port == "" {
-		panic("PORT environment variable not set")
-	}
+func StartServer(port int, host string) {
 	ctx := context.Background()
 	// The LSP client waits that the server prints "Server started" on stdout to connect. The best
 	// solution would be to make this the "express way" and give a callback to ListenAndServe that
@@ -94,9 +90,20 @@ func StartServer() {
 	// So we just print the log one second after the server started
 	go func() {
 		time.Sleep(1 * time.Second)
-		fmt.Printf("Server started, version %s\n", methods.ServerVersion)
+		fmt.Printf("Server started on port %d, version %s\n", port, methods.ServerVersion)
 	}()
-	if err := jsonrpc2.ListenAndServe(ctx, "tcp", fmt.Sprintf("localhost:%s", port), JSONRPCServer{ctx: ctx}, 0); err != nil {
+
+	err := jsonrpc2.ListenAndServe(
+		ctx,
+		"tcp",
+		fmt.Sprintf("%s:%d", host, port),
+		JSONRPCServer{
+			ctx: ctx,
+		},
+		0,
+	)
+
+	if err != nil {
 		panic(err)
 	}
 }
