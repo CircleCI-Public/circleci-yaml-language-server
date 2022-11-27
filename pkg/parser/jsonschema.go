@@ -19,7 +19,7 @@ type JSONSchemaValidator struct {
 	schema *gojsonschema.Schema
 }
 
-func (validator *JSONSchemaValidator) ParseJsonSchema() (*gojsonschema.Schema, error) {
+func (validator *JSONSchemaValidator) LoadJsonSchema() (*gojsonschema.Schema, error) {
 	schemaLocation := os.Getenv("SCHEMA_LOCATION")
 
 	if schemaLocation == "" {
