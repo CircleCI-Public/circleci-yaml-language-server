@@ -29,6 +29,7 @@ commands:
         steps:
             - node/install-packages:
                   app-dir: ~/project/editors/vscode
+                  pkg-manager: yarn
 
 jobs:
     build-and-test:
@@ -178,6 +179,7 @@ jobs:
             - checkout
             - node/install:
                 node-version: '14.19'
+            - node/install-yarn
             - install-vscode-extensions-deps
             - run:
                 name: Linter check for Go
