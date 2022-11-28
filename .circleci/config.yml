@@ -219,10 +219,10 @@ jobs:
                     if [[ << parameters.is_prerelease >> == "true" ]];
                     then
                         # This is a prerelease
-                        ghr -prerelease -delete -replace -c `git rev-parse HEAD` $TAG ~/project/bin/
+                        ghr -name $TAG -prerelease -delete -replace -c `git rev-parse HEAD` $TAG ~/project/bin/
                     else
                         # This is a standard release
-                        ghr -delete -replace -c `git rev-parse HEAD` $TAG ~/project/bin/
+                        ghr -name $TAG -delete -replace -c `git rev-parse HEAD` $TAG ~/project/bin/
                     fi
 
     extract-licenses:
