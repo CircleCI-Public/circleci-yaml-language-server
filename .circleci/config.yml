@@ -15,7 +15,7 @@ parameters:
 orbs:
     go: circleci/go@1.7.1
     node: circleci/node@5.0.2
-    snyk: snyk/snyk@1.2.3
+    snyk: snyk/snyk@1.4.0
 
 commands:
     install-zig:
@@ -293,13 +293,39 @@ jobs:
             #     name: Verify licenses
             #     command: sbom verify ./sbom.generated.json
 
-    security-scan:
+    vulnerability-scan:
         docker:
             - image: cimg/go:1.19.1
         steps:
             - checkout
-            - snyk/scan:
-                additional-arguments: --all-projects
+            - run:
+                name: Setup Scanning
+                command: |
+                    git config --global url."https://$GITHUB_USER:$GITHUB_TOKEN@github.com/circleci/".insteadOf "https://github.com/circleci/"
+            - when:
+                condition:
+                    equal: [ main, << pipeline.git.branch >> ]
+                steps:
+                    - run:
+                        name: Launching Snyk Orb Scanning
+                        command: echo "Running snyk/scan on main; uploading the results"
+                    - snyk/scan:
+                        fail-on-issues: false
+                        severity-threshold: high
+                        monitor-on-build: true
+                        project: '${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}'
+            - unless:
+                condition:
+                    equal: [ main, << pipeline.git.branch >> ]
+                steps:
+                    - run:
+                        name: Launching Snyk Orb Scanning
+                        command: echo "Running snyk/scan on branch; not uploading the results"
+                    - snyk/scan:
+                        fail-on-issues: false
+                        severity-threshold: high
+                        monitor-on-build: false
+                        project: '${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}/${CIRCLE_BRANCH}'
 
     test-e2e:
       docker:
@@ -325,10 +351,8 @@ workflows:
             - build-and-test
             - lint-check
             # - extract-licenses
-            - security-scan:
-                context:
-                    - org-global
-                    - org-global-employees
+            - vulnerability-scan:
+                context: org-global-employees
             # - check-licenses:
             #     requires:
             #         - extract-licenses
