@@ -11,6 +11,12 @@ type Cache struct {
 	FileCache   FileCache
 	OrbCache    OrbCache
 	DockerCache DockerCache
+	TokenCache  TokenCache
+}
+
+type TokenCache struct {
+	cacheMutex *sync.Mutex
+	token      string
 }
 
 type DockerCache struct {
@@ -42,6 +48,8 @@ func (c *Cache) init() {
 
 	c.DockerCache.cacheMutex = &sync.Mutex{}
 	c.DockerCache.dockerCache = make(map[string]*CachedDockerImage)
+	c.TokenCache.cacheMutex = &sync.Mutex{}
+	c.TokenCache.token = ""
 }
 
 // FILE
@@ -57,6 +65,12 @@ func (c *FileCache) GetFile(uri protocol.URI) *protocol.TextDocumentItem {
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()
 	return c.fileCache[uri]
+}
+
+func (c *FileCache) GetFiles() map[protocol.URI]*protocol.TextDocumentItem {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	return c.fileCache
 }
 
 func (c *FileCache) RemoveFile(uri protocol.URI) {
@@ -81,6 +95,19 @@ func (c *OrbCache) SetOrb(orb *ast.CachedOrb, orbID string) ast.CachedOrb {
 	defer c.cacheMutex.Unlock()
 	c.orbsCache[orbID] = orb
 	return *orb
+}
+
+func (c *TokenCache) SetToken(token string) string {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	c.token = token
+	return token
+}
+
+func (c *TokenCache) GetToken() string {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	return c.token
 }
 
 func (c *OrbCache) GetOrb(orbID string) *ast.CachedOrb {
@@ -123,8 +150,8 @@ func (c *DockerCache) Remove(name string) {
 	delete(c.dockerCache, name)
 }
 
-func CreateCache() Cache {
+func CreateCache() *Cache {
 	cache := Cache{}
 	cache.init()
-	return cache
+	return &cache
 }

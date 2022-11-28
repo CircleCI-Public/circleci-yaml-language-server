@@ -64,6 +64,9 @@ func (methods *Methods) Initialize(reply jsonrpc2.Replier) error {
 					WorkDoneProgress: true,
 				},
 			},
+			ExecuteCommandProvider: &protocol.ExecuteCommandOptions{
+				Commands: []string{"setToken"},
+			},
 		},
 		ServerInfo: &protocol.ServerInfo{
 			Name:    "circleci-language-server",

@@ -12,7 +12,7 @@ type DiagnosticType struct {
 	yamlDocument yamlparser.YamlDocument
 }
 
-func Diagnostic(params protocol.PublishDiagnosticsParams, cache utils.Cache) protocol.PublishDiagnosticsParams {
+func Diagnostic(params protocol.PublishDiagnosticsParams, cache *utils.Cache) protocol.PublishDiagnosticsParams {
 	yamlDocument, err := yamlparser.GetParsedYAMLWithCache(params.URI, cache)
 
 	if yamlDocument.Version < 2.1 || err != nil {

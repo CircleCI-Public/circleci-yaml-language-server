@@ -30,9 +30,10 @@ type OrbQuery struct {
 	Source string
 }
 
-func GetOrbInfo(orbVersionCode string, cache utils.Cache) (*ast.CachedOrb, error) {
+func GetOrbInfo(orbVersionCode string, cache *utils.Cache) (*ast.CachedOrb, error) {
 	// Returning cache if exists
 	if !cache.OrbCache.HasOrb(orbVersionCode) {
+
 		orb, err := fetchOrbInfo(orbVersionCode, cache)
 		return orb, err
 	}
@@ -40,7 +41,7 @@ func GetOrbInfo(orbVersionCode string, cache utils.Cache) (*ast.CachedOrb, error
 	return cache.OrbCache.GetOrb(orbVersionCode), nil
 }
 
-func ParseRemoteOrbs(orbs map[string]ast.Orb, cache utils.Cache) {
+func ParseRemoteOrbs(orbs map[string]ast.Orb, cache *utils.Cache) {
 	for _, orb := range orbs {
 		if orb.Url.Version != "volatile" && checkIfRemoteOrbAlreadyExistsInFSCache(orb.Url.GetOrbID()) {
 			err := addAlreadyExistingRemoteOrbsToFSCache(orb, cache)
@@ -56,8 +57,8 @@ func ParseRemoteOrbs(orbs map[string]ast.Orb, cache utils.Cache) {
 	}
 }
 
-func fetchOrbInfo(orbVersionCode string, cache utils.Cache) (*ast.CachedOrb, error) {
-	orbQuery, err := GetRemoteOrb(orbVersionCode)
+func fetchOrbInfo(orbVersionCode string, cache *utils.Cache) (*ast.CachedOrb, error) {
+	orbQuery, err := GetRemoteOrb(orbVersionCode, cache.TokenCache.GetToken())
 
 	if err != nil {
 		return &ast.CachedOrb{}, err
@@ -150,7 +151,7 @@ func GetVersionInfo(
 	return latest, latestMinor, latestPatch
 }
 
-func GetRemoteOrb(orbId string) (OrbQuery, error) {
+func GetRemoteOrb(orbId string, token string) (OrbQuery, error) {
 	httpClient := &http.Client{
 		Timeout: 30 * time.Second,
 		Transport: &http.Transport{
@@ -160,8 +161,7 @@ func GetRemoteOrb(orbId string) (OrbQuery, error) {
 			TLSHandshakeTimeout:   10 * time.Second,
 		},
 	}
-
-	client := utils.NewClient(httpClient, "https://circleci.com", "graphql-unstable", "", false)
+	client := utils.NewClient(httpClient, "https://circleci.com", "graphql-unstable", token, false)
 	query := `query($orbVersionRef: String!) {
 		orbVersion(orbVersionRef: $orbVersionRef) {
 			id
@@ -177,6 +177,7 @@ func GetRemoteOrb(orbId string) (OrbQuery, error) {
 	}`
 
 	request := utils.NewRequest(query)
+	request.SetToken(client.Token)
 	request.Var("orbVersionRef", orbId)
 
 	var response OrbResponse
@@ -189,7 +190,7 @@ func GetRemoteOrb(orbId string) (OrbQuery, error) {
 	return response.OrbVersion, err
 }
 
-func GetOrbVersions(orbId string) ([]struct{ Version string }, error) {
+func GetOrbVersions(orbId string, token string) ([]struct{ Version string }, error) {
 	httpClient := &http.Client{
 		Timeout: 30 * time.Second,
 		Transport: &http.Transport{
@@ -200,7 +201,7 @@ func GetOrbVersions(orbId string) ([]struct{ Version string }, error) {
 		},
 	}
 
-	client := utils.NewClient(httpClient, "https://circleci.com", "graphql-unstable", "", false)
+	client := utils.NewClient(httpClient, "https://circleci.com", "graphql-unstable", token, false)
 	query := `query($orbVersionRef: String!) {
 		orbVersion(orbVersionRef: $orbVersionRef) {
 			version
@@ -208,6 +209,7 @@ func GetOrbVersions(orbId string) ([]struct{ Version string }, error) {
 	}`
 
 	request := utils.NewRequest(query)
+	request.SetToken(client.Token)
 	request.Var("orbVersionRef", orbId)
 
 	var response OrbResponse
@@ -243,7 +245,7 @@ func checkIfRemoteOrbAlreadyExistsInFSCache(orbId string) bool {
 	return err == nil
 }
 
-func addAlreadyExistingRemoteOrbsToFSCache(orb ast.Orb, cache utils.Cache) error {
+func addAlreadyExistingRemoteOrbsToFSCache(orb ast.Orb, cache *utils.Cache) error {
 	filePath := getOrbCacheFSPath(orb.Url.GetOrbID())
 
 	source, err := os.ReadFile(filePath)
@@ -258,7 +260,7 @@ func addAlreadyExistingRemoteOrbsToFSCache(orb ast.Orb, cache utils.Cache) error
 		return err
 	}
 
-	versions, err := GetOrbVersions(orb.Url.GetOrbID())
+	versions, err := GetOrbVersions(orb.Url.GetOrbID(), cache.TokenCache.GetToken())
 
 	if err != nil {
 		return nil

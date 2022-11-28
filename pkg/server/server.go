@@ -18,7 +18,7 @@ type JSONRPCServer struct {
 	ctx     context.Context
 	conn    jsonrpc2.Conn
 	methods methods.Methods
-	cache   utils.Cache
+	cache   *utils.Cache
 }
 
 func (server JSONRPCServer) commandHandler(_ context.Context, reply jsonrpc2.Replier, req jsonrpc2.Request) error {
@@ -28,6 +28,9 @@ func (server JSONRPCServer) commandHandler(_ context.Context, reply jsonrpc2.Rep
 
 	case protocol.MethodInitialize:
 		return server.methods.Initialize(reply)
+
+	case protocol.MethodWorkspaceExecuteCommand:
+		return server.methods.ExecuteCommand(reply, req)
 
 	case protocol.MethodTextDocumentDidOpen:
 		return server.methods.DidOpen(reply, req)

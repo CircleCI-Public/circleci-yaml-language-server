@@ -7,7 +7,7 @@ import (
 )
 
 type DefinitionStruct struct {
-	Cache  utils.Cache
+	Cache  *utils.Cache
 	Params protocol.DefinitionParams
 	Doc    yamlparser.YamlDocument
 }
