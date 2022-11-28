@@ -33,5 +33,5 @@ tasks:
 
   prepare:vscode:
     cmds:
-      - cd editors/vscode && npm ci
-      - cd editors/vscode && npm run build
+      - cd editors/vscode && yarn
+      - cd editors/vscode && yarn run build

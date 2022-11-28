@@ -106,12 +106,21 @@ For example, I've the following in my `.emacs.d/init.el`:
 
 ## Testing within VSCode
 
-This repository embed a VSCode extension (located at `editors/vscode`) so you can test your code within the editor.
-In order to run the extension, you must first prepare installation:
+This repository embed a VSCode extension (located at `editors/vscode`) so you
+can test your code within the editor.
+
+1. In order to run the extension, you must first prepare installation. This
+   command will install the necessary node packages and build the extension:
 
 ```
 task prepare:vscode
 ```
 
-This command will install the necessary node packages and build the extension.
-Next, go in your VSCode, launch the `Run extension` debug configuration.
+2. You need to disable the CircleCI marketplace extension before testing in
+   order to avoid conflicts between the two extensions (the local one and the
+   marketplace one). To do so, please go to the `Extensions` tab, click on the
+   CircleCI extension and click on `Disable`
+
+3. Next, open a VSCode instance at the root of the project, open the
+   `Run and Debug` tab and run it via the `Run Extension` on the dropdown menu
+   at the top of the tab.
