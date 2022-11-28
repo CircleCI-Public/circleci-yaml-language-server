@@ -58,7 +58,7 @@ func (doc *YamlDocument) parseSingleJob(jobNode *sitter.Node) ast.Job {
 	iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
 		if child.Type() == "block_mapping_pair" || child.Type() == "flow_pair" {
 			keyNode, valueNode := getKeyValueNodes(child)
-			if keyNode == nil {
+			if keyNode == nil || valueNode == nil {
 				return
 			}
 			keyName := doc.GetNodeText(keyNode)

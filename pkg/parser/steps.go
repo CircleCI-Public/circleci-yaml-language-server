@@ -3,6 +3,7 @@ package parser
 import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
+
 	sitter "github.com/smacker/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
@@ -145,19 +146,21 @@ func (doc *YamlDocument) parseNamedStepWithParameters(stepName string, namedStep
 			ParametersRange: paramRange,
 		}
 		iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
-			if child != nil {
-				keyName := doc.GetNodeText(child.ChildByFieldName("key"))
-
-				if keyName == "" {
-					return
-				}
-
-				paramValue, err := doc.parseParameterValue(child)
-				if err != nil {
-					return
-				}
-				res.Parameters[keyName] = paramValue
+			if child == nil {
+				return
 			}
+
+			keyName := doc.GetNodeText(child.ChildByFieldName("key"))
+
+			if keyName == "" {
+				return
+			}
+
+			paramValue, err := doc.parseParameterValue(child)
+			if err != nil {
+				return
+			}
+			res.Parameters[keyName] = paramValue
 		})
 		return res
 	}
