@@ -1,11 +1,10 @@
 ## 0.1.8 (2022-11-28)
 
--   Added autocomplete for docker images
--   Support of private orbs
--   Support of parameters inside docker images
--   Updated supported XCode versions
--   Fixed a bug where an orb would appear unused when appearing only in post/pre
-    steps
+-   Add autocomplete for docker images
+-   Introduce support of private orbs
+-   Support parameters inside docker images
+-   Update supported XCode versions
+-   Fix a bug where an orb would appear unused when appearing only in post/pre steps
 -   Fix `docker` keyword not being highlighted in the right color
 -   Improve documentation
 
