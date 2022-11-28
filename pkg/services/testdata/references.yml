@@ -14,7 +14,7 @@ workflows:
                     filters:
                         branches:
                             only:
-                                - master
+                                - main
             - terraform-apply:
                     tf_partition_path: "modules/base"
                     context: ccits-infra
@@ -23,7 +23,7 @@ workflows:
                     filters:
                         branches:
                             only:
-                                - master
+                                - main
 
 executors:
     default:

@@ -300,15 +300,15 @@ workflows:
             - build-linux:
                 filters:
                     branches:
-                        only: master
+                        only: main
             - build-macos:
                 filters:
                     branches:
-                        only: master
+                        only: main
             - build-windows:
                 filters:
                     branches:
-                        only: master
+                        only: main
             - build-vsix:
                 requires:
                     - build-linux
