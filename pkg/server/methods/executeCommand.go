@@ -13,14 +13,17 @@ func (methods *Methods) ExecuteCommand(reply jsonrpc2.Replier, req jsonrpc2.Requ
 	if err := json.Unmarshal(req.Params(), &params); err != nil {
 		return reply(methods.Ctx, nil, fmt.Errorf("%s: %w", jsonrpc2.ErrParse, err))
 	}
+	token := params.Arguments[0].(string)
+	if methods.Cache.TokenCache.GetToken() != token {
+		methods.Cache.OrbCache.RemoveOrbs()
+		methods.Cache.RemoveOrbFiles()
+	}
+	methods.Cache.TokenCache.SetToken(token)
 	if params.Command == "setToken" {
 		filesCache := methods.Cache.FileCache.GetFiles()
 		for _, file := range filesCache {
 			go methods.notificationMethods(methods.Cache.FileCache, *file)
 		}
-
-		token := params.Arguments[0].(string)
-		methods.Cache.TokenCache.SetToken(token)
 	}
 	return reply(methods.Ctx, nil, nil)
 }

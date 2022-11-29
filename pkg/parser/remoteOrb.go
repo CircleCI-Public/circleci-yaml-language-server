@@ -5,12 +5,10 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"path"
 	"time"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
-	"github.com/adrg/xdg"
 	"golang.org/x/mod/semver"
 )
 
@@ -224,7 +222,7 @@ func GetOrbVersions(orbId string, token string) ([]struct{ Version string }, err
 }
 
 func writeRemoteOrbSourceInFSCache(orbId string, source string) (string, error) {
-	filePath := getOrbCacheFSPath(orbId)
+	filePath := utils.GetOrbCacheFSPath(orbId)
 	_, err := os.Stat(filePath)
 
 	if errors.Is(err, os.ErrNotExist) {
@@ -238,7 +236,7 @@ func writeRemoteOrbSourceInFSCache(orbId string, source string) (string, error) 
 }
 
 func checkIfRemoteOrbAlreadyExistsInFSCache(orbId string) bool {
-	filePath := getOrbCacheFSPath(orbId)
+	filePath := utils.GetOrbCacheFSPath(orbId)
 
 	// Err == nil means the file exists
 	_, err := os.Stat(filePath)
@@ -246,7 +244,7 @@ func checkIfRemoteOrbAlreadyExistsInFSCache(orbId string) bool {
 }
 
 func addAlreadyExistingRemoteOrbsToFSCache(orb ast.Orb, cache *utils.Cache) error {
-	filePath := getOrbCacheFSPath(orb.Url.GetOrbID())
+	filePath := utils.GetOrbCacheFSPath(orb.Url.GetOrbID())
 
 	source, err := os.ReadFile(filePath)
 
@@ -283,15 +281,4 @@ func addAlreadyExistingRemoteOrbsToFSCache(orb ast.Orb, cache *utils.Cache) erro
 	}, orb.Url.GetOrbID())
 
 	return nil
-}
-
-func getOrbCacheFSPath(orbId string) string {
-	file := path.Join("cci", "orbs", ".circleci", orbId+".yml")
-	filePath, err := xdg.CacheFile(file)
-
-	if err != nil {
-		filePath = path.Join(xdg.Home, ".cache", file)
-	}
-
-	return filePath
 }

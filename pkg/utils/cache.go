@@ -1,10 +1,13 @@
 package utils
 
 import (
+	"path"
 	"sync"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
+	"github.com/adrg/xdg"
 	"go.lsp.dev/protocol"
+	"go.lsp.dev/uri"
 )
 
 type Cache struct {
@@ -122,6 +125,26 @@ func (c *OrbCache) RemoveOrb(orbID string) {
 	delete(c.orbsCache, orbID)
 }
 
+func (c *OrbCache) RemoveOrbs() {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	for k := range c.orbsCache {
+		delete(c.orbsCache, k)
+	}
+}
+
+func (c *Cache) RemoveOrbFiles() {
+	c.OrbCache.cacheMutex.Lock()
+	defer c.OrbCache.cacheMutex.Unlock()
+	c.FileCache.cacheMutex.Lock()
+	defer c.FileCache.cacheMutex.Unlock()
+
+	for _, orb := range c.OrbCache.orbsCache {
+		filePath := GetOrbCacheFSPath(orb.ID)
+		c.FileCache.RemoveFile(uri.URI(filePath))
+	}
+}
+
 // Docker images cache
 
 func (c *DockerCache) Add(name string, exists bool) *CachedDockerImage {
@@ -154,4 +177,15 @@ func CreateCache() *Cache {
 	cache := Cache{}
 	cache.init()
 	return &cache
+}
+
+func GetOrbCacheFSPath(orbId string) string {
+	file := path.Join("cci", "orbs", ".circleci", orbId+".yml")
+	filePath, err := xdg.CacheFile(file)
+
+	if err != nil {
+		filePath = path.Join(xdg.Home, ".cache", file)
+	}
+
+	return filePath
 }
