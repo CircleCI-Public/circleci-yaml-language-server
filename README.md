@@ -1,3 +1,5 @@
+![](./assets/header.png)
+
 # CircleCI YAML Language Server
 
 This is CircleCI's YAML Language Server.
@@ -72,9 +74,31 @@ This is a project in active development, and we target a release frequency of on
 
 ## Contributing
 
-Development instructions for the CircleCI YAML Language Server can be found in
-[HACKING.md](HACKING.md).
+Please feel free to contribute to this project, we update our Hall of fame - [CONTRIBUTORS.md](./CONTRIBUTORS.md) with all contributors who helped us fix a bug. You can find all the contribution guidelines and useful information in [CONTRIBUTING.md](./CONTRIBUTING.md). Development instructions for the CircleCI YAML Language Server can be found in [HACKING.md](HACKING.md).
 
 ## Architecture diagram
 
 ![alt text](./assets/diagram.jpg)
+
+## Quick links
+
+Install the VS Code extension using our language server  
+https://marketplace.visualstudio.com/items?itemName=circleci.circleci
+
+Discover how the language server was leveraged for the VS Code extension  
+https://youtu.be/Sdi7ctAXe2A
+
+Learn more about CircleCI  
+https://circleci.com/
+
+Do you have questions? Ask the circleCI community Discuss  
+https://discuss.circleci.com/
+
+Help us get the word out! Share our project  
+Social media link
+
+https://twitter.com/intent/tweet?text=Take%20a%20look%20at%20the%20open%20sourced%20CircleCI%20Language%20Server%20on%20GitHub%20https%3A//github.com/CircleCI-Public/circleci-yaml-language-server%23readme%20via%20%40CircleCI
+
+https://www.facebook.com/sharer/sharer.php?u=https%3A//github.com/CircleCI-Public/circleci-yaml-language-server%23readme
+
+https://www.linkedin.com/shareArticle?mini=true&url=https%3A//github.com/CircleCI-Public/circleci-yaml-language-server%23readme
