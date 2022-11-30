@@ -13,7 +13,7 @@ resources:
 
 ## Requirements
 
--   Go 1.18+
+-   Go 1.19+
 -   [Task](https://taskfile.dev/)
 -   [detect-secrets](https://github.com/Yelp/detect-secrets)
 
@@ -40,7 +40,13 @@ order to use Go modules. We recommend cloning the repo outside of `$GOPATH` as
 you would any other source code project, for example
 `~/code/circleci-yaml-language-server`.
 
-### 2. Build the binary
+### 2. Install dependencies
+
+```
+$ task init
+```
+
+### 3. Build the binary
 
 ```
 $ task build
@@ -48,7 +54,7 @@ $ task build
 
 Note: `bin/start_server` is the entry point for the language server.
 
-### 3. Run tests
+### 4. Run tests
 
 ```
 $ task test
@@ -56,7 +62,7 @@ $ task test
 
 ## Managing Dependencies
 
-We use Go 1.18 Modules for managing our dependencies.
+We use Go 1.19 Modules for managing our dependencies.
 
 You can read more about it on the wiki:
 https://github.com/golang/go/wiki/Modules
