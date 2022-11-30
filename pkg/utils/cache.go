@@ -11,15 +11,20 @@ import (
 )
 
 type Cache struct {
-	FileCache   FileCache
-	OrbCache    OrbCache
-	DockerCache DockerCache
-	TokenCache  TokenCache
+	FileCache     FileCache
+	OrbCache      OrbCache
+	DockerCache   DockerCache
+	TokenCache    TokenCache
+	SelfHostedUrl SelfHostedUrl
 }
 
 type TokenCache struct {
 	cacheMutex *sync.Mutex
 	token      string
+}
+type SelfHostedUrl struct {
+	cacheMutex *sync.Mutex
+	url        string
 }
 
 type DockerCache struct {
@@ -53,6 +58,8 @@ func (c *Cache) init() {
 	c.DockerCache.dockerCache = make(map[string]*CachedDockerImage)
 	c.TokenCache.cacheMutex = &sync.Mutex{}
 	c.TokenCache.token = ""
+	c.SelfHostedUrl.cacheMutex = &sync.Mutex{}
+	c.SelfHostedUrl.url = ""
 }
 
 // FILE
@@ -106,11 +113,23 @@ func (c *TokenCache) SetToken(token string) string {
 	c.token = token
 	return token
 }
+func (c *SelfHostedUrl) SetUrl(url string) string {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	c.url = url
+	return url
+}
 
 func (c *TokenCache) GetToken() string {
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()
 	return c.token
+}
+
+func (c *SelfHostedUrl) GetSelfHostedUrl() string {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	return c.url
 }
 
 func (c *OrbCache) GetOrb(orbID string) *ast.CachedOrb {

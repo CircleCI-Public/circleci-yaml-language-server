@@ -25,5 +25,17 @@ func (methods *Methods) ExecuteCommand(reply jsonrpc2.Replier, req jsonrpc2.Requ
 			go methods.notificationMethods(methods.Cache.FileCache, *file)
 		}
 	}
+	if params.Command == "setSelfHostedUrl" {
+		url := params.Arguments[0].(string)
+		if methods.Cache.SelfHostedUrl.GetSelfHostedUrl() != url {
+			methods.Cache.RemoveOrbFiles()
+			methods.Cache.OrbCache.RemoveOrbs()
+		}
+		methods.Cache.SelfHostedUrl.SetUrl(url)
+		filesCache := methods.Cache.FileCache.GetFiles()
+		for _, file := range filesCache {
+			go methods.notificationMethods(methods.Cache.FileCache, *file)
+		}
+	}
 	return reply(methods.Ctx, nil, nil)
 }

@@ -28,6 +28,8 @@ type OrbQuery struct {
 	Source string
 }
 
+var baseUrl = "https://circleci.com"
+
 func GetOrbInfo(orbVersionCode string, cache *utils.Cache) (*ast.CachedOrb, error) {
 	// Returning cache if exists
 	if !cache.OrbCache.HasOrb(orbVersionCode) {
@@ -56,7 +58,7 @@ func ParseRemoteOrbs(orbs map[string]ast.Orb, cache *utils.Cache) {
 }
 
 func fetchOrbInfo(orbVersionCode string, cache *utils.Cache) (*ast.CachedOrb, error) {
-	orbQuery, err := GetRemoteOrb(orbVersionCode, cache.TokenCache.GetToken())
+	orbQuery, err := GetRemoteOrb(orbVersionCode, cache.TokenCache.GetToken(), cache.SelfHostedUrl.GetSelfHostedUrl())
 
 	if err != nil {
 		return &ast.CachedOrb{}, err
@@ -149,7 +151,7 @@ func GetVersionInfo(
 	return latest, latestMinor, latestPatch
 }
 
-func GetRemoteOrb(orbId string, token string) (OrbQuery, error) {
+func GetRemoteOrb(orbId string, token string, selfHostedUrl string) (OrbQuery, error) {
 	httpClient := &http.Client{
 		Timeout: 30 * time.Second,
 		Transport: &http.Transport{
@@ -159,7 +161,11 @@ func GetRemoteOrb(orbId string, token string) (OrbQuery, error) {
 			TLSHandshakeTimeout:   10 * time.Second,
 		},
 	}
-	client := utils.NewClient(httpClient, "https://circleci.com", "graphql-unstable", token, false)
+	url := baseUrl
+	if selfHostedUrl != "" {
+		url = selfHostedUrl
+	}
+	client := utils.NewClient(httpClient, url, "graphql-unstable", token, false)
 	query := `query($orbVersionRef: String!) {
 		orbVersion(orbVersionRef: $orbVersionRef) {
 			id
@@ -188,7 +194,7 @@ func GetRemoteOrb(orbId string, token string) (OrbQuery, error) {
 	return response.OrbVersion, err
 }
 
-func GetOrbVersions(orbId string, token string) ([]struct{ Version string }, error) {
+func GetOrbVersions(orbId string, token string, selfHostedUrl string) ([]struct{ Version string }, error) {
 	httpClient := &http.Client{
 		Timeout: 30 * time.Second,
 		Transport: &http.Transport{
@@ -199,7 +205,12 @@ func GetOrbVersions(orbId string, token string) ([]struct{ Version string }, err
 		},
 	}
 
-	client := utils.NewClient(httpClient, "https://circleci.com", "graphql-unstable", token, false)
+	url := baseUrl
+	if selfHostedUrl != "" {
+		url = selfHostedUrl
+	}
+
+	client := utils.NewClient(httpClient, url, "graphql-unstable", token, false)
 	query := `query($orbVersionRef: String!) {
 		orbVersion(orbVersionRef: $orbVersionRef) {
 			version
@@ -258,7 +269,7 @@ func addAlreadyExistingRemoteOrbsToFSCache(orb ast.Orb, cache *utils.Cache) erro
 		return err
 	}
 
-	versions, err := GetOrbVersions(orb.Url.GetOrbID(), cache.TokenCache.GetToken())
+	versions, err := GetOrbVersions(orb.Url.GetOrbID(), cache.TokenCache.GetToken(), cache.SelfHostedUrl.GetSelfHostedUrl())
 
 	if err != nil {
 		return nil
