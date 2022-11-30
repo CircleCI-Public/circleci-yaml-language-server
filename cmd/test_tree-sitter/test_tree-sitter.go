@@ -5,11 +5,18 @@ import (
 	"os"
 
 	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
 func main() {
 	content, _ := os.ReadFile("examples/config1.yml")
-	rootNode := yamlparser.ParseFile([]byte(content))
+	context := &utils.LsContext{
+		Api: utils.ApiContext{
+			Token:   "XXXXXXXXXXXX",
+			HostUrl: "https://circleci.com",
+		},
+	}
+	rootNode := yamlparser.ParseFile([]byte(content), context)
 
 	res, err := yamlparser.FindDeepestNode(rootNode.RootNode, content, []string{"workflows", "test-build", "jobs", "0"})
 	if err != nil {

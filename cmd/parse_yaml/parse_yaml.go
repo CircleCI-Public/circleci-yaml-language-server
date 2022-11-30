@@ -21,7 +21,14 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	yamlparser.ParseFile(content)
+	context := &utils.LsContext{
+		Api: utils.ApiContext{
+			Token:   "XXXXXXXXXXXX",
+			HostUrl: "https://circleci.com",
+		},
+	}
+
+	yamlparser.ParseFile(content, context)
 
 	cache := utils.CreateCache()
 	cache.FileCache.SetFile(&protocol.TextDocumentItem{
@@ -31,13 +38,6 @@ func main() {
 
 	param := protocol.PublishDiagnosticsParams{
 		URI: uri.File(filepath),
-	}
-
-	context := &utils.LsContext{
-		Api: utils.ApiContext{
-			Token:   "",
-			HostUrl: utils.CIRCLE_CI_APP_HOST_URL,
-		},
 	}
 
 	languageservice.Diagnostic(param, cache, context)

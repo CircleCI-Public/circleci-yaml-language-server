@@ -28,8 +28,8 @@ type SemanticTokenStruct struct {
 
 var PARAM_REGEX, _ = regexp.Compile(`<<\s*(parameters|pipeline.parameters)\.([A-z0-9-_]*)\s*>>`)
 
-func SemanticTokens(params protocol.SemanticTokensParams, cache *utils.Cache) protocol.SemanticTokens {
-	doc, err := parser.ParseFromUriWithCache(params.TextDocument.URI, cache)
+func SemanticTokens(params protocol.SemanticTokensParams, cache *utils.Cache, context *utils.LsContext) protocol.SemanticTokens {
+	doc, err := parser.ParseFromUriWithCache(params.TextDocument.URI, cache, context)
 
 	if err != nil {
 		return protocol.SemanticTokens{}

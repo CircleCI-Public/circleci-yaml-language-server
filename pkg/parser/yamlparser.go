@@ -11,11 +11,12 @@ import (
 	"go.lsp.dev/protocol"
 )
 
-func ParseFile(content []byte) YamlDocument {
+func ParseFile(content []byte, context *utils.LsContext) YamlDocument {
 	rootNode := GetRootNode(content)
 
 	doc := YamlDocument{
 		Content:             content,
+		Context:             context,
 		RootNode:            rootNode,
 		Commands:            make(map[string]ast.Command),
 		Orbs:                make(map[string]ast.Orb),
@@ -29,7 +30,7 @@ func ParseFile(content []byte) YamlDocument {
 	return doc
 }
 
-func (doc *YamlDocument) ParseYAML() {
+func (doc *YamlDocument) ParseYAML(context *utils.LsContext) {
 	if len(*doc.Diagnostics) > 0 {
 		return
 	}
@@ -90,31 +91,31 @@ func (doc *YamlDocument) ValidateYAML() {
 	}
 }
 
-func ParseFromURI(URI protocol.URI) (YamlDocument, error) {
+func ParseFromURI(URI protocol.URI, context *utils.LsContext) (YamlDocument, error) {
 	content, err := os.ReadFile(URI.Filename())
 	if err != nil {
 		return YamlDocument{}, err
 	}
-	doc, err := ParseFromContent([]byte(content))
+	doc, err := ParseFromContent([]byte(content), context)
 	doc.URI = URI
 
 	return doc, err
 }
 
-func ParseFromUriWithCache(URI protocol.URI, cache *utils.Cache) (YamlDocument, error) {
+func ParseFromUriWithCache(URI protocol.URI, cache *utils.Cache, context *utils.LsContext) (YamlDocument, error) {
 	textDocument := cache.FileCache.GetFile(URI)
 
-	doc, err := ParseFromContent([]byte(textDocument.Text))
+	doc, err := ParseFromContent([]byte(textDocument.Text), context)
 	doc.URI = URI
 
 	return doc, err
 }
 
-func ParseFromContent(content []byte) (YamlDocument, error) {
-	doc := ParseFile([]byte(content))
+func ParseFromContent(content []byte, context *utils.LsContext) (YamlDocument, error) {
+	doc := ParseFile([]byte(content), context)
 
 	doc.ValidateYAML()
-	doc.ParseYAML()
+	doc.ParseYAML(context)
 
 	return doc, nil
 }
@@ -132,6 +133,7 @@ type YamlDocument struct {
 	Description string
 	URI         protocol.URI
 	Diagnostics *[]protocol.Diagnostic
+	Context     *utils.LsContext
 
 	Orbs                map[string]ast.Orb
 	Executors           map[string]ast.Executor
@@ -240,7 +242,7 @@ func (doc *YamlDocument) InsertText(pos protocol.Position, text string) (YamlDoc
 		newContent += string(r)
 	}
 
-	return ParseFromContent([]byte(newContent))
+	return ParseFromContent([]byte(newContent), doc.Context)
 }
 
 type ModifiedYamlDocument struct {

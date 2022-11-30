@@ -55,7 +55,7 @@ func (doc *YamlDocument) parseLocalOrb(name string, orbNode *sitter.Node) error 
 	}
 	orbContent := doc.GetNodeText(orbNode)
 	deindentedContent := removeIndentationFromText(orbContent, orb.Offset.Character)
-	orbDoc, err := ParseFromContent([]byte(deindentedContent))
+	orbDoc, err := ParseFromContent([]byte(deindentedContent), doc.Context)
 	if err != nil {
 		return err
 	}

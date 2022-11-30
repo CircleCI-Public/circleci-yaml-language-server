@@ -14,7 +14,7 @@ func (methods *Methods) Complete(reply jsonrpc2.Replier, req jsonrpc2.Request) e
 	if err := json.Unmarshal(req.Params(), &params); err != nil {
 		return reply(methods.Ctx, nil, fmt.Errorf("%s: %w", jsonrpc2.ErrParse, err))
 	}
-	res, err := languageservice.Complete(params, methods.Cache)
+	res, err := languageservice.Complete(params, methods.Cache, methods.LsContext)
 	if err != nil {
 		return reply(methods.Ctx, nil, err)
 	}

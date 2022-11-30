@@ -10,6 +10,7 @@ import (
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/testHelpers"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
@@ -21,7 +22,12 @@ func TestComplete(t *testing.T) {
 	os.Setenv("SCHEMA_LOCATION", schemaPath)
 	cache := utils.CreateCache()
 
-	parsedOrb, err := parser.ParseFromURI(uri.File(path.Join("./testdata/orb.yaml")))
+	context := testHelpers.GetDefaultLsContext()
+
+	parsedOrb, err := parser.ParseFromURI(
+		uri.File(path.Join("./testdata/orb.yaml")),
+		context,
+	)
 
 	if err != nil {
 		panic(err)
@@ -342,6 +348,7 @@ func TestComplete(t *testing.T) {
 			},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			content, _ := os.ReadFile(tt.args.filePath)
@@ -359,7 +366,7 @@ func TestComplete(t *testing.T) {
 				},
 			}
 
-			got, err := Complete(param, cache)
+			got, err := Complete(param, cache, context)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Complete() error = %v, wantErr %v", err, tt.wantErr)
 				return

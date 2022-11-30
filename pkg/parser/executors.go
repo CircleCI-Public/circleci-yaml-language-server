@@ -330,19 +330,24 @@ func (doc *YamlDocument) addedMachineTrueDeprecatedDiag(child *sitter.Node) bool
 	_, valueNode := getKeyValueNodes(child)
 
 	value := doc.GetNodeText(valueNode)
-	if utils.IsValidYAMLBooleanValue(value) && utils.GetYAMLBooleanValue(value) {
-		doc.addDiagnostic(
-			protocol.Diagnostic{
-				Severity: protocol.DiagnosticSeverityWarning,
-				Range:    NodeToRange(child),
-				Message:  "Using `machine: true` is deprecated, please instead specify an image to use.",
-				Tags: []protocol.DiagnosticTag{
-					protocol.DiagnosticTagDeprecated,
-				},
-			},
-		)
-		return true
+
+	if !utils.IsValidYAMLBooleanValue(value) || !utils.GetYAMLBooleanValue(value) {
+		return false
 	}
 
-	return false
+	if !doc.Context.Api.UseDefaultInstance() {
+		return false
+	}
+
+	doc.addDiagnostic(
+		protocol.Diagnostic{
+			Severity: protocol.DiagnosticSeverityWarning,
+			Range:    NodeToRange(child),
+			Message:  "Using `machine: true` is deprecated, please instead specify an image to use.",
+			Tags: []protocol.DiagnosticTag{
+				protocol.DiagnosticTagDeprecated,
+			},
+		},
+	)
+	return true
 }

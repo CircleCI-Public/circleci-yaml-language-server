@@ -9,6 +9,7 @@ import (
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/testHelpers"
 	utils "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
@@ -20,7 +21,8 @@ func TestDefinition(t *testing.T) {
 	os.Setenv("SCHEMA_LOCATION", schemaPath)
 	cache := utils.CreateCache()
 
-	parsedOrb, err := parser.ParseFromURI(uri.File(path.Join("./testdata/orb.yaml")))
+	context := testHelpers.GetDefaultLsContext()
+	parsedOrb, err := parser.ParseFromURI(uri.File(path.Join("./testdata/orb.yaml")), context)
 
 	if err != nil {
 		panic(err)
@@ -412,7 +414,7 @@ func TestDefinition(t *testing.T) {
 				},
 			}
 
-			got, err := Definition(params, cache)
+			got, err := Definition(params, cache, context)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Definition(): %s error = %v, wantErr %v", tt.name, err, tt.wantErr)
 				return

@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/expect"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/testHelpers"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"github.com/stretchr/testify/assert"
 	"go.lsp.dev/protocol"
@@ -31,7 +32,8 @@ testFinal:
 
 	err := yaml.Unmarshal(content, m)
 
-	yamlDocument, _ := ParseFromContent(content)
+	context := testHelpers.GetDefaultLsContext()
+	yamlDocument, _ := ParseFromContent(content, context)
 
 	actualDiagnostics, err := handleYAMLErrors(err.Error(), content, yamlDocument.RootNode)
 
@@ -70,7 +72,8 @@ test:
 
 	err := yaml.Unmarshal(content, m)
 
-	yamlDocument, _ := ParseFromContent(content)
+	context := testHelpers.GetDefaultLsContext()
+	yamlDocument, _ := ParseFromContent(content, context)
 
 	diagnostics, err := handleYAMLErrors(err.Error(), content, yamlDocument.RootNode)
 

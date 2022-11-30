@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/testHelpers"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"github.com/stretchr/testify/assert"
 	"go.lsp.dev/protocol"
@@ -18,21 +19,18 @@ type ValidateTestCase struct {
 }
 
 func CheckYamlErrors(t *testing.T, testCases []ValidateTestCase) {
+	context := testHelpers.GetDefaultLsContext()
+	context.Api.Token = ""
 	for _, tt := range testCases {
 		t.Run(tt.Name, func(t *testing.T) {
 			content := tt.YamlContent
-			doc, err := parser.ParseFromContent([]byte(content))
+			doc, err := parser.ParseFromContent([]byte(content), context)
 			assert.Nil(t, err)
 			val := Validate{
 				Diagnostics: &[]protocol.Diagnostic{},
 				Cache:       utils.CreateCache(),
 				Doc:         doc,
-				Context: &utils.LsContext{
-					Api: utils.ApiContext{
-						Token:   "",
-						HostUrl: utils.CIRCLE_CI_APP_HOST_URL,
-					},
-				},
+				Context:     context,
 			}
 			val.Validate()
 
