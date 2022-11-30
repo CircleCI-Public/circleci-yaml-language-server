@@ -15,7 +15,7 @@ func (methods *Methods) References(reply jsonrpc2.Replier, req jsonrpc2.Request)
 		return reply(methods.Ctx, nil, fmt.Errorf("%s: %w", jsonrpc2.ErrParse, err))
 	}
 
-	res, err := languageservice.References(params, methods.Cache)
+	res, err := languageservice.References(params, methods.Cache, methods.LsContext)
 	if err != nil {
 		return reply(methods.Ctx, nil, err)
 	}

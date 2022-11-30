@@ -7,6 +7,7 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/testHelpers"
 	utils "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
@@ -256,6 +257,7 @@ func TestReferences(t *testing.T) {
 			},
 		},
 	}
+	context := testHelpers.GetDefaultLsContext()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			content, _ := os.ReadFile(tt.args.filePath)
@@ -273,7 +275,7 @@ func TestReferences(t *testing.T) {
 				},
 			}
 
-			got, err := References(params, cache)
+			got, err := References(params, cache, context)
 
 			// We don't care about the order of the items,
 			// so we sort them before comparing to avoid the order

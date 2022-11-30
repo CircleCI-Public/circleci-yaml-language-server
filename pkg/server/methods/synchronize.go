@@ -88,7 +88,7 @@ func (methods *Methods) notificationMethods(cache utils.FileCache, textDocument 
 }
 
 func (methods *Methods) parsingMethods(textDocument protocol.TextDocumentItem) {
-	parsedFile, err := yamlparser.ParseFromUriWithCache(textDocument.URI, methods.Cache)
+	parsedFile, err := yamlparser.ParseFromUriWithCache(textDocument.URI, methods.Cache, methods.LsContext)
 
 	if err != nil {
 		return

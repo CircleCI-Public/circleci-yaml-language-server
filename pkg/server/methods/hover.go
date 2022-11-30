@@ -15,7 +15,7 @@ func (methods *Methods) Hover(reply jsonrpc2.Replier, req jsonrpc2.Request) erro
 		return reply(methods.Ctx, nil, fmt.Errorf("%s: %w", jsonrpc2.ErrParse, err))
 	}
 
-	res, err := languageservice.Hover(params, methods.Cache)
+	res, err := languageservice.Hover(params, methods.Cache, methods.LsContext)
 	if err != nil {
 		return reply(methods.Ctx, nil, nil)
 	}

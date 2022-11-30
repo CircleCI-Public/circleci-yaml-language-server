@@ -7,8 +7,8 @@ import (
 	"go.lsp.dev/protocol"
 )
 
-func Definition(params protocol.DefinitionParams, cache *utils.Cache) ([]protocol.Location, error) {
-	yamlDocument, err := yamlparser.ParseFromUriWithCache(params.TextDocument.URI, cache)
+func Definition(params protocol.DefinitionParams, cache *utils.Cache, context *utils.LsContext) ([]protocol.Location, error) {
+	yamlDocument, err := yamlparser.ParseFromUriWithCache(params.TextDocument.URI, cache, context)
 	if err != nil {
 		return nil, err
 	}

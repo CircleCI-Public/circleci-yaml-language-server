@@ -13,7 +13,7 @@ type DiagnosticType struct {
 }
 
 func Diagnostic(params protocol.PublishDiagnosticsParams, cache *utils.Cache, context *utils.LsContext) protocol.PublishDiagnosticsParams {
-	yamlDocument, err := yamlparser.ParseFromUriWithCache(params.URI, cache)
+	yamlDocument, err := yamlparser.ParseFromUriWithCache(params.URI, cache, context)
 
 	if yamlDocument.Version < 2.1 || err != nil {
 		// TODO: Handle error

@@ -10,8 +10,8 @@ import (
 	"go.lsp.dev/protocol"
 )
 
-func References(params protocol.ReferenceParams, cache *utils.Cache) ([]protocol.Location, error) {
-	yamlDocument, err := yamlparser.ParseFromUriWithCache(params.TextDocument.URI, cache)
+func References(params protocol.ReferenceParams, cache *utils.Cache, context *utils.LsContext) ([]protocol.Location, error) {
+	yamlDocument, err := yamlparser.ParseFromUriWithCache(params.TextDocument.URI, cache, context)
 
 	if err != nil {
 		return nil, err
