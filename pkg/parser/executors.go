@@ -1,6 +1,8 @@
 package parser
 
 import (
+	"strings"
+
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	sitter "github.com/smacker/go-tree-sitter"
@@ -122,7 +124,7 @@ func (doc *YamlDocument) parseSingleExecutorMachine(nameNode *sitter.Node, value
 
 	parseMachine := func(blockNode *sitter.Node) {
 		// This only happens when the executor is `machine: true`
-		if doc.addedMachineTrueDeprecatedDiag(blockNode.Parent()) {
+		if doc.addedMachineTrueDeprecatedDiag(blockNode.Parent(), "") {
 			res.IsDeprecated = true
 			return
 		}
@@ -326,7 +328,7 @@ func (doc *YamlDocument) parseExecutorRef(valueNode *sitter.Node, child *sitter.
 	return name, NodeToRange(child), executorParameters
 }
 
-func (doc *YamlDocument) addedMachineTrueDeprecatedDiag(child *sitter.Node) bool {
+func (doc *YamlDocument) addedMachineTrueDeprecatedDiag(child *sitter.Node, resourceClass string) bool {
 	_, valueNode := getKeyValueNodes(child)
 
 	value := doc.GetNodeText(valueNode)
@@ -336,6 +338,12 @@ func (doc *YamlDocument) addedMachineTrueDeprecatedDiag(child *sitter.Node) bool
 	}
 
 	if !doc.Context.Api.UseDefaultInstance() {
+		return false
+	}
+
+	isResourceClassSelfHostedRunner := strings.Contains(resourceClass, "/")
+
+	if isResourceClassSelfHostedRunner {
 		return false
 	}
 
