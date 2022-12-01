@@ -16,8 +16,8 @@ func (methods *Methods) ExecuteCommand(reply jsonrpc2.Replier, req jsonrpc2.Requ
 	if params.Command == "setToken" {
 		token := params.Arguments[0].(string)
 		if methods.Cache.TokenCache.GetToken() != token {
-			methods.Cache.OrbCache.RemoveOrbs()
 			methods.Cache.RemoveOrbFiles()
+			methods.Cache.OrbCache.RemoveOrbs()
 		}
 		methods.Cache.TokenCache.SetToken(token)
 		filesCache := methods.Cache.FileCache.GetFiles()
