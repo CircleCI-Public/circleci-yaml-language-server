@@ -66,6 +66,7 @@ func (methods *Methods) notificationMethods(cache utils.FileCache, textDocument 
 			URI: textDocument.URI,
 		},
 		methods.Cache,
+		methods.LsContext,
 	)
 
 	original := cache.GetFile(textDocument.URI)
@@ -93,7 +94,7 @@ func (methods *Methods) parsingMethods(textDocument protocol.TextDocumentItem) {
 		return
 	}
 
-	yamlparser.ParseRemoteOrbs(parsedFile.Orbs, methods.Cache)
+	yamlparser.ParseRemoteOrbs(parsedFile.Orbs, methods.Cache, methods.LsContext)
 }
 
 func (methods *Methods) applyIncrementalChanges(uri protocol.URI, changes []protocol.TextDocumentContentChangeEvent) string {

@@ -38,8 +38,14 @@ func TestFindErrors(t *testing.T) {
 				URI:  uri.File(tt.args.filePath),
 				Text: string(content),
 			})
+			context := &utils.LsContext{
+				Api: utils.ApiContext{
+					Token:   "",
+					HostUrl: utils.CIRCLE_CI_APP_HOST_URL,
+				},
+			}
 			param := protocol.PublishDiagnosticsParams{URI: uri.File(tt.args.filePath)}
-			got := Diagnostic(param, cache)
+			got := Diagnostic(param, cache, context)
 			if !reflect.DeepEqual(got.Diagnostics, tt.want) {
 				t.Errorf("FindErrors() = %v, want %v", got.Diagnostics, tt.want)
 			}

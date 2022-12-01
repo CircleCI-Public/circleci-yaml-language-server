@@ -10,6 +10,7 @@ type Validate struct {
 	Diagnostics *[]protocol.Diagnostic
 	Doc         parser.YamlDocument
 	Cache       *utils.Cache
+	Context     *utils.LsContext
 }
 
 func (val *Validate) Validate() {

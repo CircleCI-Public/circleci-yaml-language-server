@@ -12,7 +12,7 @@ type DiagnosticType struct {
 	yamlDocument yamlparser.YamlDocument
 }
 
-func Diagnostic(params protocol.PublishDiagnosticsParams, cache *utils.Cache) protocol.PublishDiagnosticsParams {
+func Diagnostic(params protocol.PublishDiagnosticsParams, cache *utils.Cache, context *utils.LsContext) protocol.PublishDiagnosticsParams {
 	yamlDocument, err := yamlparser.ParseFromUriWithCache(params.URI, cache)
 
 	if yamlDocument.Version < 2.1 || err != nil {
@@ -37,6 +37,7 @@ func Diagnostic(params protocol.PublishDiagnosticsParams, cache *utils.Cache) pr
 		Doc:         diag.yamlDocument,
 		Diagnostics: &[]protocol.Diagnostic{},
 		Cache:       cache,
+		Context:     context,
 	}
 	validateStruct.Validate()
 	diag.addDiagnostics(*validateStruct.Diagnostics)

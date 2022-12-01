@@ -27,6 +27,12 @@ func CheckYamlErrors(t *testing.T, testCases []ValidateTestCase) {
 				Diagnostics: &[]protocol.Diagnostic{},
 				Cache:       utils.CreateCache(),
 				Doc:         doc,
+				Context: &utils.LsContext{
+					Api: utils.ApiContext{
+						Token:   "",
+						HostUrl: utils.CIRCLE_CI_APP_HOST_URL,
+					},
+				},
 			}
 			val.Validate()
 

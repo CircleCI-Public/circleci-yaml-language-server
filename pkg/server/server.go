@@ -15,10 +15,11 @@ import (
 )
 
 type JSONRPCServer struct {
-	ctx     context.Context
-	conn    jsonrpc2.Conn
-	methods methods.Methods
-	cache   *utils.Cache
+	ctx       context.Context
+	conn      jsonrpc2.Conn
+	methods   methods.Methods
+	cache     *utils.Cache
+	lsContext *utils.LsContext
 }
 
 func (server JSONRPCServer) commandHandler(_ context.Context, reply jsonrpc2.Replier, req jsonrpc2.Request) error {
@@ -72,9 +73,10 @@ func (server JSONRPCServer) ServeStream(_ context.Context, conn jsonrpc2.Conn) e
 	server.conn = conn
 	server.cache = utils.CreateCache()
 	server.methods = methods.Methods{
-		Ctx:   server.ctx,
-		Conn:  server.conn,
-		Cache: server.cache,
+		Ctx:       server.ctx,
+		Conn:      server.conn,
+		Cache:     server.cache,
+		LsContext: server.lsContext,
 	}
 	conn.Go(server.ctx, server.commandHandler)
 	<-conn.Done()
@@ -96,7 +98,18 @@ func StartServer() {
 		time.Sleep(1 * time.Second)
 		fmt.Printf("Server started, version %s\n", methods.ServerVersion)
 	}()
-	if err := jsonrpc2.ListenAndServe(ctx, "tcp", fmt.Sprintf("localhost:%s", port), JSONRPCServer{ctx: ctx}, 0); err != nil {
+
+	server := JSONRPCServer{
+		ctx: ctx,
+		lsContext: &utils.LsContext{
+			Api: utils.ApiContext{
+				HostUrl: utils.CIRCLE_CI_APP_HOST_URL,
+				Token:   "",
+			},
+		},
+	}
+
+	if err := jsonrpc2.ListenAndServe(ctx, "tcp", fmt.Sprintf("localhost:%s", port), server, 0); err != nil {
 		panic(err)
 	}
 }
@@ -113,7 +126,15 @@ func StartServerStdio() {
 
 	stdioStream := jsonrpc2.NewStream(&StdioReadWriteCloser{os.Stdin, os.Stdout})
 	stdioConn := jsonrpc2.NewConn(stdioStream)
-	server := JSONRPCServer{ctx: ctx}
+	server := JSONRPCServer{
+		ctx: ctx,
+		lsContext: &utils.LsContext{
+			Api: utils.ApiContext{
+				HostUrl: utils.CIRCLE_CI_APP_HOST_URL,
+				Token:   "",
+			},
+		},
+	}
 
 	if err := server.ServeStream(ctx, stdioConn); err != nil {
 		panic(err)
