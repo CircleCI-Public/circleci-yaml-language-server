@@ -55,6 +55,9 @@ func (doc *YamlDocument) parseSingleJob(jobNode *sitter.Node) ast.Job {
 	res.Range = NodeToRange(jobNode)
 	res.NameRange = NodeToRange(jobNameNode)
 
+	machineNode := &sitter.Node{}
+	machineNodeFound := false
+
 	iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
 		if child.Type() == "block_mapping_pair" || child.Type() == "flow_pair" {
 			keyNode, valueNode := getKeyValueNodes(child)
@@ -99,11 +102,16 @@ func (doc *YamlDocument) parseSingleJob(jobNode *sitter.Node) ast.Job {
 				res.DockerRange = NodeToRange(child)
 
 			case "machine":
-				doc.addedMachineTrueDeprecatedDiag(child)
+				machineNode = child
+				machineNodeFound = true
 			}
 		}
+
 	})
 
+	if machineNodeFound {
+		doc.addedMachineTrueDeprecatedDiag(machineNode, res.ResourceClass)
+	}
 	doc.jobCompletionItem(res)
 
 	return res
