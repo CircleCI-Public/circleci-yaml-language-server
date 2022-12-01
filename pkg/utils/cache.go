@@ -11,20 +11,9 @@ import (
 )
 
 type Cache struct {
-	FileCache     FileCache
-	OrbCache      OrbCache
-	DockerCache   DockerCache
-	TokenCache    TokenCache
-	SelfHostedUrl SelfHostedUrl
-}
-
-type TokenCache struct {
-	cacheMutex *sync.Mutex
-	token      string
-}
-type SelfHostedUrl struct {
-	cacheMutex *sync.Mutex
-	url        string
+	FileCache   FileCache
+	OrbCache    OrbCache
+	DockerCache DockerCache
 }
 
 type DockerCache struct {
@@ -56,10 +45,6 @@ func (c *Cache) init() {
 
 	c.DockerCache.cacheMutex = &sync.Mutex{}
 	c.DockerCache.dockerCache = make(map[string]*CachedDockerImage)
-	c.TokenCache.cacheMutex = &sync.Mutex{}
-	c.TokenCache.token = ""
-	c.SelfHostedUrl.cacheMutex = &sync.Mutex{}
-	c.SelfHostedUrl.url = ""
 }
 
 // FILE
@@ -105,31 +90,6 @@ func (c *OrbCache) SetOrb(orb *ast.CachedOrb, orbID string) ast.CachedOrb {
 	defer c.cacheMutex.Unlock()
 	c.orbsCache[orbID] = orb
 	return *orb
-}
-
-func (c *TokenCache) SetToken(token string) string {
-	c.cacheMutex.Lock()
-	defer c.cacheMutex.Unlock()
-	c.token = token
-	return token
-}
-func (c *SelfHostedUrl) SetUrl(url string) string {
-	c.cacheMutex.Lock()
-	defer c.cacheMutex.Unlock()
-	c.url = url
-	return url
-}
-
-func (c *TokenCache) GetToken() string {
-	c.cacheMutex.Lock()
-	defer c.cacheMutex.Unlock()
-	return c.token
-}
-
-func (c *SelfHostedUrl) GetSelfHostedUrl() string {
-	c.cacheMutex.Lock()
-	defer c.cacheMutex.Unlock()
-	return c.url
 }
 
 func (c *OrbCache) GetOrb(orbID string) *ast.CachedOrb {
@@ -208,4 +168,9 @@ func GetOrbCacheFSPath(orbYaml string) string {
 	}
 
 	return filePath
+}
+
+func (cache *Cache) ClearHostData() {
+	cache.RemoveOrbFiles()
+	cache.OrbCache.RemoveOrbs()
 }

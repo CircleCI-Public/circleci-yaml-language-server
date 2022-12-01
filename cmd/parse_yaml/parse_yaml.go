@@ -33,7 +33,14 @@ func main() {
 		URI: uri.File(filepath),
 	}
 
-	languageservice.Diagnostic(param, cache)
+	context := &utils.LsContext{
+		Api: utils.ApiContext{
+			Token:   "",
+			HostUrl: utils.CIRCLE_CI_APP_HOST_URL,
+		},
+	}
+
+	languageservice.Diagnostic(param, cache, context)
 
 	// fmt.Printf("S-expression:\n%v\n\n", node.RootNode)
 }

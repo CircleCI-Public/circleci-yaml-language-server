@@ -38,7 +38,7 @@ func (val Validate) validateSingleOrb(orb ast.Orb) {
 		return
 	}
 
-	orbVersion, err := parser.GetOrbInfo(orb.Url.GetOrbID(), val.Cache)
+	orbVersion, err := parser.GetOrbInfo(orb.Url.GetOrbID(), val.Cache, val.Context)
 
 	if err != nil && strings.HasPrefix(err.Error(), "could not find orb") {
 		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
@@ -123,7 +123,7 @@ func (val Validate) validateOrbExecutor(executorName string, executorRange proto
 	splittedName := strings.Split(executorName, "/")
 
 	orb := val.Doc.Orbs[splittedName[0]]
-	remoteOrb, err := parser.GetOrbInfo(orb.Url.GetOrbID(), val.Cache)
+	remoteOrb, err := parser.GetOrbInfo(orb.Url.GetOrbID(), val.Cache, val.Context)
 	if err != nil {
 		val.addDiagnostic(utils.CreateWarningDiagnosticFromRange(
 			executorRange,
