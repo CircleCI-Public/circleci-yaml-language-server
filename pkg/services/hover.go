@@ -10,7 +10,7 @@ import (
 )
 
 func Hover(params protocol.HoverParams, cache *utils.Cache) (protocol.Hover, error) {
-	doc, err := yamlparser.GetParsedYAMLWithCache(params.TextDocument.URI, cache)
+	doc, err := yamlparser.ParseFromUriWithCache(params.TextDocument.URI, cache)
 	if err != nil {
 		return protocol.Hover{}, nil
 	}

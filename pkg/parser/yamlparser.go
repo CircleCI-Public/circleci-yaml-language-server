@@ -101,7 +101,7 @@ func ParseFromURI(URI protocol.URI) (YamlDocument, error) {
 	return doc, err
 }
 
-func GetParsedYAMLWithCache(URI protocol.URI, cache *utils.Cache) (YamlDocument, error) {
+func ParseFromUriWithCache(URI protocol.URI, cache *utils.Cache) (YamlDocument, error) {
 	textDocument := cache.FileCache.GetFile(URI)
 
 	doc, err := GetParsedYAMLWithContent([]byte(textDocument.Text))
