@@ -1,13 +1,13 @@
 package utils
 
 import (
+	"os"
 	"path"
 	"sync"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	"github.com/adrg/xdg"
 	"go.lsp.dev/protocol"
-	"go.lsp.dev/uri"
 )
 
 type Cache struct {
@@ -140,8 +140,9 @@ func (c *Cache) RemoveOrbFiles() {
 	defer c.FileCache.cacheMutex.Unlock()
 
 	for _, orb := range c.OrbCache.orbsCache {
-		filePath := GetOrbCacheFSPath(orb.ID)
-		c.FileCache.RemoveFile(uri.URI(filePath))
+		if _, err := os.Stat(orb.FilePath); err == nil {
+			os.Remove(orb.FilePath)
+		}
 	}
 }
 
@@ -179,8 +180,8 @@ func CreateCache() *Cache {
 	return &cache
 }
 
-func GetOrbCacheFSPath(orbId string) string {
-	file := path.Join("cci", "orbs", ".circleci", orbId+".yml")
+func GetOrbCacheFSPath(orbYaml string) string {
+	file := path.Join("cci", "orbs", ".circleci", orbYaml+".yml")
 	filePath, err := xdg.CacheFile(file)
 
 	if err != nil {

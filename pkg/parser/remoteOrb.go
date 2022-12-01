@@ -221,8 +221,8 @@ func GetOrbVersions(orbId string, token string) ([]struct{ Version string }, err
 	return response.OrbVersion.Orb.Versions, err
 }
 
-func writeRemoteOrbSourceInFSCache(orbId string, source string) (string, error) {
-	filePath := utils.GetOrbCacheFSPath(orbId)
+func writeRemoteOrbSourceInFSCache(orbYaml string, source string) (string, error) {
+	filePath := utils.GetOrbCacheFSPath(orbYaml)
 	_, err := os.Stat(filePath)
 
 	if errors.Is(err, os.ErrNotExist) {
@@ -235,8 +235,8 @@ func writeRemoteOrbSourceInFSCache(orbId string, source string) (string, error) 
 	return filePath, err
 }
 
-func checkIfRemoteOrbAlreadyExistsInFSCache(orbId string) bool {
-	filePath := utils.GetOrbCacheFSPath(orbId)
+func checkIfRemoteOrbAlreadyExistsInFSCache(orbYaml string) bool {
+	filePath := utils.GetOrbCacheFSPath(orbYaml)
 
 	// Err == nil means the file exists
 	_, err := os.Stat(filePath)
