@@ -1,12 +1,47 @@
 version: "3"
 
-vars:
-  BIN_PATH: bin/start_server{{if eq OS "windows"}}'.exe'{{else}}''{{end}}
-
 tasks:
   build:
+    desc: Build server binary.
     cmds:
-      - bash -c "go build $(./scripts/ldflags.sh) -o {{.BIN_PATH}} cmd/start_server/start_server.go"
+      - task: build:server
+
+  build:all:
+    desc: Build all binaries
+    cmds:
+      - task: build:parser
+      - task: build:server
+      - task: build:test-tree-sitter
+
+  build:do:
+    internal: true
+    cmds:
+      - bash -c "go build {{.BUILD_FLAGS}} -o {{.BIN_PATH}}{{if eq OS "windows"}}'.exe'{{end}} {{.GO_FILE}}"
+    vars:
+      BUILD_FLAGS: '{{default "" .BUILD_FLAGS}}'
+
+  build:parser:
+    cmds:
+      - task: build:do
+        vars:
+          BIN_PATH: bin/parser
+          GO_FILE: cmd/parse_yaml/parse_yaml.go
+
+  build:server:
+    desc: Build server binary
+    cmds:
+      - task: build:do
+        vars:
+          BIN_PATH: bin/start_server
+          BUILD_FLAGS: $(./scripts/ldflags.sh)
+          GO_FILE: cmd/start_server/start_server.go
+
+  build:test-tree-sitter:
+    cmds:
+      - task: build:do
+        vars:
+          BIN_PATH: bin/test-tree-sitter
+          GO_FILE: cmd/test_tree-sitter/test_tree-sitter.go
 
   run:
     cmds:
@@ -20,16 +55,16 @@ tasks:
     cmds:
       - go test ./... -count=1
 
+  init:
+      - go install github.com/automation-co/husky@latest
+      - go get -d ./...
+      - husky install
+
   licenses:
       - go-licenses csv ./cmd/start_server >licenses.csv 2>licenses.errors
 
   lint:
       - gofmt -w pkg
-  
-  init:
-      - go install github.com/automation-co/husky@latest
-      - go get -d ./...
-      - husky install
 
   prepare:vscode:
     cmds:
