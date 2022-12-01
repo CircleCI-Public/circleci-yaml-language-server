@@ -8,7 +8,7 @@ import (
 )
 
 func Definition(params protocol.DefinitionParams, cache *utils.Cache) ([]protocol.Location, error) {
-	yamlDocument, err := yamlparser.GetParsedYAMLWithCache(params.TextDocument.URI, cache)
+	yamlDocument, err := yamlparser.ParseFromUriWithCache(params.TextDocument.URI, cache)
 	if err != nil {
 		return nil, err
 	}
