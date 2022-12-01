@@ -2,6 +2,7 @@ package main
 
 import (
 	// "fmt"
+
 	"os"
 
 	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
@@ -31,6 +32,7 @@ func main() {
 	param := protocol.PublishDiagnosticsParams{
 		URI: uri.File(filepath),
 	}
+
 	languageservice.Diagnostic(param, cache)
 
 	// fmt.Printf("S-expression:\n%v\n\n", node.RootNode)
