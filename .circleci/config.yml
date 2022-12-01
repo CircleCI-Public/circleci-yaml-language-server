@@ -64,7 +64,7 @@ jobs:
                       sh -c "go build `~/project/scripts/ldflags.sh` -o ~/project/bin/linux-amd64-lsp ./cmd/start_server/start_server.go"
 
             - when:
-                condition: 
+                condition:
                     and:
                         - equal: [ main, << pipeline.git.branch >> ]
                 steps:
@@ -230,6 +230,7 @@ jobs:
                 command: |
                     set -ex
                     cd /tmp/to-deploy
+                    cp ~/project/schema.json ~/project/bin
                     export TAG=$(cd ~/project && go run ~/project/scripts/get_next_release.go)
                     if [[ << parameters.is_prerelease >> == "true" ]];
                     then
