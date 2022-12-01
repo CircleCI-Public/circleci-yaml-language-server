@@ -20,7 +20,7 @@ func TestDefinition(t *testing.T) {
 	os.Setenv("SCHEMA_LOCATION", schemaPath)
 	cache := utils.CreateCache()
 
-	parsedOrb, err := parser.GetParsedYAMLWithURI(uri.File(path.Join("./testdata/orb.yaml")))
+	parsedOrb, err := parser.ParseFromURI(uri.File(path.Join("./testdata/orb.yaml")))
 
 	if err != nil {
 		panic(err)
