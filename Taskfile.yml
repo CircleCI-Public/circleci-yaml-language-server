@@ -54,10 +54,6 @@ tasks:
       PORT: '{{.PORT | default 10001}}'
       SCHEMA_LOCATION: ./pubxlicschema.json
 
-  test:
-    cmds:
-      - go test ./... -count=1
-
   init:
       - go install github.com/automation-co/husky@latest
       - go get -d ./...
@@ -90,6 +86,15 @@ tasks:
     cmds:
       - yarn install
 
+  test:
+    cmds:
+      - task: test:go
+
+  test:all:
+    cmds:
+      - task: test:go
+      - task: test:e2e
+
   test:e2e:
     dir: e2e
     env:
@@ -109,3 +114,18 @@ tasks:
       - task: test:e2e
         vars:
           SPAWN_LSP_SERVER: false
+
+  test:go:
+    cmds:
+      - go test ./... -count=1
+
+  validate:
+    desc: Run all necessary task to build, lint and test the project
+    deps:
+      - prepare:test:e2e
+      - prepare:vscode
+    cmds:
+      - task: lint
+      - task: build:all
+      - task: test
+      - task: test:e2e
