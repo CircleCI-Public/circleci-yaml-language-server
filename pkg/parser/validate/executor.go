@@ -116,16 +116,30 @@ func (val Validate) validateLinuxMachineExecutor(executor ast.MachineExecutor) {
 }
 
 var ValidARMOrMachineImages = []string{
+	// Ubuntu 2004
 	"ubuntu-2004:current",
+	"ubuntu-2004:2022.10.1",
+	"ubuntu-2004:2022.07.1",
+	"ubuntu-2004:2022.04.2",
 	"ubuntu-2004:2022.04.1",
 	"ubuntu-2004:202201-02",
 	"ubuntu-2004:202201-01",
 	"ubuntu-2004:202111-02",
 	"ubuntu-2004:202111-01",
-	"ubuntu-2004:202107-01",
+	"ubuntu-2004:202107-02",
 	"ubuntu-2004:202104-01",
 	"ubuntu-2004:202101-01",
-	"ubuntu-2004:202011-01",
+	"ubuntu-2004:202010-01",
+
+	// Ubuntu 2204
+	"ubuntu-2204:current",
+	"ubuntu-2204:edge",
+	"ubuntu-2204:2022.10.2",
+	"ubuntu-2204:2022.10.1",
+	"ubuntu-2204:2022.07.2",
+	"ubuntu-2204:2022.07.1",
+	"ubuntu-2204:2022.04.2",
+	"ubuntu-2204:2022.04.1",
 }
 
 func (val Validate) validateImage(img string, imgRange protocol.Range) {
