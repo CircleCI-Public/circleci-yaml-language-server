@@ -215,6 +215,15 @@ func TestComplete(t *testing.T) {
 					Label: "ubuntu-2004:current",
 				},
 				{
+					Label: "ubuntu-2004:2022.10.1",
+				},
+				{
+					Label: "ubuntu-2004:2022.07.1",
+				},
+				{
+					Label: "ubuntu-2004:2022.04.2",
+				},
+				{
 					Label: "ubuntu-2004:2022.04.1",
 				},
 				{
@@ -230,7 +239,7 @@ func TestComplete(t *testing.T) {
 					Label: "ubuntu-2004:202111-01",
 				},
 				{
-					Label: "ubuntu-2004:202107-01",
+					Label: "ubuntu-2004:202107-02",
 				},
 				{
 					Label: "ubuntu-2004:202104-01",
@@ -239,7 +248,31 @@ func TestComplete(t *testing.T) {
 					Label: "ubuntu-2004:202101-01",
 				},
 				{
-					Label: "ubuntu-2004:202011-01",
+					Label: "ubuntu-2004:202010-01",
+				},
+				{
+					Label: "ubuntu-2204:current",
+				},
+				{
+					Label: "ubuntu-2204:edge",
+				},
+				{
+					Label: "ubuntu-2204:2022.10.2",
+				},
+				{
+					Label: "ubuntu-2204:2022.10.1",
+				},
+				{
+					Label: "ubuntu-2204:2022.07.2",
+				},
+				{
+					Label: "ubuntu-2204:2022.07.1",
+				},
+				{
+					Label: "ubuntu-2204:2022.04.2",
+				},
+				{
+					Label: "ubuntu-2204:2022.04.1",
 				},
 			},
 		},
