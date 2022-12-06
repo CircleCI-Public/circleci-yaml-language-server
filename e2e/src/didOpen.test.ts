@@ -46,4 +46,24 @@ describe('DidOpen', () => {
 
     expect(diagnostics).toMatchSnapshot();
   });
+
+  it('Detects not existant dockers', async () => {
+    const response = await command(
+      Commands.DocumentDidOpen,
+      {
+        textDocument: {
+          text: await configFileContent('invalid-files/bad-docker-image.yml'),
+          uri: configFileUri('invalid-files/bad-docker-image.yml'),
+          version: 1,
+          languageId: 'yaml',
+        },
+      },
+    );
+
+    expect(response).toBeNull();
+
+    const diagnostics = await immediateDiagnostics();
+
+    expect(diagnostics).toMatchSnapshot();
+  });
 });
