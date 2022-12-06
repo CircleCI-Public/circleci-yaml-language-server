@@ -1,5 +1,12 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`DidOpen Detects not existant dockers 1`] = `
+{
+  "diagnostics": [],
+  "uri": "file:///project/test-files/.circleci/invalid-files/bad-docker-image.yml",
+}
+`;
+
 exports[`DidOpen Job without steps 1`] = `
 {
   "diagnostics": [
