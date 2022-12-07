@@ -111,6 +111,7 @@ func ParseFromUriWithCache(URI protocol.URI, cache *utils.Cache, context *utils.
 
 func ParseFromContent(content []byte, context *utils.LsContext, URI protocol.URI) (YamlDocument, error) {
 	doc := ParseFile([]byte(content), context)
+	doc.URI = URI
 
 	doc.ValidateYAML()
 	doc.ParseYAML(context)
