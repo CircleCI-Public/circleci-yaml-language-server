@@ -7,10 +7,11 @@ import (
 )
 
 type Orb struct {
-	Range     protocol.Range
-	NameRange protocol.Range
-	Name      string
-	Url       OrbURL
+	Url          OrbURL
+	Name         string
+	Range        protocol.Range
+	NameRange    protocol.Range
+	VersionRange protocol.Range
 }
 
 type OrbURL struct {
