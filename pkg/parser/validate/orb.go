@@ -77,8 +77,48 @@ func (val Validate) validateSingleOrb(orb ast.Orb) {
 			orb.Range,
 			severity,
 			message,
+			val.createCodeActions(orb, *orbVersion),
 		),
 	)
+}
+
+type OrbVersionCodeActionCreator struct {
+	OrbVersion     string
+	CodeActionText string
+}
+
+func (val Validate) createCodeActions(orb ast.Orb, cachedOrb ast.CachedOrb) []protocol.CodeAction {
+	res := []protocol.CodeAction{}
+	versions := []OrbVersionCodeActionCreator{
+		{
+			OrbVersion:     cachedOrb.LatestPatchVersion,
+			CodeActionText: "Update to last patch",
+		},
+		{
+			OrbVersion:     cachedOrb.LatestMinorVersion,
+			CodeActionText: "Update to last minor",
+		},
+		{
+			OrbVersion:     cachedOrb.LatestVersion,
+			CodeActionText: "Update to last version",
+		},
+	}
+
+	for _, version := range versions {
+		if semver.Compare("v"+orb.Url.Version, "v"+version.OrbVersion) == -1 {
+			res = append(res, utils.CreateCodeActionTextEdit(
+				version.CodeActionText,
+				val.Doc.URI,
+				[]protocol.TextEdit{
+					{
+						Range:   orb.VersionRange,
+						NewText: version.OrbVersion,
+					},
+				}, false))
+		}
+	}
+
+	return res
 }
 
 func (val Validate) checkIfOrbIsUsed(orb ast.Orb) bool {

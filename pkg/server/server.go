@@ -57,6 +57,9 @@ func (server JSONRPCServer) commandHandler(_ context.Context, reply jsonrpc2.Rep
 	case protocol.MethodTextDocumentCompletion:
 		return server.methods.Complete(reply, req)
 
+	case protocol.MethodTextDocumentCodeAction:
+		return server.methods.CodeAction(reply, req)
+
 	case protocol.MethodShutdown:
 		return reply(server.ctx, nil, nil)
 
