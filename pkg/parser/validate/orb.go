@@ -8,7 +8,6 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
-	"golang.org/x/mod/semver"
 )
 
 func (val Validate) ValidateOrbs() {
@@ -23,18 +22,6 @@ func (val Validate) validateSingleOrb(orb ast.Orb) {
 	}
 
 	if hasParam, _ := utils.CheckIfParamIsPartiallyReferenced(orb.Url.Version); hasParam {
-		return
-	}
-
-	// Checking if the version number is valid
-	if !semver.IsValid("v" + orb.Url.Version) {
-		val.addDiagnostic(
-			utils.CreateErrorDiagnosticFromRange(
-				orb.Range,
-				"Invalid version number",
-			),
-		)
-
 		return
 	}
 
