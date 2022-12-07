@@ -5,11 +5,11 @@
 {
     "version": "0.2.0",
     "configurations": [
-        {
+          {
             "name": "Run Extension",
             "presentation": {
                 "hidden": false,
-                "group": "Run extension",
+                "group": "Run",
                 "order": 1
             },
             "type": "extensionHost",
@@ -30,7 +30,7 @@
             "name": "Run Extension (user extensions enabled)",
             "presentation": {
                 "hidden": false,
-                "group": "Run extension",
+                "group": "Run",
                 "order": 2
             },
             "type": "extensionHost",
@@ -44,6 +44,24 @@
                 "CCI_DEV": "true"
             }
         },
+
+        {
+          "name": "Start server",
+          "presentation": {
+            "hidden": false,
+            "group": "Run",
+            "order": 3
+          },
+          "type": "go",
+          "request": "launch",
+          "mode": "debug",
+          "program": "${workspaceFolder}/cmd/start_server/start_server.go",
+          "args": [
+            "--port", "10001",
+            "--schema", "${workspaceFolder}/publicschema.json"
+          ]
+        },
+
         {
             "name": "Attach to Process",
             "type": "go",
