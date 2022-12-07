@@ -8,6 +8,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"github.com/stretchr/testify/assert"
 	"go.lsp.dev/protocol"
+	"go.lsp.dev/uri"
 	"gopkg.in/yaml.v3"
 )
 
@@ -33,7 +34,7 @@ testFinal:
 	err := yaml.Unmarshal(content, m)
 
 	context := testHelpers.GetDefaultLsContext()
-	yamlDocument, _ := ParseFromContent(content, context)
+	yamlDocument, _ := ParseFromContent(content, context, uri.File(""))
 
 	actualDiagnostics, err := handleYAMLErrors(err.Error(), content, yamlDocument.RootNode)
 
@@ -73,7 +74,7 @@ test:
 	err := yaml.Unmarshal(content, m)
 
 	context := testHelpers.GetDefaultLsContext()
-	yamlDocument, _ := ParseFromContent(content, context)
+	yamlDocument, _ := ParseFromContent(content, context, uri.File(""))
 
 	diagnostics, err := handleYAMLErrors(err.Error(), content, yamlDocument.RootNode)
 

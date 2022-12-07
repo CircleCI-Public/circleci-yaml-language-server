@@ -9,6 +9,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"github.com/stretchr/testify/assert"
 	"go.lsp.dev/protocol"
+	"go.lsp.dev/uri"
 )
 
 type ValidateTestCase struct {
@@ -24,7 +25,7 @@ func CheckYamlErrors(t *testing.T, testCases []ValidateTestCase) {
 	for _, tt := range testCases {
 		t.Run(tt.Name, func(t *testing.T) {
 			content := tt.YamlContent
-			doc, err := parser.ParseFromContent([]byte(content), context)
+			doc, err := parser.ParseFromContent([]byte(content), context, uri.File(""))
 			assert.Nil(t, err)
 			val := Validate{
 				Diagnostics: &[]protocol.Diagnostic{},
