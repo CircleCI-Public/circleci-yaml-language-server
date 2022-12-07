@@ -35,10 +35,11 @@ func (doc *YamlDocument) ParseYAML(context *utils.LsContext) {
 		return
 	}
 	blockMappingNode := GetBlockMappingNode(doc.RootNode)
+	doc.YamlAnchors = ParseYamlAnchors(doc)
 
 	iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
-		keyName := doc.GetNodeText(child.ChildByFieldName("key"))
-		valueNode := child.ChildByFieldName("value")
+		keyNode, valueNode := doc.GetKeyValueNodes(child)
+		keyName := doc.GetNodeText(keyNode)
 		if valueNode == nil {
 			return
 		}
@@ -69,8 +70,6 @@ func (doc *YamlDocument) ParseYAML(context *utils.LsContext) {
 			doc.PipelinesParameters = doc.parseParameters(valueNode)
 		}
 	})
-
-	doc.YamlAnchors = ParseYamlAnchors(doc)
 }
 
 func (doc *YamlDocument) ValidateYAML() {
@@ -124,6 +123,7 @@ type YamlAnchor struct {
 	Name            string
 	DefinitionRange protocol.Range
 	References      *[]protocol.Range
+	ValueNode       *sitter.Node
 }
 
 type YamlDocument struct {
@@ -141,8 +141,8 @@ type YamlDocument struct {
 	Jobs                map[string]ast.Job
 	Workflows           map[string]ast.Workflow
 	PipelinesParameters map[string]ast.Parameter
+	YamlAnchors         map[string]YamlAnchor
 
-	YamlAnchors              map[string]YamlAnchor
 	OrbsRange                protocol.Range
 	ExecutorsRange           protocol.Range
 	CommandsRange            protocol.Range

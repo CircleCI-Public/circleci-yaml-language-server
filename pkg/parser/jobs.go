@@ -39,7 +39,7 @@ func (doc *YamlDocument) parseJobs(jobsNode *sitter.Node) {
 
 func (doc *YamlDocument) parseSingleJob(jobNode *sitter.Node) ast.Job {
 	// jobNode is a block_mapping_pair
-	jobNameNode, valueNode := getKeyValueNodes(jobNode)
+	jobNameNode, valueNode := doc.GetKeyValueNodes(jobNode)
 	res := ast.Job{CompletionItem: &[]protocol.CompletionItem{}, Parallelism: -1}
 
 	if jobNameNode == nil || valueNode == nil {
@@ -60,7 +60,7 @@ func (doc *YamlDocument) parseSingleJob(jobNode *sitter.Node) ast.Job {
 
 	iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
 		if child.Type() == "block_mapping_pair" || child.Type() == "flow_pair" {
-			keyNode, valueNode := getKeyValueNodes(child)
+			keyNode, valueNode := doc.GetKeyValueNodes(child)
 			if keyNode == nil || valueNode == nil {
 				return
 			}

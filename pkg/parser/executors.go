@@ -23,9 +23,8 @@ func (doc *YamlDocument) parseExecutors(executorsNode *sitter.Node) {
 
 func (doc *YamlDocument) parseSingleExecutor(executorNode *sitter.Node) {
 	// jobNode is a block_mapping_pair
-	executorNameNode := executorNode.ChildByFieldName("key")
+	executorNameNode, blockMappingNode := doc.GetKeyValueNodes(executorNode)
 	executorName := doc.GetNodeText(executorNameNode)
-	blockMappingNode := executorNode.ChildByFieldName("value")
 	blockMappingNode = GetChildMapping(blockMappingNode)
 	if blockMappingNode == nil {
 		return
@@ -49,7 +48,8 @@ func (doc *YamlDocument) parseSingleExecutor(executorNode *sitter.Node) {
 	}
 
 	iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
-		keyName := doc.GetNodeText(child.ChildByFieldName("key"))
+		keyNode, _ := doc.GetKeyValueNodes(child)
+		keyName := doc.GetNodeText(keyNode)
 
 		switch keyName {
 		case "docker":
@@ -78,8 +78,8 @@ func (doc *YamlDocument) parseSingleExecutor(executorNode *sitter.Node) {
 
 func (doc *YamlDocument) parseBaseExecutor(base *ast.BaseExecutor, nameNode *sitter.Node, blockMappingNode *sitter.Node, fn func(node *sitter.Node), nameStep string) {
 	iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
-		keyName := doc.GetNodeText(child.ChildByFieldName("key"))
-		valueNode := child.ChildByFieldName("value")
+		keyNode, valueNode := doc.GetKeyValueNodes(child)
+		keyName := doc.GetNodeText(keyNode)
 		switch keyName {
 
 		case nameStep:
@@ -137,8 +137,8 @@ func (doc *YamlDocument) parseSingleExecutorMachine(nameNode *sitter.Node, value
 		}
 
 		iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
-			keyName := doc.GetNodeText(child.ChildByFieldName("key"))
-			valueNode := child.ChildByFieldName("value")
+			keyNode, valueNode := doc.GetKeyValueNodes(child)
+			keyName := doc.GetNodeText(keyNode)
 			switch keyName {
 			case "image":
 				res.ImageRange = NodeToRange(child)
@@ -166,8 +166,8 @@ func (doc *YamlDocument) parseSingleExecutorMacOS(nameNode *sitter.Node, valueNo
 		blockMappingNode := GetChildMapping(blockNode)
 
 		iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
-			keyName := doc.GetNodeText(child.ChildByFieldName("key"))
-			valueNode := child.ChildByFieldName("value")
+			keyNode, valueNode := doc.GetKeyValueNodes(child)
+			keyName := doc.GetNodeText(keyNode)
 			switch keyName {
 			case "xcode":
 				res.XcodeRange = NodeToRange(child)
@@ -193,8 +193,8 @@ func (doc *YamlDocument) parseSingleExecutorWindows(nameNode *sitter.Node, value
 		}
 
 		iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
-			keyName := doc.GetNodeText(child.ChildByFieldName("key"))
-			valueNode := child.ChildByFieldName("value")
+			keyNode, valueNode := doc.GetKeyValueNodes(child)
+			keyName := doc.GetNodeText(keyNode)
 			switch keyName {
 			case "image":
 				res.Image = doc.GetNodeText(valueNode)
@@ -249,8 +249,8 @@ func (doc *YamlDocument) parseDockerImage(imageNode *sitter.Node) ast.DockerImag
 	}
 
 	iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
-		keyName := doc.GetNodeText(child.ChildByFieldName("key"))
-		valueNode := child.ChildByFieldName("value")
+		keyNode, valueNode := doc.GetKeyValueNodes(child)
+		keyName := doc.GetNodeText(keyNode)
 		switch keyName {
 		case "image":
 			dockerImg.Image = ParseDockerImageValue(doc.GetNodeText(valueNode))
@@ -312,8 +312,8 @@ func (doc *YamlDocument) parseExecutorRef(valueNode *sitter.Node, child *sitter.
 	}
 
 	iterateOnBlockMapping(blockMapping, func(child *sitter.Node) {
-		keyName := doc.GetNodeText(child.ChildByFieldName("key"))
-		valueNode := child.ChildByFieldName("value")
+		keyNode, valueNode := doc.GetKeyValueNodes(child)
+		keyName := doc.GetNodeText(keyNode)
 		switch keyName {
 		case "name":
 			name = doc.GetNodeText(valueNode)
@@ -329,7 +329,7 @@ func (doc *YamlDocument) parseExecutorRef(valueNode *sitter.Node, child *sitter.
 }
 
 func (doc *YamlDocument) addedMachineTrueDeprecatedDiag(child *sitter.Node, resourceClass string) bool {
-	_, valueNode := getKeyValueNodes(child)
+	_, valueNode := doc.GetKeyValueNodes(child)
 
 	value := doc.GetNodeText(valueNode)
 

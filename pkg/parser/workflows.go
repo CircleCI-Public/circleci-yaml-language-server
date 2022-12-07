@@ -60,7 +60,7 @@ func (doc *YamlDocument) parseWorkflows(workflowsNode *sitter.Node) {
 
 func (doc *YamlDocument) parseSingleWorkflow(workflowNode *sitter.Node) ast.Workflow {
 	// workflowNode is a block_mapping_pair
-	keyNode, valueNode := getKeyValueNodes(workflowNode)
+	keyNode, valueNode := doc.GetKeyValueNodes(workflowNode)
 	if keyNode == nil || valueNode == nil {
 		return ast.Workflow{Range: NodeToRange(workflowNode)}
 	}
@@ -69,7 +69,7 @@ func (doc *YamlDocument) parseSingleWorkflow(workflowNode *sitter.Node) ast.Work
 	blockMappingNode := GetChildOfType(valueNode, "block_mapping")
 	res := ast.Workflow{Range: NodeToRange(workflowNode), Name: workflowName, NameRange: NodeToRange(keyNode)}
 	iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
-		keyNode, valueNode := getKeyValueNodes(child)
+		keyNode, valueNode := doc.GetKeyValueNodes(child)
 		if keyNode == nil || valueNode == nil {
 			return
 		}
@@ -147,7 +147,7 @@ func (doc *YamlDocument) parseSingleJobReference(jobRefNode *sitter.Node) ast.Jo
 	} else { // block_node
 		blockMappingNode := GetChildOfType(element, "block_mapping")
 		blockMappingPair := GetChildOfType(blockMappingNode, "block_mapping_pair")
-		key, value := getKeyValueNodes(blockMappingPair)
+		key, value := doc.GetKeyValueNodes(blockMappingPair)
 		if key == nil || value == nil {
 			return res
 		}
@@ -160,8 +160,8 @@ func (doc *YamlDocument) parseSingleJobReference(jobRefNode *sitter.Node) ast.Jo
 
 		iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
 			if child != nil {
-				keyName := doc.GetNodeText(child.ChildByFieldName("key"))
-				valueNode := child.ChildByFieldName("value")
+				keyNode, valueNode := doc.GetKeyValueNodes(child)
+				keyName := doc.GetNodeText(keyNode)
 
 				if keyName == "" || valueNode == nil {
 					return
@@ -220,7 +220,7 @@ func (doc *YamlDocument) parseMatrixAttributes(node *sitter.Node) map[string][]a
 	res := make(map[string][]ast.ParameterValue)
 
 	iterateOnBlockMapping(blockMapping, func(child *sitter.Node) {
-		keyNode, valueNode := getKeyValueNodes(child)
+		keyNode, valueNode := doc.GetKeyValueNodes(child)
 		if keyNode == nil || valueNode == nil {
 			return
 		}

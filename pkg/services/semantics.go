@@ -45,17 +45,17 @@ func SemanticTokens(params protocol.SemanticTokensParams, cache *utils.Cache, co
 	iter := sitter.NewIterator(doc.RootNode, sitter.DFSMode)
 	iter.ForEach(func(node *sitter.Node) error {
 		if node.Type() == "block_mapping_pair" {
-			key, value := node.ChildByFieldName("key"), node.ChildByFieldName("value")
+			keyNode, valueNode := doc.GetKeyValueNodes(node)
 
-			if key != nil {
-				semanticTokens.highlightOrbs(key)
-				semanticTokens.highlightBuiltInKeywords(key)
+			if keyNode != nil {
+				semanticTokens.highlightOrbs(keyNode)
+				semanticTokens.highlightBuiltInKeywords(keyNode)
 			}
 
-			if value != nil {
-				semanticTokens.highlightParameters(value)
-				semanticTokens.highlightCacheKeys(value)
-				semanticTokens.highlightOrbs(value)
+			if valueNode != nil {
+				semanticTokens.highlightParameters(valueNode)
+				semanticTokens.highlightCacheKeys(valueNode)
+				semanticTokens.highlightOrbs(valueNode)
 			}
 		}
 
@@ -167,7 +167,7 @@ func (sem SemanticTokenStruct) highlightOrbs(valueNode *sitter.Node) {
 }
 
 func (sem SemanticTokenStruct) highlightWithRegex(valueNode *sitter.Node, regex *regexp.Regexp) {
-	child := valueNode.Child(0)
+	child := parser.GetFirstChild(valueNode)
 	isFlowNode := valueNode.Type() == "flow_node"
 	isBlockScalar := valueNode.Type() == "block_node" && child != nil && child.Type() == "block_scalar"
 
