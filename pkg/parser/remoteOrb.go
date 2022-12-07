@@ -9,6 +9,7 @@ import (
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
+	"go.lsp.dev/uri"
 	"golang.org/x/mod/semver"
 )
 
@@ -62,7 +63,7 @@ func fetchOrbInfo(orbVersionCode string, cache *utils.Cache, context *utils.LsCo
 		return &ast.CachedOrb{}, err
 	}
 
-	parsedOrbSource, err := ParseFromContent([]byte(orbQuery.Source), context)
+	parsedOrbSource, err := ParseFromContent([]byte(orbQuery.Source), context, uri.File(""))
 
 	if err != nil {
 		return &ast.CachedOrb{}, err
@@ -262,7 +263,7 @@ func addAlreadyExistingRemoteOrbsToFSCache(orb ast.Orb, cache *utils.Cache, cont
 		return err
 	}
 
-	parsedOrbSource, err := ParseFromContent(source, context)
+	parsedOrbSource, err := ParseFromContent(source, context, uri.File(filePath))
 
 	if err != nil {
 		return err
