@@ -1,6 +1,7 @@
 version: 2.1
 
 commands:
+orbs:
 
 jobs:
     build-and-test:
@@ -10,6 +11,3 @@ jobs:
             - checkout
 
 workflows:
-    build:
-        jobs:
-            - build-and-test
