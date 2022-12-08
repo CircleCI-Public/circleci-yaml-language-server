@@ -2852,7 +2852,7 @@
 			}
 		},
 		"commands": {
-			"type": "object",
+			"type": ["object", "null"],
 			"propertyNames": {
 				"pattern": "^[a-z][a-z\\d_-]*$"
 			},
