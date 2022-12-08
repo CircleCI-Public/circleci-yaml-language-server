@@ -23,6 +23,10 @@ func CreateWarningDiagnosticFromRange(rng protocol.Range, msg string) protocol.D
 	)
 }
 
+func CreateEmptyAssignationWarning(rng protocol.Range) protocol.Diagnostic {
+	return CreateWarningDiagnosticFromRange(rng, "Empty assignation")
+}
+
 func CreateInformationDiagnosticFromRange(rng protocol.Range, msg string) protocol.Diagnostic {
 	return CreateDiagnosticFromRange(
 		rng,

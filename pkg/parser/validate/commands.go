@@ -6,6 +6,14 @@ import (
 )
 
 func (val Validate) ValidateCommands() {
+	if len(val.Doc.Commands) == 0 && !utils.IsDefaultRange(val.Doc.CommandsRange) {
+		val.addDiagnostic(
+			utils.CreateEmptyAssignationWarning(val.Doc.CommandsRange),
+		)
+
+		return
+	}
+
 	for _, command := range val.Doc.Commands {
 		val.validateSingleCommand(command)
 	}

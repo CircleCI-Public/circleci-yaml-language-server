@@ -40,34 +40,69 @@ func (doc *YamlDocument) ParseYAML(context *utils.LsContext) {
 	iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
 		keyNode, valueNode := doc.GetKeyValueNodes(child)
 		keyName := doc.GetNodeText(keyNode)
-		if valueNode == nil {
-			return
-		}
 
 		switch keyName {
 		case "version":
-			doc.parseVersion(valueNode)
+			if valueNode != nil {
+				doc.parseVersion(valueNode)
+			}
+
 			doc.VersionRange = NodeToRange(child)
+
 		case "orbs":
-			doc.OrbsRange = NodeToRange(valueNode)
-			doc.parseOrbs(valueNode)
+			if valueNode != nil {
+				doc.OrbsRange = NodeToRange(valueNode)
+				doc.parseOrbs(valueNode)
+			} else {
+				doc.OrbsRange = NodeToRange(child)
+			}
+
 		case "commands":
-			doc.CommandsRange = NodeToRange(valueNode)
-			doc.parseCommands(valueNode)
+			if valueNode != nil {
+				doc.CommandsRange = NodeToRange(valueNode)
+				doc.parseCommands(valueNode)
+			} else {
+				doc.CommandsRange = NodeToRange(child)
+			}
+
 		case "jobs":
+			if valueNode == nil {
+				break
+			}
+
 			doc.JobsRange = NodeToRange(valueNode)
 			doc.parseJobs(valueNode)
+
 		case "workflows":
+			if valueNode == nil {
+				break
+			}
+
 			doc.WorkflowRange = NodeToRange(valueNode)
 			doc.parseWorkflows(valueNode)
+
 		case "executors":
-			doc.ExecutorsRange = NodeToRange(valueNode)
-			doc.parseExecutors(valueNode)
+			if valueNode != nil {
+				doc.ExecutorsRange = NodeToRange(valueNode)
+				doc.parseExecutors(valueNode)
+			} else {
+				doc.ExecutorsRange = NodeToRange(child)
+			}
+
 		case "description":
+			if valueNode == nil {
+				break
+			}
+
 			doc.Description = doc.GetNodeText(valueNode)
+
 		case "parameters":
-			doc.PipelinesParametersRange = NodeToRange(valueNode)
-			doc.PipelinesParameters = doc.parseParameters(valueNode)
+			if valueNode != nil {
+				doc.PipelinesParametersRange = NodeToRange(valueNode)
+				doc.PipelinesParameters = doc.parseParameters(valueNode)
+			} else {
+				doc.PipelinesParametersRange = NodeToRange(child)
+			}
 		}
 	})
 }
