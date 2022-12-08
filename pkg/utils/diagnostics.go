@@ -10,6 +10,7 @@ func CreateErrorDiagnosticFromRange(rng protocol.Range, msg string) protocol.Dia
 		rng,
 		protocol.DiagnosticSeverityError,
 		msg,
+		[]protocol.CodeAction{},
 	)
 }
 
@@ -18,6 +19,7 @@ func CreateWarningDiagnosticFromRange(rng protocol.Range, msg string) protocol.D
 		rng,
 		protocol.DiagnosticSeverityWarning,
 		msg,
+		[]protocol.CodeAction{},
 	)
 }
 
@@ -26,6 +28,7 @@ func CreateInformationDiagnosticFromRange(rng protocol.Range, msg string) protoc
 		rng,
 		protocol.DiagnosticSeverityInformation,
 		msg,
+		[]protocol.CodeAction{},
 	)
 }
 
@@ -34,6 +37,7 @@ func CreateHintDiagnosticFromRange(rng protocol.Range, msg string) protocol.Diag
 		rng,
 		protocol.DiagnosticSeverityHint,
 		msg,
+		[]protocol.CodeAction{},
 	)
 }
 
@@ -41,12 +45,14 @@ func CreateDiagnosticFromRange(
 	rng protocol.Range,
 	severity protocol.DiagnosticSeverity,
 	msg string,
+	codeAction []protocol.CodeAction,
 ) protocol.Diagnostic {
 	return protocol.Diagnostic{
 		Range:    rng,
 		Severity: severity,
 		Source:   "cci-language-server",
 		Message:  msg,
+		Data:     codeAction,
 	}
 }
 

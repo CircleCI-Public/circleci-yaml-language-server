@@ -7,6 +7,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/testHelpers"
 	"github.com/stretchr/testify/assert"
 	"go.lsp.dev/protocol"
+	"go.lsp.dev/uri"
 )
 
 func TestJobExecutorMachineTrueOnApp(t *testing.T) {
@@ -21,6 +22,7 @@ jobs:
 	yamlDocument, err := ParseFromContent(
 		[]byte(yaml),
 		testHelpers.GetDefaultLsContext(),
+		uri.File(""),
 	)
 
 	assert.Equal(t, err, nil)
@@ -48,6 +50,7 @@ jobs:
 	yamlDocument, err := ParseFromContent(
 		[]byte(yaml),
 		testHelpers.GetDefaultLsContext(),
+		uri.File(""),
 	)
 
 	assert.Equal(t, err, nil)
@@ -67,6 +70,7 @@ jobs:
 	yamlDocument, err := ParseFromContent(
 		[]byte(yaml),
 		testHelpers.GetLsContextForHost("https://mycircleci.example.com"),
+		uri.File(""),
 	)
 
 	assert.Equal(t, err, nil)
@@ -91,6 +95,7 @@ jobs:
 	yamlDocument, err := ParseFromContent(
 		[]byte(yaml),
 		testHelpers.GetDefaultLsContext(),
+		uri.File(""),
 	)
 
 	assert.Equal(t, err, nil)
@@ -120,6 +125,7 @@ jobs:
 	yamlDocument, err := ParseFromContent(
 		[]byte(yaml),
 		testHelpers.GetDefaultLsContext(),
+		uri.File(""),
 	)
 
 	assert.Equal(t, err, nil)
@@ -145,6 +151,7 @@ jobs:
 	yamlDocument, err := ParseFromContent(
 		[]byte(yaml),
 		testHelpers.GetDefaultLsContext(),
+		uri.File(""),
 	)
 
 	assert.Equal(t, err, nil)
@@ -168,6 +175,7 @@ jobs:
 	yamlDocument, err := ParseFromContent(
 		[]byte(yaml),
 		testHelpers.GetDefaultLsContext(),
+		uri.File(""),
 	)
 
 	assert.Equal(t, err, nil)

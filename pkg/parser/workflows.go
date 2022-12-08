@@ -2,6 +2,7 @@ package parser
 
 import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	sitter "github.com/smacker/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
@@ -16,22 +17,22 @@ func (doc *YamlDocument) parseWorkflows(workflowsNode *sitter.Node) {
 		switch keyName {
 		case "version":
 			if doc.Version >= 2.1 {
+				rng := NodeToRange(child)
 				doc.addDiagnostic(
-					protocol.Diagnostic{
-						Severity: protocol.DiagnosticSeverityWarning,
-						Range: protocol.Range{
-							Start: protocol.Position{
-								Line:      child.StartPoint().Row,
-								Character: child.StartPoint().Column,
-							},
-							End: protocol.Position{
-								Line:      child.EndPoint().Row,
-								Character: child.EndPoint().Column,
-							},
+					utils.CreateDiagnosticFromRange(
+						rng,
+						protocol.DiagnosticSeverityWarning,
+						"Version key is deprecated since 2.1",
+						[]protocol.CodeAction{
+							utils.CreateCodeActionTextEdit("Delete version key", doc.URI,
+								[]protocol.TextEdit{
+									{
+										Range:   rng,
+										NewText: "",
+									},
+								}, false),
 						},
-						Message: "Version key is deprecated since 2.1",
-						Source:  "cci-language-server",
-					},
+					),
 				)
 			}
 		default:

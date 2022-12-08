@@ -5,6 +5,7 @@ import (
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	sitter "github.com/smacker/go-tree-sitter"
+	"go.lsp.dev/protocol"
 )
 
 func (doc *YamlDocument) parseOrbs(orbsNode *sitter.Node) {
@@ -32,10 +33,11 @@ func (doc *YamlDocument) parseSingleOrb(orbNode *sitter.Node) *ast.Orb {
 	case "flow_node":
 		orbUrl := doc.getOrbURL(doc.GetNodeText(orbContent))
 		orb := ast.Orb{
-			Name:      orbName,
-			Range:     NodeToRange(orbNode),
-			NameRange: NodeToRange(orbNameNode),
-			Url:       orbUrl,
+			Url:          orbUrl,
+			Name:         orbName,
+			Range:        NodeToRange(orbNode),
+			NameRange:    NodeToRange(orbNameNode),
+			VersionRange: doc.getOrbVersionRange(orbContent),
 		}
 		return &orb
 	case "block_node":
@@ -54,4 +56,20 @@ func (doc *YamlDocument) getOrbURL(orbUrl string) ast.OrbURL {
 	}
 
 	return ast.OrbURL{Name: splittedOrb[0], Version: "volatile"}
+}
+
+func (doc *YamlDocument) getOrbVersionRange(orbNode *sitter.Node) protocol.Range {
+	orbNodeText := doc.GetRawNodeText(orbNode)
+	orbRange := NodeToRange(orbNode)
+	atIndex := strings.Index(orbNodeText, "@")
+	if atIndex == -1 {
+		return protocol.Range{}
+	}
+	return protocol.Range{
+		Start: protocol.Position{
+			Line:      orbRange.Start.Line,
+			Character: orbRange.Start.Character + uint32(atIndex) + 1,
+		},
+		End: orbRange.End,
+	}
 }
