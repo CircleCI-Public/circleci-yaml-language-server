@@ -66,7 +66,7 @@ jobs:
             - when:
                 condition: 
                     and:
-                        - equal: [ master, << pipeline.git.branch >> ]
+                        - equal: [ main, << pipeline.git.branch >> ]
                 steps:
                     - run:
                         name: Build for Linux Arm 64
@@ -336,11 +336,11 @@ workflows:
             - build-macos:
                 filters:
                     branches:
-                        only: master
+                        only: main
             - build-windows:
                 filters:
                     branches:
-                        only: master
+                        only: main
             - build-vsix:
                 requires:
                     - build-linux
@@ -348,7 +348,7 @@ workflows:
                     - build-windows
                 filters:
                     branches:
-                        only: master
+                        only: main
 
             - test-e2e:
                 requires:
@@ -363,7 +363,7 @@ workflows:
                     - build-windows
                 filters:
                     branches:
-                        only: master
+                        only: main
     deploy:
         jobs:
             - build-linux:
