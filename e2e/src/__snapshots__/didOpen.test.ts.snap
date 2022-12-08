@@ -11,6 +11,7 @@ exports[`DidOpen Job without steps 1`] = `
 {
   "diagnostics": [
     {
+      "data": [],
       "message": "Invalid type. Expected: object, given: array",
       "range": {
         "end": {
@@ -26,6 +27,7 @@ exports[`DidOpen Job without steps 1`] = `
       "source": "cci-language-server",
     },
     {
+      "data": [],
       "message": "steps is required",
       "range": {
         "end": {
@@ -41,6 +43,7 @@ exports[`DidOpen Job without steps 1`] = `
       "source": "cci-language-server",
     },
     {
+      "data": [],
       "message": "Job is unused",
       "range": {
         "end": {
@@ -64,6 +67,7 @@ exports[`DidOpen Unused job 1`] = `
 {
   "diagnostics": [
     {
+      "data": [],
       "message": "Job is unused",
       "range": {
         "end": {
