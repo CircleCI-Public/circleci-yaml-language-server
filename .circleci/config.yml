@@ -11,3 +11,6 @@ jobs:
             - checkout
 
 workflows:
+    build:
+        jobs:
+            - build-and-test
