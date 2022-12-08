@@ -23,9 +23,8 @@ func (doc *YamlDocument) parseOrbs(orbsNode *sitter.Node) {
 
 func (doc *YamlDocument) parseSingleOrb(orbNode *sitter.Node) *ast.Orb {
 	// orbNode is a block_mapping_pair
-	orbNameNode := orbNode.ChildByFieldName("key")
+	orbNameNode, orbContent := doc.GetKeyValueNodes(orbNode)
 	orbName := doc.GetNodeText(orbNameNode)
-	orbContent := orbNode.ChildByFieldName("value")
 	if orbContent == nil {
 		return nil
 	}

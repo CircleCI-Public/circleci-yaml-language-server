@@ -32,6 +32,19 @@ func GetChildOfType(node *sitter.Node, typeName string) *sitter.Node {
 	return nil
 }
 
+func GetFirstChild(node *sitter.Node) *sitter.Node {
+	if node == nil {
+		return nil
+	}
+	if node.ChildCount() > 0 {
+		if node.Child(0).Type() == "comment" || node.Child(0).Type() == "anchor" {
+			return node.Child(1)
+		}
+		return node.Child(0)
+	}
+	return nil
+}
+
 func GetChildMapping(node *sitter.Node) *sitter.Node {
 	blockMappingNode := GetChildOfType(node, "block_mapping")
 
@@ -150,10 +163,10 @@ func (doc *YamlDocument) parseDictionary(valueNode *sitter.Node) map[string]stri
 
 	iterateOnBlockMapping(valueNode, func(child *sitter.Node) {
 		if child.Type() == "block_mapping_pair" || child.Type() == "flow_pair" {
-			key := child.ChildByFieldName("key")
-			value := child.ChildByFieldName("value")
-			if key != nil && value != nil {
-				dictionary[doc.GetNodeText(key)] = doc.GetNodeText(value)
+			keyNode, valueNode := doc.GetKeyValueNodes(child)
+
+			if keyNode != nil && valueNode != nil {
+				dictionary[doc.GetNodeText(keyNode)] = doc.GetNodeText(valueNode)
 			}
 		}
 	})
@@ -163,6 +176,24 @@ func (doc *YamlDocument) parseDictionary(valueNode *sitter.Node) map[string]stri
 
 func (doc *YamlDocument) parseDescription(descriptionNode *sitter.Node) string {
 	return doc.GetNodeText(descriptionNode)
+}
+
+func (doc *YamlDocument) GetKeyValueNodes(node *sitter.Node) (keyNode *sitter.Node, valueNode *sitter.Node) {
+	if node != nil && (node.Type() == "block_mapping_pair" || node.Type() == "flow_pair") {
+		keyNode = node.ChildByFieldName("key")
+		valueNode = node.ChildByFieldName("value")
+
+		aliasNode := GetChildOfType(valueNode, "alias")
+		if aliasNode != nil {
+			aliasNode = GetChildOfType(aliasNode, "alias_name")
+			valueName := doc.GetNodeText(aliasNode)
+			anchor, ok := doc.YamlAnchors[valueName]
+			if ok {
+				valueNode = anchor.ValueNode
+			}
+		}
+	}
+	return
 }
 
 func iterateOnBlockMapping(blockMappingNode *sitter.Node, fn func(child *sitter.Node)) {
@@ -250,12 +281,4 @@ func NodeToRange(node *sitter.Node) protocol.Range {
 		Start: protocol.Position{Line: node.StartPoint().Row, Character: node.StartPoint().Column},
 		End:   protocol.Position{Line: node.EndPoint().Row, Character: node.EndPoint().Column},
 	}
-}
-
-func getKeyValueNodes(node *sitter.Node) (keyNode *sitter.Node, valueNode *sitter.Node) {
-	if node != nil && (node.Type() == "block_mapping_pair" || node.Type() == "flow_pair") {
-		keyNode = node.ChildByFieldName("key")
-		valueNode = node.ChildByFieldName("value")
-	}
-	return
 }

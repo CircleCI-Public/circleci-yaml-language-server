@@ -1,7 +1,6 @@
 package validate
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
@@ -42,7 +41,6 @@ func CheckYamlErrors(t *testing.T, testCases []ValidateTestCase) {
 			if tt.Diagnostics == nil {
 				assert.Len(t, diags, 0)
 			} else {
-				fmt.Println(tt.Diagnostics)
 				assert.Equal(t, tt.Diagnostics, diags)
 			}
 		})
