@@ -4,9 +4,12 @@ commands:
 
 jobs:
     build-and-test:
-        environment:
-            SCHEMA_LOCATION: /home/circleci/project/schema.json
         docker:
             - image: cimg/go:1.19.1
         steps:
             - checkout
+
+workflows:
+    build:
+        jobs:
+            - build-and-test
