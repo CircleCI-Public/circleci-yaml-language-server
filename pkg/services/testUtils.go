@@ -8,6 +8,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"github.com/stretchr/testify/assert"
 	"go.lsp.dev/protocol"
+	"go.lsp.dev/uri"
 )
 
 type ExpDiagInfo struct {
@@ -61,7 +62,7 @@ func (root ExpDiag) File(context *utils.LsContext, uri protocol.URI) ExpDiagStru
 
 // ExpectDiagnostic.String
 func (root ExpDiag) String(context *utils.LsContext, content string) ExpDiagStruct {
-	yamlDocument, err := parser.ParseFromContent([]byte(content), context)
+	yamlDocument, err := parser.ParseFromContent([]byte(content), context, uri.File(""))
 
 	return buildExDiag(root.t, yamlDocument, err)
 }

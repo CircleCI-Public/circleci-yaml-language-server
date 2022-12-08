@@ -63,17 +63,22 @@ jobs:
                   command:
                       sh -c "go build `~/project/scripts/ldflags.sh` -o ~/project/bin/linux-amd64-lsp ./cmd/start_server/start_server.go"
 
-            - run:
-                  name: Build for Linux Arm 64
-                  command: |
-                      export LDFLAGS=$(~/project/scripts/ldflags.sh)
-                      export CGO_ENABLED=1
-                      export GOOS=linux
-                      export GOARCH=arm64
-                      export CC='zig cc -target aarch64-linux'
-                      export CXX='zig c++ -target aarch64-linux'
-                      export PATH="$(pwd)/zig-linux-x86_64-0.9.1:$PATH"
-                      sh -c "go build $LDFLAGS -o ~/project/bin/linux-arm64-lsp ./cmd/start_server/start_server.go"
+            - when:
+                condition: 
+                    and:
+                        - equal: [ master, << pipeline.git.branch >> ]
+                steps:
+                    - run:
+                        name: Build for Linux Arm 64
+                        command: |
+                            export LDFLAGS=$(~/project/scripts/ldflags.sh)
+                            export CGO_ENABLED=1
+                            export GOOS=linux
+                            export GOARCH=arm64
+                            export CC='zig cc -target aarch64-linux'
+                            export CXX='zig c++ -target aarch64-linux'
+                            export PATH="$(pwd)/zig-linux-x86_64-0.9.1:$PATH"
+                            sh -c "go build $LDFLAGS -o ~/project/bin/linux-arm64-lsp ./cmd/start_server/start_server.go"
 
             - store_artifacts:
                   path: ~/project/bin

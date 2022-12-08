@@ -5,6 +5,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser/validate"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
+	"go.lsp.dev/uri"
 )
 
 type DiagnosticType struct {
@@ -35,7 +36,7 @@ func DiagnosticFile(uri protocol.URI, cache *utils.Cache, context *utils.LsConte
 }
 
 func DiagnosticString(content string, cache *utils.Cache, context *utils.LsContext, schemaLocation string) ([]protocol.Diagnostic, error) {
-	yamlDocument, err := yamlparser.ParseFromContent([]byte(content), context)
+	yamlDocument, err := yamlparser.ParseFromContent([]byte(content), context, uri.File(""))
 	yamlDocument.SchemaLocation = schemaLocation
 
 	if err != nil {
