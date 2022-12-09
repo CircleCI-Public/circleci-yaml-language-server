@@ -86,10 +86,7 @@ func (val Validate) checkParamUsedWithParam(param ast.ParameterValue, stepName s
 	}
 
 	if !ok {
-		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
-			param.ValueRange,
-			fmt.Sprintf("Parameter %s is not defined", paramName),
-		))
+		// check already done before in `CheckIfParamsExist`
 		return
 	}
 

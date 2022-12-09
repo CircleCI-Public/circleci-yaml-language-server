@@ -12,7 +12,7 @@ func (val Validate) ValidateCommands() {
 }
 
 func (val Validate) validateSingleCommand(command ast.Command) {
-	val.validateSteps(command.Steps, command.Name)
+	val.validateSteps(command.Steps, command.Name, command.Parameters)
 
 	if used := val.checkIfCommandIsUsed(command); !used {
 		val.commandIsUnused(command)

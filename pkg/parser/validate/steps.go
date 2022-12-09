@@ -9,7 +9,7 @@ import (
 	"go.lsp.dev/protocol"
 )
 
-func (val Validate) validateSteps(steps []ast.Step, name string) error {
+func (val Validate) validateSteps(steps []ast.Step, name string, jobOrCommandParameters map[string]ast.Parameter) error {
 	for _, step := range steps {
 		switch step := step.(type) {
 		case ast.NamedStep:
@@ -27,7 +27,7 @@ func (val Validate) validateSteps(steps []ast.Step, name string) error {
 					step.Name,
 					step.Range,
 					definedParams,
-					definedParams,
+					jobOrCommandParameters,
 				)
 			}
 
