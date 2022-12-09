@@ -45,34 +45,42 @@ type LocalOrb struct {
 	Offset protocol.Position
 }
 
-func (doc *YamlDocument) parseLocalOrb(name string, orbNode *sitter.Node) error {
+func (doc *YamlDocument) parseLocalOrb(name string, orbNode *sitter.Node) (*LocalOrb, error) {
 	orb := LocalOrb{
 		Name:   name,
 		Offset: NodeToRange(orbNode).Start,
 	}
+
 	if orbNode.Type() != "block_node" {
-		return fmt.Errorf("Invalid orb body")
+		return nil, fmt.Errorf("Invalid orb body")
 	}
+
 	orbContent := doc.GetNodeText(orbNode)
 	deindentedContent := removeIndentationFromText(orbContent, orb.Offset.Character)
 	orbDoc, err := ParseFromContent([]byte(deindentedContent), doc.Context, doc.URI)
+
 	if err != nil {
-		return err
+		return nil, err
 	}
+
 	for name, command := range orbDoc.Commands {
 		doc.Commands[fmt.Sprintf("%s/%s", orb.Name, name)] = doc.adaptCommand(orb, command)
 	}
+
 	for name, executor := range orbDoc.Executors {
 		doc.Executors[fmt.Sprintf("%s/%s", orb.Name, name)] = doc.adaptExecutor(orb, executor)
 	}
+
 	for name, job := range orbDoc.Jobs {
 		doc.Jobs[fmt.Sprintf("%s/%s", orb.Name, name)] = doc.adaptJob(orb, job)
 	}
+
 	for _, diagnostic := range *orbDoc.Diagnostics {
 		utils.OffsetRange(&diagnostic.Range, orb.Offset)
 		doc.addDiagnostic(diagnostic)
 	}
-	return nil
+
+	return &orb, nil
 }
 
 func removeIndentationFromText(text string, indent uint32) string {

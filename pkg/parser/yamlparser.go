@@ -171,6 +171,7 @@ type YamlDocument struct {
 	SchemaLocation string
 
 	Orbs                map[string]ast.Orb
+	LocalOrbs           []LocalOrb
 	Executors           map[string]ast.Executor
 	Commands            map[string]ast.Command
 	Jobs                map[string]ast.Job

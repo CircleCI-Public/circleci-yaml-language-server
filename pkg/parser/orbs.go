@@ -15,20 +15,27 @@ func (doc *YamlDocument) parseOrbs(orbsNode *sitter.Node) {
 		return
 	}
 	iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
-		orb := doc.parseSingleOrb(child)
+		orb, localOrb := doc.parseSingleOrb(child)
+
 		if orb != nil {
 			doc.Orbs[orb.Name] = *orb
+		}
+
+		if localOrb != nil {
+			doc.LocalOrbs = append(doc.LocalOrbs, *localOrb)
 		}
 	})
 }
 
-func (doc *YamlDocument) parseSingleOrb(orbNode *sitter.Node) *ast.Orb {
+func (doc *YamlDocument) parseSingleOrb(orbNode *sitter.Node) (*ast.Orb, *LocalOrb) {
 	// orbNode is a block_mapping_pair
 	orbNameNode, orbContent := doc.GetKeyValueNodes(orbNode)
 	orbName := doc.GetNodeText(orbNameNode)
+
 	if orbContent == nil {
-		return nil
+		return nil, nil
 	}
+
 	switch orbContent.Type() {
 	case "flow_node":
 		orbUrl := doc.getOrbURL(doc.GetNodeText(orbContent))
@@ -39,12 +46,19 @@ func (doc *YamlDocument) parseSingleOrb(orbNode *sitter.Node) *ast.Orb {
 			NameRange:    NodeToRange(orbNameNode),
 			VersionRange: doc.getOrbVersionRange(orbContent),
 		}
-		return &orb
+		return &orb, nil
+
 	case "block_node":
-		doc.parseLocalOrb(orbName, orbContent)
-		return nil
+		localOrb, err := doc.parseLocalOrb(orbName, orbContent)
+
+		if err != nil {
+			return nil, nil
+		}
+
+		return nil, localOrb
+
 	default:
-		return nil
+		return nil, nil
 	}
 }
 

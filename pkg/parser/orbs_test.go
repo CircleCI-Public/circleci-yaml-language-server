@@ -107,7 +107,7 @@ func TestYamlDocument_parseSingleOrb(t *testing.T) {
 			blockMapping := GetChildOfType(rootNode, "block_mapping")
 			blockMappingPair := blockMapping.Child(0)
 
-			orb := doc.parseSingleOrb(blockMappingPair)
+			orb, _ := doc.parseSingleOrb(blockMappingPair)
 
 			if !reflect.DeepEqual(tt.want[0].Name, orb.Name) {
 				t.Errorf("YamlDocument.parseSingleOrb() = Name %v, want %v", tt.want[0], orb.Name)

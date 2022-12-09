@@ -12,7 +12,7 @@ import (
 )
 
 func (val Validate) ValidateOrbs() {
-	if len(val.Doc.Orbs) == 0 && !utils.IsDefaultRange(val.Doc.OrbsRange) {
+	if len(val.Doc.Orbs) == 0 && len(val.Doc.LocalOrbs) == 0 && !utils.IsDefaultRange(val.Doc.OrbsRange) {
 		val.addDiagnostic(
 			utils.CreateEmptyAssignationWarning(val.Doc.OrbsRange),
 		)
