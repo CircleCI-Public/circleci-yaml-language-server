@@ -81,7 +81,14 @@ func (doc *YamlDocument) parseSingleParameter(paramNode *sitter.Node, params map
 		param.TypeRange = paramTypeRange
 		params[param.Name] = param
 	default:
-		params[paramName] = ast.StringParameter{BaseParameter: ast.BaseParameter{TypeRange: paramTypeRange, Name: paramName, Range: NodeToRange(blockMappingNode)}}
+		params[paramName] = ast.StringParameter{
+			BaseParameter: ast.BaseParameter{
+				Name:      paramName,
+				NameRange: NodeToRange(keyNode),
+				Range:     NodeToRange(blockMappingNode),
+				TypeRange: paramTypeRange,
+			},
+		}
 	}
 }
 

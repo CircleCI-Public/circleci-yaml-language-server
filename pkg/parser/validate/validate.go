@@ -16,11 +16,11 @@ type Validate struct {
 
 func (val *Validate) Validate() {
 	val.ValidateAnchors()
+	val.CheckIfParamsExist()
 	val.ValidateWorkflows()
 	val.ValidateJobs()
 	val.ValidateCommands()
 	val.ValidateOrbs()
 	val.ValidateExecutors()
 	val.CheckNames()
-	val.CheckIfParamsExist()
 }

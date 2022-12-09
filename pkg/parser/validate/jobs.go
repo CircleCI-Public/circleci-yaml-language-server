@@ -16,7 +16,7 @@ func (val Validate) ValidateJobs() {
 }
 
 func (val Validate) validateSingleJob(job ast.Job) {
-	val.validateSteps(job.Steps, job.Name)
+	val.validateSteps(job.Steps, job.Name, job.Parameters)
 
 	if !val.checkIfJobIsUsed(job) {
 		val.jobIsUnused(job)
