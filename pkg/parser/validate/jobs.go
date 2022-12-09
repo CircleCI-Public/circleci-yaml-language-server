@@ -42,7 +42,7 @@ func (val Validate) validateSingleJob(job ast.Job) {
 				case ast.StringParameter:
 					str := param.(ast.StringParameter)
 
-					if !val.Doc.DoesExecutorExist(str.Default) {
+					if str.IsOptional() && !val.Doc.DoesExecutorExist(str.Default) {
 						// Error on the default value
 						val.addDiagnostic(
 							protocol.Diagnostic{
@@ -58,7 +58,7 @@ func (val Validate) validateSingleJob(job ast.Job) {
 				case ast.ExecutorParameter:
 					exec := param.(ast.ExecutorParameter)
 
-					if !val.Doc.DoesExecutorExist(exec.Default) {
+					if exec.IsOptional() && !val.Doc.DoesExecutorExist(exec.Default) {
 						// Error on the default value
 						val.addDiagnostic(
 							protocol.Diagnostic{
