@@ -393,19 +393,19 @@ workflows:
             - build-linux:
                 filters:
                     tags:
-                        only: /^.*/
+                        only: ^((?!pre).)*$
                     branches:
                         ignore: /.*/
             - build-macos:
                 filters:
                     tags:
-                        only: /^.*/
+                        only: ^((?!pre).)*$
                     branches:
                         ignore: /.*/
             - build-windows:
                 filters:
                     tags:
-                        only: /^.*/
+                        only: ^((?!pre).)*$
                     branches:
                         ignore: /.*/
             - release:
@@ -416,7 +416,7 @@ workflows:
                     - build-windows
                 filters:
                     tags:
-                        only: /^.*/
+                        only: ^((?!pre).)*$
                     branches:
                         ignore: /.*/
 
