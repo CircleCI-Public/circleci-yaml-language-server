@@ -52,7 +52,7 @@ func (def DefinitionStruct) getOrbLocation(name string, redirectToOrbFile bool) 
 	return []protocol.Location{}, fmt.Errorf("orb not found")
 }
 
-func (def DefinitionStruct) getOrbCommandOrJobLocation(orbFile ast.CachedOrb, name string) ([]protocol.Location, error) {
+func (def DefinitionStruct) getOrbCommandOrJobLocation(orbFile ast.OrbInfo, name string) ([]protocol.Location, error) {
 	if orbCommand, ok := orbFile.Commands[name]; ok {
 		return []protocol.Location{
 			{
@@ -87,7 +87,7 @@ func (def DefinitionStruct) getOrbParamLocation(name string, paramName string) (
 	return []protocol.Location{}, fmt.Errorf("orb not found")
 }
 
-func (def DefinitionStruct) getOrbCommandOrJobParamLocation(orbFile ast.CachedOrb, name string, paramName string) ([]protocol.Location, error) {
+func (def DefinitionStruct) getOrbCommandOrJobParamLocation(orbFile ast.OrbInfo, name string, paramName string) ([]protocol.Location, error) {
 	if orbCommand, ok := orbFile.Commands[name]; ok {
 		if param, ok := orbCommand.Parameters[paramName]; ok {
 			return []protocol.Location{

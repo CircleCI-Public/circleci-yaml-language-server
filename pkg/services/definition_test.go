@@ -28,7 +28,7 @@ func TestDefinition(t *testing.T) {
 		panic(err)
 	}
 
-	cache.OrbCache.SetOrb(&ast.CachedOrb{
+	cache.OrbCache.SetOrb(&ast.OrbInfo{
 		Commands: parsedOrb.Commands,
 		Jobs:     parsedOrb.Jobs,
 		RemoteInfo: ast.RemoteOrbInfo{

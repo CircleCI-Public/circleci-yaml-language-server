@@ -29,7 +29,7 @@ type OrbQuery struct {
 	Source string
 }
 
-func GetOrbInfo(orbVersionCode string, cache *utils.Cache, context *utils.LsContext) (*ast.CachedOrb, error) {
+func GetOrbInfo(orbVersionCode string, cache *utils.Cache, context *utils.LsContext) (*ast.OrbInfo, error) {
 	// Returning cache if exists
 	if !cache.OrbCache.HasOrb(orbVersionCode) {
 
@@ -56,23 +56,23 @@ func ParseRemoteOrbs(orbs map[string]ast.Orb, cache *utils.Cache, context *utils
 	}
 }
 
-func fetchOrbInfo(orbVersionCode string, cache *utils.Cache, context *utils.LsContext) (*ast.CachedOrb, error) {
+func fetchOrbInfo(orbVersionCode string, cache *utils.Cache, context *utils.LsContext) (*ast.OrbInfo, error) {
 	orbQuery, err := GetRemoteOrb(orbVersionCode, context.Api.Token, context.Api.HostUrl)
 
 	if err != nil {
-		return &ast.CachedOrb{}, err
+		return &ast.OrbInfo{}, err
 	}
 
 	parsedOrbSource, err := ParseFromContent([]byte(orbQuery.Source), context, uri.File(""))
 
 	if err != nil {
-		return &ast.CachedOrb{}, err
+		return &ast.OrbInfo{}, err
 	}
 
 	filePath, err := writeRemoteOrbSourceInFSCache(orbVersionCode, orbQuery.Source)
 
 	if err != nil {
-		return &ast.CachedOrb{}, err
+		return &ast.OrbInfo{}, err
 	}
 
 	latest, latestMinor, latestPatch := GetVersionInfo(
@@ -80,7 +80,7 @@ func fetchOrbInfo(orbVersionCode string, cache *utils.Cache, context *utils.LsCo
 		"v"+orbQuery.Version,
 	)
 
-	orb := &ast.CachedOrb{
+	orb := &ast.OrbInfo{
 		Commands:    parsedOrbSource.Commands,
 		Jobs:        parsedOrbSource.Jobs,
 		Executors:   parsedOrbSource.Executors,
@@ -281,7 +281,7 @@ func addAlreadyExistingRemoteOrbsToFSCache(orb ast.Orb, cache *utils.Cache, cont
 
 	latest, latestMinor, latestPatch := GetVersionInfo(versions, "v"+orb.Url.Version)
 
-	cache.OrbCache.SetOrb(&ast.CachedOrb{
+	cache.OrbCache.SetOrb(&ast.OrbInfo{
 		Commands:    parsedOrbSource.Commands,
 		Jobs:        parsedOrbSource.Jobs,
 		Executors:   parsedOrbSource.Executors,

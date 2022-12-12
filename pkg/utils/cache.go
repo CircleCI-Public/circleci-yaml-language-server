@@ -33,14 +33,14 @@ type FileCache struct {
 
 type OrbCache struct {
 	cacheMutex *sync.Mutex
-	orbsCache  map[string]*ast.CachedOrb
+	orbsCache  map[string]*ast.OrbInfo
 }
 
 func (c *Cache) init() {
 	c.FileCache.fileCache = make(map[protocol.URI]*protocol.TextDocumentItem)
 	c.FileCache.cacheMutex = &sync.Mutex{}
 
-	c.OrbCache.orbsCache = make(map[string]*ast.CachedOrb)
+	c.OrbCache.orbsCache = make(map[string]*ast.OrbInfo)
 	c.OrbCache.cacheMutex = &sync.Mutex{}
 
 	c.DockerCache.cacheMutex = &sync.Mutex{}
@@ -85,14 +85,14 @@ func (c *OrbCache) HasOrb(orbID string) bool {
 	return ok
 }
 
-func (c *OrbCache) SetOrb(orb *ast.CachedOrb, orbID string) ast.CachedOrb {
+func (c *OrbCache) SetOrb(orb *ast.OrbInfo, orbID string) ast.OrbInfo {
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()
 	c.orbsCache[orbID] = orb
 	return *orb
 }
 
-func (c *OrbCache) GetOrb(orbID string) *ast.CachedOrb {
+func (c *OrbCache) GetOrb(orbID string) *ast.OrbInfo {
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()
 	return c.orbsCache[orbID]

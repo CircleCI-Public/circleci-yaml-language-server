@@ -33,7 +33,7 @@ func TestComplete(t *testing.T) {
 		panic(err)
 	}
 
-	cache.OrbCache.SetOrb(&ast.CachedOrb{
+	cache.OrbCache.SetOrb(&ast.OrbInfo{
 		Commands:  parsedOrb.Commands,
 		Executors: parsedOrb.Executors,
 		Jobs:      parsedOrb.Jobs,
