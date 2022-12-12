@@ -23,7 +23,7 @@ func (orb *OrbURL) GetOrbID() string {
 	return fmt.Sprintf("%s@%s", orb.Name, orb.Version)
 }
 
-type CachedOrb struct {
+type OrbInfo struct {
 	CreatedAt   string
 	Commands    map[string]Command
 	Jobs        map[string]Job

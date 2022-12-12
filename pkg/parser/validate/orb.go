@@ -83,7 +83,7 @@ type OrbVersionCodeActionCreator struct {
 	CodeActionText string
 }
 
-func (val Validate) createCodeActions(orb ast.Orb, cachedOrb ast.CachedOrb) []protocol.CodeAction {
+func (val Validate) createCodeActions(orb ast.Orb, cachedOrb ast.OrbInfo) []protocol.CodeAction {
 	res := []protocol.CodeAction{}
 	versions := []OrbVersionCodeActionCreator{
 		{
