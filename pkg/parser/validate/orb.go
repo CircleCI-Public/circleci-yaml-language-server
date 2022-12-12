@@ -46,7 +46,7 @@ func (val Validate) validateSingleOrb(orb ast.Orb) {
 	}
 
 	// Adding diagnostics based on versions
-	if orbVersion.ID == "" {
+	if orbVersion.RemoteInfo.ID == "" {
 		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
 			orb.Range,
 			"Orb or version not found",
@@ -56,11 +56,11 @@ func (val Validate) validateSingleOrb(orb ast.Orb) {
 	}
 
 	message, severity := DiagnosticVersion(
-		orbVersion.Version,
+		orbVersion.RemoteInfo.Version,
 		InfoVersions{
-			LatestVersion:      orbVersion.LatestVersion,
-			LatestMinorVersion: orbVersion.LatestMinorVersion,
-			LatestPatchVersion: orbVersion.LatestPatchVersion,
+			LatestVersion:      orbVersion.RemoteInfo.LatestVersion,
+			LatestMinorVersion: orbVersion.RemoteInfo.LatestMinorVersion,
+			LatestPatchVersion: orbVersion.RemoteInfo.LatestPatchVersion,
 		},
 	)
 
@@ -87,15 +87,15 @@ func (val Validate) createCodeActions(orb ast.Orb, cachedOrb ast.CachedOrb) []pr
 	res := []protocol.CodeAction{}
 	versions := []OrbVersionCodeActionCreator{
 		{
-			OrbVersion:     cachedOrb.LatestPatchVersion,
+			OrbVersion:     cachedOrb.RemoteInfo.LatestPatchVersion,
 			CodeActionText: "Update to last patch",
 		},
 		{
-			OrbVersion:     cachedOrb.LatestMinorVersion,
+			OrbVersion:     cachedOrb.RemoteInfo.LatestMinorVersion,
 			CodeActionText: "Update to last minor",
 		},
 		{
-			OrbVersion:     cachedOrb.LatestVersion,
+			OrbVersion:     cachedOrb.RemoteInfo.LatestVersion,
 			CodeActionText: "Update to last version",
 		},
 	}

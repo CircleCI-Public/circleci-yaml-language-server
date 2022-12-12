@@ -119,8 +119,8 @@ func (c *Cache) RemoveOrbFiles() {
 	defer c.FileCache.cacheMutex.Unlock()
 
 	for _, orb := range c.OrbCache.orbsCache {
-		if _, err := os.Stat(orb.FilePath); err == nil {
-			os.Remove(orb.FilePath)
+		if _, err := os.Stat(orb.RemoteInfo.FilePath); err == nil {
+			os.Remove(orb.RemoteInfo.FilePath)
 		}
 	}
 }

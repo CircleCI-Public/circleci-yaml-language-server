@@ -81,17 +81,21 @@ func fetchOrbInfo(orbVersionCode string, cache *utils.Cache, context *utils.LsCo
 	)
 
 	orb := &ast.CachedOrb{
-		ID:                 orbQuery.Id,
-		Version:            orbQuery.Version,
-		Source:             orbQuery.Source,
-		Commands:           parsedOrbSource.Commands,
-		Jobs:               parsedOrbSource.Jobs,
-		Executors:          parsedOrbSource.Executors,
-		Description:        parsedOrbSource.Description,
-		FilePath:           filePath,
-		LatestVersion:      latest[1:],
-		LatestMinorVersion: latestMinor[1:],
-		LatestPatchVersion: latestPatch[1:],
+		Commands:    parsedOrbSource.Commands,
+		Jobs:        parsedOrbSource.Jobs,
+		Executors:   parsedOrbSource.Executors,
+		Description: parsedOrbSource.Description,
+		Source:      orbQuery.Source,
+		IsLocal:     false,
+
+		RemoteInfo: ast.RemoteOrbInfo{
+			ID:                 orbQuery.Id,
+			FilePath:           filePath,
+			Version:            orbQuery.Version,
+			LatestVersion:      latest[1:],
+			LatestMinorVersion: latestMinor[1:],
+			LatestPatchVersion: latestPatch[1:],
+		},
 	}
 
 	cache.OrbCache.SetOrb(orb, orbVersionCode)
@@ -278,17 +282,21 @@ func addAlreadyExistingRemoteOrbsToFSCache(orb ast.Orb, cache *utils.Cache, cont
 	latest, latestMinor, latestPatch := GetVersionInfo(versions, "v"+orb.Url.Version)
 
 	cache.OrbCache.SetOrb(&ast.CachedOrb{
-		ID:                 orb.Url.GetOrbID(),
-		Version:            orb.Url.Version,
-		Source:             string(source),
-		Commands:           parsedOrbSource.Commands,
-		Jobs:               parsedOrbSource.Jobs,
-		Executors:          parsedOrbSource.Executors,
-		Description:        parsedOrbSource.Description,
-		FilePath:           filePath,
-		LatestVersion:      latest[1:],
-		LatestMinorVersion: latestMinor[1:],
-		LatestPatchVersion: latestPatch[1:],
+		Commands:    parsedOrbSource.Commands,
+		Jobs:        parsedOrbSource.Jobs,
+		Executors:   parsedOrbSource.Executors,
+		Description: parsedOrbSource.Description,
+		Source:      string(source),
+		IsLocal:     false,
+
+		RemoteInfo: ast.RemoteOrbInfo{
+			ID:                 orb.Url.GetOrbID(),
+			FilePath:           filePath,
+			Version:            orb.Url.Version,
+			LatestVersion:      latest[1:],
+			LatestMinorVersion: latestMinor[1:],
+			LatestPatchVersion: latestPatch[1:],
+		},
 	}, orb.Url.GetOrbID())
 
 	return nil

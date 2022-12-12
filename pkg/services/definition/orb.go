@@ -21,7 +21,7 @@ func (def DefinitionStruct) getOrbDefinition() ([]protocol.Location, error) {
 	if orb := def.Cache.OrbCache.GetOrb(orbId); orb != nil {
 		return []protocol.Location{
 			{
-				URI:   uri.New(orb.FilePath),
+				URI:   uri.New(orb.RemoteInfo.FilePath),
 				Range: protocol.Range{},
 			},
 		}, nil
@@ -56,7 +56,7 @@ func (def DefinitionStruct) getOrbCommandOrJobLocation(orbFile ast.CachedOrb, na
 	if orbCommand, ok := orbFile.Commands[name]; ok {
 		return []protocol.Location{
 			{
-				URI:   uri.New(orbFile.FilePath),
+				URI:   uri.New(orbFile.RemoteInfo.FilePath),
 				Range: orbCommand.Range,
 			},
 		}, nil
@@ -65,7 +65,7 @@ func (def DefinitionStruct) getOrbCommandOrJobLocation(orbFile ast.CachedOrb, na
 	if orbJob, ok := orbFile.Jobs[name]; ok {
 		return []protocol.Location{
 			{
-				URI:   uri.New(orbFile.FilePath),
+				URI:   uri.New(orbFile.RemoteInfo.FilePath),
 				Range: orbJob.Range,
 			},
 		}, nil
@@ -92,7 +92,7 @@ func (def DefinitionStruct) getOrbCommandOrJobParamLocation(orbFile ast.CachedOr
 		if param, ok := orbCommand.Parameters[paramName]; ok {
 			return []protocol.Location{
 				{
-					URI:   uri.New(orbFile.FilePath),
+					URI:   uri.New(orbFile.RemoteInfo.FilePath),
 					Range: param.GetRange(),
 				},
 			}, nil
@@ -103,7 +103,7 @@ func (def DefinitionStruct) getOrbCommandOrJobParamLocation(orbFile ast.CachedOr
 		if param, ok := orbJob.Parameters[paramName]; ok {
 			return []protocol.Location{
 				{
-					URI:   uri.New(orbFile.FilePath),
+					URI:   uri.New(orbFile.RemoteInfo.FilePath),
 					Range: param.GetRange(),
 				},
 			}, nil
