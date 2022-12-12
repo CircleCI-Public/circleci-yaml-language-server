@@ -34,10 +34,12 @@ func TestComplete(t *testing.T) {
 	}
 
 	cache.OrbCache.SetOrb(&ast.CachedOrb{
-		FilePath:  uri.File(path.Join("./testdata/orb.yaml")).Filename(),
 		Commands:  parsedOrb.Commands,
 		Executors: parsedOrb.Executors,
 		Jobs:      parsedOrb.Jobs,
+		RemoteInfo: ast.RemoteOrbInfo{
+			FilePath: uri.File(path.Join("./testdata/orb.yaml")).Filename(),
+		},
 	}, "superorb/superfunc@1.2.3")
 
 	type args struct {

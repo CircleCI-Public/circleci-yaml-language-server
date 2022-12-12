@@ -24,15 +24,20 @@ func (orb *OrbURL) GetOrbID() string {
 }
 
 type CachedOrb struct {
+	CreatedAt   string
+	Commands    map[string]Command
+	Jobs        map[string]Job
+	Executors   map[string]Executor
+	Description string
+	Source      string
+	RemoteInfo  RemoteOrbInfo
+	IsLocal     bool
+}
+
+type RemoteOrbInfo struct {
 	ID                 string
-	Version            string
-	Source             string
-	CreatedAt          string
-	Commands           map[string]Command
-	Jobs               map[string]Job
-	Executors          map[string]Executor
-	Description        string
 	FilePath           string
+	Version            string
 	LatestVersion      string
 	LatestMinorVersion string
 	LatestPatchVersion string
