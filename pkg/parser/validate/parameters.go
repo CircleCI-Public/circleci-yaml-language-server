@@ -60,7 +60,11 @@ func (val Validate) checkParamSimpleType(param ast.ParameterValue, stepName stri
 		val.checkExecutorParamValue(param)
 
 	case "steps":
-		for _, value := range param.Value.([]ast.ParameterValue) {
+		values, ok := param.Value.([]ast.ParameterValue)
+		if !ok {
+			val.createParameterError(param, stepName, definedParam.GetType())
+		}
+		for _, value := range values {
 			if value.Type != "steps" {
 				val.createParameterError(value, stepName, definedParam.GetType())
 			}
