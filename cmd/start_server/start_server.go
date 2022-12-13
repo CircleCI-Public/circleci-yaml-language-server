@@ -15,6 +15,7 @@ func main() {
 	portRef := flag.Int("port", -1, "port number")
 	schemaRef := flag.String("schema", "", "Location of the schema")
 	versionRef := flag.Bool("version", false, "display version")
+	stdioRef := flag.Bool("stdio", false, "Use stdio instead of socket to communicate")
 	flag.Parse()
 
 	// Parameter: version
@@ -46,7 +47,7 @@ func main() {
 	}
 
 	// Command: stdio
-	if len(os.Args) > 1 && os.Args[1] == "stdio" {
+	if *stdioRef == true {
 		lsp.StartServerStdio(schema)
 		return
 	}
