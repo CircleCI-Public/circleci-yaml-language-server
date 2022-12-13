@@ -33,6 +33,24 @@ type CodeDescription = {
   href: string,
 };
 
+type CompletionList = {
+  isIncomplete: boolean,
+  items: CompletionItem[],
+};
+
+type HoverCommandResponse = {
+  contents: {
+    kind: string,
+    value: string,
+  },
+
+  range?: Range,
+};
+
+type CompletionItem = {
+  label: string,
+};
+
 type CompletionContext = {
   triggerCharacter?: string,
   triggerKind?: TriggerKind,
@@ -203,6 +221,8 @@ type ProtocolParams = DocumentDidOpenCommand
 | CompletionParams
 | PublishDiagnosticsParams;
 
+type ProtocolReturns = CompletionList | HoverCommandResponse;
+
 type EnvOptions = {
   lspServer?: {
     // Port of the LSP server
@@ -249,14 +269,17 @@ export type {
   Position,
   Range,
 
+  CompletionList,
   CompletionParams,
   DocumentDidOpenCommand,
   DocumentDidCloseCommand,
   DocumentDidChange,
   DocumentHover,
   DefinitionParams,
+  HoverCommandResponse,
   ReferenceParams,
   ProtocolParams,
+  ProtocolReturns,
   PublishDiagnosticsParams,
   SemanticTokensParams,
 };

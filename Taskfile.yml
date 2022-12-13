@@ -52,7 +52,7 @@ tasks:
       - ./bin/start_server
     env:
       PORT: '{{.PORT | default 10001}}'
-      SCHEMA_LOCATION: ./pubxlicschema.json
+      SCHEMA_LOCATION: ./publicschema.json
 
   init:
       - go install github.com/automation-co/husky@latest

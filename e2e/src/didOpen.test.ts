@@ -4,7 +4,7 @@ import {
   configFileContent,
   command,
   immediateDiagnostics,
-} from './helpers';
+} from './utils';
 
 describe('DidOpen', () => {
   it('Job without steps', async () => {
