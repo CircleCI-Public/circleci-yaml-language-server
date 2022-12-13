@@ -8,3 +8,4 @@ __pycache__
 node_modules
 coverage
 e2e/reports
+__debug_bin
