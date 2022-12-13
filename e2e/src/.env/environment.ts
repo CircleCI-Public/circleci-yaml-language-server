@@ -75,7 +75,7 @@ class LSPTestingEnvironment<T extends CommandDefinitions> extends TestEnvironmen
    * If the client didn't connect after 10s, the setup fail.
    */
   async setup() {
-    globalThis.latestRequestId += 1;
+    globalThis.latestRequestId = (globalThis.latestRequestId ?? 0) + 1;
 
     await super.setup();
     await this.#spawnServer();
@@ -162,8 +162,6 @@ async function spawnServer(
   serverBinPath: string,
   jsonSchema: string,
 ) {
-  globalThis.latestRequestId = 0;
-
   const serverProcess = spawn(
     serverBinPath,
     [

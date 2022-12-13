@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "esModuleInterop": true,
+    "lib": ["ES2022"],
+    "forceConsistentCasingInFileNames": true,
+
+    "strict": true,
+    "allowJs": false,
+    "allowUnreachableCode": false,
+    "allowUnusedLabels": false,
+    "noImplicitAny": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+
+    "skipLibCheck": true,
+    "types": [
+      "node",
+      "jest"
+    ],
+  },
+  "exclude": [
+    "node_modules"
+  ]
+}
