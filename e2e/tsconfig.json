@@ -1,21 +1,7 @@
 {
+  "extends": "../tsconfig.json",
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "NodeNext",
-    "esModuleInterop": true,
-    "lib": ["ES2022"],
-    "forceConsistentCasingInFileNames": true,
     "outDir": "dist",
-
-    "strict": true,
-    "allowJs": false,
-    "allowUnreachableCode": false,
-    "allowUnusedLabels": false,
-    "noImplicitAny": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-
-    "skipLibCheck": true,
     "types": [
       "node",
       "jest"
