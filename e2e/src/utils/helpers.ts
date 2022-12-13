@@ -1,38 +1,29 @@
-import { configFileContent, configFileUri, normalizeURI } from './.env';
-import { Commands } from './types';
-import CustomEvent from './.env/CustomEvent';
-import { EventType, RequestPayload } from './.env/RpcClient';
+import { normalizeURI } from '../.env/index';
+import { ProtocolReturns } from '../types';
+import CustomEvent from '../.env/CustomEvent';
+import { EventType, RequestPayload } from '../.env/RpcClient';
 import type {
   CommandParameters,
   Diagnostic,
   Position,
   ProtocolParams,
   PublishDiagnosticsParams,
-} from './types';
+} from '../types';
 
 /**
- * Normalize protocol params object.
- * The main transformation is the normalization of the URI
+ * Send a command to the LSP server and return the response.
  */
-function normalize<T extends ProtocolParams>(data: T) : T {
-  if ('textDocument' in data) {
-    return {
-      ...data,
-      textDocument: {
-        ...data.textDocument,
-        uri: normalizeURI(data.textDocument.uri),
-      },
-    };
+async function command<T extends keyof CommandParameters>(
+  commandName: T,
+  params: CommandParameters[T],
+) {
+  const response = await globalThis.rpcClient.request(commandName, params);
+
+  if (!response) {
+    return response;
   }
 
-  if ('uri' in data) {
-    return {
-      ...data,
-      uri: normalizeURI(data.uri),
-    };
-  }
-
-  return data;
+  return normalize(response);
 }
 
 /**
@@ -69,36 +60,36 @@ function installRpcLogger() {
   });
 }
 
-async function didOpen(filePath: string, version = 1) {
-  const response = await command(
-    Commands.DocumentDidOpen,
-    {
-      textDocument: {
-        text: await configFileContent(filePath, 'utf-8'),
-        uri: configFileUri(filePath),
-        version,
-        languageId: 'yaml',
-      },
-    },
-  );
-
-  expect(response).toBeNull();
-}
-
 /**
- * Send a command to the LSP server and return the response.
+ * Normalize protocol params object.
+ * The main transformation is the normalization of the URI
  */
-async function command<T extends keyof CommandParameters>(
-  commandName: T,
-  params: CommandParameters[T],
-) {
-  const response = await globalThis.rpcClient.request(commandName, params);
-
-  if (!response) {
-    return response;
+function normalize<T extends ProtocolParams | ProtocolReturns>(data: T) : T {
+  if ('textDocument' in data) {
+    return {
+      ...data,
+      textDocument: {
+        ...data.textDocument,
+        uri: normalizeURI(data.textDocument.uri),
+      },
+    };
   }
 
-  return normalize(response);
+  if ('uri' in data) {
+    return {
+      ...data,
+      uri: normalizeURI(data.uri),
+    };
+  }
+
+  return data;
+}
+
+function position(lineIndex: number, characterIndex: number): Position {
+  return {
+    character: characterIndex,
+    line: lineIndex,
+  };
 }
 
 /**
@@ -187,13 +178,13 @@ export {
   configFilePath,
   configFileContent,
   configFileUri,
-} from './.env';
+} from '../.env/index';
 
 export {
   command,
-  didOpen,
   immediateDiagnostics,
   installRpcLogger,
   normalize,
+  position,
   rawCommand,
 };

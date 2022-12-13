@@ -11,15 +11,22 @@ const examplesFolder = path.resolve(
   'test-files',
 );
 
-function configFilePath(name: string) {
+function configFilePath(nameOrUri: string) {
+  if (nameOrUri.startsWith('file://')) {
+    return nameOrUri.substring(7);
+  }
+
   return path.resolve(
     examplesFolder,
     '.circleci',
-    name,
+    nameOrUri,
   );
 }
 
 function configFileUri(name: string) {
+  if (name.startsWith('file://')) {
+    return name;
+  }
   const filePath = configFilePath(name);
   return `file://${filePath}`;
 }
@@ -52,8 +59,8 @@ function normalizeURI(uri: string): string {
   return `file://${normalizePath(uriPath)}`;
 }
 
-async function configFileContent(name: string, encoding: BufferEncoding = 'utf-8') {
-  const filePath = configFilePath(name);
+async function configFileContent(nameOrUri: string, encoding: BufferEncoding = 'utf-8') {
+  const filePath = configFilePath(nameOrUri);
 
   const buffer = await fs.readFile(filePath, encoding);
 

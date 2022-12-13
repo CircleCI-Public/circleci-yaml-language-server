@@ -1,28 +1,24 @@
-import { Commands } from './types';
 import {
-  configFileUri,
-  command,
-  didOpen,
-} from './helpers';
+  commands,
+  position,
+} from './utils';
 
 describe('Completion command', () => {
   it('Completion command', async () => {
-    // Opening the file before working on it
-    await didOpen('config1.yml');
+    const testingFile = 'config1.yml';
+    await commands.didOpen(testingFile);
 
-    const response = await command(
-      Commands.Completion,
-      {
-        position: {
-          character: 1,
-          line: 1,
-        },
-        textDocument: {
-          uri: configFileUri('config1.yml'),
-        },
-      },
-    );
+    const res = await commands.complete(testingFile, position(1, 1));
 
-    expect(response).toMatchSnapshot();
+    expect(res).toMatchSnapshot();
+  });
+
+  it('Complete list of jobs', async () => {
+    const testingFile = 'invalid-files/autocomplete-jobs.yml';
+
+    await commands.didOpen(testingFile);
+    const res = await commands.complete(testingFile, position(53, 7));
+
+    expect(res).toMatchSnapshot();
   });
 });

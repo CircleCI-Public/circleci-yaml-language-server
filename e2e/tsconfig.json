@@ -8,7 +8,7 @@
     ],
   },
   "include": [
-    "src/",
+    "src/**/*.ts",
     "src/.env/**/*.ts",
     "jest.config.ts"
   ],

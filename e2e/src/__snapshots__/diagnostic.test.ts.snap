@@ -1,0 +1,142 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Diagnostic testing files autocomplete-jobs.yml 1`] = `
+{
+  "diagnostics": [
+    {
+      "data": [],
+      "message": "Cannot find declaration for job ",
+      "range": {
+        "end": {
+          "character": 7,
+          "line": 53,
+        },
+        "start": {
+          "character": 6,
+          "line": 53,
+        },
+      },
+      "severity": 1,
+      "source": "cci-language-server",
+    },
+    {
+      "data": [],
+      "message": "Invalid type. Expected: string, given: null",
+      "range": {
+        "end": {
+          "character": 7,
+          "line": 53,
+        },
+        "start": {
+          "character": 6,
+          "line": 53,
+        },
+      },
+      "severity": 1,
+      "source": "cci-language-server",
+    },
+    {
+      "data": [],
+      "message": "Must validate one and only one schema (oneOf)",
+      "range": {
+        "end": {
+          "character": 7,
+          "line": 53,
+        },
+        "start": {
+          "character": 6,
+          "line": 53,
+        },
+      },
+      "severity": 1,
+      "source": "cci-language-server",
+    },
+    {
+      "message": "You may want to add the \`store_test_results\` step to visualize the test results in CircleCI",
+      "range": {
+        "end": {
+          "character": 7,
+          "line": 32,
+        },
+        "start": {
+          "character": 2,
+          "line": 32,
+        },
+      },
+      "severity": 4,
+    },
+    {
+      "data": [],
+      "message": "Job is unused",
+      "range": {
+        "end": {
+          "character": 13,
+          "line": 17,
+        },
+        "start": {
+          "character": 6,
+          "line": 17,
+        },
+      },
+      "severity": 2,
+      "source": "cci-language-server",
+    },
+    {
+      "data": [],
+      "message": "Parameter node-version is not defined",
+      "range": {
+        "end": {
+          "character": 58,
+          "line": 12,
+        },
+        "start": {
+          "character": 29,
+          "line": 12,
+        },
+      },
+      "severity": 1,
+      "source": "cci-language-server",
+    },
+    {
+      "data": [],
+      "message": "Orb is unused",
+      "range": {
+        "end": {
+          "character": 27,
+          "line": 3,
+        },
+        "start": {
+          "character": 2,
+          "line": 3,
+        },
+      },
+      "severity": 2,
+      "source": "cci-language-server",
+    },
+    {
+      "data": [],
+      "message": "version must be one of the following: 2, 2.1",
+      "range": {
+        "end": {
+          "character": 14,
+          "line": 0,
+        },
+        "start": {
+          "character": 0,
+          "line": 0,
+        },
+      },
+      "severity": 1,
+      "source": "cci-language-server",
+    },
+  ],
+  "uri": "file:///project/test-files/.circleci/invalid-files/autocomplete-jobs.yml",
+}
+`;
+
+exports[`Diagnostic testing files config1.yml 1`] = `
+{
+  "diagnostics": [],
+  "uri": "file:///project/test-files/.circleci/config1.yml",
+}
+`;

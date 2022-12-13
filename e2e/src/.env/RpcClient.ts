@@ -1,7 +1,7 @@
 // ============================================================
 // Import packages
 import net from 'net';
-import { ProtocolParams } from '../types';
+import { ProtocolReturns } from '../types';
 
 // ============================================================
 // Import modules
@@ -96,8 +96,8 @@ class RpcClient<O extends RequestDefinitions> extends EventTarget {
   async request<T extends keyof O>(
     method: T,
     params: O[T],
-  ) : Promise<undefined | ProtocolParams> {
-    return this.requestRaw(method as string, params) as unknown as ProtocolParams | undefined;
+  ) : Promise<undefined | ProtocolReturns> {
+    return this.requestRaw(method as string, params) as unknown as ProtocolReturns | undefined;
   }
 
   async requestRaw(

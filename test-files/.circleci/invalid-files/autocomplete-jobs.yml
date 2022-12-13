@@ -1,0 +1,56 @@
+version: "2.1"
+
+orbs:
+  node: circleci/node@5.0.3
+  app:
+    parameters:
+      node-version:
+        description: "The version of Node use"
+        type: string
+    jobs:
+      run:
+        docker:
+          - image: cimg/node:<< parameters.node-version >>
+        steps:
+          - checkout
+          - run: npm start
+
+      dry-run:
+        docker:
+          - image: cimg/node:17.2.0
+        steps:
+          - checkout
+          - run: npm start
+
+jobs:
+  build:
+    docker:
+      - image: cimg/node:17.2.0
+    steps:
+        - checkout
+        - run: npm run build
+
+  tests:
+    docker:
+      - image: cimg/node:17.2.0
+    steps:
+        - checkout
+        - run: npm run test
+
+  lint:
+    docker:
+      - image: cimg/node:17.2.0
+    steps:
+        - checkout
+        - run: npm run lint
+
+workflows:
+  test-build:
+    jobs:
+      - build
+      - tests
+      - lint
+      - app/run
+      -
+
+# VS Code Extension Version: 1.4.0
