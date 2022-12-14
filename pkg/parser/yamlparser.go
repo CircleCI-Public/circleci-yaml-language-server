@@ -208,7 +208,7 @@ func (doc *YamlDocument) IsBuiltIn(commandName string) bool {
 	return utils.FindInArray(builtInCommands, commandName) != -1
 }
 
-func (doc *YamlDocument) IsOrb(commandName string) bool {
+func (doc *YamlDocument) IsOrbReference(commandName string) bool {
 	splittedCommand := strings.Split(commandName, "/")
 
 	if len(splittedCommand) != 2 {
@@ -221,7 +221,7 @@ func (doc *YamlDocument) IsOrb(commandName string) bool {
 }
 
 func (doc *YamlDocument) IsGivenOrb(commandName string, orbName string) bool {
-	if !doc.IsOrb(commandName) {
+	if !doc.IsOrbReference(commandName) {
 		return false
 	}
 
@@ -366,7 +366,7 @@ func (doc *YamlDocument) DoesCommandOrJobOrExecutorExist(name string, includeCom
 		return true
 	}
 
-	if doc.IsOrb(name) {
+	if doc.IsOrbReference(name) {
 		return true
 	}
 

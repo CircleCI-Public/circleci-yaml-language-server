@@ -76,7 +76,7 @@ func (val Validate) validateSingleJob(job ast.Job) {
 			}
 
 		} else if !val.Doc.DoesExecutorExist(job.Executor) {
-			if val.Doc.IsOrb(job.Executor) {
+			if val.Doc.IsOrbReference(job.Executor) {
 				val.validateOrbExecutor(job.Executor, job.ExecutorRange)
 			} else {
 				val.addDiagnostic(
