@@ -8,7 +8,7 @@ executors:
 jobs:
     build-and-test:
         docker:
-            - image: cimg/go:1.19.1
+            - image: >cimg/go:1.19.1
         steps:
             - checkout
 
