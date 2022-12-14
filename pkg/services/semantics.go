@@ -142,7 +142,7 @@ func (sem SemanticTokenStruct) highlightCacheKeys(valueNode *sitter.Node) {
 func (sem SemanticTokenStruct) highlightOrbs(valueNode *sitter.Node) {
 	if valueNode.Type() == "flow_node" {
 		content := sem.doc.GetRawNodeText(valueNode)
-		if sem.doc.IsOrb(content) {
+		if sem.doc.IsOrbReference(content) {
 			// Orb method
 			slashIdx := strings.Index(content, "/")
 			if slashIdx == -1 {
