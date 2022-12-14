@@ -1,9 +1,20 @@
 package utils
 
 import (
+	"strings"
+
 	sitter "github.com/smacker/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
+
+// Diagnostic messages should start with a uppercase letter
+func ToDiagnosticMessage(message string) string {
+	if len(message) == 0 {
+		return message
+	}
+
+	return strings.ToUpper(message[0:1]) + message[1:]
+}
 
 func CreateErrorDiagnosticFromRange(rng protocol.Range, msg string) protocol.Diagnostic {
 	return CreateDiagnosticFromRange(

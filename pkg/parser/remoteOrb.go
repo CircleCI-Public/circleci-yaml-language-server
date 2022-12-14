@@ -42,6 +42,10 @@ func GetOrbInfo(orbVersionCode string, cache *utils.Cache, context *utils.LsCont
 
 func ParseRemoteOrbs(orbs map[string]ast.Orb, cache *utils.Cache, context *utils.LsContext) {
 	for _, orb := range orbs {
+		if orb.Url.IsLocal {
+			continue
+		}
+
 		if orb.Url.Version != "volatile" && checkIfRemoteOrbAlreadyExistsInFSCache(orb.Url.GetOrbID()) {
 			err := addAlreadyExistingRemoteOrbsToFSCache(orb, cache, context)
 

@@ -1,21 +1,52 @@
 version: "2.1"
 
+parameters:
+  top:
+    description: "The version of Node use for the application"
+    type: string
+    default: "default value of top parameter"
+
 orbs:
   node: circleci/node@5.0.3
   app:
+    jobs:
+      run:
+        parameters:
+          app-node:
+            description: "The version of Node use for the application"
+            type: string
+
+        docker:
+          - image: cimg/node:<< parameters.app-node >>
+        steps:
+          - checkout
+          - run: npm start
+
+      dry-run:
+        docker:
+          - image: cimg/node:17.2.0
+        steps:
+          - checkout
+          - run: npm start
+
+  parameter-within-job:
     parameters:
-      node-version:
+      version:
         description: "The version of Node use"
         type: string
     jobs:
-      run:
+      lint:
+        parameters:
+          node-version:
+            description: "The version of Node use"
+            type: string
         docker:
           - image: cimg/node:<< parameters.node-version >>
         steps:
           - checkout
           - run: npm start
 
-      dry-run:
+      validate:
         docker:
           - image: cimg/node:17.2.0
         steps:
@@ -37,7 +68,7 @@ jobs:
         - checkout
         - run: npm run test
 
-  lint:
+  confirm:
     docker:
       - image: cimg/node:17.2.0
     steps:
@@ -49,8 +80,10 @@ workflows:
     jobs:
       - build
       - tests
-      - lint
-      - app/run
-      -
+      - confirm
+      - app/run:
+          app-node: "17.0.0"
+      - parameter-within-job/lint:
+          node-version: "16.0.0"
 
 # VS Code Extension Version: 1.4.0

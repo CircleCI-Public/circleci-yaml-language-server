@@ -54,9 +54,9 @@ func (ch *CompletionHandler) userDefinedCommands() {
 
 func (ch *CompletionHandler) orbCommands(nodeToComplete *sitter.Node) []protocol.CompletionItem {
 	for _, orb := range ch.Doc.Orbs {
-		remoteOrb := ch.Cache.OrbCache.GetOrb(orb.Url.GetOrbID())
-		if remoteOrb != nil {
-			for cmdName := range remoteOrb.Commands {
+		orbInfo := ch.GetOrbInfo(orb)
+		if orbInfo != nil {
+			for cmdName := range orbInfo.Commands {
 				cmdName = fmt.Sprintf("%s/%s", orb.Name, cmdName)
 
 				if nodeToComplete == nil {

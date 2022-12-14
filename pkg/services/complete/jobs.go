@@ -40,9 +40,14 @@ func (ch *CompletionHandler) completeJobs() {
 
 func (ch *CompletionHandler) orbsJobs() {
 	for _, orb := range ch.Doc.Orbs {
-		remoteOrb := ch.Cache.OrbCache.GetOrb(orb.Url.GetOrbID())
-		if remoteOrb != nil {
-			for jobName := range remoteOrb.Jobs {
+		// Local orbs jobs are added directly within ch.Doc.Jobs
+		if orb.Url.IsLocal {
+			continue
+		}
+
+		orbInfo := ch.GetOrbInfo(orb)
+		if orbInfo != nil {
+			for jobName := range orbInfo.Jobs {
 				jobName = fmt.Sprintf("%s/%s", orb.Name, jobName)
 				ch.addCompletionItem(jobName)
 			}

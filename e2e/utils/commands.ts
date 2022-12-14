@@ -5,9 +5,13 @@ import {
 import type {
   CompletionList,
   HoverCommandResponse,
-  PublishDiagnosticsParams,
   Position,
 } from '../types';
+import DiagnosticList from './DiagnosticList';
+import {
+  configFileContent,
+  configFileUri,
+} from '../.env';
 
 async function didOpen(
   filePath: string,
@@ -15,13 +19,13 @@ async function didOpen(
 
   // Number of milliseconds to wait for orbs to be fetched
   waitOrbLoading = 3000,
-) : Promise<PublishDiagnosticsParams> {
+) : Promise<DiagnosticList> {
   const response = await utils.command(
     Commands.DocumentDidOpen,
     {
       textDocument: {
-        text: await utils.configFileContent(filePath, 'utf-8'),
-        uri: utils.configFileUri(filePath),
+        text: await configFileContent(filePath, 'utf-8'),
+        uri: configFileUri(filePath),
         version,
         languageId: 'yaml',
       },
@@ -48,7 +52,7 @@ async function complete(
     {
       position,
       textDocument: {
-        uri: utils.configFileUri(filename),
+        uri: configFileUri(filename),
       },
     },
   ) as CompletionList;
@@ -67,7 +71,7 @@ async function hover(
     {
       position,
       textDocument: {
-        uri: utils.configFileUri(filename),
+        uri: configFileUri(filename),
       },
     },
   ) as HoverCommandResponse;

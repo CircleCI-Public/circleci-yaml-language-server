@@ -14,13 +14,19 @@ exports[`Completion command Complete list of jobs 1`] = `
       "label": "build",
     },
     {
-      "label": "lint",
+      "label": "confirm",
     },
     {
       "label": "node/run",
     },
     {
       "label": "node/test",
+    },
+    {
+      "label": "parameter-within-job/lint",
+    },
+    {
+      "label": "parameter-within-job/validate",
     },
     {
       "label": "tests",

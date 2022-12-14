@@ -1,66 +1,18 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`Diagnostic testing files autocomplete-jobs.yml 1`] = `
-{
-  "diagnostics": [
-    {
-      "data": [],
-      "message": "Cannot find declaration for job ",
-      "range": {
-        "end": {
-          "character": 7,
-          "line": 53,
-        },
-        "start": {
-          "character": 6,
-          "line": 53,
-        },
-      },
-      "severity": 1,
-      "source": "cci-language-server",
-    },
-    {
-      "data": [],
-      "message": "Invalid type. Expected: string, given: null",
-      "range": {
-        "end": {
-          "character": 7,
-          "line": 53,
-        },
-        "start": {
-          "character": 6,
-          "line": 53,
-        },
-      },
-      "severity": 1,
-      "source": "cci-language-server",
-    },
-    {
-      "data": [],
-      "message": "Must validate one and only one schema (oneOf)",
-      "range": {
-        "end": {
-          "character": 7,
-          "line": 53,
-        },
-        "start": {
-          "character": 6,
-          "line": 53,
-        },
-      },
-      "severity": 1,
-      "source": "cci-language-server",
-    },
+DiagnosticList {
+  "list": [
     {
       "message": "You may want to add the \`store_test_results\` step to visualize the test results in CircleCI",
       "range": {
         "end": {
           "character": 7,
-          "line": 32,
+          "line": 63,
         },
         "start": {
           "character": 2,
-          "line": 32,
+          "line": 63,
         },
       },
       "severity": 4,
@@ -70,12 +22,12 @@ exports[`Diagnostic testing files autocomplete-jobs.yml 1`] = `
       "message": "Job is unused",
       "range": {
         "end": {
-          "character": 13,
-          "line": 17,
+          "character": 14,
+          "line": 48,
         },
         "start": {
           "character": 6,
-          "line": 17,
+          "line": 48,
         },
       },
       "severity": 2,
@@ -83,18 +35,18 @@ exports[`Diagnostic testing files autocomplete-jobs.yml 1`] = `
     },
     {
       "data": [],
-      "message": "Parameter node-version is not defined",
+      "message": "Job is unused",
       "range": {
         "end": {
-          "character": 58,
-          "line": 12,
+          "character": 13,
+          "line": 24,
         },
         "start": {
-          "character": 29,
-          "line": 12,
+          "character": 6,
+          "line": 24,
         },
       },
-      "severity": 1,
+      "severity": 2,
       "source": "cci-language-server",
     },
     {
@@ -103,11 +55,11 @@ exports[`Diagnostic testing files autocomplete-jobs.yml 1`] = `
       "range": {
         "end": {
           "character": 27,
-          "line": 3,
+          "line": 9,
         },
         "start": {
           "character": 2,
-          "line": 3,
+          "line": 9,
         },
       },
       "severity": 2,
@@ -130,13 +82,11 @@ exports[`Diagnostic testing files autocomplete-jobs.yml 1`] = `
       "source": "cci-language-server",
     },
   ],
-  "uri": "file:///project/test-files/.circleci/invalid-files/autocomplete-jobs.yml",
 }
 `;
 
 exports[`Diagnostic testing files config1.yml 1`] = `
-{
-  "diagnostics": [],
-  "uri": "file:///project/test-files/.circleci/config1.yml",
+DiagnosticList {
+  "list": [],
 }
 `;

@@ -1,4 +1,4 @@
-import { configFileContent, configFileUri } from './helpers';
+import { configFileContent, configFileUri } from '../.env';
 
 type VersionID = number;
 

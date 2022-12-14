@@ -34,19 +34,24 @@ func (val Validate) validateSingleOrb(orb ast.Orb) {
 		return
 	}
 
-	orbVersion, err := parser.GetOrbInfo(orb.Url.GetOrbID(), val.Cache, val.Context)
+	orbVersion, err := val.Doc.GetOrFetchOrbInfo(orb, val.Cache)
 
-	if err != nil && strings.HasPrefix(err.Error(), "could not find orb") {
-		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
-			orb.Range,
-			fmt.Sprintf("Cannot find remote orb %s", orb.Url.GetOrbID()),
-		))
-
-		return
+	if err != nil {
+		if strings.HasPrefix(err.Error(), "could not find orb") {
+			val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
+				orb.Range,
+				fmt.Sprintf("Cannot find remote orb %s", orb.Url.GetOrbID()),
+			))
+		} else {
+			val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
+				orb.Range,
+				fmt.Sprintf("error while retrieving orb %s", orb.Url.GetOrbID()),
+			))
+		}
 	}
 
 	// Adding diagnostics based on versions
-	if orbVersion.RemoteInfo.ID == "" {
+	if orbVersion == nil {
 		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
 			orb.Range,
 			"Orb or version not found",
@@ -125,7 +130,7 @@ func (val Validate) checkIfOrbIsUsed(orb ast.Orb) bool {
 	}
 
 	for _, job := range val.Doc.Jobs {
-		if val.checkIfStepsContainOrb(job.Steps, orb.Name) {
+		if val.checkIfJobUseOrb(job, orb.Name) {
 			return true
 		}
 	}

@@ -255,10 +255,10 @@ func (ch *CompletionHandler) addDockerImageCompletion(node *sitter.Node, namespa
 // Orb executor
 
 func (ch *CompletionHandler) getOrbExecutors(orb ast.Orb) []ast.Executor {
-	remoteOrb := ch.Cache.OrbCache.GetOrb(orb.Url.GetOrbID())
+	orbInfo := ch.GetOrbInfo(orb)
 
 	res := []ast.Executor{}
-	for _, executors := range remoteOrb.Executors {
+	for _, executors := range orbInfo.Executors {
 		res = append(res, executors)
 	}
 
