@@ -119,16 +119,19 @@ func (val Validate) CheckIfParamsExist() {
 			}
 
 			for _, param := range params {
-				ok := true
 				isPipeline := strings.HasPrefix(param.FullName, "pipeline")
 
+				var parameters map[string]ast.Parameter
+
 				if isPipeline {
-					_, ok = val.Doc.PipelinesParameters[param.Name]
+					parameters = val.Doc.PipelinesParameters
 				} else {
-					_, ok = val.Doc.GetParamsWithPosition(parser.NodeToRange(node).Start)[param.Name]
+					parameters = val.Doc.GetParamsWithPosition(parser.NodeToRange(node).Start)
 				}
 
-				if ok {
+				_, parameterFound := parameters[param.Name]
+
+				if parameterFound {
 					continue
 				}
 

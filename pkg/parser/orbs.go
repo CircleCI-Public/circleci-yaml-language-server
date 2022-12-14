@@ -4,9 +4,36 @@ import (
 	"strings"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	sitter "github.com/smacker/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
+
+func (doc *YamlDocument) GetOrFetchOrbInfo(orb ast.Orb, cache *utils.Cache) (*ast.OrbInfo, error) {
+	// Searching within local orbs
+	orbInfo, ok := doc.LocalOrbInfo[orb.Name]
+	if ok {
+		return orbInfo, nil
+	}
+
+	orbId := orb.Url.GetOrbID()
+
+	// Searching within remote orbs
+	orbInfo = cache.OrbCache.GetOrb(orbId)
+	if orbInfo != nil {
+		return orbInfo, nil
+	}
+
+	// Trying to fetch if not found
+	var err error
+	orbInfo, err = GetOrbInfo(orbId, cache, doc.Context)
+
+	if err != nil {
+		return &ast.OrbInfo{}, err
+	}
+
+	return orbInfo, nil
+}
 
 func (doc *YamlDocument) parseOrbs(orbsNode *sitter.Node) {
 	// orbsNode is a block_node
@@ -55,8 +82,19 @@ func (doc *YamlDocument) parseSingleOrb(orbNode *sitter.Node) (*ast.Orb, *LocalO
 			return nil, nil
 		}
 
-		return nil, localOrb
+		doc.parseLocalOrb(orbName, orbContent)
+		orb := ast.Orb{
+			Url: ast.OrbURL{
+				Name:    orbName,
+				Version: "",
+				IsLocal: true,
+			},
+			Name:      orbName,
+			Range:     NodeToRange(orbNode),
+			NameRange: NodeToRange(orbNameNode),
+		}
 
+		return &orb, localOrb
 	default:
 		return nil, nil
 	}
@@ -66,10 +104,10 @@ func (doc *YamlDocument) getOrbURL(orbUrl string) ast.OrbURL {
 	splittedOrb := strings.Split((orbUrl), "@")
 
 	if len(splittedOrb) > 1 {
-		return ast.OrbURL{Name: splittedOrb[0], Version: splittedOrb[1]}
+		return ast.OrbURL{Name: splittedOrb[0], Version: splittedOrb[1], IsLocal: false}
 	}
 
-	return ast.OrbURL{Name: splittedOrb[0], Version: "volatile"}
+	return ast.OrbURL{Name: splittedOrb[0], Version: "volatile", IsLocal: false}
 }
 
 func (doc *YamlDocument) getOrbVersionRange(orbNode *sitter.Node) protocol.Range {

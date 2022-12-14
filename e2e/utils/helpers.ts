@@ -4,11 +4,11 @@ import CustomEvent from '../.env/CustomEvent';
 import { EventType, RequestPayload } from '../.env/RpcClient';
 import type {
   CommandParameters,
-  Diagnostic,
   Position,
   ProtocolParams,
   PublishDiagnosticsParams,
 } from '../types';
+import DiagnosticList from './DiagnosticList';
 
 /**
  * Send a command to the LSP server and return the response.
@@ -110,7 +110,7 @@ function rawCommand(
  *                         Useful for snapshot testing.
  * @returns Return the diagnostic list.
  */
-async function immediateDiagnostics(sortDiagnostics = true): Promise<PublishDiagnosticsParams> {
+async function immediateDiagnostics(sortDiagnostics = true): Promise<DiagnosticList> {
   const diagnostics = await new Promise<PublishDiagnosticsParams>((resolve, reject) => {
     globalThis.rpcClient.addEventListener(
       EventType.dataReceived,
@@ -133,52 +133,18 @@ async function immediateDiagnostics(sortDiagnostics = true): Promise<PublishDiag
     );
   });
 
+  const list = new DiagnosticList(diagnostics.diagnostics);
+
   if (sortDiagnostics) {
-    diagnostics.diagnostics.sort(sortDiagnosticList);
+    list.sort();
   }
 
-  return diagnostics;
-}
-
-function sortDiagnosticList(a: Diagnostic, b: Diagnostic) {
-  return sortPosition(a.range.start, b.range.start)
-  || sortPosition(a.range.end, b.range.end)
-  || sortSeverity(a, b)
-  || a.message.localeCompare(b.message);
-}
-
-function sortSeverity(diagA: Diagnostic, diagB: Diagnostic) {
-  if (diagA.severity === diagB.severity) {
-    return 0;
-  }
-
-  const a = diagA.severity ?? 99999;
-  const b = diagB.severity ?? 99999;
-
-  return a > b ? -1 : 1;
-}
-
-function sortPosition(a: Position, b: Position): number {
-  if (a.line !== b.line) {
-    return a.line > b.line ? -1 : 1;
-  }
-
-  if (a.character === b.character) {
-    return 0;
-  }
-
-  return a.character > b.character ? -1 : 1;
+  return list;
 }
 
 type NotificationPayload = {
   data: RequestPayload<PublishDiagnosticsParams>
 };
-
-export {
-  configFilePath,
-  configFileContent,
-  configFileUri,
-} from '../.env/index';
 
 export {
   command,

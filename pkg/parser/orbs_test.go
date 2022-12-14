@@ -64,6 +64,8 @@ func TestYamlDocument_parseOrbs(t *testing.T) {
 				Commands: make(map[string]ast.Command),
 				Content:  []byte(tt.args.orbsString),
 				Orbs:     make(map[string]ast.Orb),
+
+				LocalOrbInfo: make(map[string]*ast.OrbInfo),
 			}
 			orbNode := getNodeForString(tt.args.orbsString)
 

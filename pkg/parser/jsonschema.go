@@ -37,8 +37,6 @@ func (validator *JSONSchemaValidator) LoadJsonSchema(schemaLocation string) erro
 func handleYAMLErrors(err string, content []byte, rootNode *sitter.Node) ([]protocol.Diagnostic, error) {
 	diagnostics := []protocol.Diagnostic{}
 
-	reWithLine, _ := regexp.Compile(`(?s)^yaml:\s(?P<Error>[\w\d\s]+):\n(?P<Lines>\s+line \d+:.+\n?)+`)
-
 	if strings.Contains(err, "yaml: unknown anchor") {
 		anchorName := strings.Split(err, "'")[1]
 		regex, _ := regexp.Compile(anchorName)
@@ -61,13 +59,37 @@ func handleYAMLErrors(err string, content []byte, rootNode *sitter.Node) ([]prot
 		return diagnostics, nil
 	}
 
-	if !reWithLine.MatchString(err) {
+	reError, _ := regexp.Compile(`(?s)^yaml: line (?P<Lines>\d+):\s(?P<Error>.+)`)
+
+	if reError.MatchString(err) {
+		info := reError.FindAllStringSubmatch(err, -1)[0]
+		lineError := info[2]
+		lineNumber, error := strconv.Atoi(info[1])
+
+		// If, for some reason, the Atoi fail, we return the original error
+		if error != nil {
+			return []protocol.Diagnostic{utils.CreateErrorDiagnosticFromNode(rootNode, err)}, nil
+		}
+
+		lineRange := utils.AllLineContentRange([]int{lineNumber}, content)[0]
+
+		diagnostic := utils.CreateErrorDiagnosticFromRange(
+			lineRange,
+			utils.ToDiagnosticMessage(lineError),
+		)
+
+		return []protocol.Diagnostic{diagnostic}, nil
+	}
+
+	reMultilineError, _ := regexp.Compile(`(?s)^yaml:\s(?P<Error>[\w\d\s]+):\n(?P<Lines>\s+line \d+:.+\n?)+`)
+
+	if !reMultilineError.MatchString(err) {
 		return []protocol.Diagnostic{utils.CreateErrorDiagnosticFromNode(rootNode, err)}, nil
 	}
 
 	// For errors providing line numbers, we add a diagnostic on the
 	// specified lines
-	mes := reWithLine.FindAllStringSubmatch(err, -1)[0]
+	mes := reMultilineError.FindAllStringSubmatch(err, -1)[0]
 	lines := strings.Split(mes[2], "\n")
 
 	re := regexp.MustCompile(`^\s+line\s+(\d+):\s(.+)$`)

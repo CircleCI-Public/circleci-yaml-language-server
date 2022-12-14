@@ -3,6 +3,7 @@ package complete
 import (
 	"fmt"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	sitter "github.com/smacker/go-tree-sitter"
@@ -92,4 +93,8 @@ func (ch *CompletionHandler) addCompletionItemFieldWithCustomText(label string, 
 		Label:      label,
 		InsertText: fmt.Sprintf("%s%s", label, customText),
 	})
+}
+
+func (ch *CompletionHandler) GetOrbInfo(orb ast.Orb) *ast.OrbInfo {
+	return ch.Doc.GetOrbInfo(ch.Cache, orb.Name)
 }

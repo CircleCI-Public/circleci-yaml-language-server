@@ -15,23 +15,37 @@ type Orb struct {
 }
 
 type OrbURL struct {
+	IsLocal bool
 	Name    string
 	Version string
 }
 
 func (orb *OrbURL) GetOrbID() string {
+	if orb.IsLocal {
+		return orb.Name
+	}
 	return fmt.Sprintf("%s@%s", orb.Name, orb.Version)
 }
 
 type OrbInfo struct {
-	CreatedAt   string
-	Commands    map[string]Command
-	Jobs        map[string]Job
-	Executors   map[string]Executor
+	IsLocal bool
+
+	CreatedAt  string
+	Commands   map[string]Command
+	Jobs       map[string]Job
+	Executors  map[string]Executor
+	Parameters map[string]Parameter
+
 	Description string
 	Source      string
 	RemoteInfo  RemoteOrbInfo
-	IsLocal     bool
+
+	OrbsRange       protocol.Range
+	ExecutorsRange  protocol.Range
+	CommandsRange   protocol.Range
+	JobsRange       protocol.Range
+	WorkflowRange   protocol.Range
+	ParametersRange protocol.Range
 }
 
 type RemoteOrbInfo struct {

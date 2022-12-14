@@ -13,6 +13,15 @@ func OffsetRange(rng *protocol.Range, offset protocol.Position) {
 	rng.End.Character += offset.Character
 }
 
+func AddOffsetToRange(rng protocol.Range, offset protocol.Position) protocol.Range {
+	rng.Start.Line += offset.Line
+	rng.Start.Character += offset.Character
+	rng.End.Line += offset.Line
+	rng.End.Character += offset.Character
+
+	return rng
+}
+
 // Return the exact range of the text on a line
 //
 // For example, with a yaml:

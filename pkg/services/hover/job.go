@@ -57,7 +57,7 @@ func hoverSteps(doc yamlparser.YamlDocument, path []string, cache *utils.Cache) 
 func hoverOrb(doc yamlparser.YamlDocument, stepName string, cache *utils.Cache) string {
 	splittedStep := strings.Split(stepName, "/")
 	orbInDoc := doc.Orbs[splittedStep[0]]
-	orb := cache.OrbCache.GetOrb(orbInDoc.Url.GetOrbID())
+	orb := doc.GetOrbInfo(cache, orbInDoc.Name)
 	if orb == nil {
 		return ""
 	}

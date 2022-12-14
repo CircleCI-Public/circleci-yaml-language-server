@@ -1,6 +1,7 @@
 package definition
 
 import (
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
@@ -48,4 +49,8 @@ func (def DefinitionStruct) Definition(yamlDocument yamlparser.YamlDocument) ([]
 	}
 
 	return nil, nil
+}
+
+func (def DefinitionStruct) GetOrbInfo(name string) *ast.OrbInfo {
+	return def.Doc.GetOrbInfo(def.Cache, name)
 }

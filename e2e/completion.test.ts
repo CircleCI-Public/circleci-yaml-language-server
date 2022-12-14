@@ -17,7 +17,7 @@ describe('Completion command', () => {
     const testingFile = 'invalid-files/autocomplete-jobs.yml';
 
     await commands.didOpen(testingFile);
-    const res = await commands.complete(testingFile, position(53, 7));
+    const res = await commands.complete(testingFile, position(85, 9));
 
     expect(res).toMatchSnapshot();
   });

@@ -24,7 +24,7 @@ describe('DidOpen', () => {
 
     const diagnostics = await immediateDiagnostics();
 
-    expect(diagnostics).toMatchSnapshot();
+    expect(diagnostics.list).toMatchSnapshot();
   });
 
   it('Unused job', async () => {

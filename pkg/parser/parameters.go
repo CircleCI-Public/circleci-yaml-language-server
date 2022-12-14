@@ -29,6 +29,10 @@ func (doc *YamlDocument) parseSingleParameter(paramNode *sitter.Node, params map
 	// paramNode is a block_mapping_pair
 	keyNode, valueNode := doc.GetKeyValueNodes(paramNode)
 
+	if keyNode == nil {
+		return
+	}
+
 	blockMappingNode := GetChildMapping(valueNode)
 	if blockMappingNode == nil {
 		return
