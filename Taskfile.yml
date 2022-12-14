@@ -77,9 +77,10 @@ tasks:
       - gofmt -w pkg
 
   prepare:vscode:
+    dir: editors/vscode
     cmds:
-      - cd editors/vscode && yarn
-      - cd editors/vscode && yarn run build
+      - yarn install --immutable
+      - yarn run build
 
   prepare:test:e2e:
     dir: e2e
