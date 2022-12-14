@@ -65,9 +65,9 @@ CircleCI Configuration files. It offers:
     definition directly in the IDE when using the go-to-definition feature on an
     orb-defined command or parameter.
 
-<div style="text-align:center">
+<p align="center">
     <img src="https://images.ctfassets.net/il1yandlcjgk/knAhj4Gns5QidEb9ZQiwz/66bdeba70a7221bb12ad574e4f5e6572/config_helper_go-to-definition-optimised.gif" alt="circleci-vscode-go-to-definition" width="50%"/>
-</div>
+</p>
 
 -   **Contextual documentation and usage hints when hovering on specific keys**,
     so to avoid you having to continuously switch to your browser to check the
@@ -75,32 +75,32 @@ CircleCI Configuration files. It offers:
     official CircleCI documentation are also provided on hover - for easier
     navigation.
 
-<div style="text-align:center">
+<p align="center">
     <img src="https://images.ctfassets.net/il1yandlcjgk/3CFOeD8gH89Dq2A6P0aaGi/d2e2afdb3ec456df857533c413022c7c/config_helper_on-hover-documentation.png" alt="circleci-vscode-documentation-on-hover" width="50%"/>
-</div>
+</p>
 
 -   **Syntax validation** - which makes it much easier to identify typos,
     incorrect use of parameters, incomplete definitions, wrong types, invalid or
     deprecated machine versions, etc.
 
-<div style="text-align:center">
+<p align="center">
     <img src="https://images.ctfassets.net/il1yandlcjgk/6HXk81I7GxFwZ6F8X29CCN/a8b82d3f8a458c847ae9b1ac2e0b31f2/config_helper_syntax-validation.gif" alt="circleci-vscode-syntax-validation" width="50%"/>
-</div>
+</p>
 
 -   **Usage warnings** - which can help identify deprecated parameters, unused
     jobs or executors, or missing keys that prevent you from taking advantage of
     CircleCI’s full capabilities
 
-<div style="text-align:center">
+<p align="center">
     <img src="https://images.ctfassets.net/il1yandlcjgk/47wbq0Yp0BfIQMmVKg0vd2/86a6cf49af3c15848269b9f876b6b49e/config_helper_usage-warning.png" alt="circleci-vscode-usage-warnings" width="50%"/>
-</div>
+</p>
 
 -   **Auto completion**, available both on built-in keys and parameters and on
     user-defined variables
 
-<div style="text-align:center">
+<p align="center">
     <img src="https://images.ctfassets.net/il1yandlcjgk/lDNOHSw9R59F9nhhN3KWq/6adf764144b085e3d22c26de8e653a33/config_helper_autocomplete.png" alt="circleci-vscode-autocomplete" width="50%"/>
-</div>
+</p>
 
 ## <a name="platforms"></a>Platforms, Deployment and Package Managers
 
@@ -137,13 +137,13 @@ YAML Language Server can be found in [HACKING.md](HACKING.md).
 
 ## Social media links
 
-<a href="https://twitter.com/intent/tweet?text=Take%20a%20look%20at%20the%20open%20sourced%20CircleCI%20Language%20Server%20on%20GitHub%20https%3A//github.com/CircleCI-Public/circleci-yaml-language-server%23readme%20via%20%40CircleCI" style="text-align:center; margin-right:15px">
+<a href="https://twitter.com/intent/tweet?text=Take%20a%20look%20at%20the%20open%20sourced%20CircleCI%20Language%20Server%20on%20GitHub%20https%3A//github.com/CircleCI-Public/circleci-yaml-language-server%23readme%20via%20%40CircleCI" style="align:center; margin-right:15px">
     <img src="./assets/social/tw.png" alt="twitter-link" width="60px"/>
 </a> 
-<a href="https://www.facebook.com/sharer/sharer.php?u=https%3A//github.com/CircleCI-Public/circleci-yaml-language-server%23readme" style="text-align:center; margin-right:15px">
+<a href="https://www.facebook.com/sharer/sharer.php?u=https%3A//github.com/CircleCI-Public/circleci-yaml-language-server%23readme" style="align:center; margin-right:15px">
     <img src="./assets/social/fb.png" alt="facebook-link" width="60px"/>
 </a> 
-<a href="https://www.linkedin.com/shareArticle?mini=true&url=https%3A//github.com/CircleCI-Public/circleci-yaml-language-server%23readme" style="text-align:center">
+<a href="https://www.linkedin.com/shareArticle?mini=true&url=https%3A//github.com/CircleCI-Public/circleci-yaml-language-server%23readme" style="align:center">
     <img src="./assets/social/ln.png" alt="linkedin-link" width="60px"/>
 </a>
 
