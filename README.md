@@ -1,9 +1,5 @@
 ![](./assets/header.png)
 
-<div style="text-align:center">
-    <img src="./assets/header.png" alt="circleci-language-server-repo-header" width="95%"/>
-</div>
-
 # CircleCI YAML Language Server
 
 [![CircleCI](https://dl.circleci.com/status-badge/img/gh/CircleCI-Public/circleci-yaml-language-server/tree/master.svg?style=svg&circle-token=4f59ef1a4041930f4d07e37cb0b7ebd764f9689e)](https://dl.circleci.com/status-badge/redirect/gh/CircleCI-Public/circleci-yaml-language-server/tree/master)
@@ -51,7 +47,7 @@ CircleCI Configuration files. It offers:
     orb-defined command or parameter.
 
 <div style="text-align:center">
-    <img src="https://images.ctfassets.net/il1yandlcjgk/knAhj4Gns5QidEb9ZQiwz/66bdeba70a7221bb12ad574e4f5e6572/config_helper_go-to-definition-optimised.gif" alt="circleci-vscode-go-to-definition" width="95%"/>
+    <img src="https://images.ctfassets.net/il1yandlcjgk/knAhj4Gns5QidEb9ZQiwz/66bdeba70a7221bb12ad574e4f5e6572/config_helper_go-to-definition-optimised.gif" alt="circleci-vscode-go-to-definition" width="50%"/>
 </div>
 
 -   **Contextual documentation and usage hints when hovering on specific keys**,
@@ -61,7 +57,7 @@ CircleCI Configuration files. It offers:
     navigation.
 
 <div style="text-align:center">
-    <img src="https://images.ctfassets.net/il1yandlcjgk/3CFOeD8gH89Dq2A6P0aaGi/d2e2afdb3ec456df857533c413022c7c/config_helper_on-hover-documentation.png" alt="circleci-vscode-documentation-on-hover" width="95%"/>
+    <img src="https://images.ctfassets.net/il1yandlcjgk/3CFOeD8gH89Dq2A6P0aaGi/d2e2afdb3ec456df857533c413022c7c/config_helper_on-hover-documentation.png" alt="circleci-vscode-documentation-on-hover" width="50%"/>
 </div>
 
 -   **Syntax validation** - which makes it much easier to identify typos,
@@ -69,7 +65,7 @@ CircleCI Configuration files. It offers:
     deprecated machine versions, etc.
 
 <div style="text-align:center">
-    <img src="https://images.ctfassets.net/il1yandlcjgk/6HXk81I7GxFwZ6F8X29CCN/a8b82d3f8a458c847ae9b1ac2e0b31f2/config_helper_syntax-validation.gif" alt="circleci-vscode-syntax-validation" width="95%"/>
+    <img src="https://images.ctfassets.net/il1yandlcjgk/6HXk81I7GxFwZ6F8X29CCN/a8b82d3f8a458c847ae9b1ac2e0b31f2/config_helper_syntax-validation.gif" alt="circleci-vscode-syntax-validation" width="50%"/>
 </div>
 
 -   **Usage warnings** - which can help identify deprecated parameters, unused
@@ -77,14 +73,14 @@ CircleCI Configuration files. It offers:
     CircleCI’s full capabilities
 
 <div style="text-align:center">
-    <img src="https://images.ctfassets.net/il1yandlcjgk/47wbq0Yp0BfIQMmVKg0vd2/86a6cf49af3c15848269b9f876b6b49e/config_helper_usage-warning.png" alt="circleci-vscode-usage-warnings" width="95%"/>
+    <img src="https://images.ctfassets.net/il1yandlcjgk/47wbq0Yp0BfIQMmVKg0vd2/86a6cf49af3c15848269b9f876b6b49e/config_helper_usage-warning.png" alt="circleci-vscode-usage-warnings" width="50%"/>
 </div>
 
 -   **Auto completion**, available both on built-in keys and parameters and on
     user-defined variables
 
 <div style="text-align:center">
-    <img src="https://images.ctfassets.net/il1yandlcjgk/lDNOHSw9R59F9nhhN3KWq/6adf764144b085e3d22c26de8e653a33/config_helper_autocomplete.png" alt="circleci-vscode-autocomplete" width="95%"/>
+    <img src="https://images.ctfassets.net/il1yandlcjgk/lDNOHSw9R59F9nhhN3KWq/6adf764144b085e3d22c26de8e653a33/config_helper_autocomplete.png" alt="circleci-vscode-autocomplete" width="50%"/>
 </div>
 
 ## <a name="platforms"></a>Platforms, Deployment and Package Managers
@@ -106,24 +102,24 @@ Please feel free to contribute to this project, we update our Hall of fame - [CO
 
 ## <a name="quicklinks"></a>Quick links
 
-[Install the VS Code extension using our language server](https://marketplace.visualstudio.com/items?itemName=circleci.circleci)
+- [Install the VS Code extension using our language server](https://marketplace.visualstudio.com/items?itemName=circleci.circleci)
 
-[Discover how the language server was leveraged for the VS Code extension](https://youtu.be/Sdi7ctAXe2A)
+- [Discover how the language server was leveraged for the VS Code extension](https://youtu.be/Sdi7ctAXe2A)
 
-[Learn more about CircleCI](https://circleci.com/)
+- [Learn more about CircleCI](https://circleci.com/)
 
-[Do you have questions? Ask the circleCI community Discuss](https://discuss.circleci.com/)
+- [Do you have questions? Ask the circleCI community Discuss](https://discuss.circleci.com/)
 
-Help us get the word out! Share our project  
+## Social media links
 
-## Social media link
-
-<a href="https://twitter.com/intent/tweet?text=Take%20a%20look%20at%20the%20open%20sourced%20CircleCI%20Language%20Server%20on%20GitHub%20https%3A//github.com/CircleCI-Public/circleci-yaml-language-server%23readme%20via%20%40CircleCI" style="text-align:center">
-    <img src="./assets/social/tw.png" alt="twitter-link" width="10%"/>
+<a href="https://twitter.com/intent/tweet?text=Take%20a%20look%20at%20the%20open%20sourced%20CircleCI%20Language%20Server%20on%20GitHub%20https%3A//github.com/CircleCI-Public/circleci-yaml-language-server%23readme%20via%20%40CircleCI" style="text-align:center; margin-right:15px">
+    <img src="./assets/social/tw.png" alt="twitter-link" width="60px"/>
 </a> 
-<a href="https://www.facebook.com/sharer/sharer.php?u=https%3A//github.com/CircleCI-Public/circleci-yaml-language-server%23readme" style="text-align:center">
-    <img src="./assets/social/fb.png" alt="facebook-link" width="10%"/>
+<a href="https://www.facebook.com/sharer/sharer.php?u=https%3A//github.com/CircleCI-Public/circleci-yaml-language-server%23readme" style="text-align:center; margin-right:15px">
+    <img src="./assets/social/fb.png" alt="facebook-link" width="60px"/>
 </a> 
 <a href="https://www.linkedin.com/shareArticle?mini=true&url=https%3A//github.com/CircleCI-Public/circleci-yaml-language-server%23readme" style="text-align:center">
-    <img src="./assets/social/ln.png" alt="linkedin-link" width="10%"/>
+    <img src="./assets/social/ln.png" alt="linkedin-link" width="60px"/>
 </a> 
+
+Help us get the word out! Share our project  
