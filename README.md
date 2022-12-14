@@ -7,29 +7,48 @@
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE.md)
 
 ## This is CircleCI's YAML Language Server.
-The official CircleCI extension for Visual Studio Code is available [on the VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=circleci.circleci). This extension was developed by the Developer Experience team of CircleCI and it includes two sets of features: the pipeline manager and the config helper. 
 
-**The CircleCI config helper is based on a Language Server.** It provides language support for CircleCI YAML files. Thanks to the new VS Code extension, developers and DevOps engineers have access to direct feedback about the Config file they are editing, through features such as syntax validation and highlighting, rich navigation, on-hover documentation, autocompletion and usage hints.
+The official CircleCI extension for Visual Studio Code is available
+[on the VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=circleci.circleci).
+This extension was developed by the Developer Experience team of CircleCI and it
+includes two sets of features: the pipeline manager and the config helper.
 
-In our case the Language Server is an implementation of the Language Server Protocol for CircleCI YAML config files that we have open sourced in order to provide more transparency to our community regarding the way the config helper works under the hood and by providing access for our community to take the language server capabilities to the IDE of their liking.
+**The CircleCI config helper is based on a Language Server.** It provides
+language support for CircleCI YAML files. Thanks to the new VS Code extension,
+developers and DevOps engineers have access to direct feedback about the Config
+file they are editing, through features such as syntax validation and
+highlighting, rich navigation, on-hover documentation, autocompletion and usage
+hints.
 
-We believe that the CircleCI community is best placed to say what features are truly important or what bugs are the most annoying. We hope that the whole community will contribute to improving this tool by pointing out or addressing issues we might have overlooked. And we hope the value of this language server will be accessible to a great number of CircleCI users regardless of the IDE they choose to use.
+In our case the Language Server is an implementation of the Language Server
+Protocol for CircleCI YAML config files that we have open sourced in order to
+provide more transparency to our community regarding the way the config helper
+works under the hood and by providing access for our community to take the
+language server capabilities to the IDE of their liking.
 
-The Language Server is implemented in Go 1.19+ and is, at its core, a JSON-RPC server that handles different calls (specified by the LSP spec). 
+We believe that the CircleCI community is best placed to say what features are
+truly important or what bugs are the most annoying. We hope that the whole
+community will contribute to improving this tool by pointing out or addressing
+issues we might have overlooked. And we hope the value of this language server
+will be accessible to a great number of CircleCI users regardless of the IDE
+they choose to use.
+
+The Language Server is implemented in Go 1.19+ and is, at its core, a JSON-RPC
+server that handles different calls (specified by the LSP spec).
 
 ## Summary
 
-- [Features](./README.md#features)
-- [Platforms, Deployment and Package Managers](./README.md#platforms)
-- [Contributing](./README.md#contributing)
-- [Architecture Diagram](./README.md#architecture)
-- [Code of Conduct](./CODE_OF_CONDUCT.md)  
-- [Contribution Guidelines](./CONTRIBUTING.md)
-- [Contributors](./README.md#contributor)
-- [Quick Links](./README.md#quicklinks)
-- [Credits](./README.md#credits)
-- [Hacking](./HACKING.md)
-- [License](./README.md#licence)
+-   [Features](./README.md#features)
+-   [Platforms, Deployment and Package Managers](./README.md#platforms)
+-   [Contributing](./README.md#contributing)
+-   [Architecture Diagram](./README.md#architecture)
+-   [Code of Conduct](./CODE_OF_CONDUCT.md)
+-   [Contribution Guidelines](./CONTRIBUTING.md)
+-   [Contributors](./README.md#contributor)
+-   [Quick Links](./README.md#quicklinks)
+-   [Credits](./README.md#credits)
+-   [Hacking](./HACKING.md)
+-   [License](./README.md#licence)
 
 ## <a name="features"></a>Features
 
@@ -90,11 +109,17 @@ The tool is deployed through
 Green builds on the `master` branch will publish a new GitHub release. These
 releases contain binaries for macOS, Linux and Windows.
 
-This is a project in active development, and we target a release frequency of one release per week on average. However, we reserve the right of releasing more or less frequently when necessary.
+This is a project in active development, and we target a release frequency of
+one release per week on average. However, we reserve the right of releasing more
+or less frequently when necessary.
 
 ## <a name="contributing"></a>Contributing
 
-Please feel free to contribute to this project, we update our Hall of fame - [CONTRIBUTORS.md](./CONTRIBUTORS.md) with all contributors who helped us fix a bug. You can find all the contribution guidelines and useful information in [CONTRIBUTING.md](./CONTRIBUTING.md). Development instructions for the CircleCI YAML Language Server can be found in [HACKING.md](HACKING.md).
+Please feel free to contribute to this project, we update our Hall of fame -
+[CONTRIBUTORS.md](./CONTRIBUTORS.md) with all contributors who helped us fix a
+bug. You can find all the contribution guidelines and useful information in
+[CONTRIBUTING.md](./CONTRIBUTING.md). Development instructions for the CircleCI
+YAML Language Server can be found in [HACKING.md](HACKING.md).
 
 ## <a name="architecture"></a>Architecture diagram
 
@@ -102,13 +127,13 @@ Please feel free to contribute to this project, we update our Hall of fame - [CO
 
 ## <a name="quicklinks"></a>Quick links
 
-- [Install the VS Code extension using our language server](https://marketplace.visualstudio.com/items?itemName=circleci.circleci)
+-   [Install the VS Code extension using our language server](https://marketplace.visualstudio.com/items?itemName=circleci.circleci)
 
-- [Discover how the language server was leveraged for the VS Code extension](https://youtu.be/Sdi7ctAXe2A)
+-   [Discover how the language server was leveraged for the VS Code extension](https://youtu.be/Sdi7ctAXe2A)
 
-- [Learn more about CircleCI](https://circleci.com/)
+-   [Learn more about CircleCI](https://circleci.com/)
 
-- [Do you have questions? Ask the circleCI community Discuss](https://discuss.circleci.com/)
+-   [Do you have questions? Ask the circleCI community Discuss](https://discuss.circleci.com/)
 
 ## Social media links
 
@@ -120,6 +145,6 @@ Please feel free to contribute to this project, we update our Hall of fame - [CO
 </a> 
 <a href="https://www.linkedin.com/shareArticle?mini=true&url=https%3A//github.com/CircleCI-Public/circleci-yaml-language-server%23readme" style="text-align:center">
     <img src="./assets/social/ln.png" alt="linkedin-link" width="60px"/>
-</a> 
+</a>
 
-Help us get the word out! Share our project  
+Help us get the word out! Share our project
