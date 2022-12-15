@@ -34,7 +34,7 @@ commands:
     install-e2e-tests-deps:
         steps:
             - node/install-packages:
-                  app-dir: ~/project/e2e
+                  app-dir: ~/project
                   pkg-manager: yarn
 
 jobs:
@@ -201,7 +201,7 @@ jobs:
                 command: cd editors/vscode && npm run lint-check
             - run:
                 name: "Linter check for E2E test"
-                command: cd e2e && npm run lint
+                command: npm run lint:e2e
 
     release:
         parameters:
@@ -342,9 +342,9 @@ jobs:
         - install-e2e-tests-deps
         - run:
             name: Running tests
-            command: cd e2e && yarn start:ci
+            command: yarn test:e2e:ci
         - store_test_results:
-            path: e2e/reports
+            path: reports
 
 workflows:
     build:
