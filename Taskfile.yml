@@ -68,9 +68,8 @@ tasks:
       - task: lint:e2e
 
   lint:e2e:
-    dir: e2e
     cmds:
-      - yarn lint
+      - yarn lint:e2e
 
   lint:go:
     cmds:
@@ -83,7 +82,6 @@ tasks:
       - yarn run build
 
   prepare:test:e2e:
-    dir: e2e
     cmds:
       - yarn install --immutable
 
@@ -97,12 +95,11 @@ tasks:
       - task: test:e2e
 
   test:e2e:
-    dir: e2e
     env:
       SPAWN_LSP_SERVER: '{{.SPAWN_LSP_SERVER | default true}}'
       PORT: 10001
     cmds:
-      - yarn start {{.JEST_ARGS}}
+      - yarn test:e2e {{.JEST_ARGS}}
 
   test:e2e:update:
     cmds:

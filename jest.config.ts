@@ -2,7 +2,7 @@ import type { Config as JestConfig } from 'jest';
 
 import type {
   EnvOptions,
-} from './src/types';
+} from './e2e/types';
 
 /*
  * For a detailed explanation regarding each configuration property and type check, visit:
@@ -31,7 +31,7 @@ const config : Config = {
   ],
 
   // The test environment that will be used for testing
-  testEnvironment: './src/.env/environment.ts',
+  testEnvironment: './e2e/.env/environment.ts',
 
   // Options that will be passed to the testEnvironment
   testEnvironmentOptions: {
@@ -55,13 +55,13 @@ const config : Config = {
       // Path to the server binary
       // Env variable: RPC_SERVER_BIN
       // Default: <none>
-      binPath: '../bin/start_server', // Name of the build after the "task build" command
+      binPath: './bin/start_server', // Name of the build after the "task build" command
 
       // Path to the schema.
       // If relative, it will be relative to the current folder
       // Env variable: SCHEMA_LOCATION
       // Default: <none>
-      jsonSchemaLocation: '../publicschema.json',
+      jsonSchemaLocation: './publicschema.json',
     },
   },
 };

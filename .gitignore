@@ -7,5 +7,5 @@ licenses.errors
 __pycache__
 node_modules
 coverage
-e2e/reports
+/reports
 __debug_bin

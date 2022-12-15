@@ -4,9 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "lint": "eslint .",
-    "start": "jest",
-    "start:ci": "jest --maxWorkers 1"
+    "lint:e2e": "eslint e2e/",
+    "test:e2e": "jest",
+    "test:e2e:ci": "jest --maxWorkers 1"
   },
   "author": "",
   "license": "ISC",

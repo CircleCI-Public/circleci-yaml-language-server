@@ -3,7 +3,7 @@ import path from 'path';
 
 const projectRoot = path.resolve(
   __dirname,
-  '../../..',
+  '../..',
 );
 
 const examplesFolder = path.resolve(
