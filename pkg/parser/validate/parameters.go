@@ -11,6 +11,14 @@ import (
 	"go.lsp.dev/protocol"
 )
 
+func (val Validate) ValidatePipelineParameters() {
+	if len(val.Doc.PipelinesParameters) == 0 && !utils.IsDefaultRange(val.Doc.PipelinesParametersRange) {
+		val.addDiagnostic(
+			utils.CreateEmptyAssignationWarning(val.Doc.PipelinesParametersRange),
+		)
+	}
+}
+
 // Check if the parameter is defined if it's not optional,
 // otherwise add a diagnostic error if the needed parameter is not assigned
 func (val Validate) checkIfParamAssigned(params map[string]ast.ParameterValue, definedParam ast.Parameter, stepName string, stepRange protocol.Range) bool {

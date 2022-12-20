@@ -23,4 +23,5 @@ func (val *Validate) Validate() {
 	val.ValidateOrbs()
 	val.ValidateExecutors()
 	val.CheckNames()
+	val.ValidatePipelineParameters()
 }

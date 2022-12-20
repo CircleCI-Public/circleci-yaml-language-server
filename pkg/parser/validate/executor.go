@@ -10,6 +10,14 @@ import (
 )
 
 func (val Validate) ValidateExecutors() {
+	if len(val.Doc.Executors) == 0 && !utils.IsDefaultRange(val.Doc.ExecutorsRange) {
+		val.addDiagnostic(
+			utils.CreateEmptyAssignationWarning(val.Doc.ExecutorsRange),
+		)
+
+		return
+	}
+
 	for _, executor := range val.Doc.Executors {
 		val.validateSingleExecutor(executor)
 	}

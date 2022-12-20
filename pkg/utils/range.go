@@ -90,6 +90,13 @@ func AreRangeEqual(a protocol.Range, b protocol.Range) bool {
 	return ArePositionEqual(b.End, b.End)
 }
 
+func IsDefaultRange(rng protocol.Range) bool {
+	// A default range is a set of default position
+	// which is a set of numbers which defaults to 0 in Go
+
+	return (rng.Start.Character + rng.Start.Line + rng.End.Character + rng.End.Line) == 0
+}
+
 // Compare two positions.
 // Return 0 if the two position are the same
 // Return 1 if a is before b

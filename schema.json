@@ -1024,7 +1024,7 @@
 	"type": "object",
 	"properties": {
 		"executors": {
-			"type": "object",
+			"type": ["object", "null"],
 			"propertyNames": {
 				"pattern": "^[a-z][a-z\\d_-]*$"
 			},
@@ -2018,7 +2018,7 @@
 			}
 		},
 		"orbs": {
-			"type": "object",
+			"type": ["object", "null"],
 			"additionalProperties": {
 				"oneOf": [
 					{
@@ -2852,7 +2852,7 @@
 			}
 		},
 		"commands": {
-			"type": "object",
+			"type": ["object", "null"],
 			"propertyNames": {
 				"pattern": "^[a-z][a-z\\d_-]*$"
 			},
@@ -2971,7 +2971,7 @@
 			"enum": ["2.1", 2.1]
 		},
 		"parameters": {
-			"type": "object",
+			"type": ["object", "null"],
 			"additionalProperties": {
 				"type": "object",
 				"properties": {
