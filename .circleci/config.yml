@@ -394,19 +394,19 @@ workflows:
             - build-linux:
                 filters:
                     tags:
-                        only: ^((?!pre).)*$
+                        only: /^((?!pre).)*$/
                     branches:
                         ignore: /.*/
             - build-macos:
                 filters:
                     tags:
-                        only: ^((?!pre).)*$
+                        only: /^((?!pre).)*$/
                     branches:
                         ignore: /.*/
             - build-windows:
                 filters:
                     tags:
-                        only: ^((?!pre).)*$
+                        only: /^((?!pre).)*$/
                     branches:
                         ignore: /.*/
             - release:
@@ -417,8 +417,8 @@ workflows:
                     - build-windows
                 filters:
                     tags:
-                        only: ^((?!pre).)*$
+                        only: /^((?!pre).)*$/
                     branches:
                         ignore: /.*/
 
-# VS Code Extension Version: 1.1.1
+# VS Code Extension Version: 1.4.0
