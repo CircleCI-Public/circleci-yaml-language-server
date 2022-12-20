@@ -302,7 +302,13 @@ func (doc *YamlDocument) parseExecutorRef(valueNode *sitter.Node, child *sitter.
 
 	// valueNode is either a flow_node or a block_node containing a block_mapping_pair
 	if valueNode.Type() == "flow_node" {
-		return doc.GetNodeText(valueNode), NodeToRange(child), executorParameters
+		flowNodeChild := valueNode.Child(0)
+
+		if flowNodeChild != nil && flowNodeChild.Type() == "anchor" {
+			flowNodeChild = flowNodeChild.NextSibling()
+		}
+
+		return doc.GetNodeText(flowNodeChild), NodeToRange(child), executorParameters
 	}
 
 	name := ""
@@ -316,7 +322,14 @@ func (doc *YamlDocument) parseExecutorRef(valueNode *sitter.Node, child *sitter.
 		keyName := doc.GetNodeText(keyNode)
 		switch keyName {
 		case "name":
-			name = doc.GetNodeText(valueNode)
+			flowNodeChild := valueNode.Child(0)
+
+			if flowNodeChild != nil && flowNodeChild.Type() == "anchor" {
+				flowNodeChild = flowNodeChild.NextSibling()
+			}
+
+			name = doc.GetNodeText(flowNodeChild)
+
 		default:
 			value, err := doc.parseParameterValue(child)
 			if err == nil {
