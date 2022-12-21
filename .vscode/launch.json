@@ -67,6 +67,37 @@
       ]
     },
     {
+      "name": "E2E tests",
+      "presentation": {
+        "hidden": false,
+        "group": "Tests",
+        "order": 4
+      },
+      "program": "${workspaceFolder}/node_modules/jest/bin/jest.js",
+      "request": "launch",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "type": "node"
+    },
+    {
+      "name": "E2E tests (standalone)",
+      "presentation": {
+        "hidden": false,
+        "group": "Tests",
+        "order": 4
+      },
+      "env": {
+        "SPAWN_LSP_SERVER": "false"
+      },
+      "program": "${workspaceFolder}/node_modules/jest/bin/jest.js",
+      "request": "launch",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "type": "node"
+    },
+    {
       "name": "Attach to Process",
       "type": "go",
       "request": "attach",
