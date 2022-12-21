@@ -20,6 +20,10 @@
       "jest"
     ],
   },
+  "include": [
+    "./e2e/jest.config.ts",
+    "./e2e/**/*.ts"
+  ],
   "exclude": [
     "node_modules"
   ]

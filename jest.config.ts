@@ -2,7 +2,7 @@ import type { Config as JestConfig } from 'jest';
 
 import type {
   EnvOptions,
-} from './e2e/types';
+} from './e2e/utils/types';
 
 /*
  * For a detailed explanation regarding each configuration property and type check, visit:
