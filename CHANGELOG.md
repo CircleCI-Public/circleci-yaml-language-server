@@ -1,3 +1,12 @@
+## 0.1.13 (2022-12-08)
+
+-   Added newly supported xcode versions to validation
+-   Fix: Job executors can contain anchors
+-   Fix: Empty executors, pipeline parameters, orbs and commands are no longer
+    marked as invalid
+-   Fix: Crash when parameter value is not of the expected type
+-   Fix: Unknown parameters 
+
 ## 0.1.10 (2022-12-08)
 
 -   Support for anchors and aliases in syntax validation
