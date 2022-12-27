@@ -19,10 +19,18 @@ func (methods *Methods) ExecuteCommand(reply jsonrpc2.Replier, req jsonrpc2.Requ
 
 	switch params.Command {
 	case "setToken":
-		methods.setTokenCmd(arguments[0].(string))
+		param, ok := arguments[0].(string)
+		if !ok {
+			return reply(methods.Ctx, nil, nil)
+		}
+		methods.setTokenCmd(param)
 
 	case "setSelfHostedUrl":
-		methods.setHostUrl(arguments[0].(string))
+		param, ok := arguments[0].(string)
+		if !ok {
+			return reply(methods.Ctx, nil, nil)
+		}
+		methods.setHostUrl(param)
 	}
 
 	return reply(methods.Ctx, nil, nil)
