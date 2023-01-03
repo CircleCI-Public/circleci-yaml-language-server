@@ -449,6 +449,13 @@ func (doc *YamlDocument) parseSimpleParameterValue(paramName string, simpleParam
 		return ast.ParameterValue{}, fmt.Errorf("error while parsing simple parameter value")
 	}
 
+	// This is needed if a parameter is written such as :
+	//     param: >
+	//       value
+	if simpleParamNodeChild.Type() == ">" || simpleParamNodeChild.Type() == "|" {
+		simpleParamNodeChild = simpleParamNode
+	}
+
 	switch simpleParamNodeChild.Type() {
 	case "double_quote_scalar":
 		return ast.ParameterValue{
@@ -460,6 +467,15 @@ func (doc *YamlDocument) parseSimpleParameterValue(paramName string, simpleParam
 		}, nil
 
 	case "string_scalar":
+		return ast.ParameterValue{
+			Value:      doc.GetNodeText(simpleParamNode),
+			ValueRange: NodeToRange(simpleParamNode),
+			Name:       paramName,
+			Type:       "string",
+			Range:      rng,
+		}, nil
+
+	case "block_scalar":
 		return ast.ParameterValue{
 			Value:      doc.GetNodeText(simpleParamNode),
 			ValueRange: NodeToRange(simpleParamNode),

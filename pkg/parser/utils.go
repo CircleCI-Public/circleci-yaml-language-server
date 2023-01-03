@@ -78,6 +78,8 @@ func (doc *YamlDocument) GetNodeText(node *sitter.Node) string {
 	}
 
 	res = strings.TrimPrefix(res, "|\n")
+	res = strings.TrimPrefix(res, ">-\n")
+	res = strings.TrimPrefix(res, ">\n")
 	res = strings.TrimSpace(res)
 
 	return res
