@@ -26,39 +26,39 @@ func DiagnosticVersion(version string, infoVersions InfoVersions) (string, proto
 
 	// Displaying a warning if a patched version exists
 	if infoVersions.LatestPatchVersion != version {
-		text := "A newer patched version exists.\n\n"
-		text += "Current: " + version + "\n"
+		text := "A newer patched version exists.\n"
+		text += "- Current: " + version + "\n"
 
 		if infoVersions.LatestVersion != infoVersions.LatestMinorVersion {
 			if infoVersions.LatestMinorVersion != infoVersions.LatestPatchVersion {
-				text += "Patch:   " + infoVersions.LatestPatchVersion + "\n"
+				text += "- Patch:   " + infoVersions.LatestPatchVersion + "\n"
 			}
 
-			text += "Minor:   " + infoVersions.LatestMinorVersion + "\n"
+			text += "- Minor:   " + infoVersions.LatestMinorVersion + "\n"
 		}
 
-		text += "Latest:  " + infoVersions.LatestVersion + "\n"
+		text += "- Latest:  " + infoVersions.LatestVersion
 
 		return text, protocol.DiagnosticSeverityWarning
 	}
 
 	// Displaying an info if a new minor exists
 	if infoVersions.LatestMinorVersion != version {
-		text := "A newer minor version exists.\n\n"
-		text += "Current: " + version + "\n"
+		text := "A newer minor version exists.\n"
+		text += "- Current: " + version + "\n"
 		if infoVersions.LatestVersion != infoVersions.LatestMinorVersion {
-			text += "Minor:   " + infoVersions.LatestMinorVersion + "\n"
+			text += "- Minor:   " + infoVersions.LatestMinorVersion + "\n"
 		}
-		text += "Latest:  " + infoVersions.LatestVersion + "\n"
+		text += "- Latest:  " + infoVersions.LatestVersion
 
 		return text, protocol.DiagnosticSeverityInformation
 	}
 
 	// Displaying an info if a new major exists
 	if infoVersions.LatestVersion != version {
-		text := "A newer major version exists.\n\n"
-		text += "Current: " + version + "\n"
-		text += "Latest:  " + infoVersions.LatestVersion + "\n"
+		text := "A newer major version exists.\n"
+		text += "- Current: " + version + "\n"
+		text += "- Latest:  " + infoVersions.LatestVersion
 
 		return text, protocol.DiagnosticSeverityInformation
 	}
