@@ -49,7 +49,6 @@ func (val Validate) validateSteps(steps []ast.Step, name string, jobOrCommandPar
 				return nil
 			}
 			parameterType := parameter.GetType()
-			fmt.Println("parameterType", parameterType)
 			if parameterType != "steps" {
 				val.addDiagnostic(protocol.Diagnostic{
 					Severity: protocol.DiagnosticSeverityError,

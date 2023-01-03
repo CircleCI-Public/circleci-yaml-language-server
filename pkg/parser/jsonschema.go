@@ -34,7 +34,7 @@ func (validator *JSONSchemaValidator) LoadJsonSchema(schemaLocation string) erro
 	return nil
 }
 
-func handleYAMLErrors(err string, content []byte, node *sitter.Node) ([]protocol.Diagnostic, error) {
+func handleYAMLErrors(err string, content []byte, rootNode *sitter.Node) ([]protocol.Diagnostic, error) {
 	diagnostics := []protocol.Diagnostic{}
 
 	reWithLine, _ := regexp.Compile(`(?s)^yaml:\s(?P<Error>[\w\d\s]+):\n(?P<Lines>\s+line \d+:.+\n?)+`)
@@ -53,14 +53,16 @@ func handleYAMLErrors(err string, content []byte, node *sitter.Node) ([]protocol
 				Start: utils.IndexToPos(match[0], content),
 				End:   utils.IndexToPos(match[1], content),
 			}
-
-			diagnostics = append(diagnostics, utils.CreateErrorDiagnosticFromRange(rng, err))
+			node, _, _ := utils.NodeAtPos(rootNode, rng.Start)
+			if node.Type() == "alias_name" {
+				diagnostics = append(diagnostics, utils.CreateErrorDiagnosticFromRange(rng, err))
+			}
 		}
 		return diagnostics, nil
 	}
 
 	if !reWithLine.MatchString(err) {
-		return []protocol.Diagnostic{utils.CreateErrorDiagnosticFromNode(node, err)}, nil
+		return []protocol.Diagnostic{utils.CreateErrorDiagnosticFromNode(rootNode, err)}, nil
 	}
 
 	// For errors providing line numbers, we add a diagnostic on the
@@ -81,7 +83,7 @@ func handleYAMLErrors(err string, content []byte, node *sitter.Node) ([]protocol
 
 		// If, for some reason, the Atoi fail, we return the original error
 		if error != nil {
-			return []protocol.Diagnostic{utils.CreateErrorDiagnosticFromNode(node, err)}, nil
+			return []protocol.Diagnostic{utils.CreateErrorDiagnosticFromNode(rootNode, err)}, nil
 		}
 
 		lineIndexes = append(lineIndexes, lineNumber-1)

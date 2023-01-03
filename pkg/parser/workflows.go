@@ -1,6 +1,8 @@
 package parser
 
 import (
+	"strings"
+
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	sitter "github.com/smacker/go-tree-sitter"
@@ -139,8 +141,20 @@ func (doc *YamlDocument) parseSingleJobReference(jobRefNode *sitter.Node) ast.Jo
 	res.Parameters = make(map[string]ast.ParameterValue)
 	res.HasMatrix = false
 
+	if alias := GetChildOfType(element, "alias"); alias != nil {
+		aliasName := strings.TrimPrefix(doc.GetNodeText(alias), "*")
+		anchor, ok := doc.YamlAnchors[aliasName]
+
+		if !ok {
+			return res
+		}
+
+		element = anchor.ValueNode
+	}
+
 	if element != nil && element.Type() == "flow_node" {
-		res.JobName = doc.GetNodeText(element)
+		name := GetChildOfType(element, "plain_scalar")
+		res.JobName = doc.GetNodeText(name)
 		res.JobNameRange = NodeToRange(element)
 		res.StepName = res.JobName
 		res.StepNameRange = res.JobNameRange

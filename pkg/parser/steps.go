@@ -54,53 +54,83 @@ func (doc *YamlDocument) parseSingleStep(stepNode *sitter.Node) []ast.Step {
 
 	switch child.Type() {
 	case "flow_node":
-		return []ast.Step{ast.NamedStep{Name: doc.GetNodeText(child), Range: NodeToRange(child)}}
+		if child.Child(0).Type() != "alias" {
+			return []ast.Step{ast.NamedStep{Name: doc.GetNodeText(child), Range: NodeToRange(child)}}
+		}
+		step := doc.YamlAnchors[doc.GetNodeText(child)[1:]].ValueNode
+		if step == nil {
+			return nil
+		}
+		blockMapping := GetChildOfType(step, "block_mapping")
+		if blockMapping == nil {
+			step = GetChildOfType(step, "plain_scalar")
+			if step == nil {
+				return nil
+			}
+			return []ast.Step{ast.NamedStep{Name: doc.GetNodeText(step), Range: NodeToRange(step)}}
+		}
+		return doc.parseStep(blockMapping)
 	case "block_node":
 		blockMapping := GetChildOfType(child, "block_mapping")
 		if blockMapping == nil {
 			return []ast.Step{ast.Run{Range: NodeToRange(child)}}
 		}
-		blockMappingPair := GetChildOfType(blockMapping, "block_mapping_pair")
-		keyNode, valueNode := doc.GetKeyValueNodes(blockMappingPair)
-		keyName := doc.GetNodeText(keyNode)
-		if valueNode == nil {
-			return nil
-		}
-		switch keyName {
-		case "run":
-			return []ast.Step{doc.parseRunStep(valueNode)}
-		case "checkout":
-			return []ast.Step{doc.parseCheckoutStep(valueNode)}
-		case "setup_remote_docker":
-			return []ast.Step{doc.parseSetupRemoteDockerStep(valueNode)}
-		case "save_cache":
-			return []ast.Step{doc.parseSaveCacheStep(valueNode)}
-		case "restore_cache":
-			return []ast.Step{doc.parseRestoreCacheStep(valueNode)}
-		case "store_artifacts":
-			return []ast.Step{doc.parseStoreArtifactsStep(valueNode)}
-		case "store_test_results":
-			return []ast.Step{doc.parseStoreTestResultsStep(valueNode)}
-		case "persist_to_workspace":
-			return []ast.Step{doc.parsePersistToWorkspaceStep(valueNode)}
-		case "attach_workspace":
-			return []ast.Step{doc.parseAttachWorkspaceStep(valueNode)}
-		case "add_ssh_keys":
-			return []ast.Step{doc.parseAddSSHKeyStep(valueNode)}
-		case "when":
-			return doc.parseWhenUnlessStep(valueNode)
-		case "unless":
-			return doc.parseWhenUnlessStep(valueNode)
-		case "steps":
-			stepName := doc.GetNodeText(valueNode)
-			_, stepName = utils.ExtractParameterName(stepName)
-			return []ast.Step{ast.Steps{Name: stepName, Range: NodeToRange(valueNode)}}
-		default:
-			return []ast.Step{doc.parseNamedStepWithParameters(keyName, valueNode)}
-		}
+		return doc.parseStep(blockMapping)
 	}
 
 	return []ast.Step{ast.NamedStep{}} // TODO: return error
+}
+
+func (doc *YamlDocument) parseStep(blockMapping *sitter.Node) []ast.Step {
+	blockMappingPair := GetChildOfType(blockMapping, "block_mapping_pair")
+	keyNode, valueNode := doc.GetKeyValueNodes(blockMappingPair)
+	keyName := doc.GetNodeText(keyNode)
+	if valueNode == nil {
+		return nil
+	}
+	switch keyName {
+	case "run":
+		return []ast.Step{doc.parseRunStep(valueNode)}
+	case "checkout":
+		return []ast.Step{doc.parseCheckoutStep(valueNode)}
+	case "setup_remote_docker":
+		return []ast.Step{doc.parseSetupRemoteDockerStep(valueNode)}
+	case "save_cache":
+		return []ast.Step{doc.parseSaveCacheStep(valueNode)}
+	case "restore_cache":
+		return []ast.Step{doc.parseRestoreCacheStep(valueNode)}
+	case "store_artifacts":
+		return []ast.Step{doc.parseStoreArtifactsStep(valueNode)}
+	case "store_test_results":
+		return []ast.Step{doc.parseStoreTestResultsStep(valueNode)}
+	case "persist_to_workspace":
+		return []ast.Step{doc.parsePersistToWorkspaceStep(valueNode)}
+	case "attach_workspace":
+		return []ast.Step{doc.parseAttachWorkspaceStep(valueNode)}
+	case "add_ssh_keys":
+		return []ast.Step{doc.parseAddSSHKeyStep(valueNode)}
+	case "when":
+		return doc.parseWhenUnlessStep(valueNode)
+	case "unless":
+		return doc.parseWhenUnlessStep(valueNode)
+	case "steps":
+		stepName := doc.GetNodeText(valueNode)
+		_, stepName = utils.ExtractParameterName(stepName)
+		return []ast.Step{ast.Steps{Name: stepName, Range: NodeToRange(valueNode)}}
+	case "<<":
+		referencedStepNode := GetChildOfType(valueNode, "block_sequence")
+		if referencedStepNode == nil {
+			return nil
+		}
+		referencedStepNode = GetChildOfType(referencedStepNode, "block_sequence_item")
+		if referencedStepNode == nil {
+			return nil
+		}
+		step := doc.parseSingleStep(referencedStepNode)
+		return step
+	default:
+		return []ast.Step{doc.parseNamedStepWithParameters(keyName, valueNode)}
+	}
 }
 
 func (doc *YamlDocument) parseWhenUnlessStep(blockNode *sitter.Node) []ast.Step {
