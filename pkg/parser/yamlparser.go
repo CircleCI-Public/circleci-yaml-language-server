@@ -40,7 +40,7 @@ func (doc *YamlDocument) ParseYAML(context *utils.LsContext) {
 	blockMappingNode := GetBlockMappingNode(doc.RootNode)
 	doc.YamlAnchors = ParseYamlAnchors(doc)
 
-	iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
+	doc.iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
 		keyNode, valueNode := doc.GetKeyValueNodes(child)
 		keyName := doc.GetNodeText(keyNode)
 

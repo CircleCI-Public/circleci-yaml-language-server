@@ -18,7 +18,7 @@ func (doc *YamlDocument) parseParameters(paramsNode *sitter.Node) map[string]ast
 		return nil
 	}
 
-	iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
+	doc.iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
 		doc.parseSingleParameter(child, res)
 	})
 
@@ -103,7 +103,7 @@ func (doc *YamlDocument) GetParameterType(paramNode *sitter.Node) (paramType str
 		return "", protocol.Range{}
 	}
 
-	iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
+	doc.iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
 		keyNode, valueNode := doc.GetKeyValueNodes(child)
 		keyName := doc.GetNodeText(keyNode)
 		switch keyName {
@@ -131,7 +131,7 @@ func (doc *YamlDocument) parseStringParameter(paramName string, paramNode *sitte
 	// paramNode is a block_mapping_pair
 	stringParam.Name = paramName
 
-	iterateOnBlockMapping(paramNode, func(child *sitter.Node) {
+	doc.iterateOnBlockMapping(paramNode, func(child *sitter.Node) {
 		keyNode, valueNode := doc.GetKeyValueNodes(child)
 		keyName := doc.GetNodeText(keyNode)
 		switch keyName {
@@ -151,7 +151,7 @@ func (doc *YamlDocument) parseBooleanParameter(paramName string, paramNode *sitt
 	// paramNode is a block_mapping_pair
 	boolParam.Name = paramName
 
-	iterateOnBlockMapping(paramNode, func(child *sitter.Node) {
+	doc.iterateOnBlockMapping(paramNode, func(child *sitter.Node) {
 		keyNode, valueNode := doc.GetKeyValueNodes(child)
 		keyName := doc.GetNodeText(keyNode)
 		switch keyName {
@@ -171,7 +171,7 @@ func (doc *YamlDocument) parseIntegerParameter(paramName string, paramNode *sitt
 	// paramNode is a block_mapping_pair
 	intParam.Name = paramName
 
-	iterateOnBlockMapping(paramNode, func(child *sitter.Node) {
+	doc.iterateOnBlockMapping(paramNode, func(child *sitter.Node) {
 		keyNode, valueNode := doc.GetKeyValueNodes(child)
 		keyName := doc.GetNodeText(keyNode)
 		switch keyName {
@@ -195,7 +195,7 @@ func (doc *YamlDocument) parseEnumParameter(paramName string, paramNode *sitter.
 	// paramNode is a block_mapping_pair
 	enumParam.Name = paramName
 
-	iterateOnBlockMapping(paramNode, func(child *sitter.Node) {
+	doc.iterateOnBlockMapping(paramNode, func(child *sitter.Node) {
 		keyNode, valueNode := doc.GetKeyValueNodes(child)
 		keyName := doc.GetNodeText(keyNode)
 		switch keyName {
@@ -221,7 +221,7 @@ func (doc *YamlDocument) parseExecutorParameter(paramName string, paramNode *sit
 	// paramNode is a block_mapping_pair
 	executorParam.Name = paramName
 
-	iterateOnBlockMapping(paramNode, func(child *sitter.Node) {
+	doc.iterateOnBlockMapping(paramNode, func(child *sitter.Node) {
 		keyNode, valueNode := doc.GetKeyValueNodes(child)
 		keyName := doc.GetNodeText(keyNode)
 		switch keyName {
@@ -241,7 +241,7 @@ func (doc *YamlDocument) parseStepsParameter(paramName string, paramNode *sitter
 	// paramNode is a block_mapping_pair
 	stepsParam.Name = paramName
 
-	iterateOnBlockMapping(paramNode, func(child *sitter.Node) {
+	doc.iterateOnBlockMapping(paramNode, func(child *sitter.Node) {
 		keyNode, valueNode := doc.GetKeyValueNodes(child)
 		keyName := doc.GetNodeText(keyNode)
 		switch keyName {
@@ -272,7 +272,7 @@ func (doc *YamlDocument) parseEnvVariableParameter(paramName string, paramNode *
 	// paramNode is a block_mapping_pair
 	envVariable.Name = paramName
 
-	iterateOnBlockMapping(paramNode, func(child *sitter.Node) {
+	doc.iterateOnBlockMapping(paramNode, func(child *sitter.Node) {
 		keyNode, valueNode := doc.GetKeyValueNodes(child)
 		keyName := doc.GetNodeText(keyNode)
 		switch keyName {
@@ -361,7 +361,7 @@ func (doc *YamlDocument) parseParameterValue(child *sitter.Node) (ast.ParameterV
 	case "block_mapping":
 		value := make(map[string]ast.ParameterValue, 0)
 
-		iterateOnBlockMapping(flowNodeChild, func(child *sitter.Node) {
+		doc.iterateOnBlockMapping(flowNodeChild, func(child *sitter.Node) {
 			keyNode, valueNode := doc.GetKeyValueNodes(child)
 
 			if keyNode == nil || valueNode == nil {
