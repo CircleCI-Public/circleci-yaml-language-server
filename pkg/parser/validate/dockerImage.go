@@ -3,8 +3,9 @@ package validate
 import (
 	"fmt"
 
-	"github.com/circleci/circleci-yaml-language-server/pkg/ast"
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/dockerhub"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
 func ValidateDockerImage(img *ast.DockerImage, cache *utils.DockerCache) (bool, string) {
@@ -22,7 +23,7 @@ func ValidateDockerImage(img *ast.DockerImage, cache *utils.DockerCache) (bool, 
 	if cachedDockerImage == nil {
 		cache.Add(
 			img.Image.FullPath,
-			utils.DoesDockerImageExist(img.Image.Namespace, img.Image.Name, img.Image.Tag),
+			dockerhub.DoesImageExist(img.Image.Namespace, img.Image.Name, img.Image.Tag),
 		)
 
 		cachedDockerImage = cache.Get(img.Image.FullPath)
@@ -40,5 +41,6 @@ Unsuported syntaxes:
 */
 func isDockerImageCheckable(img *ast.DockerImage) bool {
 	// For now, just make the name & version mandatory
-	return img.Image.Name != "" && img.Auth == ast.DockerImageAuth{} && img.AwsAuth == ast.DockerImageAWSAuth{}
+	hasParamInTag, _ := utils.CheckIfParamIsPartiallyReferenced(img.Image.Tag)
+	return img.Image.Name != "" && img.Auth == ast.DockerImageAuth{} && img.AwsAuth == ast.DockerImageAWSAuth{} && !hasParamInTag
 }

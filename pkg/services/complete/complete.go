@@ -3,8 +3,9 @@ package complete
 import (
 	"fmt"
 
-	yamlparser "github.com/circleci/circleci-yaml-language-server/pkg/parser"
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
+	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	sitter "github.com/smacker/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
@@ -17,7 +18,7 @@ type CompletionHandler struct {
 	DocDiff string
 
 	Items []protocol.CompletionItem
-	Cache utils.Cache
+	Cache *utils.Cache
 }
 
 func (ch *CompletionHandler) GetCompletionItems() {
@@ -92,4 +93,8 @@ func (ch *CompletionHandler) addCompletionItemFieldWithCustomText(label string, 
 		Label:      label,
 		InsertText: fmt.Sprintf("%s%s", label, customText),
 	})
+}
+
+func (ch *CompletionHandler) GetOrbInfo(orb ast.Orb) *ast.OrbInfo {
+	return ch.Doc.GetOrbInfo(ch.Cache, orb.Name)
 }

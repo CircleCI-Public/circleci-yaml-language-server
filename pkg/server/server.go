@@ -10,15 +10,17 @@ import (
 	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/protocol"
 
-	methods "github.com/circleci/circleci-yaml-language-server/pkg/server/methods"
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	methods "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/server/methods"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
 type JSONRPCServer struct {
-	ctx     context.Context
-	conn    jsonrpc2.Conn
-	methods methods.Methods
-	cache   utils.Cache
+	ctx            context.Context
+	conn           jsonrpc2.Conn
+	methods        methods.Methods
+	cache          *utils.Cache
+	lsContext      *utils.LsContext
+	SchemaLocation string
 }
 
 func (server JSONRPCServer) commandHandler(_ context.Context, reply jsonrpc2.Replier, req jsonrpc2.Request) error {
@@ -28,6 +30,9 @@ func (server JSONRPCServer) commandHandler(_ context.Context, reply jsonrpc2.Rep
 
 	case protocol.MethodInitialize:
 		return server.methods.Initialize(reply)
+
+	case protocol.MethodWorkspaceExecuteCommand:
+		return server.methods.ExecuteCommand(reply, req)
 
 	case protocol.MethodTextDocumentDidOpen:
 		return server.methods.DidOpen(reply, req)
@@ -53,6 +58,9 @@ func (server JSONRPCServer) commandHandler(_ context.Context, reply jsonrpc2.Rep
 	case protocol.MethodTextDocumentCompletion:
 		return server.methods.Complete(reply, req)
 
+	case protocol.MethodTextDocumentCodeAction:
+		return server.methods.CodeAction(reply, req)
+
 	case protocol.MethodShutdown:
 		return reply(server.ctx, nil, nil)
 
@@ -66,23 +74,22 @@ func (server JSONRPCServer) commandHandler(_ context.Context, reply jsonrpc2.Rep
 }
 
 func (server JSONRPCServer) ServeStream(_ context.Context, conn jsonrpc2.Conn) error {
+	fmt.Println("New client connection")
 	server.conn = conn
 	server.cache = utils.CreateCache()
 	server.methods = methods.Methods{
-		Ctx:   server.ctx,
-		Conn:  server.conn,
-		Cache: server.cache,
+		Ctx:            server.ctx,
+		Conn:           server.conn,
+		Cache:          server.cache,
+		LsContext:      server.lsContext,
+		SchemaLocation: server.SchemaLocation,
 	}
 	conn.Go(server.ctx, server.commandHandler)
 	<-conn.Done()
 	return conn.Err()
 }
 
-func StartServer() {
-	port := os.Getenv("PORT")
-	if port == "" {
-		panic("PORT environment variable not set")
-	}
+func StartServer(port int, host string, schemaLocation string) {
 	ctx := context.Background()
 	// The LSP client waits that the server prints "Server started" on stdout to connect. The best
 	// solution would be to make this the "express way" and give a callback to ListenAndServe that
@@ -91,9 +98,30 @@ func StartServer() {
 	// So we just print the log one second after the server started
 	go func() {
 		time.Sleep(1 * time.Second)
-		fmt.Printf("Server started, version %s\n", methods.ServerVersion)
+		fmt.Printf("Server started on port %d, version %s\n", port, methods.ServerVersion)
+		fmt.Printf("   JSON Schema: %s", schemaLocation)
 	}()
-	if err := jsonrpc2.ListenAndServe(ctx, "tcp", fmt.Sprintf("localhost:%s", port), JSONRPCServer{ctx: ctx}, 0); err != nil {
+
+	server := JSONRPCServer{
+		ctx: ctx,
+		lsContext: &utils.LsContext{
+			Api: utils.ApiContext{
+				HostUrl: utils.CIRCLE_CI_APP_HOST_URL,
+				Token:   "",
+			},
+		},
+		SchemaLocation: schemaLocation,
+	}
+
+	err := jsonrpc2.ListenAndServe(
+		ctx,
+		"tcp",
+		fmt.Sprintf("%s:%d", host, port),
+		server,
+		0,
+	)
+
+	if err != nil {
 		panic(err)
 	}
 }
@@ -105,12 +133,21 @@ type StdioReadWriteCloser struct {
 
 func (s *StdioReadWriteCloser) Close() error { return nil }
 
-func StartServerStdio() {
+func StartServerStdio(schema string) {
 	ctx := context.Background()
 
 	stdioStream := jsonrpc2.NewStream(&StdioReadWriteCloser{os.Stdin, os.Stdout})
 	stdioConn := jsonrpc2.NewConn(stdioStream)
-	server := JSONRPCServer{ctx: ctx}
+	server := JSONRPCServer{
+		ctx: ctx,
+		lsContext: &utils.LsContext{
+			Api: utils.ApiContext{
+				HostUrl: utils.CIRCLE_CI_APP_HOST_URL,
+				Token:   "",
+			},
+		},
+		SchemaLocation: schema,
+	}
 
 	if err := server.ServeStream(ctx, stdioConn); err != nil {
 		panic(err)

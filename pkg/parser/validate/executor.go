@@ -4,12 +4,20 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/circleci/circleci-yaml-language-server/pkg/ast"
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
 )
 
 func (val Validate) ValidateExecutors() {
+	if len(val.Doc.Executors) == 0 && !utils.IsDefaultRange(val.Doc.ExecutorsRange) {
+		val.addDiagnostic(
+			utils.CreateEmptyAssignationWarning(val.Doc.ExecutorsRange),
+		)
+
+		return
+	}
+
 	for _, executor := range val.Doc.Executors {
 		val.validateSingleExecutor(executor)
 	}
@@ -31,24 +39,16 @@ func (val Validate) validateSingleExecutor(executor ast.Executor) {
 // MacOSExecutor
 
 var ValidXCodeVersions = []string{
-	"14.0.0",
-	"14.0.0",
+	"14.2.0",
+	"14.1.0",
+	"14.0.1",
 	"13.4.1",
 	"13.3.1",
 	"13.2.1",
 	"13.1.0",
 	"13.0.0",
 	"12.5.1",
-	"12.4.0",
-	"12.3.0",
-	"12.2.0",
-	"12.1.1",
-	"12.0.1",
 	"11.7.0",
-	"11.6.0",
-	"11.5.0",
-	"11.4.1",
-	"10.3.0",
 }
 
 var ValidMacOSResourceClasses = []string{
@@ -125,16 +125,30 @@ func (val Validate) validateLinuxMachineExecutor(executor ast.MachineExecutor) {
 }
 
 var ValidARMOrMachineImages = []string{
+	// Ubuntu 2004
 	"ubuntu-2004:current",
+	"ubuntu-2004:2022.10.1",
+	"ubuntu-2004:2022.07.1",
+	"ubuntu-2004:2022.04.2",
 	"ubuntu-2004:2022.04.1",
 	"ubuntu-2004:202201-02",
 	"ubuntu-2004:202201-01",
 	"ubuntu-2004:202111-02",
 	"ubuntu-2004:202111-01",
-	"ubuntu-2004:202107-01",
+	"ubuntu-2004:202107-02",
 	"ubuntu-2004:202104-01",
 	"ubuntu-2004:202101-01",
-	"ubuntu-2004:202011-01",
+	"ubuntu-2004:202010-01",
+
+	// Ubuntu 2204
+	"ubuntu-2204:current",
+	"ubuntu-2204:edge",
+	"ubuntu-2204:2022.10.2",
+	"ubuntu-2204:2022.10.1",
+	"ubuntu-2204:2022.07.2",
+	"ubuntu-2204:2022.07.1",
+	"ubuntu-2204:2022.04.2",
+	"ubuntu-2204:2022.04.1",
 }
 
 func (val Validate) validateImage(img string, imgRange protocol.Range) {

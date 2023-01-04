@@ -10,15 +10,15 @@
             {
                 "path": "./cmd/start_server",
                 "subprojects": {
-                    "./pkg/server": "github.com/circleci/circleci-yaml-language-server/pkg/server",
-                    "./pkg/server/methods": "github.com/circleci/circleci-yaml-language-server/pkg/server/methods",
-                    "./pkg/utils": "github.com/circleci/circleci-yaml-language-server/pkg/utils",
-                    "./pkg/ast": "github.com/circleci/circleci-yaml-language-server/pkg/ast",
-                    "./pkg/parser": "github.com/circleci/circleci-yaml-language-server/pkg/parser",
-                    "./pkg/parser/validate": "github.com/circleci/circleci-yaml-language-server/pkg/parser/validate",
-                    "./pkg/services": "github.com/circleci/circleci-yaml-language-server/pkg/services",
-                    "./pkg/services/complete": "github.com/circleci/circleci-yaml-language-server/pkg/services/complete",
-                    "./pkg/services/definition": "github.com/circleci/circleci-yaml-language-server/pkg/services/definition"
+                    "./pkg/server": "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/server",
+                    "./pkg/server/methods": "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/server/methods",
+                    "./pkg/utils": "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils",
+                    "./pkg/ast": "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast",
+                    "./pkg/parser": "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser",
+                    "./pkg/parser/validate": "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser/validate",
+                    "./pkg/services": "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/services",
+                    "./pkg/services/complete": "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/services/complete",
+                    "./pkg/services/definition": "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/services/definition"
                 },
                 "licenseFileType": "go-licenses",
                 "licenseFilePath": "./licenses.csv"

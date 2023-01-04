@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/circleci/circleci-yaml-language-server/pkg/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 )
 
 type orbsArgs struct {
@@ -64,6 +64,8 @@ func TestYamlDocument_parseOrbs(t *testing.T) {
 				Commands: make(map[string]ast.Command),
 				Content:  []byte(tt.args.orbsString),
 				Orbs:     make(map[string]ast.Orb),
+
+				LocalOrbInfo: make(map[string]*ast.OrbInfo),
 			}
 			orbNode := getNodeForString(tt.args.orbsString)
 
@@ -107,7 +109,7 @@ func TestYamlDocument_parseSingleOrb(t *testing.T) {
 			blockMapping := GetChildOfType(rootNode, "block_mapping")
 			blockMappingPair := blockMapping.Child(0)
 
-			orb := doc.parseSingleOrb(blockMappingPair)
+			orb, _ := doc.parseSingleOrb(blockMappingPair)
 
 			if !reflect.DeepEqual(tt.want[0].Name, orb.Name) {
 				t.Errorf("YamlDocument.parseSingleOrb() = Name %v, want %v", tt.want[0], orb.Name)

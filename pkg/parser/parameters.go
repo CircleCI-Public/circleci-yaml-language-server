@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/circleci/circleci-yaml-language-server/pkg/ast"
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	sitter "github.com/smacker/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
@@ -27,61 +27,72 @@ func (doc *YamlDocument) parseParameters(paramsNode *sitter.Node) map[string]ast
 
 func (doc *YamlDocument) parseSingleParameter(paramNode *sitter.Node, params map[string]ast.Parameter) {
 	// paramNode is a block_mapping_pair
-	key, value := paramNode.ChildByFieldName("key"), paramNode.ChildByFieldName("value")
+	keyNode, valueNode := doc.GetKeyValueNodes(paramNode)
 
-	blockMappingNode := GetChildMapping(value)
+	if keyNode == nil {
+		return
+	}
+
+	blockMappingNode := GetChildMapping(valueNode)
 	if blockMappingNode == nil {
 		return
 	}
 
-	paramType, paramTypeRange := doc.GetParameterType(value)
-	paramName := doc.GetNodeText(key)
+	paramType, paramTypeRange := doc.GetParameterType(valueNode)
+	paramName := doc.GetNodeText(keyNode)
 
 	switch paramType {
 	case "string":
 		param := doc.parseStringParameter(paramName, blockMappingNode)
 		param.Range = NodeToRange(paramNode)
-		param.NameRange = NodeToRange(key)
+		param.NameRange = NodeToRange(keyNode)
 		param.TypeRange = paramTypeRange
 		params[param.Name] = param
 	case "boolean":
 		param := doc.parseBooleanParameter(paramName, blockMappingNode)
 		param.Range = NodeToRange(paramNode)
-		param.NameRange = NodeToRange(key)
+		param.NameRange = NodeToRange(keyNode)
 		param.TypeRange = paramTypeRange
 		params[param.Name] = param
 	case "integer":
 		param := doc.parseIntegerParameter(paramName, blockMappingNode)
 		param.Range = NodeToRange(paramNode)
-		param.NameRange = NodeToRange(key)
+		param.NameRange = NodeToRange(keyNode)
 		param.TypeRange = paramTypeRange
 		params[param.Name] = param
 	case "enum":
 		param := doc.parseEnumParameter(paramName, blockMappingNode)
 		param.Range = NodeToRange(paramNode)
-		param.NameRange = NodeToRange(key)
+		param.NameRange = NodeToRange(keyNode)
 		param.TypeRange = paramTypeRange
 		params[param.Name] = param
 	case "executor":
 		param := doc.parseExecutorParameter(paramName, blockMappingNode)
 		param.Range = NodeToRange(paramNode)
-		param.NameRange = NodeToRange(key)
+		param.NameRange = NodeToRange(keyNode)
 		param.TypeRange = paramTypeRange
 		params[param.Name] = param
 	case "steps":
 		param := doc.parseStepsParameter(paramName, blockMappingNode)
 		param.Range = NodeToRange(paramNode)
-		param.NameRange = NodeToRange(key)
+		param.NameRange = NodeToRange(keyNode)
 		param.TypeRange = paramTypeRange
 		params[param.Name] = param
 	case "env_var_name":
 		param := doc.parseEnvVariableParameter(paramName, blockMappingNode)
 		param.Range = NodeToRange(paramNode)
-		param.NameRange = NodeToRange(key)
+		param.NameRange = NodeToRange(keyNode)
 		param.TypeRange = paramTypeRange
 		params[param.Name] = param
 	default:
-		params[paramName] = ast.StringParameter{BaseParameter: ast.BaseParameter{TypeRange: paramTypeRange, Name: paramName, Range: NodeToRange(blockMappingNode)}}
+		params[paramName] = ast.StringParameter{
+			BaseParameter: ast.BaseParameter{
+				Name:      paramName,
+				NameRange: NodeToRange(keyNode),
+				Range:     NodeToRange(blockMappingNode),
+				TypeRange: paramTypeRange,
+			},
+		}
 	}
 }
 
@@ -93,8 +104,8 @@ func (doc *YamlDocument) GetParameterType(paramNode *sitter.Node) (paramType str
 	}
 
 	iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
-		keyName := doc.GetNodeText(child.ChildByFieldName("key"))
-		valueNode := child.ChildByFieldName("value")
+		keyNode, valueNode := doc.GetKeyValueNodes(child)
+		keyName := doc.GetNodeText(keyNode)
 		switch keyName {
 		case "type":
 			typeRange := NodeToRange(child)
@@ -121,11 +132,11 @@ func (doc *YamlDocument) parseStringParameter(paramName string, paramNode *sitte
 	stringParam.Name = paramName
 
 	iterateOnBlockMapping(paramNode, func(child *sitter.Node) {
-		keyName := doc.GetNodeText(child.ChildByFieldName("key"))
-		valueNode := child.ChildByFieldName("value")
+		keyNode, valueNode := doc.GetKeyValueNodes(child)
+		keyName := doc.GetNodeText(keyNode)
 		switch keyName {
 		case "default":
-			stringParam.DefaultRange = getDefaultRange(child)
+			stringParam.DefaultRange = doc.getDefaultParameterRange(child)
 			stringParam.Default = doc.GetNodeText(valueNode)
 			stringParam.HasDefault = true
 		case "description":
@@ -141,11 +152,11 @@ func (doc *YamlDocument) parseBooleanParameter(paramName string, paramNode *sitt
 	boolParam.Name = paramName
 
 	iterateOnBlockMapping(paramNode, func(child *sitter.Node) {
-		keyName := doc.GetNodeText(child.ChildByFieldName("key"))
-		valueNode := child.ChildByFieldName("value")
+		keyNode, valueNode := doc.GetKeyValueNodes(child)
+		keyName := doc.GetNodeText(keyNode)
 		switch keyName {
 		case "default":
-			boolParam.DefaultRange = getDefaultRange(child)
+			boolParam.DefaultRange = doc.getDefaultParameterRange(child)
 			boolParam.Default = utils.GetYAMLBooleanValue(doc.GetNodeText(valueNode))
 			boolParam.HasDefault = true
 		case "description":
@@ -161,15 +172,15 @@ func (doc *YamlDocument) parseIntegerParameter(paramName string, paramNode *sitt
 	intParam.Name = paramName
 
 	iterateOnBlockMapping(paramNode, func(child *sitter.Node) {
-		keyName := doc.GetNodeText(child.ChildByFieldName("key"))
-		valueNode := child.ChildByFieldName("value")
+		keyNode, valueNode := doc.GetKeyValueNodes(child)
+		keyName := doc.GetNodeText(keyNode)
 		switch keyName {
 		case "default":
 			int, err := strconv.Atoi(doc.GetNodeText(valueNode))
 			if err != nil {
 				return // TODO: error
 			}
-			intParam.DefaultRange = getDefaultRange(child)
+			intParam.DefaultRange = doc.getDefaultParameterRange(child)
 			intParam.Default = int
 			intParam.HasDefault = true
 		case "description":
@@ -185,11 +196,11 @@ func (doc *YamlDocument) parseEnumParameter(paramName string, paramNode *sitter.
 	enumParam.Name = paramName
 
 	iterateOnBlockMapping(paramNode, func(child *sitter.Node) {
-		keyName := doc.GetNodeText(child.ChildByFieldName("key"))
-		valueNode := child.ChildByFieldName("value")
+		keyNode, valueNode := doc.GetKeyValueNodes(child)
+		keyName := doc.GetNodeText(keyNode)
 		switch keyName {
 		case "default":
-			enumParam.DefaultRange = getDefaultRange(child)
+			enumParam.DefaultRange = doc.getDefaultParameterRange(child)
 			enumParam.Default = doc.GetNodeText(valueNode)
 			enumParam.HasDefault = true
 		case "description":
@@ -211,11 +222,11 @@ func (doc *YamlDocument) parseExecutorParameter(paramName string, paramNode *sit
 	executorParam.Name = paramName
 
 	iterateOnBlockMapping(paramNode, func(child *sitter.Node) {
-		keyName := doc.GetNodeText(child.ChildByFieldName("key"))
-		valueNode := child.ChildByFieldName("value")
+		keyNode, valueNode := doc.GetKeyValueNodes(child)
+		keyName := doc.GetNodeText(keyNode)
 		switch keyName {
 		case "default":
-			executorParam.DefaultRange = getDefaultRange(child)
+			executorParam.DefaultRange = doc.getDefaultParameterRange(child)
 			executorParam.Default = doc.GetNodeText(valueNode)
 			executorParam.HasDefault = true
 		case "description":
@@ -231,8 +242,8 @@ func (doc *YamlDocument) parseStepsParameter(paramName string, paramNode *sitter
 	stepsParam.Name = paramName
 
 	iterateOnBlockMapping(paramNode, func(child *sitter.Node) {
-		keyName := doc.GetNodeText(child.ChildByFieldName("key"))
-		valueNode := child.ChildByFieldName("value")
+		keyNode, valueNode := doc.GetKeyValueNodes(child)
+		keyName := doc.GetNodeText(keyNode)
 		switch keyName {
 		case "default":
 			stepsNode := GetChildOfType(valueNode, "block_sequence")
@@ -242,7 +253,7 @@ func (doc *YamlDocument) parseStepsParameter(paramName string, paramNode *sitter
 			rng := NodeToRange(child)
 			astDefault, _ := doc.parseArrayParameterValue(paramName, stepsNode, rng)
 			stepsParam.Default = astDefault
-			stepsParam.DefaultRange = getDefaultRange(child)
+			stepsParam.DefaultRange = doc.getDefaultParameterRange(child)
 			stepsParam.HasDefault = true
 			for _, step := range stepsParam.Default.Value.([]ast.ParameterValue) {
 				if step.Type != "steps" {
@@ -262,11 +273,11 @@ func (doc *YamlDocument) parseEnvVariableParameter(paramName string, paramNode *
 	envVariable.Name = paramName
 
 	iterateOnBlockMapping(paramNode, func(child *sitter.Node) {
-		keyName := doc.GetNodeText(child.ChildByFieldName("key"))
-		valueNode := child.ChildByFieldName("value")
+		keyNode, valueNode := doc.GetKeyValueNodes(child)
+		keyName := doc.GetNodeText(keyNode)
 		switch keyName {
 		case "default":
-			envVariable.DefaultRange = getDefaultRange(child)
+			envVariable.DefaultRange = doc.getDefaultParameterRange(child)
 			envVariable.Default = doc.GetNodeText(valueNode)
 			envVariable.HasDefault = true
 		case "description":
@@ -288,8 +299,22 @@ func (doc *YamlDocument) parseParameterValue(child *sitter.Node) (ast.ParameterV
 	// flowNode can be a block_node too, and in this case:
 	// - has a single child (block_scalar) which is a string but escaped at the
 	//   beginning of the string with "|"
-	keyNode, valueNode := getKeyValueNodes(child)
+	keyNode, valueNode := doc.GetKeyValueNodes(child)
 	paramName := doc.GetNodeText(keyNode)
+
+	if keyNode == nil {
+		return ast.ParameterValue{}, fmt.Errorf("key not defined")
+	}
+
+	if valueNode == nil {
+		diag := utils.CreateWarningDiagnosticFromNode(
+			keyNode,
+			"No value defined for the parameter",
+		)
+		doc.addDiagnostic(diag)
+		return ast.ParameterValue{}, fmt.Errorf("no parameter value")
+	}
+
 	flowNodeChild := valueNode.Child(0)
 	if flowNodeChild == nil {
 		return ast.ParameterValue{}, fmt.Errorf("error while parsing parameter value")
@@ -337,7 +362,7 @@ func (doc *YamlDocument) parseParameterValue(child *sitter.Node) (ast.ParameterV
 		value := make(map[string]ast.ParameterValue, 0)
 
 		iterateOnBlockMapping(flowNodeChild, func(child *sitter.Node) {
-			keyNode, valueNode := getKeyValueNodes(child)
+			keyNode, valueNode := doc.GetKeyValueNodes(child)
 
 			if keyNode == nil || valueNode == nil {
 				return
@@ -428,6 +453,13 @@ func (doc *YamlDocument) parseSimpleParameterValue(paramName string, simpleParam
 		return ast.ParameterValue{}, fmt.Errorf("error while parsing simple parameter value")
 	}
 
+	// This is needed if a parameter is written such as :
+	//     param: >
+	//       value
+	if simpleParamNodeChild.Type() == ">" || simpleParamNodeChild.Type() == "|" {
+		simpleParamNodeChild = simpleParamNode
+	}
+
 	switch simpleParamNodeChild.Type() {
 	case "double_quote_scalar":
 		return ast.ParameterValue{
@@ -439,6 +471,15 @@ func (doc *YamlDocument) parseSimpleParameterValue(paramName string, simpleParam
 		}, nil
 
 	case "string_scalar":
+		return ast.ParameterValue{
+			Value:      doc.GetNodeText(simpleParamNode),
+			ValueRange: NodeToRange(simpleParamNode),
+			Name:       paramName,
+			Type:       "string",
+			Range:      rng,
+		}, nil
+
+	case "block_scalar":
 		return ast.ParameterValue{
 			Value:      doc.GetNodeText(simpleParamNode),
 			ValueRange: NodeToRange(simpleParamNode),
@@ -479,19 +520,19 @@ func (doc *YamlDocument) parseSimpleParameterValue(paramName string, simpleParam
 	return ast.ParameterValue{}, fmt.Errorf("unsupported parameter value type")
 }
 
-func getDefaultRange(child *sitter.Node) protocol.Range {
-	_, value := getKeyValueNodes(child)
+func (doc *YamlDocument) getDefaultParameterRange(child *sitter.Node) protocol.Range {
+	_, value := doc.GetKeyValueNodes(child)
 
 	if value != nil {
 		return NodeToRange(child)
-	} else {
-		defaultRange := NodeToRange(child)
-		return protocol.Range{
-			Start: defaultRange.Start,
-			End: protocol.Position{
-				Line:      defaultRange.End.Line,
-				Character: defaultRange.End.Character + 999,
-			},
-		}
+	}
+
+	defaultRange := NodeToRange(child)
+	return protocol.Range{
+		Start: defaultRange.Start,
+		End: protocol.Position{
+			Line:      defaultRange.End.Line,
+			Character: defaultRange.End.Character + 999,
+		},
 	}
 }

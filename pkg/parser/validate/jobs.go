@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/circleci/circleci-yaml-language-server/pkg/ast"
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
 )
 
@@ -16,7 +16,7 @@ func (val Validate) ValidateJobs() {
 }
 
 func (val Validate) validateSingleJob(job ast.Job) {
-	val.validateSteps(job.Steps, job.Name)
+	val.validateSteps(job.Steps, job.Name, job.Parameters)
 
 	if !val.checkIfJobIsUsed(job) {
 		val.jobIsUnused(job)
@@ -42,7 +42,7 @@ func (val Validate) validateSingleJob(job ast.Job) {
 				case ast.StringParameter:
 					str := param.(ast.StringParameter)
 
-					if !val.Doc.DoesExecutorExist(str.Default) {
+					if str.IsOptional() && !val.Doc.DoesExecutorExist(str.Default) {
 						// Error on the default value
 						val.addDiagnostic(
 							protocol.Diagnostic{
@@ -58,7 +58,7 @@ func (val Validate) validateSingleJob(job ast.Job) {
 				case ast.ExecutorParameter:
 					exec := param.(ast.ExecutorParameter)
 
-					if !val.Doc.DoesExecutorExist(exec.Default) {
+					if exec.IsOptional() && !val.Doc.DoesExecutorExist(exec.Default) {
 						// Error on the default value
 						val.addDiagnostic(
 							protocol.Diagnostic{
@@ -76,7 +76,7 @@ func (val Validate) validateSingleJob(job ast.Job) {
 			}
 
 		} else if !val.Doc.DoesExecutorExist(job.Executor) {
-			if val.Doc.IsOrb(job.Executor) {
+			if val.Doc.IsOrbReference(job.Executor) {
 				val.validateOrbExecutor(job.Executor, job.ExecutorRange)
 			} else {
 				val.addDiagnostic(

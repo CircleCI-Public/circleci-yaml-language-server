@@ -34,8 +34,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/circleci/circleci-yaml-language-server/pkg/ast"
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	sitter "github.com/smacker/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
@@ -45,34 +45,78 @@ type LocalOrb struct {
 	Offset protocol.Position
 }
 
-func (doc *YamlDocument) parseLocalOrb(name string, orbNode *sitter.Node) error {
+func (doc *YamlDocument) parseLocalOrb(name string, orbNode *sitter.Node) (*LocalOrb, error) {
 	orb := LocalOrb{
 		Name:   name,
 		Offset: NodeToRange(orbNode).Start,
 	}
+
 	if orbNode.Type() != "block_node" {
-		return fmt.Errorf("Invalid orb body")
+		return nil, fmt.Errorf("Invalid orb body")
 	}
+
 	orbContent := doc.GetNodeText(orbNode)
 	deindentedContent := removeIndentationFromText(orbContent, orb.Offset.Character)
-	orbDoc, err := GetParsedYAMLWithContent([]byte(deindentedContent))
+	orbDoc, err := ParseFromContent([]byte(deindentedContent), doc.Context, doc.URI)
+
 	if err != nil {
-		return err
+		return nil, err
 	}
+
+	orbInfo := &ast.OrbInfo{
+		IsLocal: true,
+
+		Source:      deindentedContent,
+		Description: orbDoc.Description,
+		Commands:    orbDoc.Commands,
+		Jobs:        orbDoc.Jobs,
+		Executors:   orbDoc.Executors,
+		Parameters:  orbDoc.PipelinesParameters,
+
+		OrbsRange:       utils.AddOffsetToRange(orbDoc.OrbsRange, orb.Offset),
+		ExecutorsRange:  utils.AddOffsetToRange(orbDoc.ExecutorsRange, orb.Offset),
+		CommandsRange:   utils.AddOffsetToRange(orbDoc.CommandsRange, orb.Offset),
+		JobsRange:       utils.AddOffsetToRange(orbDoc.JobsRange, orb.Offset),
+		WorkflowRange:   utils.AddOffsetToRange(orbDoc.WorkflowRange, orb.Offset),
+		ParametersRange: utils.AddOffsetToRange(orbDoc.PipelinesParametersRange, orb.Offset),
+	}
+
+	doc.LocalOrbInfo[name] = orbInfo
+
+	// Commands
 	for name, command := range orbDoc.Commands {
-		doc.Commands[fmt.Sprintf("%s/%s", orb.Name, name)] = doc.adaptCommand(orb, command)
+		commandName := fmt.Sprintf("%s/%s", orb.Name, name)
+		orbCommand := doc.adaptCommand(orb, command)
+
+		orbDoc.Commands[name] = orbCommand
+		doc.Commands[commandName] = orbCommand
 	}
+
+	// Executors
 	for name, executor := range orbDoc.Executors {
-		doc.Executors[fmt.Sprintf("%s/%s", orb.Name, name)] = doc.adaptExecutor(orb, executor)
+		executorName := fmt.Sprintf("%s/%s", orb.Name, name)
+		orbExecutor := doc.adaptExecutor(orb, executor)
+
+		orbDoc.Executors[name] = orbExecutor
+		doc.Executors[executorName] = orbExecutor
 	}
+
+	// Jobs
 	for name, job := range orbDoc.Jobs {
-		doc.Jobs[fmt.Sprintf("%s/%s", orb.Name, name)] = doc.adaptJob(orb, job)
+		jobName := fmt.Sprintf("%s/%s", orb.Name, name)
+		orbJob := doc.adaptJob(orb, job)
+
+		orbDoc.Jobs[name] = orbJob
+		doc.Jobs[jobName] = orbJob
 	}
+
+	// Diagnostics
 	for _, diagnostic := range *orbDoc.Diagnostics {
 		utils.OffsetRange(&diagnostic.Range, orb.Offset)
 		doc.addDiagnostic(diagnostic)
 	}
-	return nil
+
+	return &orb, nil
 }
 
 func removeIndentationFromText(text string, indent uint32) string {

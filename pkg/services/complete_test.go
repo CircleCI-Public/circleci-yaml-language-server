@@ -8,9 +8,10 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/circleci/circleci-yaml-language-server/pkg/ast"
-	"github.com/circleci/circleci-yaml-language-server/pkg/parser"
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/testHelpers"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 )
@@ -21,17 +22,24 @@ func TestComplete(t *testing.T) {
 	os.Setenv("SCHEMA_LOCATION", schemaPath)
 	cache := utils.CreateCache()
 
-	parsedOrb, err := parser.GetParsedYAMLWithURI(uri.File(path.Join("./testdata/orb.yaml")))
+	context := testHelpers.GetDefaultLsContext()
+
+	parsedOrb, err := parser.ParseFromURI(
+		uri.File(path.Join("./testdata/orb.yaml")),
+		context,
+	)
 
 	if err != nil {
 		panic(err)
 	}
 
-	cache.OrbCache.SetOrb(&ast.CachedOrb{
-		FilePath:  uri.File(path.Join("./testdata/orb.yaml")).Filename(),
+	cache.OrbCache.SetOrb(&ast.OrbInfo{
 		Commands:  parsedOrb.Commands,
 		Executors: parsedOrb.Executors,
 		Jobs:      parsedOrb.Jobs,
+		RemoteInfo: ast.RemoteOrbInfo{
+			FilePath: uri.File(path.Join("./testdata/orb.yaml")).Filename(),
+		},
 	}, "superorb/superfunc@1.2.3")
 
 	type args struct {
@@ -215,6 +223,15 @@ func TestComplete(t *testing.T) {
 					Label: "ubuntu-2004:current",
 				},
 				{
+					Label: "ubuntu-2004:2022.10.1",
+				},
+				{
+					Label: "ubuntu-2004:2022.07.1",
+				},
+				{
+					Label: "ubuntu-2004:2022.04.2",
+				},
+				{
 					Label: "ubuntu-2004:2022.04.1",
 				},
 				{
@@ -230,7 +247,7 @@ func TestComplete(t *testing.T) {
 					Label: "ubuntu-2004:202111-01",
 				},
 				{
-					Label: "ubuntu-2004:202107-01",
+					Label: "ubuntu-2004:202107-02",
 				},
 				{
 					Label: "ubuntu-2004:202104-01",
@@ -239,7 +256,31 @@ func TestComplete(t *testing.T) {
 					Label: "ubuntu-2004:202101-01",
 				},
 				{
-					Label: "ubuntu-2004:202011-01",
+					Label: "ubuntu-2004:202010-01",
+				},
+				{
+					Label: "ubuntu-2204:current",
+				},
+				{
+					Label: "ubuntu-2204:edge",
+				},
+				{
+					Label: "ubuntu-2204:2022.10.2",
+				},
+				{
+					Label: "ubuntu-2204:2022.10.1",
+				},
+				{
+					Label: "ubuntu-2204:2022.07.2",
+				},
+				{
+					Label: "ubuntu-2204:2022.07.1",
+				},
+				{
+					Label: "ubuntu-2204:2022.04.2",
+				},
+				{
+					Label: "ubuntu-2204:2022.04.1",
 				},
 			},
 		},
@@ -309,6 +350,7 @@ func TestComplete(t *testing.T) {
 			},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			content, _ := os.ReadFile(tt.args.filePath)
@@ -326,7 +368,7 @@ func TestComplete(t *testing.T) {
 				},
 			}
 
-			got, err := Complete(param, cache)
+			got, err := Complete(param, cache, context)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Complete() error = %v, wantErr %v", err, tt.wantErr)
 				return

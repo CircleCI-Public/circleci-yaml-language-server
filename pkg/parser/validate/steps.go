@@ -4,30 +4,35 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/circleci/circleci-yaml-language-server/pkg/ast"
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
 )
 
-func (val Validate) validateSteps(steps []ast.Step, name string) error {
+func (val Validate) validateSteps(steps []ast.Step, name string, jobOrCommandParameters map[string]ast.Parameter) error {
 	for _, step := range steps {
 		switch step := step.(type) {
 		case ast.NamedStep:
-			if !val.Doc.DoesJobExist(step.Name) && !val.Doc.DoesCommandExist(step.Name) &&
-				!val.Doc.IsBuiltIn(step.Name) && !val.Doc.IsOrb(step.Name) && !val.Doc.IsAlias(step.Name) {
+			commandExists := val.Doc.DoesJobExist(step.Name) ||
+				val.Doc.DoesCommandExist(step.Name) ||
+				val.Doc.IsBuiltIn(step.Name) ||
+				val.Doc.IsOrbCommand(step.Name, val.Cache) ||
+				val.Doc.IsAlias(step.Name)
+
+			if !commandExists {
 				val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
 					step.Range,
 					fmt.Sprintf("Cannot find declaration for step %s", step.Name)))
 			}
 
-			if !val.Doc.IsOrb(step.Name) && !val.Doc.IsBuiltIn(step.Name) {
+			if !val.Doc.IsOrbReference(step.Name) && !val.Doc.IsBuiltIn(step.Name) {
 				definedParams := val.Doc.GetDefinedParams(step.Name)
 				val.validateParametersValue(
 					step.Parameters,
 					step.Name,
 					step.Range,
 					definedParams,
-					definedParams,
+					jobOrCommandParameters,
 				)
 			}
 
@@ -49,7 +54,6 @@ func (val Validate) validateSteps(steps []ast.Step, name string) error {
 				return nil
 			}
 			parameterType := parameter.GetType()
-			fmt.Println("parameterType", parameterType)
 			if parameterType != "steps" {
 				val.addDiagnostic(protocol.Diagnostic{
 					Severity: protocol.DiagnosticSeverityError,
@@ -75,7 +79,24 @@ func (val Validate) checkIfStepsContainStep(steps []ast.Step, stepName string) b
 
 func (val Validate) checkIfStepsContainOrb(steps []ast.Step, orbName string) bool {
 	for _, step := range steps {
-		if val.Doc.IsOrb(step.GetName()) && strings.Split(step.GetName(), "/")[0] == orbName {
+		isOrb := val.Doc.IsOrbReference(step.GetName())
+
+		if isOrb && strings.Split(step.GetName(), "/")[0] == orbName {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (val Validate) checkIfJobUseOrb(job ast.Job, orbName string) bool {
+	if val.checkIfStepsContainOrb(job.Steps, orbName) {
+		return true
+	}
+
+	if job.Executor != "" {
+		split := strings.Split(job.Executor, "/")
+		if split[0] == orbName {
 			return true
 		}
 	}

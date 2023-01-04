@@ -4,12 +4,20 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/circleci/circleci-yaml-language-server/pkg/ast"
-	"github.com/circleci/circleci-yaml-language-server/pkg/parser"
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	sitter "github.com/smacker/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
+
+func (val Validate) ValidatePipelineParameters() {
+	if len(val.Doc.PipelinesParameters) == 0 && !utils.IsDefaultRange(val.Doc.PipelinesParametersRange) {
+		val.addDiagnostic(
+			utils.CreateEmptyAssignationWarning(val.Doc.PipelinesParametersRange),
+		)
+	}
+}
 
 // Check if the parameter is defined if it's not optional,
 // otherwise add a diagnostic error if the needed parameter is not assigned
@@ -60,7 +68,11 @@ func (val Validate) checkParamSimpleType(param ast.ParameterValue, stepName stri
 		val.checkExecutorParamValue(param)
 
 	case "steps":
-		for _, value := range param.Value.([]ast.ParameterValue) {
+		values, ok := param.Value.([]ast.ParameterValue)
+		if !ok {
+			val.createParameterError(param, stepName, definedParam.GetType())
+		}
+		for _, value := range values {
 			if value.Type != "steps" {
 				val.createParameterError(value, stepName, definedParam.GetType())
 			}
@@ -86,10 +98,7 @@ func (val Validate) checkParamUsedWithParam(param ast.ParameterValue, stepName s
 	}
 
 	if !ok {
-		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
-			param.ValueRange,
-			fmt.Sprintf("Parameter %s is not defined", paramName),
-		))
+		// check already done before in `CheckIfParamsExist`
 		return
 	}
 
@@ -110,16 +119,19 @@ func (val Validate) CheckIfParamsExist() {
 			}
 
 			for _, param := range params {
-				ok := true
 				isPipeline := strings.HasPrefix(param.FullName, "pipeline")
 
+				var parameters map[string]ast.Parameter
+
 				if isPipeline {
-					_, ok = val.Doc.PipelinesParameters[param.Name]
+					parameters = val.Doc.PipelinesParameters
 				} else {
-					_, ok = val.Doc.GetParamsWithPosition(parser.NodeToRange(node).Start)[param.Name]
+					parameters = val.Doc.GetParamsWithPosition(parser.NodeToRange(node).Start)
 				}
 
-				if ok {
+				_, parameterFound := parameters[param.Name]
+
+				if parameterFound {
 					continue
 				}
 

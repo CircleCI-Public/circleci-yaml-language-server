@@ -1,7 +1,10 @@
 package parser
 
 import (
-	"github.com/circleci/circleci-yaml-language-server/pkg/ast"
+	"strings"
+
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	sitter "github.com/smacker/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
@@ -16,22 +19,22 @@ func (doc *YamlDocument) parseWorkflows(workflowsNode *sitter.Node) {
 		switch keyName {
 		case "version":
 			if doc.Version >= 2.1 {
+				rng := NodeToRange(child)
 				doc.addDiagnostic(
-					protocol.Diagnostic{
-						Severity: protocol.DiagnosticSeverityWarning,
-						Range: protocol.Range{
-							Start: protocol.Position{
-								Line:      child.StartPoint().Row,
-								Character: child.StartPoint().Column,
-							},
-							End: protocol.Position{
-								Line:      child.EndPoint().Row,
-								Character: child.EndPoint().Column,
-							},
+					utils.CreateDiagnosticFromRange(
+						rng,
+						protocol.DiagnosticSeverityWarning,
+						"Version key is deprecated since 2.1",
+						[]protocol.CodeAction{
+							utils.CreateCodeActionTextEdit("Delete version key", doc.URI,
+								[]protocol.TextEdit{
+									{
+										Range:   rng,
+										NewText: "",
+									},
+								}, false),
 						},
-						Message: "Version key is deprecated since 2.1",
-						Source:  "cci-language-server",
-					},
+					),
 				)
 			}
 		default:
@@ -60,7 +63,7 @@ func (doc *YamlDocument) parseWorkflows(workflowsNode *sitter.Node) {
 
 func (doc *YamlDocument) parseSingleWorkflow(workflowNode *sitter.Node) ast.Workflow {
 	// workflowNode is a block_mapping_pair
-	keyNode, valueNode := getKeyValueNodes(workflowNode)
+	keyNode, valueNode := doc.GetKeyValueNodes(workflowNode)
 	if keyNode == nil || valueNode == nil {
 		return ast.Workflow{Range: NodeToRange(workflowNode)}
 	}
@@ -69,7 +72,7 @@ func (doc *YamlDocument) parseSingleWorkflow(workflowNode *sitter.Node) ast.Work
 	blockMappingNode := GetChildOfType(valueNode, "block_mapping")
 	res := ast.Workflow{Range: NodeToRange(workflowNode), Name: workflowName, NameRange: NodeToRange(keyNode)}
 	iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
-		keyNode, valueNode := getKeyValueNodes(child)
+		keyNode, valueNode := doc.GetKeyValueNodes(child)
 		if keyNode == nil || valueNode == nil {
 			return
 		}
@@ -138,8 +141,20 @@ func (doc *YamlDocument) parseSingleJobReference(jobRefNode *sitter.Node) ast.Jo
 	res.Parameters = make(map[string]ast.ParameterValue)
 	res.HasMatrix = false
 
+	if alias := GetChildOfType(element, "alias"); alias != nil {
+		aliasName := strings.TrimPrefix(doc.GetNodeText(alias), "*")
+		anchor, ok := doc.YamlAnchors[aliasName]
+
+		if !ok {
+			return res
+		}
+
+		element = anchor.ValueNode
+	}
+
 	if element != nil && element.Type() == "flow_node" {
-		res.JobName = doc.GetNodeText(element)
+		name := GetChildOfType(element, "plain_scalar")
+		res.JobName = doc.GetNodeText(name)
 		res.JobNameRange = NodeToRange(element)
 		res.StepName = res.JobName
 		res.StepNameRange = res.JobNameRange
@@ -147,7 +162,7 @@ func (doc *YamlDocument) parseSingleJobReference(jobRefNode *sitter.Node) ast.Jo
 	} else { // block_node
 		blockMappingNode := GetChildOfType(element, "block_mapping")
 		blockMappingPair := GetChildOfType(blockMappingNode, "block_mapping_pair")
-		key, value := getKeyValueNodes(blockMappingPair)
+		key, value := doc.GetKeyValueNodes(blockMappingPair)
 		if key == nil || value == nil {
 			return res
 		}
@@ -160,8 +175,8 @@ func (doc *YamlDocument) parseSingleJobReference(jobRefNode *sitter.Node) ast.Jo
 
 		iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
 			if child != nil {
-				keyName := doc.GetNodeText(child.ChildByFieldName("key"))
-				valueNode := child.ChildByFieldName("value")
+				keyNode, valueNode := doc.GetKeyValueNodes(child)
+				keyName := doc.GetNodeText(keyNode)
 
 				if keyName == "" || valueNode == nil {
 					return
@@ -220,7 +235,7 @@ func (doc *YamlDocument) parseMatrixAttributes(node *sitter.Node) map[string][]a
 	res := make(map[string][]ast.ParameterValue)
 
 	iterateOnBlockMapping(blockMapping, func(child *sitter.Node) {
-		keyNode, valueNode := getKeyValueNodes(child)
+		keyNode, valueNode := doc.GetKeyValueNodes(child)
 		if keyNode == nil || valueNode == nil {
 			return
 		}

@@ -3,14 +3,14 @@ package languageservice
 import (
 	"fmt"
 
-	yamlparser "github.com/circleci/circleci-yaml-language-server/pkg/parser"
-	utils "github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
+	utils "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	sitter "github.com/smacker/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
 
-func Hover(params protocol.HoverParams, cache utils.Cache) (protocol.Hover, error) {
-	doc, err := yamlparser.GetParsedYAMLWithCache(params.TextDocument.URI, cache)
+func Hover(params protocol.HoverParams, cache *utils.Cache, context *utils.LsContext) (protocol.Hover, error) {
+	doc, err := yamlparser.ParseFromUriWithCache(params.TextDocument.URI, cache, context)
 	if err != nil {
 		return protocol.Hover{}, nil
 	}

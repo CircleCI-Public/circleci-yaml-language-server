@@ -1,21 +1,23 @@
 package parser
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
 
-	"github.com/circleci/circleci-yaml-language-server/pkg/ast"
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	sitter "github.com/smacker/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
 
-func ParseFile(content []byte) YamlDocument {
+func ParseFile(content []byte, context *utils.LsContext) YamlDocument {
 	rootNode := GetRootNode(content)
 
 	doc := YamlDocument{
 		Content:             content,
+		Context:             context,
 		RootNode:            rootNode,
 		Commands:            make(map[string]ast.Command),
 		Orbs:                make(map[string]ast.Orb),
@@ -24,52 +26,88 @@ func ParseFile(content []byte) YamlDocument {
 		Executors:           make(map[string]ast.Executor),
 		PipelinesParameters: make(map[string]ast.Parameter),
 		Diagnostics:         &[]protocol.Diagnostic{},
+
+		LocalOrbInfo: make(map[string]*ast.OrbInfo),
 	}
 
 	return doc
 }
 
-func (doc *YamlDocument) ParseYAML() {
+func (doc *YamlDocument) ParseYAML(context *utils.LsContext) {
 	if len(*doc.Diagnostics) > 0 {
 		return
 	}
 	blockMappingNode := GetBlockMappingNode(doc.RootNode)
+	doc.YamlAnchors = ParseYamlAnchors(doc)
 
 	iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
-		keyName := doc.GetNodeText(child.ChildByFieldName("key"))
-		valueNode := child.ChildByFieldName("value")
-		if valueNode == nil {
-			return
-		}
+		keyNode, valueNode := doc.GetKeyValueNodes(child)
+		keyName := doc.GetNodeText(keyNode)
 
 		switch keyName {
 		case "version":
-			doc.parseVersion(valueNode)
+			if valueNode != nil {
+				doc.parseVersion(valueNode)
+			}
+
 			doc.VersionRange = NodeToRange(child)
+
 		case "orbs":
-			doc.OrbsRange = NodeToRange(valueNode)
-			doc.parseOrbs(valueNode)
+			if valueNode != nil {
+				doc.OrbsRange = NodeToRange(valueNode)
+				doc.parseOrbs(valueNode)
+			} else {
+				doc.OrbsRange = NodeToRange(child)
+			}
+
 		case "commands":
-			doc.CommandsRange = NodeToRange(valueNode)
-			doc.parseCommands(valueNode)
+			if valueNode != nil {
+				doc.CommandsRange = NodeToRange(valueNode)
+				doc.parseCommands(valueNode)
+			} else {
+				doc.CommandsRange = NodeToRange(child)
+			}
+
 		case "jobs":
+			if valueNode == nil {
+				break
+			}
+
 			doc.JobsRange = NodeToRange(valueNode)
 			doc.parseJobs(valueNode)
+
 		case "workflows":
+			if valueNode == nil {
+				break
+			}
+
 			doc.WorkflowRange = NodeToRange(valueNode)
 			doc.parseWorkflows(valueNode)
+
 		case "executors":
-			doc.ExecutorsRange = NodeToRange(valueNode)
-			doc.parseExecutors(valueNode)
+			if valueNode != nil {
+				doc.ExecutorsRange = NodeToRange(valueNode)
+				doc.parseExecutors(valueNode)
+			} else {
+				doc.ExecutorsRange = NodeToRange(child)
+			}
+
 		case "description":
+			if valueNode == nil {
+				break
+			}
+
 			doc.Description = doc.GetNodeText(valueNode)
+
 		case "parameters":
-			doc.PipelinesParametersRange = NodeToRange(valueNode)
-			doc.PipelinesParameters = doc.parseParameters(valueNode)
+			if valueNode != nil {
+				doc.PipelinesParametersRange = NodeToRange(valueNode)
+				doc.PipelinesParameters = doc.parseParameters(valueNode)
+			} else {
+				doc.PipelinesParametersRange = NodeToRange(child)
+			}
 		}
 	})
-
-	doc.YamlAnchors = ParseYamlAnchors(doc)
 }
 
 func (doc *YamlDocument) ValidateYAML() {
@@ -90,31 +128,36 @@ func (doc *YamlDocument) ValidateYAML() {
 	}
 }
 
-func GetParsedYAMLWithURI(URI protocol.URI) (YamlDocument, error) {
+func ParseFromURI(URI protocol.URI, context *utils.LsContext) (YamlDocument, error) {
 	content, err := os.ReadFile(URI.Filename())
 	if err != nil {
 		return YamlDocument{}, err
 	}
-	doc, err := GetParsedYAMLWithContent([]byte(content))
-	doc.URI = URI
+	doc, err := ParseFromContent([]byte(content), context, URI)
 
 	return doc, err
 }
 
-func GetParsedYAMLWithCache(URI protocol.URI, cache utils.Cache) (YamlDocument, error) {
+func ParseFromUriWithCache(URI protocol.URI, cache *utils.Cache, context *utils.LsContext) (YamlDocument, error) {
 	textDocument := cache.FileCache.GetFile(URI)
 
-	doc, err := GetParsedYAMLWithContent([]byte(textDocument.Text))
-	doc.URI = URI
+	if textDocument == nil {
+		return YamlDocument{}, fmt.Errorf("file hasn't been opened: %s", URI.Filename())
+	}
+
+	content := []byte(textDocument.Text)
+
+	doc, err := ParseFromContent(content, context, URI)
 
 	return doc, err
 }
 
-func GetParsedYAMLWithContent(content []byte) (YamlDocument, error) {
-	doc := ParseFile([]byte(content))
+func ParseFromContent(content []byte, context *utils.LsContext, URI protocol.URI) (YamlDocument, error) {
+	doc := ParseFile([]byte(content), context)
+	doc.URI = URI
 
 	doc.ValidateYAML()
-	doc.ParseYAML()
+	doc.ParseYAML(context)
 
 	return doc, nil
 }
@@ -123,24 +166,28 @@ type YamlAnchor struct {
 	Name            string
 	DefinitionRange protocol.Range
 	References      *[]protocol.Range
+	ValueNode       *sitter.Node
 }
 
 type YamlDocument struct {
-	Content     []byte
-	RootNode    *sitter.Node
-	Version     float32
-	Description string
-	URI         protocol.URI
-	Diagnostics *[]protocol.Diagnostic
+	Content        []byte
+	RootNode       *sitter.Node
+	Version        float32
+	Description    string
+	URI            protocol.URI
+	Diagnostics    *[]protocol.Diagnostic
+	Context        *utils.LsContext
+	SchemaLocation string
 
 	Orbs                map[string]ast.Orb
+	LocalOrbs           []LocalOrb
 	Executors           map[string]ast.Executor
 	Commands            map[string]ast.Command
 	Jobs                map[string]ast.Job
 	Workflows           map[string]ast.Workflow
 	PipelinesParameters map[string]ast.Parameter
+	YamlAnchors         map[string]YamlAnchor
 
-	YamlAnchors              map[string]YamlAnchor
 	OrbsRange                protocol.Range
 	ExecutorsRange           protocol.Range
 	CommandsRange            protocol.Range
@@ -148,6 +195,8 @@ type YamlDocument struct {
 	WorkflowRange            protocol.Range
 	PipelinesParametersRange protocol.Range
 	VersionRange             protocol.Range
+
+	LocalOrbInfo map[string]*ast.OrbInfo
 }
 
 func (doc *YamlDocument) IsBuiltIn(commandName string) bool {
@@ -170,20 +219,42 @@ func (doc *YamlDocument) IsBuiltIn(commandName string) bool {
 	return utils.FindInArray(builtInCommands, commandName) != -1
 }
 
-func (doc *YamlDocument) IsOrb(commandName string) bool {
+func (doc *YamlDocument) IsOrbReference(commandName string) bool {
 	splittedCommand := strings.Split(commandName, "/")
 
 	if len(splittedCommand) != 2 {
 		return false
 	}
 
-	_, ok := doc.Orbs[splittedCommand[0]]
+	orbName := splittedCommand[0]
+	_, ok := doc.Orbs[orbName]
+
+	return ok
+}
+
+func (doc *YamlDocument) IsOrbCommand(orbCommand string, cache *utils.Cache) bool {
+	splittedCommand := strings.Split(orbCommand, "/")
+
+	if len(splittedCommand) != 2 {
+		return false
+	}
+
+	orbName := splittedCommand[0]
+	commandName := splittedCommand[1]
+
+	orbInfo := doc.GetOrbInfo(cache, orbName)
+
+	if orbInfo == nil {
+		return false
+	}
+
+	_, ok := orbInfo.Commands[commandName]
 
 	return ok
 }
 
 func (doc *YamlDocument) IsGivenOrb(commandName string, orbName string) bool {
-	if !doc.IsOrb(commandName) {
+	if !doc.IsOrbReference(commandName) {
 		return false
 	}
 
@@ -240,7 +311,7 @@ func (doc *YamlDocument) InsertText(pos protocol.Position, text string) (YamlDoc
 		newContent += string(r)
 	}
 
-	return GetParsedYAMLWithContent([]byte(newContent))
+	return ParseFromContent([]byte(newContent), doc.Context, doc.URI)
 }
 
 type ModifiedYamlDocument struct {
@@ -328,7 +399,7 @@ func (doc *YamlDocument) DoesCommandOrJobOrExecutorExist(name string, includeCom
 		return true
 	}
 
-	if doc.IsOrb(name) {
+	if doc.IsOrbReference(name) {
 		return true
 	}
 
@@ -352,8 +423,54 @@ func (doc *YamlDocument) GetParamsWithPosition(position protocol.Position) map[s
 		}
 	}
 
+	if utils.PosInRange(doc.OrbsRange, position) {
+		for _, orb := range doc.Orbs {
+			if !orb.Url.IsLocal {
+				continue
+			}
+
+			if !utils.PosInRange(orb.Range, position) {
+				continue
+			}
+
+			orbInfo := doc.LocalOrbInfo[orb.Name]
+
+			return GetOrbParameters(orbInfo, position)
+		}
+
+		return map[string]ast.Parameter{}
+	}
+
 	if utils.PosInRange(doc.ExecutorsRange, position) {
 		for _, executor := range doc.Executors {
+			if utils.PosInRange(executor.GetRange(), position) {
+				return executor.GetParameters()
+			}
+		}
+	}
+
+	return map[string]ast.Parameter{}
+}
+
+func GetOrbParameters(orb *ast.OrbInfo, position protocol.Position) map[string]ast.Parameter {
+	if utils.PosInRange(orb.CommandsRange, position) {
+		for _, command := range orb.Commands {
+			if utils.PosInRange(command.Range, position) {
+				return command.Parameters
+			}
+		}
+	}
+
+	if utils.PosInRange(orb.JobsRange, position) {
+		for _, job := range orb.Jobs {
+			if utils.PosInRange(job.Range, position) {
+				return job.Parameters
+			}
+		}
+	}
+
+	if utils.PosInRange(orb.ExecutorsRange, position) {
+		for _, executor := range orb.Executors {
 			if utils.PosInRange(executor.GetRange(), position) {
 				return executor.GetParameters()
 			}
@@ -385,4 +502,20 @@ func (doc *YamlDocument) GetDefinedParams(entityName string) map[string]ast.Para
 	}
 
 	return definedParams
+}
+
+func (doc *YamlDocument) GetOrbInfo(cache *utils.Cache, name string) *ast.OrbInfo {
+	orb, ok := doc.Orbs[name]
+
+	if !ok {
+		return nil
+	}
+
+	if orb.Url.IsLocal {
+		return doc.LocalOrbInfo[name]
+	}
+
+	orbId := orb.Url.GetOrbID()
+
+	return cache.OrbCache.GetOrb(orbId)
 }

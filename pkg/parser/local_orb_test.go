@@ -3,7 +3,9 @@ package parser
 import (
 	"testing"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/testHelpers"
 	"github.com/stretchr/testify/assert"
+	"go.lsp.dev/uri"
 )
 
 func TestLocalOrbJob(t *testing.T) {
@@ -21,7 +23,8 @@ orbs:
           - image: cimg/base:2020.01
         steps:
           - run: echo "Hello << parameter.name >>"`
-	doc, err := GetParsedYAMLWithContent([]byte(content))
+	context := testHelpers.GetDefaultLsContext()
+	doc, err := ParseFromContent([]byte(content), context, uri.File(""))
 	assert.Nil(t, err)
 
 	// Test job
@@ -69,7 +72,8 @@ orbs:
           - image: cimg/base:2020.01
         steps:
           - run: echo "Hello << parameter.name >>"`
-	doc, err := GetParsedYAMLWithContent([]byte(content))
+	context := testHelpers.GetDefaultLsContext()
+	doc, err := ParseFromContent([]byte(content), context, uri.File(""))
 	assert.Nil(t, err)
 
 	// Test job
@@ -111,7 +115,8 @@ orbs:
                   default: 1.0.0
                   description: Specify the Terraform Docker image tag for the executor
                   type: string`
-	doc, err := GetParsedYAMLWithContent([]byte(content))
+	context := testHelpers.GetDefaultLsContext()
+	doc, err := ParseFromContent([]byte(content), context, uri.File(""))
 	assert.Nil(t, err)
 
 	// Test executor
@@ -141,7 +146,8 @@ orbs:
                 type: string
         steps:
           - run: echo "Hello << parameter.name >>"`
-	doc, err := GetParsedYAMLWithContent([]byte(content))
+	context := testHelpers.GetDefaultLsContext()
+	doc, err := ParseFromContent([]byte(content), context, uri.File(""))
 	assert.Nil(t, err)
 
 	// Test command
@@ -188,7 +194,8 @@ workflows:
   someworkflow:
     jobs:
       - localorb/localjob`
-	doc, err := GetParsedYAMLWithContent([]byte(content))
+	context := testHelpers.GetDefaultLsContext()
+	doc, err := ParseFromContent([]byte(content), context, uri.File(""))
 	assert.Nil(t, err)
 
 	assert.Len(t, *doc.Diagnostics, 0)

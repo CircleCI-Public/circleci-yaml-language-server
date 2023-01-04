@@ -7,31 +7,51 @@ import (
 )
 
 type Orb struct {
-	Range     protocol.Range
-	NameRange protocol.Range
-	Name      string
-	Url       OrbURL
+	Url          OrbURL
+	Name         string
+	Range        protocol.Range
+	NameRange    protocol.Range
+	VersionRange protocol.Range
 }
 
 type OrbURL struct {
+	IsLocal bool
 	Name    string
 	Version string
 }
 
 func (orb *OrbURL) GetOrbID() string {
+	if orb.IsLocal {
+		return orb.Name
+	}
 	return fmt.Sprintf("%s@%s", orb.Name, orb.Version)
 }
 
-type CachedOrb struct {
+type OrbInfo struct {
+	IsLocal bool
+
+	CreatedAt  string
+	Commands   map[string]Command
+	Jobs       map[string]Job
+	Executors  map[string]Executor
+	Parameters map[string]Parameter
+
+	Description string
+	Source      string
+	RemoteInfo  RemoteOrbInfo
+
+	OrbsRange       protocol.Range
+	ExecutorsRange  protocol.Range
+	CommandsRange   protocol.Range
+	JobsRange       protocol.Range
+	WorkflowRange   protocol.Range
+	ParametersRange protocol.Range
+}
+
+type RemoteOrbInfo struct {
 	ID                 string
-	Version            string
-	Source             string
-	CreatedAt          string
-	Commands           map[string]Command
-	Jobs               map[string]Job
-	Executors          map[string]Executor
-	Description        string
 	FilePath           string
+	Version            string
 	LatestVersion      string
 	LatestMinorVersion string
 	LatestPatchVersion string

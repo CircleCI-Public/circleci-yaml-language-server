@@ -5,12 +5,11 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"path"
 	"time"
 
-	"github.com/adrg/xdg"
-	"github.com/circleci/circleci-yaml-language-server/pkg/ast"
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
+	"go.lsp.dev/uri"
 	"golang.org/x/mod/semver"
 )
 
@@ -30,20 +29,25 @@ type OrbQuery struct {
 	Source string
 }
 
-func GetOrbInfo(orbVersionCode string, cache utils.Cache) (*ast.CachedOrb, error) {
+func GetOrbInfo(orbVersionCode string, cache *utils.Cache, context *utils.LsContext) (*ast.OrbInfo, error) {
 	// Returning cache if exists
 	if !cache.OrbCache.HasOrb(orbVersionCode) {
-		orb, err := fetchOrbInfo(orbVersionCode, cache)
+
+		orb, err := fetchOrbInfo(orbVersionCode, cache, context)
 		return orb, err
 	}
 
 	return cache.OrbCache.GetOrb(orbVersionCode), nil
 }
 
-func ParseRemoteOrbs(orbs map[string]ast.Orb, cache utils.Cache) {
+func ParseRemoteOrbs(orbs map[string]ast.Orb, cache *utils.Cache, context *utils.LsContext) {
 	for _, orb := range orbs {
+		if orb.Url.IsLocal {
+			continue
+		}
+
 		if orb.Url.Version != "volatile" && checkIfRemoteOrbAlreadyExistsInFSCache(orb.Url.GetOrbID()) {
-			err := addAlreadyExistingRemoteOrbsToFSCache(orb, cache)
+			err := addAlreadyExistingRemoteOrbsToFSCache(orb, cache, context)
 
 			// If no error, we continue
 			// Otherwise, we fetch again orb info
@@ -52,27 +56,27 @@ func ParseRemoteOrbs(orbs map[string]ast.Orb, cache utils.Cache) {
 			}
 		}
 
-		fetchOrbInfo(orb.Url.GetOrbID(), cache)
+		fetchOrbInfo(orb.Url.GetOrbID(), cache, context)
 	}
 }
 
-func fetchOrbInfo(orbVersionCode string, cache utils.Cache) (*ast.CachedOrb, error) {
-	orbQuery, err := GetRemoteOrb(orbVersionCode)
+func fetchOrbInfo(orbVersionCode string, cache *utils.Cache, context *utils.LsContext) (*ast.OrbInfo, error) {
+	orbQuery, err := GetRemoteOrb(orbVersionCode, context.Api.Token, context.Api.HostUrl)
 
 	if err != nil {
-		return &ast.CachedOrb{}, err
+		return &ast.OrbInfo{}, err
 	}
 
-	parsedOrbSource, err := GetParsedYAMLWithContent([]byte(orbQuery.Source))
+	parsedOrbSource, err := ParseFromContent([]byte(orbQuery.Source), context, uri.File(""))
 
 	if err != nil {
-		return &ast.CachedOrb{}, err
+		return &ast.OrbInfo{}, err
 	}
 
 	filePath, err := writeRemoteOrbSourceInFSCache(orbVersionCode, orbQuery.Source)
 
 	if err != nil {
-		return &ast.CachedOrb{}, err
+		return &ast.OrbInfo{}, err
 	}
 
 	latest, latestMinor, latestPatch := GetVersionInfo(
@@ -80,18 +84,22 @@ func fetchOrbInfo(orbVersionCode string, cache utils.Cache) (*ast.CachedOrb, err
 		"v"+orbQuery.Version,
 	)
 
-	orb := &ast.CachedOrb{
-		ID:                 orbQuery.Id,
-		Version:            orbQuery.Version,
-		Source:             orbQuery.Source,
-		Commands:           parsedOrbSource.Commands,
-		Jobs:               parsedOrbSource.Jobs,
-		Executors:          parsedOrbSource.Executors,
-		Description:        parsedOrbSource.Description,
-		FilePath:           filePath,
-		LatestVersion:      latest[1:],
-		LatestMinorVersion: latestMinor[1:],
-		LatestPatchVersion: latestPatch[1:],
+	orb := &ast.OrbInfo{
+		Commands:    parsedOrbSource.Commands,
+		Jobs:        parsedOrbSource.Jobs,
+		Executors:   parsedOrbSource.Executors,
+		Description: parsedOrbSource.Description,
+		Source:      orbQuery.Source,
+		IsLocal:     false,
+
+		RemoteInfo: ast.RemoteOrbInfo{
+			ID:                 orbQuery.Id,
+			FilePath:           filePath,
+			Version:            orbQuery.Version,
+			LatestVersion:      latest[1:],
+			LatestMinorVersion: latestMinor[1:],
+			LatestPatchVersion: latestPatch[1:],
+		},
 	}
 
 	cache.OrbCache.SetOrb(orb, orbVersionCode)
@@ -150,7 +158,7 @@ func GetVersionInfo(
 	return latest, latestMinor, latestPatch
 }
 
-func GetRemoteOrb(orbId string) (OrbQuery, error) {
+func GetRemoteOrb(orbId string, token string, hostUrl string) (OrbQuery, error) {
 	httpClient := &http.Client{
 		Timeout: 30 * time.Second,
 		Transport: &http.Transport{
@@ -161,7 +169,11 @@ func GetRemoteOrb(orbId string) (OrbQuery, error) {
 		},
 	}
 
-	client := utils.NewClient(httpClient, "https://circleci.com", "graphql-unstable", "", false)
+	if hostUrl == "" {
+		return OrbQuery{}, errors.New("host URL not defined")
+	}
+
+	client := utils.NewClient(httpClient, hostUrl, "graphql-unstable", token, false)
 	query := `query($orbVersionRef: String!) {
 		orbVersion(orbVersionRef: $orbVersionRef) {
 			id
@@ -177,6 +189,7 @@ func GetRemoteOrb(orbId string) (OrbQuery, error) {
 	}`
 
 	request := utils.NewRequest(query)
+	request.SetToken(client.Token)
 	request.Var("orbVersionRef", orbId)
 
 	var response OrbResponse
@@ -189,7 +202,7 @@ func GetRemoteOrb(orbId string) (OrbQuery, error) {
 	return response.OrbVersion, err
 }
 
-func GetOrbVersions(orbId string) ([]struct{ Version string }, error) {
+func GetOrbVersions(orbId string, token string, hostUrl string) ([]struct{ Version string }, error) {
 	httpClient := &http.Client{
 		Timeout: 30 * time.Second,
 		Transport: &http.Transport{
@@ -200,7 +213,12 @@ func GetOrbVersions(orbId string) ([]struct{ Version string }, error) {
 		},
 	}
 
-	client := utils.NewClient(httpClient, "https://circleci.com", "graphql-unstable", "", false)
+	if hostUrl == "" {
+		emptyList := make([]struct{ Version string }, 0)
+		return emptyList, fmt.Errorf("host URL not defined")
+	}
+
+	client := utils.NewClient(httpClient, hostUrl, "graphql-unstable", token, false)
 	query := `query($orbVersionRef: String!) {
 		orbVersion(orbVersionRef: $orbVersionRef) {
 			version
@@ -208,6 +226,7 @@ func GetOrbVersions(orbId string) ([]struct{ Version string }, error) {
 	}`
 
 	request := utils.NewRequest(query)
+	request.SetToken(client.Token)
 	request.Var("orbVersionRef", orbId)
 
 	var response OrbResponse
@@ -221,8 +240,8 @@ func GetOrbVersions(orbId string) ([]struct{ Version string }, error) {
 	return response.OrbVersion.Orb.Versions, err
 }
 
-func writeRemoteOrbSourceInFSCache(orbId string, source string) (string, error) {
-	filePath := getOrbCacheFSPath(orbId)
+func writeRemoteOrbSourceInFSCache(orbYaml string, source string) (string, error) {
+	filePath := utils.GetOrbCacheFSPath(orbYaml)
 	_, err := os.Stat(filePath)
 
 	if errors.Is(err, os.ErrNotExist) {
@@ -235,16 +254,16 @@ func writeRemoteOrbSourceInFSCache(orbId string, source string) (string, error) 
 	return filePath, err
 }
 
-func checkIfRemoteOrbAlreadyExistsInFSCache(orbId string) bool {
-	filePath := getOrbCacheFSPath(orbId)
+func checkIfRemoteOrbAlreadyExistsInFSCache(orbYaml string) bool {
+	filePath := utils.GetOrbCacheFSPath(orbYaml)
 
 	// Err == nil means the file exists
 	_, err := os.Stat(filePath)
 	return err == nil
 }
 
-func addAlreadyExistingRemoteOrbsToFSCache(orb ast.Orb, cache utils.Cache) error {
-	filePath := getOrbCacheFSPath(orb.Url.GetOrbID())
+func addAlreadyExistingRemoteOrbsToFSCache(orb ast.Orb, cache *utils.Cache, context *utils.LsContext) error {
+	filePath := utils.GetOrbCacheFSPath(orb.Url.GetOrbID())
 
 	source, err := os.ReadFile(filePath)
 
@@ -252,13 +271,13 @@ func addAlreadyExistingRemoteOrbsToFSCache(orb ast.Orb, cache utils.Cache) error
 		return err
 	}
 
-	parsedOrbSource, err := GetParsedYAMLWithContent(source)
+	parsedOrbSource, err := ParseFromContent(source, context, uri.File(filePath))
 
 	if err != nil {
 		return err
 	}
 
-	versions, err := GetOrbVersions(orb.Url.GetOrbID())
+	versions, err := GetOrbVersions(orb.Url.GetOrbID(), context.Api.Token, context.Api.HostUrl)
 
 	if err != nil {
 		return nil
@@ -266,30 +285,23 @@ func addAlreadyExistingRemoteOrbsToFSCache(orb ast.Orb, cache utils.Cache) error
 
 	latest, latestMinor, latestPatch := GetVersionInfo(versions, "v"+orb.Url.Version)
 
-	cache.OrbCache.SetOrb(&ast.CachedOrb{
-		ID:                 orb.Url.GetOrbID(),
-		Version:            orb.Url.Version,
-		Source:             string(source),
-		Commands:           parsedOrbSource.Commands,
-		Jobs:               parsedOrbSource.Jobs,
-		Executors:          parsedOrbSource.Executors,
-		Description:        parsedOrbSource.Description,
-		FilePath:           filePath,
-		LatestVersion:      latest[1:],
-		LatestMinorVersion: latestMinor[1:],
-		LatestPatchVersion: latestPatch[1:],
+	cache.OrbCache.SetOrb(&ast.OrbInfo{
+		Commands:    parsedOrbSource.Commands,
+		Jobs:        parsedOrbSource.Jobs,
+		Executors:   parsedOrbSource.Executors,
+		Description: parsedOrbSource.Description,
+		Source:      string(source),
+		IsLocal:     false,
+
+		RemoteInfo: ast.RemoteOrbInfo{
+			ID:                 orb.Url.GetOrbID(),
+			FilePath:           filePath,
+			Version:            orb.Url.Version,
+			LatestVersion:      latest[1:],
+			LatestMinorVersion: latestMinor[1:],
+			LatestPatchVersion: latestPatch[1:],
+		},
 	}, orb.Url.GetOrbID())
 
 	return nil
-}
-
-func getOrbCacheFSPath(orbId string) string {
-	file := path.Join("cci", "orbs", ".circleci", orbId+".yml")
-	filePath, err := xdg.CacheFile(file)
-
-	if err != nil {
-		filePath = path.Join(xdg.Home, ".cache", file)
-	}
-
-	return filePath
 }

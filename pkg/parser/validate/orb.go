@@ -4,14 +4,22 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/circleci/circleci-yaml-language-server/pkg/ast"
-	"github.com/circleci/circleci-yaml-language-server/pkg/parser"
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
 	"golang.org/x/mod/semver"
 )
 
 func (val Validate) ValidateOrbs() {
+	if len(val.Doc.Orbs) == 0 && len(val.Doc.LocalOrbs) == 0 && !utils.IsDefaultRange(val.Doc.OrbsRange) {
+		val.addDiagnostic(
+			utils.CreateEmptyAssignationWarning(val.Doc.OrbsRange),
+		)
+
+		return
+	}
+
 	for _, orb := range val.Doc.Orbs {
 		val.validateSingleOrb(orb)
 	}
@@ -26,31 +34,24 @@ func (val Validate) validateSingleOrb(orb ast.Orb) {
 		return
 	}
 
-	// Checking if the version number is valid
-	if !semver.IsValid("v" + orb.Url.Version) {
-		val.addDiagnostic(
-			utils.CreateErrorDiagnosticFromRange(
+	orbVersion, err := val.Doc.GetOrFetchOrbInfo(orb, val.Cache)
+
+	if err != nil {
+		if strings.HasPrefix(err.Error(), "could not find orb") {
+			val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
 				orb.Range,
-				"Invalid version number",
-			),
-		)
-
-		return
-	}
-
-	orbVersion, err := parser.GetOrbInfo(orb.Url.GetOrbID(), val.Cache)
-
-	if err != nil && strings.HasPrefix(err.Error(), "could not find orb") {
-		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
-			orb.Range,
-			fmt.Sprintf("Cannot find remote orb %s", orb.Url.GetOrbID()),
-		))
-
-		return
+				fmt.Sprintf("Cannot find remote orb %s", orb.Url.GetOrbID()),
+			))
+		} else {
+			val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
+				orb.Range,
+				fmt.Sprintf("error while retrieving orb %s", orb.Url.GetOrbID()),
+			))
+		}
 	}
 
 	// Adding diagnostics based on versions
-	if orbVersion.ID == "" {
+	if orbVersion == nil {
 		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
 			orb.Range,
 			"Orb or version not found",
@@ -60,11 +61,11 @@ func (val Validate) validateSingleOrb(orb ast.Orb) {
 	}
 
 	message, severity := DiagnosticVersion(
-		orbVersion.Version,
+		orbVersion.RemoteInfo.Version,
 		InfoVersions{
-			LatestVersion:      orbVersion.LatestVersion,
-			LatestMinorVersion: orbVersion.LatestMinorVersion,
-			LatestPatchVersion: orbVersion.LatestPatchVersion,
+			LatestVersion:      orbVersion.RemoteInfo.LatestVersion,
+			LatestMinorVersion: orbVersion.RemoteInfo.LatestMinorVersion,
+			LatestPatchVersion: orbVersion.RemoteInfo.LatestPatchVersion,
 		},
 	)
 
@@ -77,8 +78,48 @@ func (val Validate) validateSingleOrb(orb ast.Orb) {
 			orb.Range,
 			severity,
 			message,
+			val.createCodeActions(orb, *orbVersion),
 		),
 	)
+}
+
+type OrbVersionCodeActionCreator struct {
+	OrbVersion     string
+	CodeActionText string
+}
+
+func (val Validate) createCodeActions(orb ast.Orb, cachedOrb ast.OrbInfo) []protocol.CodeAction {
+	res := []protocol.CodeAction{}
+	versions := []OrbVersionCodeActionCreator{
+		{
+			OrbVersion:     cachedOrb.RemoteInfo.LatestPatchVersion,
+			CodeActionText: "Update to last patch",
+		},
+		{
+			OrbVersion:     cachedOrb.RemoteInfo.LatestMinorVersion,
+			CodeActionText: "Update to last minor",
+		},
+		{
+			OrbVersion:     cachedOrb.RemoteInfo.LatestVersion,
+			CodeActionText: "Update to last version",
+		},
+	}
+
+	for _, version := range versions {
+		if semver.Compare("v"+orb.Url.Version, "v"+version.OrbVersion) == -1 {
+			res = append(res, utils.CreateCodeActionTextEdit(
+				version.CodeActionText,
+				val.Doc.URI,
+				[]protocol.TextEdit{
+					{
+						Range:   orb.VersionRange,
+						NewText: version.OrbVersion,
+					},
+				}, false))
+		}
+	}
+
+	return res
 }
 
 func (val Validate) checkIfOrbIsUsed(orb ast.Orb) bool {
@@ -89,7 +130,7 @@ func (val Validate) checkIfOrbIsUsed(orb ast.Orb) bool {
 	}
 
 	for _, job := range val.Doc.Jobs {
-		if val.checkIfStepsContainOrb(job.Steps, orb.Name) {
+		if val.checkIfJobUseOrb(job, orb.Name) {
 			return true
 		}
 	}
@@ -123,7 +164,7 @@ func (val Validate) validateOrbExecutor(executorName string, executorRange proto
 	splittedName := strings.Split(executorName, "/")
 
 	orb := val.Doc.Orbs[splittedName[0]]
-	remoteOrb, err := parser.GetOrbInfo(orb.Url.GetOrbID(), val.Cache)
+	remoteOrb, err := parser.GetOrbInfo(orb.Url.GetOrbID(), val.Cache, val.Context)
 	if err != nil {
 		val.addDiagnostic(utils.CreateWarningDiagnosticFromRange(
 			executorRange,

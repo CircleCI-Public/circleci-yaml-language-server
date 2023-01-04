@@ -1,0 +1,20 @@
+version: "2.1"
+
+parameters:
+  :
+    type: string
+    default: 1.0.0
+jobs:
+  run:
+    docker:
+      - image: cimg/node:<< parameters.version >>
+    steps:
+      - checkout
+
+workflows:
+  test-build:
+    jobs:
+      - run:
+          node-version: "16.0.0"
+
+# VS Code Extension Version: 1.4.0

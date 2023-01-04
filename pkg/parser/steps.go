@@ -1,8 +1,9 @@
 package parser
 
 import (
-	"github.com/circleci/circleci-yaml-language-server/pkg/ast"
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
+
 	sitter "github.com/smacker/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
@@ -53,54 +54,83 @@ func (doc *YamlDocument) parseSingleStep(stepNode *sitter.Node) []ast.Step {
 
 	switch child.Type() {
 	case "flow_node":
-		return []ast.Step{ast.NamedStep{Name: doc.GetNodeText(child), Range: NodeToRange(child)}}
+		if child.Child(0).Type() != "alias" {
+			return []ast.Step{ast.NamedStep{Name: doc.GetNodeText(child), Range: NodeToRange(child)}}
+		}
+		step := doc.YamlAnchors[doc.GetNodeText(child)[1:]].ValueNode
+		if step == nil {
+			return nil
+		}
+		blockMapping := GetChildOfType(step, "block_mapping")
+		if blockMapping == nil {
+			step = GetChildOfType(step, "plain_scalar")
+			if step == nil {
+				return nil
+			}
+			return []ast.Step{ast.NamedStep{Name: doc.GetNodeText(step), Range: NodeToRange(step)}}
+		}
+		return doc.parseStep(blockMapping)
 	case "block_node":
 		blockMapping := GetChildOfType(child, "block_mapping")
 		if blockMapping == nil {
 			return []ast.Step{ast.Run{Range: NodeToRange(child)}}
 		}
-		blockMappingPair := GetChildOfType(blockMapping, "block_mapping_pair")
-		key := blockMappingPair.ChildByFieldName("key")
-		keyName := doc.GetNodeText(key)
-		valueNode := blockMappingPair.ChildByFieldName("value")
-		if valueNode == nil {
-			return nil
-		}
-		switch keyName {
-		case "run":
-			return []ast.Step{doc.parseRunStep(valueNode)}
-		case "checkout":
-			return []ast.Step{doc.parseCheckoutStep(valueNode)}
-		case "setup_remote_docker":
-			return []ast.Step{doc.parseSetupRemoteDockerStep(valueNode)}
-		case "save_cache":
-			return []ast.Step{doc.parseSaveCacheStep(valueNode)}
-		case "restore_cache":
-			return []ast.Step{doc.parseRestoreCacheStep(valueNode)}
-		case "store_artifacts":
-			return []ast.Step{doc.parseStoreArtifactsStep(valueNode)}
-		case "store_test_results":
-			return []ast.Step{doc.parseStoreTestResultsStep(valueNode)}
-		case "persist_to_workspace":
-			return []ast.Step{doc.parsePersistToWorkspaceStep(valueNode)}
-		case "attach_workspace":
-			return []ast.Step{doc.parseAttachWorkspaceStep(valueNode)}
-		case "add_ssh_keys":
-			return []ast.Step{doc.parseAddSSHKeyStep(valueNode)}
-		case "when":
-			return doc.parseWhenUnlessStep(valueNode)
-		case "unless":
-			return doc.parseWhenUnlessStep(valueNode)
-		case "steps":
-			stepName := doc.GetNodeText(valueNode)
-			_, stepName = utils.ExtractParameterName(stepName)
-			return []ast.Step{ast.Steps{Name: stepName, Range: NodeToRange(valueNode)}}
-		default:
-			return []ast.Step{doc.parseNamedStepWithParameters(keyName, valueNode)}
-		}
+		return doc.parseStep(blockMapping)
 	}
 
 	return []ast.Step{ast.NamedStep{}} // TODO: return error
+}
+
+func (doc *YamlDocument) parseStep(blockMapping *sitter.Node) []ast.Step {
+	blockMappingPair := GetChildOfType(blockMapping, "block_mapping_pair")
+	keyNode, valueNode := doc.GetKeyValueNodes(blockMappingPair)
+	keyName := doc.GetNodeText(keyNode)
+	if valueNode == nil {
+		return nil
+	}
+	switch keyName {
+	case "run":
+		return []ast.Step{doc.parseRunStep(valueNode)}
+	case "checkout":
+		return []ast.Step{doc.parseCheckoutStep(valueNode)}
+	case "setup_remote_docker":
+		return []ast.Step{doc.parseSetupRemoteDockerStep(valueNode)}
+	case "save_cache":
+		return []ast.Step{doc.parseSaveCacheStep(valueNode)}
+	case "restore_cache":
+		return []ast.Step{doc.parseRestoreCacheStep(valueNode)}
+	case "store_artifacts":
+		return []ast.Step{doc.parseStoreArtifactsStep(valueNode)}
+	case "store_test_results":
+		return []ast.Step{doc.parseStoreTestResultsStep(valueNode)}
+	case "persist_to_workspace":
+		return []ast.Step{doc.parsePersistToWorkspaceStep(valueNode)}
+	case "attach_workspace":
+		return []ast.Step{doc.parseAttachWorkspaceStep(valueNode)}
+	case "add_ssh_keys":
+		return []ast.Step{doc.parseAddSSHKeyStep(valueNode)}
+	case "when":
+		return doc.parseWhenUnlessStep(valueNode)
+	case "unless":
+		return doc.parseWhenUnlessStep(valueNode)
+	case "steps":
+		stepName := doc.GetNodeText(valueNode)
+		_, stepName = utils.ExtractParameterName(stepName)
+		return []ast.Step{ast.Steps{Name: stepName, Range: NodeToRange(valueNode)}}
+	case "<<":
+		referencedStepNode := GetChildOfType(valueNode, "block_sequence")
+		if referencedStepNode == nil {
+			return nil
+		}
+		referencedStepNode = GetChildOfType(referencedStepNode, "block_sequence_item")
+		if referencedStepNode == nil {
+			return nil
+		}
+		step := doc.parseSingleStep(referencedStepNode)
+		return step
+	default:
+		return []ast.Step{doc.parseNamedStepWithParameters(keyName, valueNode)}
+	}
 }
 
 func (doc *YamlDocument) parseWhenUnlessStep(blockNode *sitter.Node) []ast.Step {
@@ -109,7 +139,7 @@ func (doc *YamlDocument) parseWhenUnlessStep(blockNode *sitter.Node) []ast.Step 
 
 	blockMapping := GetChildMapping(blockNode)
 	iterateOnBlockMapping(blockMapping, func(child *sitter.Node) {
-		key, value := getKeyValueNodes(child)
+		key, value := doc.GetKeyValueNodes(child)
 		if key == nil || value == nil {
 			return
 		}
@@ -145,19 +175,21 @@ func (doc *YamlDocument) parseNamedStepWithParameters(stepName string, namedStep
 			ParametersRange: paramRange,
 		}
 		iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
-			if child != nil {
-				keyName := doc.GetNodeText(child.ChildByFieldName("key"))
-
-				if keyName == "" {
-					return
-				}
-
-				paramValue, err := doc.parseParameterValue(child)
-				if err != nil {
-					return
-				}
-				res.Parameters[keyName] = paramValue
+			if child == nil {
+				return
 			}
+
+			keyName := doc.GetNodeText(child.ChildByFieldName("key"))
+
+			if keyName == "" {
+				return
+			}
+
+			paramValue, err := doc.parseParameterValue(child)
+			if err != nil {
+				return
+			}
+			res.Parameters[keyName] = paramValue
 		})
 		return res
 	}
@@ -182,7 +214,7 @@ func (doc *YamlDocument) parseRunStep(runNode *sitter.Node) ast.Run {
 		blockMappingNode := GetChildMapping(runNode)
 		res := ast.Run{Range: NodeToRange(runNode.Parent().ChildByFieldName("key"))}
 		iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
-			keyNode, valueNode := getKeyValueNodes(child)
+			keyNode, valueNode := doc.GetKeyValueNodes(child)
 			if keyNode == nil || valueNode == nil {
 				return
 			}
@@ -221,7 +253,7 @@ func (doc *YamlDocument) parseCheckoutStep(checkoutNode *sitter.Node) ast.Checko
 	} else { // block_node
 		blockMappingNode := GetChildMapping(checkoutNode)
 		iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
-			keyNode, valueNode := getKeyValueNodes(child)
+			keyNode, valueNode := doc.GetKeyValueNodes(child)
 			if keyNode == nil || valueNode == nil {
 				return
 			}
@@ -243,7 +275,7 @@ func (doc *YamlDocument) parseSetupRemoteDockerStep(setupRemoteDockerNode *sitte
 	} else { // block_node
 		blockMappingNode := GetChildMapping(setupRemoteDockerNode)
 		iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
-			keyNode, valueNode := getKeyValueNodes(child)
+			keyNode, valueNode := doc.GetKeyValueNodes(child)
 			if keyNode == nil || valueNode == nil {
 				return
 			}
@@ -263,7 +295,7 @@ func (doc *YamlDocument) parseSaveCacheStep(saveCacheNode *sitter.Node) ast.Save
 	blockMappingNode := GetChildMapping(saveCacheNode)
 	res := ast.SaveCache{Range: NodeToRange(saveCacheNode.Parent().ChildByFieldName("key"))}
 	iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
-		keyNode, valueNode := getKeyValueNodes(child)
+		keyNode, valueNode := doc.GetKeyValueNodes(child)
 		if keyNode == nil || valueNode == nil {
 			return
 		}
@@ -285,7 +317,7 @@ func (doc *YamlDocument) parseRestoreCacheStep(restoreCacheNode *sitter.Node) as
 	blockMappingNode := GetChildMapping(restoreCacheNode)
 	res := ast.RestoreCache{Range: NodeToRange(restoreCacheNode.Parent().ChildByFieldName("key"))}
 	iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
-		keyNode, valueNode := getKeyValueNodes(child)
+		keyNode, valueNode := doc.GetKeyValueNodes(child)
 		if keyNode == nil || valueNode == nil {
 			return
 		}
@@ -306,7 +338,7 @@ func (doc *YamlDocument) parseStoreArtifactsStep(storeArtifactsNode *sitter.Node
 	blockMappingNode := GetChildMapping(storeArtifactsNode)
 	res := ast.StoreArtifacts{Range: NodeToRange(storeArtifactsNode.Parent().ChildByFieldName("key"))}
 	iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
-		keyNode, valueNode := getKeyValueNodes(child)
+		keyNode, valueNode := doc.GetKeyValueNodes(child)
 		if keyNode == nil || valueNode == nil {
 			return
 		}
@@ -325,7 +357,7 @@ func (doc *YamlDocument) parseStoreTestResultsStep(storeTestResultsNode *sitter.
 	blockMappingNode := GetChildMapping(storeTestResultsNode)
 	res := ast.StoreTestResults{Range: NodeToRange(storeTestResultsNode.Parent().ChildByFieldName("key"))}
 	iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
-		keyNode, valueNode := getKeyValueNodes(child)
+		keyNode, valueNode := doc.GetKeyValueNodes(child)
 		if keyNode == nil || valueNode == nil {
 			return
 		}
@@ -342,7 +374,7 @@ func (doc *YamlDocument) parsePersistToWorkspaceStep(persistToWorkspaceNode *sit
 	blockMappingNode := GetChildMapping(persistToWorkspaceNode)
 	res := ast.PersistToWorkspace{Range: NodeToRange(persistToWorkspaceNode.Parent().ChildByFieldName("key"))}
 	iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
-		keyNode, valueNode := getKeyValueNodes(child)
+		keyNode, valueNode := doc.GetKeyValueNodes(child)
 		if keyNode == nil || valueNode == nil {
 			return
 		}
@@ -361,7 +393,7 @@ func (doc *YamlDocument) parseAttachWorkspaceStep(attachWorkspaceNode *sitter.No
 	blockMappingNode := GetChildMapping(attachWorkspaceNode)
 	res := ast.AttachWorkspace{Range: NodeToRange(attachWorkspaceNode.Parent().ChildByFieldName("key"))}
 	iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
-		keyNode, valueNode := getKeyValueNodes(child)
+		keyNode, valueNode := doc.GetKeyValueNodes(child)
 		if keyNode == nil || valueNode == nil {
 			return
 		}
@@ -378,7 +410,7 @@ func (doc *YamlDocument) parseAddSSHKeyStep(addSSHKeyNode *sitter.Node) ast.AddS
 	blockMappingNode := GetChildMapping(addSSHKeyNode)
 	res := ast.AddSSHKey{Range: NodeToRange(addSSHKeyNode.Parent().ChildByFieldName("key"))}
 	iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
-		keyNode, valueNode := getKeyValueNodes(child)
+		keyNode, valueNode := doc.GetKeyValueNodes(child)
 		if keyNode == nil || valueNode == nil {
 			return
 		}

@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"time"
 
+	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
+	lsp "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/services"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"github.com/bep/debounce"
-	yamlparser "github.com/circleci/circleci-yaml-language-server/pkg/parser"
-	lsp "github.com/circleci/circleci-yaml-language-server/pkg/services"
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
 	"github.com/segmentio/encoding/json"
 	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/protocol"
@@ -61,12 +61,19 @@ func (methods *Methods) DidClose(reply jsonrpc2.Replier, req jsonrpc2.Request) e
 }
 
 func (methods *Methods) notificationMethods(cache utils.FileCache, textDocument protocol.TextDocumentItem) {
-	diagnosticParams := lsp.Diagnostic(
-		protocol.PublishDiagnosticsParams{
-			URI: textDocument.URI,
-		},
+	diagnostic, _ := lsp.DiagnosticFile(
+		textDocument.URI,
 		methods.Cache,
+		methods.LsContext,
+		methods.SchemaLocation,
 	)
+
+	// TODO: Handle error
+
+	diagnosticParams := protocol.PublishDiagnosticsParams{
+		URI:         textDocument.URI,
+		Diagnostics: diagnostic,
+	}
 
 	original := cache.GetFile(textDocument.URI)
 
@@ -87,13 +94,13 @@ func (methods *Methods) notificationMethods(cache utils.FileCache, textDocument 
 }
 
 func (methods *Methods) parsingMethods(textDocument protocol.TextDocumentItem) {
-	parsedFile, err := yamlparser.GetParsedYAMLWithCache(textDocument.URI, methods.Cache)
+	parsedFile, err := yamlparser.ParseFromUriWithCache(textDocument.URI, methods.Cache, methods.LsContext)
 
 	if err != nil {
 		return
 	}
 
-	yamlparser.ParseRemoteOrbs(parsedFile.Orbs, methods.Cache)
+	yamlparser.ParseRemoteOrbs(parsedFile.Orbs, methods.Cache, methods.LsContext)
 }
 
 func (methods *Methods) applyIncrementalChanges(uri protocol.URI, changes []protocol.TextDocumentContentChangeEvent) string {
