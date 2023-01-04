@@ -3,6 +3,8 @@ package methods
 import (
 	"bytes"
 	"fmt"
+	"path"
+	"strings"
 	"time"
 
 	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
@@ -65,6 +67,21 @@ func (methods *Methods) DidClose(reply jsonrpc2.Replier, req jsonrpc2.Request) e
 
 	// removed due to a bug in remote orbs
 	// methods.Cache.FileCache.RemoveFile(params.TextDocument.URI)
+	namespace := path.Base((path.Dir(params.TextDocument.URI.Filename())))
+	orb := path.Base(params.TextDocument.URI.Filename())
+	orbId := strings.TrimRight(path.Join(namespace, orb), ".yml")
+
+	isOrb := methods.Cache.OrbCache.HasOrb(orbId)
+	if isOrb {
+		methods.Conn.Notify(
+			methods.Ctx,
+			protocol.MethodTextDocumentPublishDiagnostics,
+			protocol.PublishDiagnosticsParams{
+				URI:         params.TextDocument.URI,
+				Diagnostics: []protocol.Diagnostic{},
+			},
+		)
+	}
 
 	return reply(methods.Ctx, nil, nil)
 }
