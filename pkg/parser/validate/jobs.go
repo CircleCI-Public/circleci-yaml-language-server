@@ -42,7 +42,10 @@ func (val Validate) validateSingleJob(job ast.Job) {
 				case ast.StringParameter:
 					str := param.(ast.StringParameter)
 
-					if str.IsOptional() && !val.Doc.DoesExecutorExist(str.Default) {
+					isOrbExecutor, err := val.doesOrbExecutorExist(str.Default, str.DefaultRange)
+					if str.IsOptional() &&
+						!val.Doc.DoesExecutorExist(str.Default) &&
+						(!isOrbExecutor && err == nil) {
 						// Error on the default value
 						val.addDiagnostic(
 							protocol.Diagnostic{
@@ -57,8 +60,11 @@ func (val Validate) validateSingleJob(job ast.Job) {
 					}
 				case ast.ExecutorParameter:
 					exec := param.(ast.ExecutorParameter)
+					isOrbExecutor, err := val.doesOrbExecutorExist(exec.Default, exec.DefaultRange)
 
-					if exec.IsOptional() && !val.Doc.DoesExecutorExist(exec.Default) {
+					if exec.IsOptional() && !val.Doc.DoesExecutorExist(exec.Default) &&
+						!val.Doc.DoesExecutorExist(exec.Default) &&
+						(!isOrbExecutor && err == nil) {
 						// Error on the default value
 						val.addDiagnostic(
 							protocol.Diagnostic{

@@ -161,22 +161,38 @@ func (val Validate) orbIsUnused(orb ast.Orb) {
 }
 
 func (val Validate) validateOrbExecutor(executorName string, executorRange protocol.Range) {
+	orbExecutorExist, err := val.doesOrbExecutorExist(executorName, executorRange)
+	if !orbExecutorExist && err != nil {
+		splittedName := strings.Split(executorName, "/")
+		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
+			executorRange,
+			fmt.Sprintf("Cannot find executor %s in orb %s", splittedName[1], splittedName[0]),
+		))
+	}
+}
+
+func (val Validate) doesOrbExecutorExist(executorName string, executorRange protocol.Range) (bool, error) {
 	splittedName := strings.Split(executorName, "/")
 
-	orb := val.Doc.Orbs[splittedName[0]]
+	orb, ok := val.Doc.Orbs[splittedName[0]]
+	if !ok {
+		err := fmt.Errorf("unknown orb referenced: %s", splittedName[0])
+		val.addDiagnostic(utils.CreateWarningDiagnosticFromRange(
+			executorRange,
+			err.Error(),
+		))
+		return false, err
+	}
+
 	remoteOrb, err := parser.GetOrbInfo(orb.Url.GetOrbID(), val.Cache, val.Context)
 	if err != nil {
 		val.addDiagnostic(utils.CreateWarningDiagnosticFromRange(
 			executorRange,
 			fmt.Sprintf("Invalid orb or error trying to fetch it: %+v", err),
 		))
-		return
+		return false, err
 	}
 
-	if _, ok := remoteOrb.Executors[splittedName[1]]; !ok {
-		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
-			executorRange,
-			fmt.Sprintf("Cannot find executor %s in orb %s", splittedName[1], splittedName[0]),
-		))
-	}
+	_, ok = remoteOrb.Executors[splittedName[1]]
+	return ok, nil
 }
