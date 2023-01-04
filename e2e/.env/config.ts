@@ -5,7 +5,7 @@ import { JestEnvironmentConfig } from '@jest/environment';
 
 // ============================================================
 // Import modules
-import { EnvOptions } from '../types';
+import type { EnvOptions } from '../utils';
 
 // ============================================================
 // Module's constants and variables

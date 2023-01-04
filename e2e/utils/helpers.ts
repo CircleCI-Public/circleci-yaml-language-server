@@ -1,5 +1,5 @@
-import { normalizeURI } from '../.env/index';
-import { ProtocolReturns } from '../types';
+import { normalizeURI } from '../.env';
+import { ProtocolReturns } from './types';
 import CustomEvent from '../.env/CustomEvent';
 import { EventType, RequestPayload } from '../.env/RpcClient';
 import type {
@@ -7,7 +7,7 @@ import type {
   Position,
   ProtocolParams,
   PublishDiagnosticsParams,
-} from '../types';
+} from './types';
 import DiagnosticList from './DiagnosticList';
 
 /**

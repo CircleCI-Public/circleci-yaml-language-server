@@ -1,7 +1,7 @@
 // ============================================================
 // Import packages
 import net from 'net';
-import { ProtocolReturns } from '../types';
+import { ProtocolReturns } from '../utils/types';
 
 // ============================================================
 // Import modules

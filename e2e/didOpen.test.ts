@@ -1,5 +1,5 @@
-import { Commands } from './types';
 import {
+  Commands,
   configFileUri,
   configFileContent,
   command,

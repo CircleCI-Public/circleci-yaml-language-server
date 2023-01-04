@@ -2,7 +2,7 @@ import {
   Diagnostic,
   Position,
   Range,
-} from '../types';
+} from './types';
 
 class DiagnosticList {
   readonly list: Diagnostic[];

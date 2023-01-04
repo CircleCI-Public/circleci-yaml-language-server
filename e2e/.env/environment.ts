@@ -14,7 +14,7 @@ import type {
 
 // ============================================================
 // Import modules
-import { CommandDefinitions } from '../types';
+import type { CommandDefinitions } from '../utils';
 import {
   getJsonSchemaLocation,
   getLspClientHost,

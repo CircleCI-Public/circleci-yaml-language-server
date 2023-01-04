@@ -167,6 +167,22 @@ task test:e2e:standalone
 
 You may have to set the `PORT`.
 
+### Debug in VSCode
+It is possible to easily debug tests in VSCode.
+
+#### Scenario 1: debug tests
+
+You can simply debug your tests by running the configuration "E2E tests" in the "run and debug" menu:
+The debugger will stop on any breakpoints you will place in the `*.ts` file in the `e2e/` folder.
+
+#### Scenario 2: debug LSP code
+
+Run the two following configuration:
+* `Start server`: this will start a LSP server on port 10001.
+* `E2E tests (standalone)`: this will run the tests without spawning the LSP server. Tests will try to reach the LSP server on port 10001.
+
+By running those two configuration simultaneously, you will be able to add breakpoints on both Go and `e2e/*.ts` files.
+
 ### Update snapshots
 
 To update snapshots, run:

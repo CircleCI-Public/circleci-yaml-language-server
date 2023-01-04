@@ -1,12 +1,12 @@
 import * as utils from './helpers';
 import {
   Commands,
-} from '../types';
+} from './types';
 import type {
   CompletionList,
   HoverCommandResponse,
   Position,
-} from '../types';
+} from './types';
 import DiagnosticList from './DiagnosticList';
 import {
   configFileContent,
