@@ -162,12 +162,14 @@ func (validator *JSONSchemaValidator) ValidateWithJSONSchema(rootNode *sitter.No
 		return []protocol.Diagnostic{utils.CreateErrorDiagnosticFromNode(rootNode, err.Error())}
 	}
 
+	jsonSchemaDiags := []protocol.Diagnostic{}
+
 	if !result.Valid() {
 		for _, resErr := range result.Errors() {
 			fields := strings.Split(resErr.Field(), ".")
 			if len(fields) == 1 && fields[0] == "(root)" {
 				diagnostic := utils.CreateErrorDiagnosticFromNode(rootNode, resErr.Description())
-				diagnostics = append(diagnostics, diagnostic)
+				jsonSchemaDiags = append(jsonSchemaDiags, diagnostic)
 			} else {
 				node, err := FindDeepestNode(rootNode, content, fields)
 				if err != nil {
@@ -179,10 +181,13 @@ func (validator *JSONSchemaValidator) ValidateWithJSONSchema(rootNode *sitter.No
 				}
 
 				diagnostic := utils.CreateErrorDiagnosticFromNode(node, resErr.Description())
-				diagnostics = append(diagnostics, diagnostic)
+				jsonSchemaDiags = append(jsonSchemaDiags, diagnostic)
 			}
 		}
 	}
+
+	jsonSchemaDiags = removeUselessMustValidateError(jsonSchemaDiags)
+	diagnostics = append(diagnostics, jsonSchemaDiags...)
 
 	return diagnostics
 }
@@ -210,6 +215,36 @@ func (validator *JSONSchemaValidator) doesNodeUseParameter(node *sitter.Node) bo
 		value := validator.Doc.GetNodeText(valueNode)
 
 		if isInArray := utils.FindInArray(PARAMS_KEYS, key); utils.CheckIfOnlyParamUsed(value) && isInArray > 0 {
+			return true
+		}
+	}
+
+	return false
+}
+func removeUselessMustValidateError(diags []protocol.Diagnostic) []protocol.Diagnostic {
+	resDiags := []protocol.Diagnostic{}
+	for i, diag := range diags {
+		if diag.Message == "Must validate one and only one schema (oneOf)" {
+			if hasAnotherDiagInsideRange(diags, diag.Range) {
+				continue
+			}
+			resDiags = append(resDiags, utils.CreateDiagnosticFromRange(
+				diag.Range,
+				diag.Severity,
+				"Invalid structure",
+				[]protocol.CodeAction{},
+			))
+		} else {
+			resDiags = append(resDiags, diags[i])
+		}
+	}
+
+	return resDiags
+}
+
+func hasAnotherDiagInsideRange(diags []protocol.Diagnostic, rangeToCheck protocol.Range) bool {
+	for _, diag := range diags {
+		if utils.PosInRange(rangeToCheck, diag.Range.Start) {
 			return true
 		}
 	}
