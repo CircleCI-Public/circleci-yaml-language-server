@@ -1,92 +1,89 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Diagnostic testing files autocomplete-jobs.yml 1`] = `
+exports[`Diagnostic testing files diagnostic.yml 1`] = `
 DiagnosticList {
   "list": [
     {
-      "message": "You may want to add the \`store_test_results\` step to visualize the test results in CircleCI",
-      "range": {
-        "end": {
-          "character": 7,
-          "line": 63,
-        },
-        "start": {
-          "character": 2,
-          "line": 63,
-        },
-      },
-      "severity": 4,
-    },
-    {
       "data": [],
-      "message": "Job is unused",
+      "message": "Cannot find declaration for step slack/notify",
       "range": {
         "end": {
-          "character": 14,
-          "line": 48,
-        },
-        "start": {
-          "character": 6,
-          "line": 48,
-        },
-      },
-      "severity": 2,
-      "source": "cci-language-server",
-    },
-    {
-      "data": [],
-      "message": "Job is unused",
-      "range": {
-        "end": {
-          "character": 13,
+          "character": 20,
           "line": 24,
         },
         "start": {
-          "character": 6,
+          "character": 8,
           "line": 24,
-        },
-      },
-      "severity": 2,
-      "source": "cci-language-server",
-    },
-    {
-      "data": [],
-      "message": "Orb is unused",
-      "range": {
-        "end": {
-          "character": 27,
-          "line": 9,
-        },
-        "start": {
-          "character": 2,
-          "line": 9,
-        },
-      },
-      "severity": 2,
-      "source": "cci-language-server",
-    },
-    {
-      "data": [],
-      "message": "version must be one of the following: 2, 2.1",
-      "range": {
-        "end": {
-          "character": 14,
-          "line": 0,
-        },
-        "start": {
-          "character": 0,
-          "line": 0,
         },
       },
       "severity": 1,
       "source": "cci-language-server",
     },
+    {
+      "data": [
+        {
+          "edit": {
+            "changes": {
+              "file:///home/abraham/projects/yaml-language-server/test-files/.circleci/diagnostic.yml": [
+                {
+                  "newText": "4.12.0",
+                  "range": {
+                    "end": {
+                      "character": 29,
+                      "line": 4,
+                    },
+                    "start": {
+                      "character": 24,
+                      "line": 4,
+                    },
+                  },
+                },
+              ],
+            },
+          },
+          "kind": "quickfix",
+          "title": "Update to last minor",
+        },
+        {
+          "edit": {
+            "changes": {
+              "file:///home/abraham/projects/yaml-language-server/test-files/.circleci/diagnostic.yml": [
+                {
+                  "newText": "4.12.0",
+                  "range": {
+                    "end": {
+                      "character": 29,
+                      "line": 4,
+                    },
+                    "start": {
+                      "character": 24,
+                      "line": 4,
+                    },
+                  },
+                },
+              ],
+            },
+          },
+          "kind": "quickfix",
+          "title": "Update to last version",
+        },
+      ],
+      "message": "A newer minor version exists.
+- Current: 4.4.4
+- Latest:  4.12.0",
+      "range": {
+        "end": {
+          "character": 29,
+          "line": 4,
+        },
+        "start": {
+          "character": 2,
+          "line": 4,
+        },
+      },
+      "severity": 3,
+      "source": "cci-language-server",
+    },
   ],
-}
-`;
-
-exports[`Diagnostic testing files config1.yml 1`] = `
-DiagnosticList {
-  "list": [],
 }
 `;
