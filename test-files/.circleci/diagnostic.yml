@@ -1,0 +1,29 @@
+# The goal of this file is to list a maximum of diagnostics conditions.
+version: 2.1
+
+orbs:
+  slack: circleci/slack@4.4.4
+
+workflows:
+  main-workflow:
+    jobs:
+      - deploy
+
+executors:
+  default:
+    docker:
+      - image: cimg/go:1.18
+
+jobs:
+  deploy:
+    steps:
+      - notify_slack
+
+commands:
+  notify_slack:
+    steps:
+      - slack/notify:
+          channel: some-channel
+          branch_pattern: main
+          event: pass
+          template: some-template

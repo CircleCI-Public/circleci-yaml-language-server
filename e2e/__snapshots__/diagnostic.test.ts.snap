@@ -90,3 +90,75 @@ DiagnosticList {
   "list": [],
 }
 `;
+
+exports[`Diagnostic testing files diagnostic.yml 1`] = `
+DiagnosticList {
+  "list": [
+    {
+      "data": [
+        {
+          "edit": {
+            "changes": {
+              "file:///home/circleci/project/test-files/.circleci/diagnostic.yml": [
+                {
+                  "newText": "4.12.0",
+                  "range": {
+                    "end": {
+                      "character": 29,
+                      "line": 4,
+                    },
+                    "start": {
+                      "character": 24,
+                      "line": 4,
+                    },
+                  },
+                },
+              ],
+            },
+          },
+          "kind": "quickfix",
+          "title": "Update to last minor",
+        },
+        {
+          "edit": {
+            "changes": {
+              "file:///home/circleci/project/test-files/.circleci/diagnostic.yml": [
+                {
+                  "newText": "4.12.0",
+                  "range": {
+                    "end": {
+                      "character": 29,
+                      "line": 4,
+                    },
+                    "start": {
+                      "character": 24,
+                      "line": 4,
+                    },
+                  },
+                },
+              ],
+            },
+          },
+          "kind": "quickfix",
+          "title": "Update to last version",
+        },
+      ],
+      "message": "A newer minor version exists.
+- Current: 4.4.4
+- Latest:  4.12.0",
+      "range": {
+        "end": {
+          "character": 29,
+          "line": 4,
+        },
+        "start": {
+          "character": 2,
+          "line": 4,
+        },
+      },
+      "severity": 3,
+      "source": "cci-language-server",
+    },
+  ],
+}
+`;
