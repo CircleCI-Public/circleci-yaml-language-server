@@ -18,16 +18,22 @@ func (def DefinitionStruct) getOrbDefinition() ([]protocol.Location, error) {
 		}
 	}
 
-	if orb := def.GetOrbInfo(orb.Name); orb != nil {
-		return []protocol.Location{
-			{
-				URI:   uri.New(orb.RemoteInfo.FilePath),
-				Range: protocol.Range{},
-			},
-		}, nil
+	orbInfo, err := def.GetOrbInfo(orb.Name)
+
+	if err != nil {
+		return nil, err
 	}
 
-	return []protocol.Location{}, nil
+	if orbInfo == nil {
+		return []protocol.Location{}, nil
+	}
+
+	return []protocol.Location{
+		{
+			URI:   uri.New(orbInfo.RemoteInfo.FilePath),
+			Range: protocol.Range{},
+		},
+	}, nil
 }
 
 func (def DefinitionStruct) getOrbLocation(name string, redirectToOrbFile bool) ([]protocol.Location, error) {
@@ -36,7 +42,12 @@ func (def DefinitionStruct) getOrbLocation(name string, redirectToOrbFile bool) 
 		if orb, ok := def.Doc.Orbs[splittedName[0]]; ok {
 
 			if redirectToOrbFile {
-				orbFile := def.GetOrbInfo(orb.Name)
+				orbFile, err := def.GetOrbInfo(orb.Name)
+
+				if err != nil {
+					return nil, err
+				}
+
 				return def.getOrbCommandOrJobLocation(orbFile, splittedName[1])
 			}
 
@@ -90,7 +101,12 @@ func (def DefinitionStruct) getOrbParamLocation(name string, paramName string) (
 		return []protocol.Location{}, fmt.Errorf("orb not found")
 	}
 
-	orbFile := def.GetOrbInfo(name)
+	orbFile, err := def.GetOrbInfo(name)
+
+	if err != nil {
+		return []protocol.Location{}, err
+	}
+
 	if orbFile == nil {
 		return []protocol.Location{}, fmt.Errorf("orb not found")
 	}

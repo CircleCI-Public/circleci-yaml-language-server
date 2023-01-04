@@ -242,9 +242,9 @@ func (doc *YamlDocument) IsOrbCommand(orbCommand string, cache *utils.Cache) boo
 	orbName := splittedCommand[0]
 	commandName := splittedCommand[1]
 
-	orbInfo := doc.GetOrbInfo(cache, orbName)
+	orbInfo, err := doc.GetOrbInfoFromName(orbName, cache)
 
-	if orbInfo == nil {
+	if err != nil || orbInfo == nil {
 		return false
 	}
 
@@ -502,20 +502,4 @@ func (doc *YamlDocument) GetDefinedParams(entityName string) map[string]ast.Para
 	}
 
 	return definedParams
-}
-
-func (doc *YamlDocument) GetOrbInfo(cache *utils.Cache, name string) *ast.OrbInfo {
-	orb, ok := doc.Orbs[name]
-
-	if !ok {
-		return nil
-	}
-
-	if orb.Url.IsLocal {
-		return doc.LocalOrbInfo[name]
-	}
-
-	orbId := orb.Url.GetOrbID()
-
-	return cache.OrbCache.GetOrb(orbId)
 }

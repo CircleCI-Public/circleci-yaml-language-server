@@ -9,6 +9,22 @@ import (
 	"go.lsp.dev/protocol"
 )
 
+func (doc *YamlDocument) GetOrbInfoFromName(name string, cache *utils.Cache) (*ast.OrbInfo, error) {
+	// Searching within local orbs
+	orbInfo, ok := doc.LocalOrbInfo[name]
+	if ok {
+		return orbInfo, nil
+	}
+
+	orb, ok := doc.Orbs[name]
+
+	if !ok {
+		return nil, nil
+	}
+
+	return doc.GetOrFetchOrbInfo(orb, cache)
+}
+
 func (doc *YamlDocument) GetOrFetchOrbInfo(orb ast.Orb, cache *utils.Cache) (*ast.OrbInfo, error) {
 	// Searching within local orbs
 	orbInfo, ok := doc.LocalOrbInfo[orb.Name]

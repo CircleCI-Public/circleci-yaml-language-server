@@ -98,5 +98,6 @@ func (ch *CompletionHandler) addCompletionItemFieldWithCustomText(label string, 
 }
 
 func (ch *CompletionHandler) GetOrbInfo(orb ast.Orb) *ast.OrbInfo {
-	return ch.Doc.GetOrbInfo(ch.Cache, orb.Name)
+	orbInfo, _ := ch.Doc.GetOrFetchOrbInfo(orb, ch.Cache)
+	return orbInfo
 }
