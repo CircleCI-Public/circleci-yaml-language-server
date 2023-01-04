@@ -15,7 +15,7 @@ describe('Diagnostic testing files', () => {
     expect(diagnostics).toMatchSnapshot();
   });
 
-  it.only('diagnostic.yml', async () => {
+  it('diagnostic.yml', async () => {
     const testingFile = 'diagnostic.yml';
     const diagnostics = await commands.didOpen(testingFile);
 
