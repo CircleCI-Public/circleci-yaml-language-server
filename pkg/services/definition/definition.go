@@ -51,6 +51,6 @@ func (def DefinitionStruct) Definition(yamlDocument yamlparser.YamlDocument) ([]
 	return nil, nil
 }
 
-func (def DefinitionStruct) GetOrbInfo(name string) *ast.OrbInfo {
-	return def.Doc.GetOrbInfo(def.Cache, name)
+func (def DefinitionStruct) GetOrbInfo(name string) (*ast.OrbInfo, error) {
+	return def.Doc.GetOrbInfoFromName(name, def.Cache)
 }

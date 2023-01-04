@@ -20,7 +20,12 @@ func HoverInOrbs(doc yamlparser.YamlDocument, path []string, cache *utils.Cache)
 
 func orbDefinition(doc yamlparser.YamlDocument, orbName string, cache *utils.Cache) string {
 	orbInDoc := doc.Orbs[orbName]
-	orb := doc.GetOrbInfo(cache, orbInDoc.Name)
+	orb, err := doc.GetOrbInfoFromName(orbInDoc.Name, cache)
+
+	if err != nil {
+		return ""
+	}
+
 	if orb != nil {
 		return orb.Description
 	}
