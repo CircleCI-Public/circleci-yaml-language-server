@@ -143,24 +143,3 @@ func (doc *YamlDocument) jobCompletionItem(job ast.Job) {
 		job.AddCompletionItem("parallelism", []string{":", " "})
 	}
 }
-
-// TODO: REMOVE
-func getAnchorName(doc *YamlDocument, valueNode *sitter.Node) string {
-	if doc == nil || valueNode == nil {
-		return ""
-	}
-
-	if valueNode.Type() != "flow_node" {
-		return ""
-	}
-
-	child := valueNode.Child(0)
-
-	if child.Type() != "alias" {
-		return ""
-	}
-
-	txt := doc.GetNodeText(child)
-
-	return txt[1:]
-}
