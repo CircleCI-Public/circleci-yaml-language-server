@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "lint:e2e": "eslint e2e/",
-    "test:e2e": "jest",
+    "test:e2e": "jest diagnostic",
     "test:e2e:ci": "jest --maxWorkers 1"
   },
   "author": "",
