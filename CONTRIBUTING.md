@@ -48,16 +48,6 @@ To contribute, [fork](https://help.github.com/articles/fork-a-repo/)
 Your request will be reviewed as soon as possible. You may be asked to make
 changes to your submission during the review process.
 
-#### Before submitting
-
-Test your change thoroughly, to do this you can use the VSCode extension in
-`editors/vscode` in order to only test the LSP in an extension that would only
-run the LSP and nothing else.
-
-To do so, open a VSCode instance at the root of the project, open the
-`Run and Debug` tab and run it via the `Run Extension` on the dropdown menu at
-the top of the tab.
-
 # Hall of Fame
 
 Have you reported a bug that was fixed or even sent a patch that fixed one?

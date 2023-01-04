@@ -1,15 +1,27 @@
 package utils
 
 import (
+	"strings"
+
 	sitter "github.com/smacker/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
+
+// Diagnostic messages should start with a uppercase letter
+func ToDiagnosticMessage(message string) string {
+	if len(message) == 0 {
+		return message
+	}
+
+	return strings.ToUpper(message[0:1]) + message[1:]
+}
 
 func CreateErrorDiagnosticFromRange(rng protocol.Range, msg string) protocol.Diagnostic {
 	return CreateDiagnosticFromRange(
 		rng,
 		protocol.DiagnosticSeverityError,
 		msg,
+		[]protocol.CodeAction{},
 	)
 }
 
@@ -18,7 +30,12 @@ func CreateWarningDiagnosticFromRange(rng protocol.Range, msg string) protocol.D
 		rng,
 		protocol.DiagnosticSeverityWarning,
 		msg,
+		[]protocol.CodeAction{},
 	)
+}
+
+func CreateEmptyAssignationWarning(rng protocol.Range) protocol.Diagnostic {
+	return CreateWarningDiagnosticFromRange(rng, "Empty assignation")
 }
 
 func CreateInformationDiagnosticFromRange(rng protocol.Range, msg string) protocol.Diagnostic {
@@ -26,6 +43,7 @@ func CreateInformationDiagnosticFromRange(rng protocol.Range, msg string) protoc
 		rng,
 		protocol.DiagnosticSeverityInformation,
 		msg,
+		[]protocol.CodeAction{},
 	)
 }
 
@@ -34,6 +52,7 @@ func CreateHintDiagnosticFromRange(rng protocol.Range, msg string) protocol.Diag
 		rng,
 		protocol.DiagnosticSeverityHint,
 		msg,
+		[]protocol.CodeAction{},
 	)
 }
 
@@ -41,12 +60,14 @@ func CreateDiagnosticFromRange(
 	rng protocol.Range,
 	severity protocol.DiagnosticSeverity,
 	msg string,
+	codeAction []protocol.CodeAction,
 ) protocol.Diagnostic {
 	return protocol.Diagnostic{
 		Range:    rng,
 		Severity: severity,
 		Source:   "cci-language-server",
 		Message:  msg,
+		Data:     codeAction,
 	}
 }
 

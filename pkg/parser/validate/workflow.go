@@ -3,8 +3,8 @@ package validate
 import (
 	"fmt"
 
-	"github.com/circleci/circleci-yaml-language-server/pkg/ast"
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
 )
 
@@ -27,13 +27,13 @@ func (val Validate) validateSingleWorkflow(workflow ast.Workflow) error {
 			continue
 		}
 
-		if !val.Doc.DoesJobExist(jobRef.JobName) && !val.Doc.IsOrb(jobRef.JobName) {
+		if !val.Doc.DoesJobExist(jobRef.JobName) && !val.Doc.IsOrbReference(jobRef.JobName) {
 			val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
 				jobRef.JobRefRange,
 				fmt.Sprintf("Cannot find declaration for job %s", jobRef.JobName)))
 		}
 
-		if !val.Doc.IsOrb(jobRef.JobName) && !val.Doc.IsBuiltIn(jobRef.JobName) {
+		if !val.Doc.IsOrbReference(jobRef.JobName) && !val.Doc.IsBuiltIn(jobRef.JobName) {
 			val.validateWorkflowParameters(jobRef, jobRef.JobName, jobRef.JobRefRange)
 		}
 	}

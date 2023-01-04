@@ -1,8 +1,8 @@
 package definition
 
 import (
-	yamlparser "github.com/circleci/circleci-yaml-language-server/pkg/parser"
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
 )
 

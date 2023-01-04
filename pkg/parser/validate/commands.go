@@ -1,18 +1,26 @@
 package validate
 
 import (
-	"github.com/circleci/circleci-yaml-language-server/pkg/ast"
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
 func (val Validate) ValidateCommands() {
+	if len(val.Doc.Commands) == 0 && !utils.IsDefaultRange(val.Doc.CommandsRange) {
+		val.addDiagnostic(
+			utils.CreateEmptyAssignationWarning(val.Doc.CommandsRange),
+		)
+
+		return
+	}
+
 	for _, command := range val.Doc.Commands {
 		val.validateSingleCommand(command)
 	}
 }
 
 func (val Validate) validateSingleCommand(command ast.Command) {
-	val.validateSteps(command.Steps, command.Name)
+	val.validateSteps(command.Steps, command.Name, command.Parameters)
 
 	if used := val.checkIfCommandIsUsed(command); !used {
 		val.commandIsUnused(command)
@@ -25,9 +33,21 @@ func (val Validate) checkIfCommandIsUsed(command ast.Command) bool {
 			return true
 		}
 	}
+
 	for _, job := range val.Doc.Jobs {
 		if val.checkIfStepsContainStep(job.Steps, command.Name) {
 			return true
+		}
+	}
+
+	for _, workflow := range val.Doc.Workflows {
+		for _, jobRef := range workflow.JobRefs {
+			steps := jobRef.PostSteps
+			steps = append(steps, jobRef.PreSteps...)
+
+			if val.checkIfStepsContainStep(steps, command.Name) {
+				return true
+			}
 		}
 	}
 

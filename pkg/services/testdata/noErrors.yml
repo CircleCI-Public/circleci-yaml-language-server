@@ -4,6 +4,11 @@ orbs:
   compass: atlassian-labs/compass@0.1.2
   other: atlassian-labs/compass@0.1.2
 
+executors:
+  go:
+    docker:
+      - image: cimg/go:latest
+
 jobs:
   build:
     parameters:
@@ -19,7 +24,19 @@ jobs:
       - checkout
       - run: echo "hello world"
       - run: <<parameters.myparam>>
-    
+  somejob:
+    executor: &executorRef go
+    steps:
+      - checkout
+
+  anotherjob:
+    executor:
+      name: &execRefBis go
+    environment:
+      SOME_ENV: *executorRef
+      SOME_ENV2: *execRefBis
+    steps:
+      - checkout
 
 workflows:
   test-build:
@@ -42,3 +59,6 @@ workflows:
                 token_name: atoken
                 environment_type: something
                 environment: another thing
+      
+      - somejob
+      - anotherjob

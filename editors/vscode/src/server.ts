@@ -187,6 +187,20 @@ export class LSP {
 
         await client.start();
 
+        const token = process.env.TOKEN;
+
+        const registerCommand = {
+            command: 'setToken',
+            arguments: [token],
+        };
+        await client.sendRequest('workspace/executeCommand', registerCommand);
+        const selfHostedUrl = process.env.SELF_HOSTED_URL;
+        const registerCommand2 = {
+            command: 'setSelfHostedUrl',
+            arguments: [selfHostedUrl],
+        };
+        await client.sendRequest('workspace/executeCommand', registerCommand2);
+
         return client;
     }
 }

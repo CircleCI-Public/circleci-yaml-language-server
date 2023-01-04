@@ -3,10 +3,12 @@ package parser
 import (
 	"testing"
 
-	"github.com/circleci/circleci-yaml-language-server/pkg/expect"
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/expect"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/testHelpers"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"github.com/stretchr/testify/assert"
 	"go.lsp.dev/protocol"
+	"go.lsp.dev/uri"
 	"gopkg.in/yaml.v3"
 )
 
@@ -31,7 +33,8 @@ testFinal:
 
 	err := yaml.Unmarshal(content, m)
 
-	yamlDocument, _ := GetParsedYAMLWithContent(content)
+	context := testHelpers.GetDefaultLsContext()
+	yamlDocument, _ := ParseFromContent(content, context, uri.File(""))
 
 	actualDiagnostics, err := handleYAMLErrors(err.Error(), content, yamlDocument.RootNode)
 
@@ -57,7 +60,7 @@ testFinal:
 		},
 	}
 
-	expect.ExpectAllDiagnosticInList(t, actualDiagnostics, expectedDiagnostics)
+	expect.DiagnosticList(t, actualDiagnostics).To.IncludeAll(expectedDiagnostics)
 }
 
 func Test_HandleYamlError_UnknownAnchor(t *testing.T) {
@@ -70,7 +73,8 @@ test:
 
 	err := yaml.Unmarshal(content, m)
 
-	yamlDocument, _ := GetParsedYAMLWithContent(content)
+	context := testHelpers.GetDefaultLsContext()
+	yamlDocument, _ := ParseFromContent(content, context, uri.File(""))
 
 	diagnostics, err := handleYAMLErrors(err.Error(), content, yamlDocument.RootNode)
 
@@ -85,5 +89,5 @@ test:
 		Message:  "yaml: unknown anchor 'unknownAnchor' referenced",
 	}
 
-	expect.ExpectDiagnosticInList(t, diagnostics, expected)
+	expect.DiagnosticList(t, diagnostics).To.Include(expected)
 }

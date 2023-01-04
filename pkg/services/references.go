@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/circleci/circleci-yaml-language-server/pkg/ast"
-	yamlparser "github.com/circleci/circleci-yaml-language-server/pkg/parser"
-	utils "github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
+	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
+	utils "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
 )
 
-func References(params protocol.ReferenceParams, cache utils.Cache) ([]protocol.Location, error) {
-	yamlDocument, err := yamlparser.GetParsedYAMLWithCache(params.TextDocument.URI, cache)
+func References(params protocol.ReferenceParams, cache *utils.Cache, context *utils.LsContext) ([]protocol.Location, error) {
+	yamlDocument, err := yamlparser.ParseFromUriWithCache(params.TextDocument.URI, cache, context)
 
 	if err != nil {
 		return nil, err
@@ -30,7 +30,7 @@ func References(params protocol.ReferenceParams, cache utils.Cache) ([]protocol.
 type ReferenceHandler struct {
 	Doc        yamlparser.YamlDocument
 	Params     protocol.ReferenceParams
-	Cache      utils.Cache
+	Cache      *utils.Cache
 	FoundSteps *[]StepRangeAndName
 }
 

@@ -1,0 +1,43 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Completion command Complete list of jobs 1`] = `
+{
+  "isIncomplete": true,
+  "items": [
+    {
+      "label": "app/dry-run",
+    },
+    {
+      "label": "app/run",
+    },
+    {
+      "label": "build",
+    },
+    {
+      "label": "confirm",
+    },
+    {
+      "label": "node/run",
+    },
+    {
+      "label": "node/test",
+    },
+    {
+      "label": "parameter-within-job/lint",
+    },
+    {
+      "label": "parameter-within-job/validate",
+    },
+    {
+      "label": "tests",
+    },
+  ],
+}
+`;
+
+exports[`Completion command Completion command 1`] = `
+{
+  "isIncomplete": true,
+  "items": [],
+}
+`;

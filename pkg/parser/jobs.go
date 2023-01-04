@@ -3,7 +3,7 @@ package parser
 import (
 	"strconv"
 
-	"github.com/circleci/circleci-yaml-language-server/pkg/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	sitter "github.com/smacker/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
@@ -39,7 +39,7 @@ func (doc *YamlDocument) parseJobs(jobsNode *sitter.Node) {
 
 func (doc *YamlDocument) parseSingleJob(jobNode *sitter.Node) ast.Job {
 	// jobNode is a block_mapping_pair
-	jobNameNode, valueNode := getKeyValueNodes(jobNode)
+	jobNameNode, valueNode := doc.GetKeyValueNodes(jobNode)
 	res := ast.Job{CompletionItem: &[]protocol.CompletionItem{}, Parallelism: -1}
 
 	if jobNameNode == nil || valueNode == nil {
@@ -55,10 +55,13 @@ func (doc *YamlDocument) parseSingleJob(jobNode *sitter.Node) ast.Job {
 	res.Range = NodeToRange(jobNode)
 	res.NameRange = NodeToRange(jobNameNode)
 
+	machineNode := &sitter.Node{}
+	machineNodeFound := false
+
 	iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
 		if child.Type() == "block_mapping_pair" || child.Type() == "flow_pair" {
-			keyNode, valueNode := getKeyValueNodes(child)
-			if keyNode == nil {
+			keyNode, valueNode := doc.GetKeyValueNodes(child)
+			if keyNode == nil || valueNode == nil {
 				return
 			}
 			keyName := doc.GetNodeText(keyNode)
@@ -99,11 +102,16 @@ func (doc *YamlDocument) parseSingleJob(jobNode *sitter.Node) ast.Job {
 				res.DockerRange = NodeToRange(child)
 
 			case "machine":
-				doc.addedMachineTrueDeprecatedDiag(child)
+				machineNode = child
+				machineNodeFound = true
 			}
 		}
+
 	})
 
+	if machineNodeFound {
+		doc.addedMachineTrueDeprecatedDiag(machineNode, res.ResourceClass)
+	}
 	doc.jobCompletionItem(res)
 
 	return res
