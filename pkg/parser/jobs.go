@@ -15,7 +15,7 @@ func (doc *YamlDocument) parseJobs(jobsNode *sitter.Node) {
 		return
 	}
 
-	iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
+	doc.iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
 		job := doc.parseSingleJob(child)
 		if definedJob, ok := doc.Jobs[job.Name]; ok {
 			doc.addDiagnostic(protocol.Diagnostic{
@@ -58,12 +58,13 @@ func (doc *YamlDocument) parseSingleJob(jobNode *sitter.Node) ast.Job {
 	machineNode := &sitter.Node{}
 	machineNodeFound := false
 
-	iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
+	doc.iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
 		if child.Type() == "block_mapping_pair" || child.Type() == "flow_pair" {
 			keyNode, valueNode := doc.GetKeyValueNodes(child)
 			if keyNode == nil || valueNode == nil {
 				return
 			}
+
 			keyName := doc.GetNodeText(keyNode)
 			switch keyName {
 			case "shell":
@@ -106,7 +107,6 @@ func (doc *YamlDocument) parseSingleJob(jobNode *sitter.Node) ast.Job {
 				machineNodeFound = true
 			}
 		}
-
 	})
 
 	if machineNodeFound {

@@ -13,7 +13,7 @@ func (doc *YamlDocument) parseCommands(commandsNode *sitter.Node) {
 		return
 	}
 
-	iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
+	doc.iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
 		command := doc.parseSingleCommand(child)
 		if definedCommand, ok := doc.Commands[command.Name]; ok {
 			doc.addDiagnostic(protocol.Diagnostic{
@@ -55,7 +55,7 @@ func (doc *YamlDocument) parseSingleCommand(commandNode *sitter.Node) ast.Comman
 	res.Range = NodeToRange(commandNode)
 	res.NameRange = NodeToRange(commandNameNode)
 
-	iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
+	doc.iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
 		keyNode, valueNode := doc.GetKeyValueNodes(child)
 		keyName := doc.GetNodeText(keyNode)
 		if valueNode == nil {

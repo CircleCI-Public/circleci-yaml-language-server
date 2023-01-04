@@ -13,7 +13,7 @@ func (doc *YamlDocument) parseWorkflows(workflowsNode *sitter.Node) {
 	// workflowsNode is of type block_node
 	blockMappingNode := GetChildOfType(workflowsNode, "block_mapping")
 
-	iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
+	doc.iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
 		keyName := doc.GetNodeText(child.ChildByFieldName("key"))
 
 		switch keyName {
@@ -71,7 +71,7 @@ func (doc *YamlDocument) parseSingleWorkflow(workflowNode *sitter.Node) ast.Work
 
 	blockMappingNode := GetChildOfType(valueNode, "block_mapping")
 	res := ast.Workflow{Range: NodeToRange(workflowNode), Name: workflowName, NameRange: NodeToRange(keyNode)}
-	iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
+	doc.iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
 		keyNode, valueNode := doc.GetKeyValueNodes(child)
 		if keyNode == nil || valueNode == nil {
 			return
@@ -173,7 +173,7 @@ func (doc *YamlDocument) parseSingleJobReference(jobRefNode *sitter.Node) ast.Jo
 		res.StepName = doc.GetNodeText(key)
 		blockMappingNode = GetChildOfType(value, "block_mapping")
 
-		iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
+		doc.iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
 			if child != nil {
 				keyNode, valueNode := doc.GetKeyValueNodes(child)
 				keyName := doc.GetNodeText(keyNode)
@@ -234,7 +234,7 @@ func (doc *YamlDocument) parseMatrixAttributes(node *sitter.Node) map[string][]a
 	blockMapping := GetChildOfType(node, "block_mapping")
 	res := make(map[string][]ast.ParameterValue)
 
-	iterateOnBlockMapping(blockMapping, func(child *sitter.Node) {
+	doc.iterateOnBlockMapping(blockMapping, func(child *sitter.Node) {
 		keyNode, valueNode := doc.GetKeyValueNodes(child)
 		if keyNode == nil || valueNode == nil {
 			return
@@ -256,7 +256,7 @@ func (doc *YamlDocument) parseMatrixParam(node *sitter.Node) map[string][]ast.Pa
 	blockMapping := GetChildOfType(node, "block_mapping")
 	res := make(map[string][]ast.ParameterValue)
 
-	iterateOnBlockMapping(blockMapping, func(child *sitter.Node) {
+	doc.iterateOnBlockMapping(blockMapping, func(child *sitter.Node) {
 		keyNode := child.ChildByFieldName("key")
 		if keyNode == nil {
 			return

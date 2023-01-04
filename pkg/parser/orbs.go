@@ -41,7 +41,8 @@ func (doc *YamlDocument) parseOrbs(orbsNode *sitter.Node) {
 	if blockMappingNode == nil {
 		return
 	}
-	iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
+
+	doc.iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
 		orb, localOrb := doc.parseSingleOrb(child)
 
 		if orb != nil {

@@ -163,7 +163,7 @@ func (doc *YamlDocument) getNodeTextArrayOrText(valueNode *sitter.Node) []string
 func (doc *YamlDocument) parseDictionary(valueNode *sitter.Node) map[string]string {
 	dictionary := make(map[string]string)
 
-	iterateOnBlockMapping(valueNode, func(child *sitter.Node) {
+	doc.iterateOnBlockMapping(valueNode, func(child *sitter.Node) {
 		if child.Type() == "block_mapping_pair" || child.Type() == "flow_pair" {
 			keyNode, valueNode := doc.GetKeyValueNodes(child)
 
@@ -198,10 +198,17 @@ func (doc *YamlDocument) GetKeyValueNodes(node *sitter.Node) (keyNode *sitter.No
 	return
 }
 
-func iterateOnBlockMapping(blockMappingNode *sitter.Node, fn func(child *sitter.Node)) {
+func (doc *YamlDocument) iterateOnBlockMapping(blockMappingNode *sitter.Node, fn func(child *sitter.Node)) {
 	if blockMappingNode == nil || (blockMappingNode.Type() != "block_mapping" && blockMappingNode.Type() != "flow_mapping") {
 		return
 	}
+
+	// Save keys that are mapped on, to support merge keys (<<: *someAlias)
+	// For common keys between a map using a merge key & the mapped alias
+	// the merged value does NOT override the parent block-mapping defined key
+	// For this reason, it is important to know which keys have already been evaluated or not
+	mappedKeys := map[string]bool{}
+	mergeKeys := map[string]bool{}
 
 	for i := 0; uint32(i) < blockMappingNode.ChildCount(); i++ {
 		child := blockMappingNode.Child(i)
@@ -210,8 +217,93 @@ func iterateOnBlockMapping(blockMappingNode *sitter.Node, fn func(child *sitter.
 			continue
 		}
 
+		keyNode := child.ChildByFieldName("key")
+		keyText := doc.GetNodeText(keyNode)
+
+		// When a merge key is encountered, skip it.
+		// it will be handled after other keys, to avoid potential falsy override
+		if keyText == "<<" {
+			valueNode := child.ChildByFieldName("value")
+			anchorsToMerge := extractMergeAnchorNames(valueNode, doc)
+
+			for _, anchorName := range anchorsToMerge {
+				mergeKeys[anchorName] = true
+			}
+
+			continue
+		}
+
 		fn(child)
+		mappedKeys[keyText] = true
 	}
+
+	for anchorName := range mergeKeys {
+		anchor, ok := doc.YamlAnchors[anchorName]
+
+		if !ok || anchor.ValueNode == nil {
+			return
+		}
+
+		anchorValue := anchor.ValueNode.Child(0)
+		if anchorValue.Type() == "anchor" {
+			anchorValue = anchorValue.NextSibling()
+		}
+
+		// Recursively call iterateOnBlockMapping to handle merged block that contain merged blocks themselves
+		doc.iterateOnBlockMapping(
+			anchorValue,
+			func(child *sitter.Node) {
+				keyNode, _ := doc.GetKeyValueNodes(child)
+				keyName := doc.GetNodeText(keyNode)
+
+				// On each key defined by the to-merge block;
+				// check if the key has already been evaluated by the
+				// parent definition or not
+				if mappedKeys[keyName] {
+					return
+				}
+
+				// If it hasn't, call the original callback and store the key too
+				fn(child)
+				mappedKeys[keyName] = true
+			},
+		)
+	}
+
+}
+
+func extractMergeAnchorNames(node *sitter.Node, doc *YamlDocument) []string {
+	if node == nil {
+		return nil
+	}
+
+	child := node.Child(0)
+
+	if child == nil {
+		return nil
+	}
+
+	// One alias; just return the alias name
+	// example: <<: *myAlias
+	if child.Type() == "alias" {
+		txt := doc.GetNodeText(child)
+
+		return []string{txt[1:]}
+	}
+
+	// List of aliases; return all of em dude
+	// example: <<: [*alias1, *alias2, ..., *aliasN]
+	if child.Type() == "flow_sequence" {
+		names := []string{}
+
+		for i := 0; uint32(i) < child.ChildCount(); i++ {
+			names = append(names, extractMergeAnchorNames(child.Child(i), doc)...)
+		}
+
+		return names
+	}
+
+	return []string{}
 }
 
 func iterateOnBlockSequence(blockSequenceNode *sitter.Node, fn func(child *sitter.Node)) {
