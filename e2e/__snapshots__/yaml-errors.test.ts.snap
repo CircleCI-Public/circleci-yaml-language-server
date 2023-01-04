@@ -51,6 +51,22 @@ DiagnosticList {
       "severity": 1,
       "source": "cci-language-server",
     },
+    {
+      "data": [],
+      "message": "Invalid type. Expected: object, given: null",
+      "range": {
+        "end": {
+          "character": 0,
+          "line": 20,
+        },
+        "start": {
+          "character": 0,
+          "line": 0,
+        },
+      },
+      "severity": 1,
+      "source": "cci-language-server",
+    },
   ],
 }
 `;
