@@ -61,6 +61,7 @@ type Run struct {
 	WorkingDirectory string
 	NoOutputTimeout  string
 	When             string
+	WhenRange        protocol.Range
 	Environment      map[string]string
 }
 

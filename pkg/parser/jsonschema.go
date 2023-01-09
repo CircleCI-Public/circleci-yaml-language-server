@@ -16,6 +16,7 @@ import (
 
 type JSONSchemaValidator struct {
 	schema *gojsonschema.Schema
+	Doc    YamlDocument
 }
 
 func (validator *JSONSchemaValidator) LoadJsonSchema(schemaLocation string) error {
@@ -173,6 +174,10 @@ func (validator *JSONSchemaValidator) ValidateWithJSONSchema(rootNode *sitter.No
 					continue
 				}
 
+				if validator.doesNodeUseParameter(node) {
+					continue
+				}
+
 				diagnostic := utils.CreateErrorDiagnosticFromNode(node, resErr.Description())
 				diagnostics = append(diagnostics, diagnostic)
 			}
@@ -180,4 +185,34 @@ func (validator *JSONSchemaValidator) ValidateWithJSONSchema(rootNode *sitter.No
 	}
 
 	return diagnostics
+}
+
+// Keys that can have only a parameter inside it,
+// and therefore the JSON Schema validation is not necessary for these keys.
+//
+// Example:
+//
+//	`when: << parameters.my_param >>`
+//
+//	But in the JSON Schema, the `when` key is defined as an object, so the validation
+//	will fail if we don't ignore it.
+var PARAMS_KEYS = []string{
+	"when",
+}
+
+func (validator *JSONSchemaValidator) doesNodeUseParameter(node *sitter.Node) bool {
+	if node.Type() == "block_mapping_pair" {
+		keyNode, valueNode := validator.Doc.GetKeyValueNodes(node)
+		if keyNode == nil || valueNode == nil {
+			return false
+		}
+		key := validator.Doc.GetNodeText(keyNode)
+		value := validator.Doc.GetNodeText(valueNode)
+
+		if isInArray := utils.FindInArray(PARAMS_KEYS, key); utils.CheckIfOnlyParamUsed(value) && isInArray > 0 {
+			return true
+		}
+	}
+
+	return false
 }

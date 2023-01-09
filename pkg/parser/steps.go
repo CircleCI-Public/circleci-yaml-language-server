@@ -237,6 +237,7 @@ func (doc *YamlDocument) parseRunStep(runNode *sitter.Node) ast.Run {
 				res.NoOutputTimeout = doc.GetNodeText(valueNode)
 			case "when":
 				res.When = doc.GetNodeText(valueNode)
+				res.WhenRange = NodeToRange(valueNode)
 			case "environment":
 				res.Environment = doc.parseDictionary(valueNode)
 			}

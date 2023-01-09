@@ -60,7 +60,9 @@ func DiagnosticYAML(yamlDocument yamlparser.YamlDocument, cache *utils.Cache, co
 	yamlDocument.ValidateYAML()
 	diag.addDiagnostics(*yamlDocument.Diagnostics)
 
-	validator := yamlparser.JSONSchemaValidator{}
+	validator := yamlparser.JSONSchemaValidator{
+		Doc: yamlDocument,
+	}
 	err := validator.LoadJsonSchema(yamlDocument.SchemaLocation)
 
 	if err != nil {
