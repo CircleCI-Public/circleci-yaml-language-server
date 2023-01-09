@@ -36,11 +36,27 @@ func (val Validate) validateSingleWorkflow(workflow ast.Workflow) error {
 		if !val.Doc.IsOrbReference(jobRef.JobName) && !val.Doc.IsBuiltIn(jobRef.JobName) {
 			val.validateWorkflowParameters(jobRef, jobRef.JobName, jobRef.JobRefRange)
 		}
+		for _, require := range jobRef.Requires {
+			if !val.doesJobRefExist(workflow, require.Name) {
+				val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
+					require.Range,
+					fmt.Sprintf("Cannot find declaration for job reference %s", require.Name)))
+			}
+		}
 	}
 
 	val.validateDAG(workflow)
 
 	return nil
+}
+
+func (val Validate) doesJobRefExist(workflow ast.Workflow, requireName string) bool {
+	for _, jobRef := range workflow.JobRefs {
+		if jobRef.JobName == requireName || jobRef.StepName == requireName {
+			return true
+		}
+	}
+	return false
 }
 
 func (val Validate) validateWorkflowParameters(jobRef ast.JobRef, stepName string, stepRange protocol.Range) {
