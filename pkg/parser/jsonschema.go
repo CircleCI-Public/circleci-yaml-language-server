@@ -117,6 +117,10 @@ func handleYAMLErrors(err string, content []byte, rootNode *sitter.Node) ([]prot
 	for i, lineContentRange := range lineContentRanges {
 		lineError := lineErrors[i]
 
+		if duplicateMergeKeyErrorRegex.MatchString(lineError) {
+			continue
+		}
+
 		diagnostic := utils.CreateErrorDiagnosticFromRange(
 			lineContentRange,
 			lineError,
@@ -181,3 +185,5 @@ func (validator *JSONSchemaValidator) ValidateWithJSONSchema(rootNode *sitter.No
 
 	return diagnostics
 }
+
+var duplicateMergeKeyErrorRegex = regexp.MustCompile(`mapping key "<<" already defined at line \d+\n?`)
