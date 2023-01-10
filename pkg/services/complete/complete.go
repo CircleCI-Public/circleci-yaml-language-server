@@ -47,6 +47,8 @@ func (ch *CompletionHandler) GetCompletionItems() {
 			ch.completeCommands()
 		} else if utils.PosInRange(ch.Doc.ExecutorsRange, ch.Params.Position) {
 			ch.completeExecutors()
+		} else if utils.PosInRange(ch.Doc.OrbsRange, ch.Params.Position) {
+			ch.completeOrbs()
 		}
 
 		if len(ch.Items) > 0 {
