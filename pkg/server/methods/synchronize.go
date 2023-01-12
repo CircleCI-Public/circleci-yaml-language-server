@@ -22,7 +22,16 @@ func (methods *Methods) DidOpen(reply jsonrpc2.Replier, req jsonrpc2.Request) er
 
 	methods.Cache.FileCache.SetFile(&params.TextDocument)
 	methods.parsingMethods(params.TextDocument)
-	go methods.notificationMethods(methods.Cache.FileCache, params.TextDocument)
+	go (func() {
+		methods.notificationMethods(methods.Cache.FileCache, params.TextDocument)
+		methods.SendTelemetryEvent(TelemetryEvent{
+			Event:  "DidOpen",
+			Action: "finished",
+			Properties: DidOpenFinishedProperties{
+				Filename: params.TextDocument.URI.Filename(),
+			},
+		})
+	})()
 
 	return reply(methods.Ctx, nil, nil)
 }
