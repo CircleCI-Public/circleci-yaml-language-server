@@ -3,9 +3,9 @@ package methods
 import "go.lsp.dev/protocol"
 
 type TelemetryEvent struct {
-	Event      string `json:"event"`
-	Action     string `json:"action"`
-	Properties interface{}
+	Event      string      `json:"event"`
+	Action     string      `json:"action"`
+	Properties interface{} `json:"properties"`
 }
 
 type DidOpenFinishedProperties struct {
