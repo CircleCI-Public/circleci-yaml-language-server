@@ -38,34 +38,30 @@ func (val Validate) validateSingleJob(job ast.Job) {
 			param := job.Parameters[paramName]
 
 			if param != nil {
-				switch param.(type) {
+				switch param := param.(type) {
 				case ast.StringParameter:
-					str := param.(ast.StringParameter)
-
-					if str.IsOptional() && !val.Doc.DoesExecutorExist(str.Default) {
+					if param.IsOptional() && !val.Doc.DoesExecutorExist(param.Default) {
 						// Error on the default value
 						val.addDiagnostic(
 							protocol.Diagnostic{
-								Range: str.DefaultRange,
+								Range: param.DefaultRange,
 								Message: fmt.Sprintf(
 									"Parameter is used as executor but executor `%s` does not exist.",
-									str.Default,
+									param.Default,
 								),
 								Severity: protocol.DiagnosticSeverityError,
 							},
 						)
 					}
 				case ast.ExecutorParameter:
-					exec := param.(ast.ExecutorParameter)
-
-					if exec.IsOptional() && !val.Doc.DoesExecutorExist(exec.Default) {
+					if param.IsOptional() && !val.Doc.DoesExecutorExist(param.Default) {
 						// Error on the default value
 						val.addDiagnostic(
 							protocol.Diagnostic{
-								Range: exec.DefaultRange,
+								Range: param.DefaultRange,
 								Message: fmt.Sprintf(
 									"Parameter is used as executor but executor `%s` does not exist.",
-									exec.Default,
+									param.Default,
 								),
 								Severity: protocol.DiagnosticSeverityError,
 							},
