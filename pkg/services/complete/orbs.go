@@ -58,7 +58,8 @@ func (ch *CompletionHandler) completeOrbName(node *sitter.Node) {
 }
 
 func getOrbNameCompletions(name, hostUrl, token string) ([]string, error) {
-	registry, _, _ := splitOrbName(name)
+	parts := strings.Split(name, "/")
+	registry := parts[0]
 
 	response, err := fetchOrbsByRegistry(registry, hostUrl, token)
 
@@ -133,20 +134,6 @@ func fetchOrbsByRegistry(registry, hostUrl, token string) (*NamespaceOrbResponse
 	simpleRegistryOrbsCache[registry] = &response
 
 	return &response, nil
-}
-
-func splitOrbName(name string) (string, string, string) {
-	if fullOrbNameRegex.MatchString(name) {
-		matches := fullOrbNameRegex.FindStringSubmatch(name)
-
-		return matches[1], matches[2], matches[3]
-	} else if registryAndNameRegex.MatchString(name) {
-		matches := registryAndNameRegex.FindStringSubmatch(name)
-
-		return matches[1], matches[2], ""
-	}
-
-	return strings.Trim(name, "/"), "", ""
 }
 
 type OrbGQLData struct {
