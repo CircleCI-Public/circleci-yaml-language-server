@@ -16,7 +16,7 @@ func (doc *YamlDocument) parseExecutors(executorsNode *sitter.Node) {
 		return
 	}
 
-	iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
+	doc.iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
 		doc.parseSingleExecutor(child)
 	})
 }
@@ -47,7 +47,7 @@ func (doc *YamlDocument) parseSingleExecutor(executorNode *sitter.Node) {
 		return
 	}
 
-	iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
+	doc.iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
 		keyNode, _ := doc.GetKeyValueNodes(child)
 		keyName := doc.GetNodeText(keyNode)
 
@@ -77,7 +77,7 @@ func (doc *YamlDocument) parseSingleExecutor(executorNode *sitter.Node) {
 }
 
 func (doc *YamlDocument) parseBaseExecutor(base *ast.BaseExecutor, nameNode *sitter.Node, blockMappingNode *sitter.Node, fn func(node *sitter.Node), nameStep string) {
-	iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
+	doc.iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
 		keyNode, valueNode := doc.GetKeyValueNodes(child)
 		keyName := doc.GetNodeText(keyNode)
 		switch keyName {
@@ -136,7 +136,7 @@ func (doc *YamlDocument) parseSingleExecutorMachine(nameNode *sitter.Node, value
 			return
 		}
 
-		iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
+		doc.iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
 			keyNode, valueNode := doc.GetKeyValueNodes(child)
 			keyName := doc.GetNodeText(keyNode)
 			switch keyName {
@@ -165,7 +165,7 @@ func (doc *YamlDocument) parseSingleExecutorMacOS(nameNode *sitter.Node, valueNo
 		// blockNode is a block_node
 		blockMappingNode := GetChildMapping(blockNode)
 
-		iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
+		doc.iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
 			keyNode, valueNode := doc.GetKeyValueNodes(child)
 			keyName := doc.GetNodeText(keyNode)
 			switch keyName {
@@ -192,7 +192,7 @@ func (doc *YamlDocument) parseSingleExecutorWindows(nameNode *sitter.Node, value
 			return
 		}
 
-		iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
+		doc.iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
 			keyNode, valueNode := doc.GetKeyValueNodes(child)
 			keyName := doc.GetNodeText(keyNode)
 			switch keyName {
@@ -248,7 +248,7 @@ func (doc *YamlDocument) parseDockerImage(imageNode *sitter.Node) ast.DockerImag
 		return dockerImg
 	}
 
-	iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
+	doc.iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
 		keyNode, valueNode := doc.GetKeyValueNodes(child)
 		keyName := doc.GetNodeText(keyNode)
 		switch keyName {
@@ -317,7 +317,7 @@ func (doc *YamlDocument) parseExecutorRef(valueNode *sitter.Node, child *sitter.
 		return "", protocol.Range{}, executorParameters
 	}
 
-	iterateOnBlockMapping(blockMapping, func(child *sitter.Node) {
+	doc.iterateOnBlockMapping(blockMapping, func(child *sitter.Node) {
 		keyNode, valueNode := doc.GetKeyValueNodes(child)
 		keyName := doc.GetNodeText(keyNode)
 		switch keyName {

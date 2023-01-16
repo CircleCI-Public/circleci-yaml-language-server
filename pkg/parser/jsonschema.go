@@ -122,6 +122,10 @@ func handleYAMLErrors(err string, content []byte, rootNode *sitter.Node) ([]prot
 	for i, lineContentRange := range lineContentRanges {
 		lineError := lineErrors[i]
 
+		if duplicateMergeKeyErrorRegex.MatchString(lineError) {
+			continue
+		}
+
 		diagnostic := utils.CreateErrorDiagnosticFromRange(
 			lineContentRange,
 			lineError,
@@ -214,6 +218,7 @@ func (validator *JSONSchemaValidator) doesNodeUseParameter(node *sitter.Node) bo
 
 	return false
 }
+
 func removeUselessMustValidateError(diags []protocol.Diagnostic) []protocol.Diagnostic {
 	resDiags := []protocol.Diagnostic{}
 	for i, diag := range diags {
@@ -244,3 +249,5 @@ func hasAnotherDiagInsideRange(diags []protocol.Diagnostic, rangeToCheck protoco
 
 	return false
 }
+
+var duplicateMergeKeyErrorRegex = regexp.MustCompile(`mapping key "<<" already defined at line \d+\n?`)

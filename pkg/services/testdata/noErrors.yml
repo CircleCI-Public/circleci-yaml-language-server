@@ -10,7 +10,7 @@ executors:
       - image: cimg/go:latest
 
 jobs:
-  build:
+  build: &buildJob
     parameters:
       myparam:
         description: "A test parameter"
@@ -25,9 +25,11 @@ jobs:
       - run: echo "hello world"
       - run: <<parameters.myparam>>
   somejob:
+    <<: *buildJob
     executor: &executorRef go
     steps:
       - checkout
+      - run: <<parameters.myparam>>
 
   anotherjob:
     executor:
@@ -60,5 +62,6 @@ workflows:
                 environment_type: something
                 environment: another thing
       
-      - somejob
+      - somejob:
+          myparam: some-value
       - anotherjob

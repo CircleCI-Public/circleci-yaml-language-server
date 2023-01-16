@@ -5,7 +5,6 @@ import (
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/expect"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/testHelpers"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"github.com/stretchr/testify/assert"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
@@ -40,25 +39,7 @@ testFinal:
 
 	assert.Nil(t, err)
 
-	expectedDiagnostics := []protocol.Diagnostic{
-		{
-			Range:    utils.LineContentRange(12, content),
-			Severity: protocol.DiagnosticSeverityError,
-			Message:  `mapping key "<<" already defined at line 12`,
-		},
-
-		{
-			Range:    utils.LineContentRange(13, content),
-			Severity: protocol.DiagnosticSeverityError,
-			Message:  `mapping key "<<" already defined at line 12`,
-		},
-
-		{
-			Range:    utils.LineContentRange(13, content),
-			Severity: protocol.DiagnosticSeverityError,
-			Message:  `mapping key "<<" already defined at line 13`,
-		},
-	}
+	expectedDiagnostics := []protocol.Diagnostic{}
 
 	expect.DiagnosticList(t, actualDiagnostics).To.IncludeAll(expectedDiagnostics)
 }
