@@ -1,6 +1,7 @@
 package validate
 
 import (
+	"sort"
 	"testing"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
@@ -42,6 +43,8 @@ func CheckYamlErrors(t *testing.T, testCases []ValidateTestCase) {
 			if tt.Diagnostics == nil {
 				assert.Len(t, diags, 0)
 			} else {
+				sortDiagnostic(&diags)
+				sortDiagnostic(&tt.Diagnostics)
 				assert.Equal(t, tt.Diagnostics, diags)
 			}
 		})
@@ -56,4 +59,17 @@ func getErrorDiagnostic(diags *[]protocol.Diagnostic) []protocol.Diagnostic {
 		}
 	}
 	return res
+}
+
+func sortDiagnostic(diags *[]protocol.Diagnostic) {
+	sort.Slice(*diags, func(i, j int) bool {
+		if (*diags)[i].Range.Start.Line == (*diags)[j].Range.Start.Line {
+			return (*diags)[i].Range.Start.Character < (*diags)[j].Range.Start.Character
+		}
+		if (*diags)[i].Range.End.Line == (*diags)[j].Range.End.Line {
+			return (*diags)[i].Range.End.Character < (*diags)[j].Range.End.Character
+		}
+
+		return (*diags)[i].Range.Start.Line < (*diags)[j].Range.Start.Line
+	})
 }
