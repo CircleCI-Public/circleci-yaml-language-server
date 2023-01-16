@@ -41,9 +41,9 @@ Your issue must follow these guidelines for it to be considered:
 
 # Opening a Pull Request
 
-To contribute, [fork](https://docs.github.com/en/get-started/quickstart/fork-a-repo)
+To contribute, [fork](https://help.github.com/articles/fork-a-repo/)
 `circleci-yaml-language-server`, commit your changes, and
-[open a pull request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests).
+[open a pull request](https://help.github.com/articles/using-pull-requests/).
 
 Your request will be reviewed as soon as possible. You may be asked to make
 changes to your submission during the review process.
@@ -75,4 +75,4 @@ All community members are expected to adhere to our
 # License
 
 CircleCI's `circleci-yaml-language-server` is released under the
-[Apache License 2.0](./LICENSE.md).
+[Apache License 2.0](./LICENSE).
