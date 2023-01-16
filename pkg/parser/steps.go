@@ -118,19 +118,26 @@ func (doc *YamlDocument) parseStep(blockMapping *sitter.Node) []ast.Step {
 		_, stepName = utils.ExtractParameterName(stepName)
 		return []ast.Step{ast.Steps{Name: stepName, Range: NodeToRange(valueNode)}}
 	case "<<":
-		referencedStepNode := GetChildOfType(valueNode, "block_sequence")
-		if referencedStepNode == nil {
-			return nil
-		}
-		referencedStepNode = GetChildOfType(referencedStepNode, "block_sequence_item")
-		if referencedStepNode == nil {
-			return nil
-		}
-		step := doc.parseSingleStep(referencedStepNode)
-		return step
+		return doc.parseAnchorStep(valueNode)
 	default:
 		return []ast.Step{doc.parseNamedStepWithParameters(keyName, valueNode)}
 	}
+}
+
+func (doc *YamlDocument) parseAnchorStep(blockNode *sitter.Node) []ast.Step {
+	blockMapping := GetChildOfType(blockNode, "block_mapping")
+	blockSequence := GetChildOfType(blockNode, "block_sequence")
+
+	if blockSequence != nil {
+		blockSequenceItem := GetChildOfType(blockSequence, "block_sequence_item")
+		return doc.parseSingleStep(blockSequenceItem)
+	}
+
+	if blockMapping != nil {
+		return doc.parseStep(blockMapping)
+	}
+
+	return nil
 }
 
 func (doc *YamlDocument) parseWhenUnlessStep(blockNode *sitter.Node) []ast.Step {

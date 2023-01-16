@@ -60,6 +60,10 @@ func handleYAMLErrors(err string, content []byte, rootNode *sitter.Node) ([]prot
 		return diagnostics, nil
 	}
 
+	if strings.Contains(err, "yaml: map merge requires map or sequence of maps as the value") {
+		return []protocol.Diagnostic{}, nil
+	}
+
 	reError, _ := regexp.Compile(`(?s)^yaml: line (?P<Lines>\d+):\s(?P<Error>.+)`)
 
 	if reError.MatchString(err) {
@@ -140,22 +144,11 @@ func (validator *JSONSchemaValidator) ValidateWithJSONSchema(rootNode *sitter.No
 		// Can only happen if anchor or alias are not properly defined and/or referenced
 		yamlError, _ := handleYAMLErrors(err.Error(), content, rootNode)
 		diagnostics = append(diagnostics, yamlError...)
-
-		return diagnostics
 	}
 
-	// This is needed so that the yaml library resolves anchor and aliases for us
-	tmpYML, err := yaml.Marshal(file)
-	if err != nil {
-		// Should never happen
-		return []protocol.Diagnostic{utils.CreateErrorDiagnosticFromNode(rootNode, err.Error())}
-	}
+	yamlLoader := gojsonschema.NewGoLoader(file)
 
-	yaml.Unmarshal(tmpYML, &file)
-
-	yamlloader := gojsonschema.NewGoLoader(file)
-
-	result, err := validator.schema.Validate(yamlloader)
+	result, err := validator.schema.Validate(yamlLoader)
 
 	if err != nil {
 		// Should never happen
