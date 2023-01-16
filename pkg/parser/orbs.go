@@ -72,6 +72,8 @@ func (doc *YamlDocument) parseSingleOrb(orbNode *sitter.Node) (*ast.Orb, *LocalO
 			Range:        NodeToRange(orbNode),
 			NameRange:    NodeToRange(orbNameNode),
 			VersionRange: doc.getOrbVersionRange(orbContent),
+			ValueNode:    orbContent,
+			ValueRange:   NodeToRange(orbContent),
 		}
 		return &orb, nil
 
@@ -89,9 +91,11 @@ func (doc *YamlDocument) parseSingleOrb(orbNode *sitter.Node) (*ast.Orb, *LocalO
 				Version: "",
 				IsLocal: true,
 			},
-			Name:      orbName,
-			Range:     NodeToRange(orbNode),
-			NameRange: NodeToRange(orbNameNode),
+			Name:       orbName,
+			Range:      NodeToRange(orbNode),
+			NameRange:  NodeToRange(orbNameNode),
+			ValueNode:  orbContent,
+			ValueRange: NodeToRange(orbContent),
 		}
 
 		return &orb, localOrb

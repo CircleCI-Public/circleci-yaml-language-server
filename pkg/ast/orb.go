@@ -3,6 +3,7 @@ package ast
 import (
 	"fmt"
 
+	sitter "github.com/smacker/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
 
@@ -12,6 +13,8 @@ type Orb struct {
 	Range        protocol.Range
 	NameRange    protocol.Range
 	VersionRange protocol.Range
+	ValueRange   protocol.Range
+	ValueNode    *sitter.Node
 }
 
 type OrbURL struct {
