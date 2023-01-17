@@ -1,16 +1,13 @@
 ## 0.1.14 (2023-01-17)
 
--   Added merge key support on block mappings
--   Support for alias and anchors inside step definitions
--   Support for parameters written as multi-lines (block scalars)
+-   Support for YAML object merging (merge keys)
+-   Support for YAML alias and anchors inside step definitions
+-   Support for parameter values written as multi-lines
 -   Replaced unintelligible diagnostic "Must validate one and only one schema ..." with more meaningful diagnostic
 -   Autocompletion for orb names
--   Fixed bug at start when not specifying token or host url
+-   Improved testing
 -   Fix and refactor Orbs caching
 -   Fixed parameter default values not recognizing orb executors
--   E2E tests for telemtry
--   Tests for non-existing executor in orbs
--   Updated links in repo's MD files
 
 ## 0.1.13 (2022-12-08)
 
