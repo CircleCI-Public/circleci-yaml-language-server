@@ -1,3 +1,17 @@
+## 0.1.14 (2023-01-17)
+
+-   Added merge key support on block mappings
+-   Support for alias and anchors inside step definitions
+-   Support for parameters written as multi-lines (block scalars)
+-   Replaced unintelligible diagnostic "Must validate one and only one schema ..." with more meaningful diagnostic
+-   Autocompletion for orb names
+-   Fixed bug at start when not specifying token or host url
+-   Fix and refactor Orbs caching
+-   Fixed parameter default values not recognizing orb executors
+-   E2E tests for telemtry
+-   Tests for non-existing executor in orbs
+-   Updated links in repo's MD files
+
 ## 0.1.13 (2022-12-08)
 
 -   Added newly supported xcode versions to validation
