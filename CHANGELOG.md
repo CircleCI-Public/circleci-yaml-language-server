@@ -1,3 +1,14 @@
+## 0.1.14 (2023-01-17)
+
+-   Support for YAML object merging (merge keys)
+-   Support for YAML alias and anchors inside step definitions
+-   Support for parameter values written as multi-lines
+-   Replaced unintelligible diagnostic "Must validate one and only one schema ..." with more meaningful diagnostic
+-   Autocompletion for orb names
+-   Improved testing
+-   Fix and refactor Orbs caching
+-   Fixed parameter default values not recognizing orb executors
+
 ## 0.1.13 (2022-12-08)
 
 -   Added newly supported xcode versions to validation
