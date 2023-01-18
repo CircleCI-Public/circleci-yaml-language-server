@@ -50,6 +50,71 @@ DiagnosticList {
       "source": "cci-language-server",
     },
     {
+      "data": [
+        {
+          "edit": {
+            "changes": {
+              "file:///home/circleci/project/test-files/.circleci/invalid-files/autocomplete-jobs.yml": [
+                {
+                  "newText": "5.1.0",
+                  "range": {
+                    "end": {
+                      "character": 27,
+                      "line": 9,
+                    },
+                    "start": {
+                      "character": 22,
+                      "line": 9,
+                    },
+                  },
+                },
+              ],
+            },
+          },
+          "kind": "quickfix",
+          "title": "Update to last minor",
+        },
+        {
+          "edit": {
+            "changes": {
+              "file:///home/circleci/project/test-files/.circleci/invalid-files/autocomplete-jobs.yml": [
+                {
+                  "newText": "5.1.0",
+                  "range": {
+                    "end": {
+                      "character": 27,
+                      "line": 9,
+                    },
+                    "start": {
+                      "character": 22,
+                      "line": 9,
+                    },
+                  },
+                },
+              ],
+            },
+          },
+          "kind": "quickfix",
+          "title": "Update to last version",
+        },
+      ],
+      "message": "A newer minor version exists.
+- Current: 5.0.3
+- Latest:  5.1.0",
+      "range": {
+        "end": {
+          "character": 27,
+          "line": 9,
+        },
+        "start": {
+          "character": 2,
+          "line": 9,
+        },
+      },
+      "severity": 3,
+      "source": "cci-language-server",
+    },
+    {
       "data": [],
       "message": "Orb is unused",
       "range": {
@@ -101,7 +166,7 @@ DiagnosticList {
             "changes": {
               "file:///home/circleci/project/test-files/.circleci/diagnostic.yml": [
                 {
-                  "newText": "4.12.0",
+                  "newText": "4.12.1",
                   "range": {
                     "end": {
                       "character": 29,
@@ -124,7 +189,7 @@ DiagnosticList {
             "changes": {
               "file:///home/circleci/project/test-files/.circleci/diagnostic.yml": [
                 {
-                  "newText": "4.12.0",
+                  "newText": "4.12.1",
                   "range": {
                     "end": {
                       "character": 29,
@@ -145,7 +210,7 @@ DiagnosticList {
       ],
       "message": "A newer minor version exists.
 - Current: 4.4.4
-- Latest:  4.12.0",
+- Latest:  4.12.1",
       "range": {
         "end": {
           "character": 29,
