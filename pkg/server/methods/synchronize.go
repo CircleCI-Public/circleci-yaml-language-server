@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
 	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
 	lsp "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/services"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
@@ -24,6 +25,7 @@ func (methods *Methods) DidOpen(reply jsonrpc2.Replier, req jsonrpc2.Request) er
 
 	methods.Cache.FileCache.SetFile(&params.TextDocument)
 	methods.parsingMethods(params.TextDocument)
+	methods.updateOrbFile([]byte(params.TextDocument.Text), params.TextDocument.URI)
 	go (func() {
 		methods.notificationMethods(methods.Cache.FileCache, params.TextDocument)
 		methods.SendTelemetryEvent(TelemetryEvent{
@@ -52,6 +54,8 @@ func (methods *Methods) DidChange(reply jsonrpc2.Replier, req jsonrpc2.Request) 
 		Version: params.TextDocument.Version,
 	}
 	methods.Cache.FileCache.SetFile(&textDocument)
+	methods.updateOrbFile([]byte(newText), params.TextDocument.URI)
+
 	debounceInnerChange(func() {
 		methods.parsingMethods(textDocument)
 		go methods.notificationMethods(methods.Cache.FileCache, textDocument)
@@ -67,11 +71,7 @@ func (methods *Methods) DidClose(reply jsonrpc2.Replier, req jsonrpc2.Request) e
 
 	// removed due to a bug in remote orbs
 	// methods.Cache.FileCache.RemoveFile(params.TextDocument.URI)
-	namespace := path.Base((path.Dir(params.TextDocument.URI.Filename())))
-	orb := path.Base(params.TextDocument.URI.Filename())
-	orbId := strings.TrimRight(path.Join(namespace, orb), ".yml")
-
-	isOrb := methods.Cache.OrbCache.HasOrb(orbId)
+	isOrb, _ := methods.isOrb(params.TextDocument.URI)
 	if isOrb {
 		methods.Conn.Notify(
 			methods.Ctx,
@@ -144,4 +144,24 @@ func (methods *Methods) applyIncrementalChanges(uri protocol.URI, changes []prot
 	}
 
 	return string(content)
+}
+
+func (methods *Methods) updateOrbFile(content []byte, uri protocol.URI) {
+	isOrb, orbId := methods.isOrb(uri)
+	if isOrb {
+		parsedOrbSource, err := parser.ParseFromContent([]byte(content), methods.LsContext, uri)
+		if err == nil {
+			methods.Cache.OrbCache.UpdateOrbParsedAttributes(orbId, parsedOrbSource.ToOrbParsedAttributes())
+		}
+	}
+}
+
+func (methods *Methods) isOrb(uri protocol.URI) (bool, string) {
+	namespace := path.Base((path.Dir(uri.Filename())))
+	orb := path.Base(uri.Filename())
+	orbId := strings.TrimRight(path.Join(namespace, orb), ".yml")
+
+	isOrb := methods.Cache.OrbCache.HasOrb(orbId)
+
+	return isOrb, orbId
 }

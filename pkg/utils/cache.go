@@ -92,6 +92,13 @@ func (c *OrbCache) SetOrb(orb *ast.OrbInfo, orbID string) ast.OrbInfo {
 	return *orb
 }
 
+func (c *OrbCache) UpdateOrbParsedAttributes(orbID string, parsedOrbAttributes ast.OrbParsedAttributes) ast.OrbParsedAttributes {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	c.orbsCache[orbID].OrbParsedAttributes = parsedOrbAttributes
+	return parsedOrbAttributes
+}
+
 func (c *OrbCache) GetOrb(orbID string) *ast.OrbInfo {
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()

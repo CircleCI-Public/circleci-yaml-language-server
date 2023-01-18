@@ -503,3 +503,19 @@ func (doc *YamlDocument) GetDefinedParams(entityName string) map[string]ast.Para
 
 	return definedParams
 }
+
+func (doc *YamlDocument) ToOrbParsedAttributes() ast.OrbParsedAttributes {
+	return ast.OrbParsedAttributes{
+		Commands:           doc.Commands,
+		Jobs:               doc.Jobs,
+		Executors:          doc.Executors,
+		PipelineParameters: doc.PipelinesParameters,
+
+		ExecutorsRange:          doc.ExecutorsRange,
+		CommandsRange:           doc.CommandsRange,
+		JobsRange:               doc.JobsRange,
+		PipelineParametersRange: doc.PipelinesParametersRange,
+		WorkflowRange:           doc.WorkflowRange,
+		OrbsRange:               doc.OrbsRange,
+	}
+}

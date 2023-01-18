@@ -31,24 +31,27 @@ func (orb *OrbURL) GetOrbID() string {
 }
 
 type OrbInfo struct {
+	OrbParsedAttributes
 	IsLocal bool
 
-	CreatedAt  string
-	Commands   map[string]Command
-	Jobs       map[string]Job
-	Executors  map[string]Executor
-	Parameters map[string]Parameter
-
+	CreatedAt   string
 	Description string
 	Source      string
 	RemoteInfo  RemoteOrbInfo
+}
 
-	OrbsRange       protocol.Range
-	ExecutorsRange  protocol.Range
-	CommandsRange   protocol.Range
-	JobsRange       protocol.Range
-	WorkflowRange   protocol.Range
-	ParametersRange protocol.Range
+type OrbParsedAttributes struct {
+	Commands           map[string]Command
+	Jobs               map[string]Job
+	Executors          map[string]Executor
+	PipelineParameters map[string]Parameter
+
+	ExecutorsRange          protocol.Range
+	CommandsRange           protocol.Range
+	JobsRange               protocol.Range
+	PipelineParametersRange protocol.Range
+	WorkflowRange           protocol.Range
+	OrbsRange               protocol.Range
 }
 
 type RemoteOrbInfo struct {
