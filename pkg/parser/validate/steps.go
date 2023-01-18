@@ -87,8 +87,8 @@ func (val Validate) validateNamedStep(step ast.NamedStep, jobOrCommandParameters
 			fmt.Sprintf("Cannot find declaration for step %s", step.Name)))
 	}
 
-	if !val.Doc.IsOrbReference(step.Name) && !val.Doc.IsBuiltIn(step.Name) {
-		definedParams := val.Doc.GetDefinedParams(step.Name)
+	if !val.Doc.IsBuiltIn(step.Name) {
+		definedParams := val.Doc.GetDefinedParams(step.Name, val.Cache)
 		val.validateParametersValue(
 			step.Parameters,
 			step.Name,

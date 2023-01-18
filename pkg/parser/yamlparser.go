@@ -253,6 +253,27 @@ func (doc *YamlDocument) IsOrbCommand(orbCommand string, cache *utils.Cache) boo
 	return ok
 }
 
+func (doc *YamlDocument) IsOrbJob(orbCommand string, cache *utils.Cache) bool {
+	splittedCommand := strings.Split(orbCommand, "/")
+
+	if len(splittedCommand) != 2 {
+		return false
+	}
+
+	orbName := splittedCommand[0]
+	commandName := splittedCommand[1]
+
+	orbInfo, err := doc.GetOrbInfoFromName(orbName, cache)
+
+	if err != nil || orbInfo == nil {
+		return false
+	}
+
+	_, ok := orbInfo.Jobs[commandName]
+
+	return ok
+}
+
 func (doc *YamlDocument) IsGivenOrb(commandName string, orbName string) bool {
 	if !doc.IsOrbReference(commandName) {
 		return false
@@ -490,7 +511,7 @@ func (doc *YamlDocument) GetExecutorDefinedAtPosition(position protocol.Position
 	return ast.BaseExecutor{}
 }
 
-func (doc *YamlDocument) GetDefinedParams(entityName string) map[string]ast.Parameter {
+func (doc *YamlDocument) GetDefinedParams(entityName string, cache *utils.Cache) map[string]ast.Parameter {
 	var definedParams map[string]ast.Parameter
 
 	if command, ok := doc.Commands[entityName]; ok {
@@ -498,6 +519,33 @@ func (doc *YamlDocument) GetDefinedParams(entityName string) map[string]ast.Para
 	}
 
 	if job, ok := doc.Jobs[entityName]; ok {
+		definedParams = job.Parameters
+	}
+
+	if doc.IsOrbCommand(entityName, cache) || doc.IsOrbJob(entityName, cache) {
+		return doc.GetOrbDefinedParams(entityName, cache)
+	}
+
+	return definedParams
+}
+
+func (doc *YamlDocument) GetOrbDefinedParams(entityName string, cache *utils.Cache) map[string]ast.Parameter {
+	var definedParams map[string]ast.Parameter
+
+	splittedName := strings.Split(entityName, "/")
+	orbName := splittedName[0]
+	commandOrJob := splittedName[1]
+
+	orbInfo, err := doc.GetOrFetchOrbInfo(doc.Orbs[orbName], cache)
+	if err != nil {
+		return definedParams
+	}
+
+	if command, ok := orbInfo.Commands[commandOrJob]; ok {
+		definedParams = command.Parameters
+	}
+
+	if job, ok := orbInfo.Jobs[commandOrJob]; ok {
 		definedParams = job.Parameters
 	}
 
