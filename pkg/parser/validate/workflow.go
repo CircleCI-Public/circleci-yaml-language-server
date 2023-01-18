@@ -60,7 +60,7 @@ func (val Validate) doesJobRefExist(workflow ast.Workflow, requireName string) b
 }
 
 func (val Validate) validateWorkflowParameters(jobRef ast.JobRef, stepName string, stepRange protocol.Range) {
-	definedParams := val.Doc.GetDefinedParams(stepName)
+	definedParams := val.Doc.GetDefinedParams(stepName, val.Cache)
 
 	for _, definedParam := range definedParams {
 		_, okMatrix := jobRef.MatrixParams[definedParam.GetName()]
