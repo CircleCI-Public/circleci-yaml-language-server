@@ -165,8 +165,11 @@ func (doc *YamlDocument) parseNamedStepWithParameters(stepName string, namedStep
 	if namedStepWithParams == nil {
 		return ast.NamedStep{}
 	}
-	if namedStepWithParams.Type() == "flow_node" {
-		return ast.NamedStep{Name: stepName, Range: NodeToRange(namedStepWithParams.Parent().ChildByFieldName("key"))}
+	hasFlowMapping := GetChildOfType(namedStepWithParams, "flow_mapping") != nil
+	if namedStepWithParams.Type() == "flow_node" && !hasFlowMapping {
+		stepNameNode, _ := doc.GetKeyValueNodes(namedStepWithParams.Parent())
+		rng := NodeToRange(stepNameNode)
+		return ast.NamedStep{Name: stepName, Range: rng}
 	} else { // block_node
 		blockMappingNode := GetChildMapping(namedStepWithParams)
 		paramRange := protocol.Range{}
@@ -185,8 +188,8 @@ func (doc *YamlDocument) parseNamedStepWithParameters(stepName string, namedStep
 			if child == nil {
 				return
 			}
-
-			keyName := doc.GetNodeText(child.ChildByFieldName("key"))
+			key, _ := doc.GetKeyValueNodes(child)
+			keyName := doc.GetNodeText(key)
 
 			if keyName == "" {
 				return
