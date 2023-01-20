@@ -1,9 +1,10 @@
-package parser
+package parser_test
 
 import (
 	"testing"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/expect"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/testHelpers"
 	"github.com/stretchr/testify/assert"
 	"go.lsp.dev/protocol"
@@ -19,7 +20,7 @@ jobs:
       - checkout
 `
 
-	yamlDocument, err := ParseFromContent(
+	yamlDocument, err := parser.ParseFromContent(
 		[]byte(yaml),
 		testHelpers.GetDefaultLsContext(),
 		uri.File(""),
@@ -47,7 +48,7 @@ jobs:
       - checkout
 `
 
-	yamlDocument, err := ParseFromContent(
+	yamlDocument, err := parser.ParseFromContent(
 		[]byte(yaml),
 		testHelpers.GetDefaultLsContext(),
 		uri.File(""),
@@ -67,7 +68,7 @@ jobs:
       - checkout
 `
 
-	yamlDocument, err := ParseFromContent(
+	yamlDocument, err := parser.ParseFromContent(
 		[]byte(yaml),
 		testHelpers.GetLsContextForHost("https://mycircleci.example.com"),
 		uri.File(""),
@@ -92,7 +93,7 @@ jobs:
       - checkout
 `
 
-	yamlDocument, err := ParseFromContent(
+	yamlDocument, err := parser.ParseFromContent(
 		[]byte(yaml),
 		testHelpers.GetDefaultLsContext(),
 		uri.File(""),
@@ -122,7 +123,7 @@ jobs:
       - checkout
 `
 
-	yamlDocument, err := ParseFromContent(
+	yamlDocument, err := parser.ParseFromContent(
 		[]byte(yaml),
 		testHelpers.GetDefaultLsContext(),
 		uri.File(""),
@@ -148,7 +149,7 @@ jobs:
       - checkout
 `
 
-	yamlDocument, err := ParseFromContent(
+	yamlDocument, err := parser.ParseFromContent(
 		[]byte(yaml),
 		testHelpers.GetDefaultLsContext(),
 		uri.File(""),
@@ -172,7 +173,7 @@ jobs:
       - checkout
 `
 
-	yamlDocument, err := ParseFromContent(
+	yamlDocument, err := parser.ParseFromContent(
 		[]byte(yaml),
 		testHelpers.GetDefaultLsContext(),
 		uri.File(""),

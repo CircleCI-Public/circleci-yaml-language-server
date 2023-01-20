@@ -122,12 +122,10 @@ func (doc *YamlDocument) parseSingleExecutorMachine(nameNode *sitter.Node, value
 		IsDeprecated: false,
 	}
 
+	var machineNode *sitter.Node
+
 	parseMachine := func(blockNode *sitter.Node) {
-		// This only happens when the executor is `machine: true`
-		if doc.addedMachineTrueDeprecatedDiag(blockNode.Parent(), "") {
-			res.IsDeprecated = true
-			return
-		}
+		machineNode = blockNode
 
 		// blockNode is a block_node
 		blockMappingNode := GetChildMapping(blockNode)
@@ -153,6 +151,11 @@ func (doc *YamlDocument) parseSingleExecutorMachine(nameNode *sitter.Node, value
 	}
 
 	doc.parseBaseExecutor(&res.BaseExecutor, nameNode, valueNode, parseMachine, "machine")
+
+	// This only happens when the executor is `machine: true`
+	if machineNode != nil && doc.addedMachineTrueDeprecatedDiag(machineNode.Parent(), res.ResourceClass) {
+		res.IsDeprecated = true
+	}
 
 	return res
 }
@@ -350,13 +353,11 @@ func (doc *YamlDocument) addedMachineTrueDeprecatedDiag(child *sitter.Node, reso
 		return false
 	}
 
-	if !doc.Context.Api.UseDefaultInstance() {
+	if !doc.Context.Api.UseDefaultInstance() || doc.IsSelfHostedRunner(resourceClass) {
 		return false
 	}
 
-	isResourceClassSelfHostedRunner := strings.Contains(resourceClass, "/")
-
-	if isResourceClassSelfHostedRunner {
+	if doc.IsSelfHostedRunner(resourceClass) {
 		return false
 	}
 
@@ -371,4 +372,8 @@ func (doc *YamlDocument) addedMachineTrueDeprecatedDiag(child *sitter.Node, reso
 		},
 	)
 	return true
+}
+
+func (doc *YamlDocument) IsSelfHostedRunner(resourceClass string) bool {
+	return len(strings.Split(resourceClass, "/")) > 1
 }

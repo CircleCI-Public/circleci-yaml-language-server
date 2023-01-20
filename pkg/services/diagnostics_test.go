@@ -31,6 +31,11 @@ func TestFindErrors(t *testing.T) {
 			args: args{filePath: "./testdata/noErrors.yml"},
 			want: make([]protocol.Diagnostic, 0),
 		},
+		{
+			name: "No errors",
+			args: args{filePath: "./testdata/anchorNoErrors.yml"},
+			want: make([]protocol.Diagnostic, 0),
+		},
 	}
 
 	for _, tt := range tests {
@@ -50,7 +55,7 @@ func TestFindErrors(t *testing.T) {
 			}
 
 			if !reflect.DeepEqual(diagnostics, tt.want) {
-				t.Errorf("FindErrors() = %v, want %v", diagnostics, tt.want)
+				t.Errorf("FindErrors() in file %s = %v, want %v", tt.args.filePath, diagnostics, tt.want)
 			}
 		})
 	}
