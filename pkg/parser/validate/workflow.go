@@ -93,6 +93,15 @@ func (val Validate) validateWorkflowParameters(jobRef ast.JobRef, stepName strin
 			val.checkParamSimpleType(jobRef.Parameters[definedParam.GetName()], stepName, definedParam)
 		}
 	}
+
+	for _, param := range jobRef.Parameters {
+		if definedParams[param.Name] == nil {
+			val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
+				param.Range,
+				fmt.Sprintf("Parameter %s is not defined in %s", param.Name, stepName)),
+			)
+		}
+	}
 }
 
 func (val Validate) validateDAG(workflow ast.Workflow) {
