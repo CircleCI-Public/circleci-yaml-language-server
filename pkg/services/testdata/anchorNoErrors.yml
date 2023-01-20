@@ -1,0 +1,67 @@
+version: 2.1
+
+references:
+  - &py39 "3.9.14"
+  - &py310 "3.10.5"
+  - &py38 "3.8.10"
+  - &usefulJob "dummyJob"
+
+executors:
+  macos-m1:
+    machine: true
+    resource_class: data-heroes/dh
+
+commands:
+  print:
+    parameters:
+      message:
+        type: string
+    steps:
+      - run: echo << parameters.message >>
+
+  install-python-pyenv:
+    parameters:
+      py_version:
+        type: enum
+        enum: [*py38, *py39, *py310]
+        default: *py38
+      is_build:
+        type: boolean
+        default: false
+    steps:
+      - run:
+          name: install-python-lib
+          command: |
+            pyenv install -s <<parameters.py_version>>
+            pyenv global <<parameters.py_version>>
+            pyenv version
+            echo 'eval "$(pyenv init --path)"' >> ~/.bash_profile
+      - print:
+          message: Printing << parameters.is_build >>
+
+jobs:
+  dummyJob:
+    docker:
+      - image: cimg/node:17.2.0
+    steps:
+      - install-python-pyenv:
+          is_build: true
+          py_version: *py39
+
+  uselessJob:
+    docker:
+      - image: cimg/node:17.2.0
+    steps:
+      - run: echo Hello world
+
+workflows:
+  dummy:
+    jobs:
+      - dummyJob
+      - dummyJob:
+          name: build-windows-<<matrix.py_version>>
+          matrix:
+            parameters:
+              py_version: ["3.8"]
+      - uselessJob:
+          requires: [*usefulJob, build-windows-<<matrix.py_version>>]

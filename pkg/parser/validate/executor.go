@@ -116,7 +116,7 @@ func (val Validate) validateLinuxMachineExecutor(executor ast.MachineExecutor) {
 
 	if executor.Image != "" {
 		val.validateImage(executor.Image, executor.ImageRange)
-	} else if !executor.IsDeprecated {
+	} else if !executor.IsDeprecated && !val.Doc.IsSelfHostedRunner(executor.ResourceClass) {
 		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
 			executor.Range,
 			"Missing image",
@@ -197,8 +197,7 @@ func (val Validate) validateWindowsExecutor(executor ast.WindowsExecutor) {
 }
 
 func (val Validate) checkIfValidResourceClass(resourceClass string, validResourceClasses []string, resourceClassRange protocol.Range) {
-	if !utils.CheckIfOnlyParamUsed(resourceClass) && resourceClass != "" && utils.FindInArray(validResourceClasses, resourceClass) == -1 &&
-		val.Context.Api.UseDefaultInstance() {
+	if !utils.CheckIfOnlyParamUsed(resourceClass) && resourceClass != "" && utils.FindInArray(validResourceClasses, resourceClass) == -1 && !val.Doc.IsSelfHostedRunner(resourceClass) {
 
 		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
 			resourceClassRange,
