@@ -1,5 +1,26 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`Diagnostic testing files Matrix alias 1`] = `
+DiagnosticList {
+  "list": [
+    {
+      "message": "You may want to add the \`store_test_results\` step to visualize the test results in CircleCI",
+      "range": {
+        "end": {
+          "character": 6,
+          "line": 14,
+        },
+        "start": {
+          "character": 2,
+          "line": 14,
+        },
+      },
+      "severity": 4,
+    },
+  ],
+}
+`;
+
 exports[`Diagnostic testing files autocomplete-jobs.yml 1`] = `
 DiagnosticList {
   "list": [

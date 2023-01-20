@@ -21,4 +21,11 @@ describe('Diagnostic testing files', () => {
 
     expect(diagnostics).toMatchSnapshot();
   });
+
+  it('Matrix alias', async () => {
+    const testingFile = 'config4.yml';
+    const diagnostics = await commands.didOpen(testingFile);
+
+    expect(diagnostics).toMatchSnapshot();
+  });
 });
