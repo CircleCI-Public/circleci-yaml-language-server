@@ -29,8 +29,7 @@ func TestDefinition(t *testing.T) {
 	}
 
 	cache.OrbCache.SetOrb(&ast.OrbInfo{
-		Commands: parsedOrb.Commands,
-		Jobs:     parsedOrb.Jobs,
+		OrbParsedAttributes: parsedOrb.ToOrbParsedAttributes(),
 		RemoteInfo: ast.RemoteOrbInfo{
 			FilePath: uri.File(path.Join("./testdata/orb.yaml")).Filename(),
 		},

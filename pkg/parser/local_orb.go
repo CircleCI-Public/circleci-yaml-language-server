@@ -68,17 +68,18 @@ func (doc *YamlDocument) parseLocalOrb(name string, orbNode *sitter.Node) (*Loca
 
 		Source:      deindentedContent,
 		Description: orbDoc.Description,
-		Commands:    orbDoc.Commands,
-		Jobs:        orbDoc.Jobs,
-		Executors:   orbDoc.Executors,
-		Parameters:  orbDoc.PipelinesParameters,
+		OrbParsedAttributes: ast.OrbParsedAttributes{
+			Commands:           orbDoc.Commands,
+			Jobs:               orbDoc.Jobs,
+			Executors:          orbDoc.Executors,
+			PipelineParameters: orbDoc.PipelinesParameters,
 
-		OrbsRange:       utils.AddOffsetToRange(orbDoc.OrbsRange, orb.Offset),
-		ExecutorsRange:  utils.AddOffsetToRange(orbDoc.ExecutorsRange, orb.Offset),
-		CommandsRange:   utils.AddOffsetToRange(orbDoc.CommandsRange, orb.Offset),
-		JobsRange:       utils.AddOffsetToRange(orbDoc.JobsRange, orb.Offset),
-		WorkflowRange:   utils.AddOffsetToRange(orbDoc.WorkflowRange, orb.Offset),
-		ParametersRange: utils.AddOffsetToRange(orbDoc.PipelinesParametersRange, orb.Offset),
+			OrbsRange:               utils.AddOffsetToRange(orbDoc.OrbsRange, orb.Offset),
+			ExecutorsRange:          utils.AddOffsetToRange(orbDoc.ExecutorsRange, orb.Offset),
+			CommandsRange:           utils.AddOffsetToRange(orbDoc.CommandsRange, orb.Offset),
+			JobsRange:               utils.AddOffsetToRange(orbDoc.JobsRange, orb.Offset),
+			WorkflowRange:           utils.AddOffsetToRange(orbDoc.WorkflowRange, orb.Offset),
+			PipelineParametersRange: utils.AddOffsetToRange(orbDoc.PipelinesParametersRange, orb.Offset)},
 	}
 
 	doc.LocalOrbInfo[name] = orbInfo

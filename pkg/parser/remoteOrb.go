@@ -9,6 +9,7 @@ import (
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
+	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 	"golang.org/x/mod/semver"
 )
@@ -85,12 +86,10 @@ func fetchOrbInfo(orbVersionCode string, cache *utils.Cache, context *utils.LsCo
 	)
 
 	orb := &ast.OrbInfo{
-		Commands:    parsedOrbSource.Commands,
-		Jobs:        parsedOrbSource.Jobs,
-		Executors:   parsedOrbSource.Executors,
-		Description: parsedOrbSource.Description,
-		Source:      orbQuery.Source,
-		IsLocal:     false,
+		OrbParsedAttributes: parsedOrbSource.ToOrbParsedAttributes(),
+		Description:         parsedOrbSource.Description,
+		Source:              orbQuery.Source,
+		IsLocal:             false,
 
 		RemoteInfo: ast.RemoteOrbInfo{
 			ID:                 orbQuery.Id,
@@ -265,13 +264,19 @@ func checkIfRemoteOrbAlreadyExistsInFSCache(orbYaml string) bool {
 func addAlreadyExistingRemoteOrbsToFSCache(orb ast.Orb, cache *utils.Cache, context *utils.LsContext) error {
 	filePath := utils.GetOrbCacheFSPath(orb.Url.GetOrbID())
 
-	source, err := os.ReadFile(filePath)
+	content, err := os.ReadFile(filePath)
+
+	AddOrbToCacheWithContent(orb, uri.File(filePath), content, context, cache)
 
 	if err != nil {
 		return err
 	}
 
-	parsedOrbSource, err := ParseFromContent(source, context, uri.File(filePath))
+	return nil
+}
+
+func AddOrbToCacheWithContent(orb ast.Orb, uri protocol.URI, content []byte, context *utils.LsContext, cache *utils.Cache) error {
+	parsedOrbSource, err := ParseFromContent(content, context, uri)
 
 	if err != nil {
 		return err
@@ -286,16 +291,15 @@ func addAlreadyExistingRemoteOrbsToFSCache(orb ast.Orb, cache *utils.Cache, cont
 	latest, latestMinor, latestPatch := GetVersionInfo(versions, "v"+orb.Url.Version)
 
 	cache.OrbCache.SetOrb(&ast.OrbInfo{
-		Commands:    parsedOrbSource.Commands,
-		Jobs:        parsedOrbSource.Jobs,
-		Executors:   parsedOrbSource.Executors,
-		Description: parsedOrbSource.Description,
-		Source:      string(source),
-		IsLocal:     false,
+
+		Description:         parsedOrbSource.Description,
+		Source:              string(content),
+		IsLocal:             false,
+		OrbParsedAttributes: parsedOrbSource.ToOrbParsedAttributes(),
 
 		RemoteInfo: ast.RemoteOrbInfo{
 			ID:                 orb.Url.GetOrbID(),
-			FilePath:           filePath,
+			FilePath:           uri.Filename(),
 			Version:            orb.Url.Version,
 			LatestVersion:      latest[1:],
 			LatestMinorVersion: latestMinor[1:],
