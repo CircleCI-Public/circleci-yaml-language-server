@@ -197,7 +197,11 @@ func (doc *YamlDocument) parseSingleJobReference(jobRefNode *sitter.Node) ast.Jo
 				case "tags":
 				case "matrix":
 					res.HasMatrix = true
-					res.MatrixParams = doc.parseMatrixAttributes(valueNode)
+					matrixParams, alias := doc.parseMatrixAttributes(valueNode)
+					res.MatrixParams = matrixParams
+					if alias != "" {
+						res.StepName = alias
+					}
 
 				case "pre-steps":
 					res.PreStepsRange = NodeToRange(child)
@@ -229,10 +233,11 @@ func (doc *YamlDocument) parseSingleJobRequires(node *sitter.Node) []ast.Require
 	return res
 }
 
-func (doc *YamlDocument) parseMatrixAttributes(node *sitter.Node) map[string][]ast.ParameterValue {
+func (doc *YamlDocument) parseMatrixAttributes(node *sitter.Node) (map[string][]ast.ParameterValue, string) {
 	// node is a block_node
 	blockMapping := GetChildOfType(node, "block_mapping")
 	res := make(map[string][]ast.ParameterValue)
+	alias := ""
 
 	doc.iterateOnBlockMapping(blockMapping, func(child *sitter.Node) {
 		keyNode, valueNode := doc.GetKeyValueNodes(child)
@@ -244,11 +249,12 @@ func (doc *YamlDocument) parseMatrixAttributes(node *sitter.Node) map[string][]a
 		case "parameters":
 			res = doc.parseMatrixParam(valueNode)
 		case "alias":
+			alias = doc.GetNodeText(valueNode)
 		case "exclude":
 		}
 	})
 
-	return res
+	return res, alias
 }
 
 func (doc *YamlDocument) parseMatrixParam(node *sitter.Node) map[string][]ast.ParameterValue {
