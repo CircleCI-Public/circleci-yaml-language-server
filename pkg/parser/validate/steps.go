@@ -74,7 +74,7 @@ func (val Validate) validateRunCommand(step ast.Run, jobOrCommandParameters map[
 	}
 }
 
-func (val Validate) validateNamedStep(step ast.NamedStep, jobOrCommandParameters map[string]ast.Parameter) {
+func (val Validate) validateNamedStep(step ast.NamedStep, usableParams map[string]ast.Parameter) {
 	commandExists := val.Doc.DoesJobExist(step.Name) ||
 		val.Doc.DoesCommandExist(step.Name) ||
 		val.Doc.IsBuiltIn(step.Name) ||
@@ -88,13 +88,13 @@ func (val Validate) validateNamedStep(step ast.NamedStep, jobOrCommandParameters
 	}
 
 	if !val.Doc.IsBuiltIn(step.Name) {
-		definedParams := val.Doc.GetDefinedParams(step.Name, val.Cache)
+		targetEntityDefinedParams := val.Doc.GetDefinedParams(step.Name, val.Cache)
 		val.validateParametersValue(
 			step.Parameters,
 			step.Name,
 			step.Range,
-			definedParams,
-			jobOrCommandParameters,
+			targetEntityDefinedParams,
+			usableParams,
 		)
 	}
 

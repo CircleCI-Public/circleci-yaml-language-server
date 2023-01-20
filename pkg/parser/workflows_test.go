@@ -132,7 +132,7 @@ func TestYamlDocument_parseSingleJobReference(t *testing.T) {
 					{
 						Name: "setup",
 						Range: protocol.Range{
-							Start: protocol.Position{Line: 3, Character: 8},
+							Start: protocol.Position{Line: 3, Character: 10},
 							End:   protocol.Position{Line: 3, Character: 15},
 						},
 					},

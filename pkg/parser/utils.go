@@ -120,31 +120,34 @@ func (doc *YamlDocument) getNodeTextArrayWithRange(valueNode *sitter.Node) []Tex
 	}
 
 	iterateOnBlockSequence(blockSequenceNode, func(child *sitter.Node) {
+		getText := func(node *sitter.Node) TextAndRange {
+			if alias := GetChildOfType(node, "alias"); alias != nil {
+				anchor, ok := doc.YamlAnchors[strings.TrimLeft(doc.GetNodeText(alias), "*")]
+				if !ok {
+					return TextAndRange{Text: "wtf"}
+				}
+				anchorValueNode := GetFirstChild(anchor.ValueNode)
+				text := doc.GetNodeText(anchorValueNode)
+				return TextAndRange{Text: text, Range: NodeToRange(anchorValueNode)}
+			} else {
+
+				return TextAndRange{Text: doc.GetNodeText(node), Range: NodeToRange(node)}
+			}
+		}
+
 		// If blockSequence is a flow_sequence, then the child is
 		// directly a flow_node
 		if child.Type() == "flow_node" {
-			texts = append(texts, TextAndRange{Text: doc.GetNodeText(child), Range: NodeToRange(child)})
+			texts = append(texts, getText(child))
 		} else {
 			// But if the blockSequence is a block_sequence, then the child is
 			// a block_sequence_item
 			element := GetChildOfType(child, "flow_node")
 			hyphenNode := child.Child(0)
 			if element != nil {
-				texts = append(texts, TextAndRange{Text: doc.GetNodeText(element), Range: NodeToRange(child)})
+				texts = append(texts, getText(element))
 			} else if hyphenNode != nil {
-				texts = append(texts, TextAndRange{
-					Text: doc.GetNodeText(element),
-					Range: protocol.Range{
-						Start: protocol.Position{
-							Line:      hyphenNode.StartPoint().Row,
-							Character: hyphenNode.StartPoint().Column + 1,
-						},
-						End: protocol.Position{
-							Line:      hyphenNode.EndPoint().Row,
-							Character: hyphenNode.EndPoint().Column + 2,
-						},
-					},
-				})
+				texts = append(texts, getText(hyphenNode.NextSibling()))
 			}
 		}
 	})
@@ -244,10 +247,7 @@ func (doc *YamlDocument) iterateOnBlockMapping(blockMappingNode *sitter.Node, fn
 			return
 		}
 
-		anchorValue := anchor.ValueNode.Child(0)
-		if anchorValue.Type() == "anchor" {
-			anchorValue = anchorValue.NextSibling()
-		}
+		anchorValue := GetFirstChild(anchor.ValueNode)
 
 		// Recursively call iterateOnBlockMapping to handle merged block that contain merged blocks themselves
 		doc.iterateOnBlockMapping(

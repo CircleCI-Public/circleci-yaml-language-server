@@ -137,7 +137,7 @@ func (doc *YamlDocument) parseStringParameter(paramName string, paramNode *sitte
 		switch keyName {
 		case "default":
 			stringParam.DefaultRange = doc.getDefaultParameterRange(child)
-			stringParam.Default = doc.GetNodeText(valueNode)
+			stringParam.Default = doc.GetNodeText(GetFirstChild(valueNode))
 			stringParam.HasDefault = true
 		case "description":
 			stringParam.Description = doc.GetNodeText(valueNode)
@@ -201,7 +201,7 @@ func (doc *YamlDocument) parseEnumParameter(paramName string, paramNode *sitter.
 		switch keyName {
 		case "default":
 			enumParam.DefaultRange = doc.getDefaultParameterRange(child)
-			enumParam.Default = doc.GetNodeText(valueNode)
+			enumParam.Default = doc.GetNodeText(GetFirstChild(valueNode))
 			enumParam.HasDefault = true
 		case "description":
 			enumParam.Description = doc.GetNodeText(valueNode)
@@ -227,7 +227,7 @@ func (doc *YamlDocument) parseExecutorParameter(paramName string, paramNode *sit
 		switch keyName {
 		case "default":
 			executorParam.DefaultRange = doc.getDefaultParameterRange(child)
-			executorParam.Default = doc.GetNodeText(valueNode)
+			executorParam.Default = doc.GetNodeText(GetFirstChild(valueNode))
 			executorParam.HasDefault = true
 		case "description":
 			executorParam.Description = doc.GetNodeText(valueNode)
@@ -278,7 +278,7 @@ func (doc *YamlDocument) parseEnvVariableParameter(paramName string, paramNode *
 		switch keyName {
 		case "default":
 			envVariable.DefaultRange = doc.getDefaultParameterRange(child)
-			envVariable.Default = doc.GetNodeText(valueNode)
+			envVariable.Default = doc.GetNodeText(GetFirstChild(valueNode))
 			envVariable.HasDefault = true
 		case "description":
 			envVariable.Description = doc.GetNodeText(valueNode)
@@ -315,7 +315,7 @@ func (doc *YamlDocument) parseParameterValue(child *sitter.Node) (ast.ParameterV
 		return ast.ParameterValue{}, fmt.Errorf("no parameter value")
 	}
 
-	flowNodeChild := valueNode.Child(0)
+	flowNodeChild := GetFirstChild(valueNode)
 	if flowNodeChild == nil {
 		return ast.ParameterValue{}, fmt.Errorf("error while parsing parameter value")
 	}
@@ -447,7 +447,7 @@ func isStep(doc *YamlDocument, child *sitter.Node) bool {
 
 func (doc *YamlDocument) parseSimpleParameterValue(paramName string, simpleParamNode *sitter.Node, rng protocol.Range) (ast.ParameterValue, error) {
 	// simpleParamNode's child is either a string_scalar, a boolean_scalar or an integer_scalar
-	simpleParamNodeChild := simpleParamNode.Child(0)
+	simpleParamNodeChild := GetFirstChild(simpleParamNode)
 
 	if simpleParamNodeChild == nil {
 		return ast.ParameterValue{}, fmt.Errorf("error while parsing simple parameter value")
