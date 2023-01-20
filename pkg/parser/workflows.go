@@ -190,7 +190,7 @@ func (doc *YamlDocument) parseSingleJobReference(jobRefNode *sitter.Node) ast.Jo
 					res.Requires = doc.parseSingleJobRequires(valueNode)
 				case "name":
 					res.StepNameRange = NodeToRange(valueNode)
-					res.StepName = doc.GetNodeText(valueNode)
+					res.StepName = doc.GetNodeText(GetFirstChild(valueNode))
 				case "context":
 				case "filters":
 				case "branches":

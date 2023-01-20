@@ -100,7 +100,7 @@ func GetReferencesOfParamInRange(content []byte, paramName string, rng protocol.
 //	param: << pipeline.parameters.paramName >> -> true
 //	param: `/home/<< parameters.paramName >>/Downloads` -> false
 func CheckIfOnlyParamUsed(content string) bool {
-	regex, _ := regexp.Compile(`<<\s*(parameters|pipeline.parameters)\.([A-z0-9-_]*)\s*>>$`)
+	regex, _ := regexp.Compile(`^<<\s*(parameters|pipeline.parameters)\.([A-z0-9-_]*)\s*>>$`)
 	return regex.MatchString(content)
 }
 
@@ -108,6 +108,11 @@ func CheckIfParamIsPartiallyReferenced(content string) (bool, bool) {
 	regex, _ := regexp.Compile(`<<\s*(parameters|pipeline.parameters)\.\s*>?>?`)
 	isPipelineParam := strings.Contains(content, "pipeline.")
 	return regex.Find([]byte(content)) != nil, isPipelineParam
+}
+
+func CheckIfMatrixParamIsPartiallyReferenced(content string) bool {
+	regex, _ := regexp.Compile(`<<\s*matrix\.\s*>?>?`)
+	return regex.Find([]byte(content)) != nil
 }
 
 func GetParamsInString(content string) ([]struct {

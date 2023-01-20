@@ -197,7 +197,8 @@ func (val Validate) validateWindowsExecutor(executor ast.WindowsExecutor) {
 }
 
 func (val Validate) checkIfValidResourceClass(resourceClass string, validResourceClasses []string, resourceClassRange protocol.Range) {
-	if !utils.CheckIfOnlyParamUsed(resourceClass) && resourceClass != "" && utils.FindInArray(validResourceClasses, resourceClass) == -1 {
+	if !utils.CheckIfOnlyParamUsed(resourceClass) && resourceClass != "" && utils.FindInArray(validResourceClasses, resourceClass) == -1 &&
+		val.Context.Api.UseDefaultInstance() {
 
 		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
 			resourceClassRange,

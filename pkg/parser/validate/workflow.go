@@ -37,7 +37,7 @@ func (val Validate) validateSingleWorkflow(workflow ast.Workflow) error {
 			val.validateWorkflowParameters(jobRef, jobRef.JobName, jobRef.JobRefRange)
 		}
 		for _, require := range jobRef.Requires {
-			if !val.doesJobRefExist(workflow, require.Name) {
+			if !val.doesJobRefExist(workflow, require.Name) && !utils.CheckIfMatrixParamIsPartiallyReferenced(require.Name) {
 				val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
 					require.Range,
 					fmt.Sprintf("Cannot find declaration for job reference %s", require.Name)))
