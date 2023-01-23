@@ -1,7 +1,8 @@
 package utils
 
 type LsContext struct {
-	Api ApiContext
+	Api    ApiContext
+	UserId string
 }
 
 type ApiContext struct {
