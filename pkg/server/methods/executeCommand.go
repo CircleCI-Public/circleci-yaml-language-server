@@ -31,6 +31,13 @@ func (methods *Methods) ExecuteCommand(reply jsonrpc2.Replier, req jsonrpc2.Requ
 			return reply(methods.Ctx, nil, nil)
 		}
 		methods.setHostUrl(param)
+	case "setUserId":
+		param, ok := arguments[0].(string)
+		if !ok {
+			return reply(methods.Ctx, nil, nil)
+		}
+		methods.setUserId(param)
+
 	}
 
 	return reply(methods.Ctx, nil, nil)
@@ -63,4 +70,8 @@ func (methods *Methods) setHostUrl(hostUrl string) {
 	for _, file := range filesCache {
 		go methods.notificationMethods(methods.Cache.FileCache, *file)
 	}
+}
+
+func (methods *Methods) setUserId(userId string) {
+	methods.LsContext.UserId = userId
 }

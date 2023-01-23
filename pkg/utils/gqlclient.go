@@ -69,6 +69,11 @@ func (request *Request) SetToken(token string) {
 	request.Header.Set("Authorization", token)
 }
 
+// SetUserId sets the Authorization header for the request with the given user id.
+func (request *Request) SetUserId(userId string) {
+	request.Header.Set("user_id", userId)
+}
+
 // Var sets a variable.
 func (request *Request) Var(key string, value interface{}) {
 	request.Variables[key] = value

@@ -46,6 +46,7 @@ func (ch *CompletionHandler) completeOrbName(node *sitter.Node) {
 		ch.Doc.GetNodeText(node),
 		ch.Doc.Context.Api.HostUrl,
 		ch.Doc.Context.Api.Token,
+		ch.Doc.Context.UserId,
 	)
 
 	if err != nil {
@@ -57,11 +58,11 @@ func (ch *CompletionHandler) completeOrbName(node *sitter.Node) {
 	}
 }
 
-func getOrbNameCompletions(name, hostUrl, token string) ([]string, error) {
+func getOrbNameCompletions(name, hostUrl, token, userId string) ([]string, error) {
 	parts := strings.Split(name, "/")
 	registry := parts[0]
 
-	response, err := fetchOrbsByRegistry(registry, hostUrl, token)
+	response, err := fetchOrbsByRegistry(registry, hostUrl, token, userId)
 
 	if err != nil {
 		return nil, err
@@ -78,7 +79,7 @@ func getOrbNameCompletions(name, hostUrl, token string) ([]string, error) {
 	return completions, nil
 }
 
-func fetchOrbsByRegistry(registry, hostUrl, token string) (*NamespaceOrbResponse, error) {
+func fetchOrbsByRegistry(registry, hostUrl, token, userId string) (*NamespaceOrbResponse, error) {
 	cached, cacheExists := simpleRegistryOrbsCache[registry]
 
 	if cacheExists {
@@ -122,6 +123,7 @@ func fetchOrbsByRegistry(registry, hostUrl, token string) (*NamespaceOrbResponse
 
 	request := utils.NewRequest(query)
 	request.SetToken(client.Token)
+	request.SetUserId(userId)
 	request.Var("name", registry)
 
 	var response NamespaceOrbResponse
