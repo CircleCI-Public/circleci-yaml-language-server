@@ -62,7 +62,7 @@ func ParseRemoteOrbs(orbs map[string]ast.Orb, cache *utils.Cache, context *utils
 }
 
 func fetchOrbInfo(orbVersionCode string, cache *utils.Cache, context *utils.LsContext) (*ast.OrbInfo, error) {
-	orbQuery, err := GetRemoteOrb(orbVersionCode, context.Api.Token, context.Api.HostUrl)
+	orbQuery, err := GetRemoteOrb(orbVersionCode, context.Api.Token, context.Api.HostUrl, context.UserId)
 
 	if err != nil {
 		return &ast.OrbInfo{}, err
@@ -157,7 +157,7 @@ func GetVersionInfo(
 	return latest, latestMinor, latestPatch
 }
 
-func GetRemoteOrb(orbId string, token string, hostUrl string) (OrbQuery, error) {
+func GetRemoteOrb(orbId string, token string, hostUrl, userId string) (OrbQuery, error) {
 	httpClient := &http.Client{
 		Timeout: 30 * time.Second,
 		Transport: &http.Transport{
@@ -189,6 +189,7 @@ func GetRemoteOrb(orbId string, token string, hostUrl string) (OrbQuery, error) 
 
 	request := utils.NewRequest(query)
 	request.SetToken(client.Token)
+	request.SetUserId(userId)
 	request.Var("orbVersionRef", orbId)
 
 	var response OrbResponse
@@ -201,7 +202,7 @@ func GetRemoteOrb(orbId string, token string, hostUrl string) (OrbQuery, error) 
 	return response.OrbVersion, err
 }
 
-func GetOrbVersions(orbId string, token string, hostUrl string) ([]struct{ Version string }, error) {
+func GetOrbVersions(orbId string, token string, hostUrl, userId string) ([]struct{ Version string }, error) {
 	httpClient := &http.Client{
 		Timeout: 30 * time.Second,
 		Transport: &http.Transport{
@@ -226,6 +227,7 @@ func GetOrbVersions(orbId string, token string, hostUrl string) ([]struct{ Versi
 
 	request := utils.NewRequest(query)
 	request.SetToken(client.Token)
+	request.SetUserId(userId)
 	request.Var("orbVersionRef", orbId)
 
 	var response OrbResponse
@@ -282,7 +284,7 @@ func AddOrbToCacheWithContent(orb ast.Orb, uri protocol.URI, content []byte, con
 		return err
 	}
 
-	versions, err := GetOrbVersions(orb.Url.GetOrbID(), context.Api.Token, context.Api.HostUrl)
+	versions, err := GetOrbVersions(orb.Url.GetOrbID(), context.Api.Token, context.Api.HostUrl, context.UserId)
 
 	if err != nil {
 		return nil
