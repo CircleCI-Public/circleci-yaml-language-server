@@ -60,27 +60,31 @@ func (val Validate) validateSingleOrb(orb ast.Orb) {
 		return
 	}
 
-	message, severity := DiagnosticVersion(
-		orbVersion.RemoteInfo.Version,
-		InfoVersions{
-			LatestVersion:      orbVersion.RemoteInfo.LatestVersion,
-			LatestMinorVersion: orbVersion.RemoteInfo.LatestMinorVersion,
-			LatestPatchVersion: orbVersion.RemoteInfo.LatestPatchVersion,
-		},
-	)
+	// Only check for updates if the orb version
+	// is a valid semver
+	if semver.IsValid("v" + orb.Url.Version) {
+		message, severity := DiagnosticVersion(
+			orbVersion.RemoteInfo.Version,
+			InfoVersions{
+				LatestVersion:      orbVersion.RemoteInfo.LatestVersion,
+				LatestMinorVersion: orbVersion.RemoteInfo.LatestMinorVersion,
+				LatestPatchVersion: orbVersion.RemoteInfo.LatestPatchVersion,
+			},
+		)
 
-	if message == "" {
-		return
+		if message == "" {
+			return
+		}
+
+		val.addDiagnostic(
+			utils.CreateDiagnosticFromRange(
+				orb.Range,
+				severity,
+				message,
+				val.createCodeActions(orb, *orbVersion),
+			),
+		)
 	}
-
-	val.addDiagnostic(
-		utils.CreateDiagnosticFromRange(
-			orb.Range,
-			severity,
-			message,
-			val.createCodeActions(orb, *orbVersion),
-		),
-	)
 }
 
 type OrbVersionCodeActionCreator struct {
