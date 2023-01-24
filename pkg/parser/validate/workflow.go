@@ -60,7 +60,7 @@ func (val Validate) doesJobRefExist(workflow ast.Workflow, requireName string) b
 }
 
 func (val Validate) validateWorkflowParameters(jobRef ast.JobRef, stepName string, stepRange protocol.Range) {
-	definedParams := val.Doc.GetDefinedParams(stepName)
+	definedParams := val.Doc.GetDefinedParams(stepName, val.Cache)
 
 	for _, definedParam := range definedParams {
 		_, okMatrix := jobRef.MatrixParams[definedParam.GetName()]
@@ -91,6 +91,15 @@ func (val Validate) validateWorkflowParameters(jobRef ast.JobRef, stepName strin
 			}
 		} else if okParams {
 			val.checkParamSimpleType(jobRef.Parameters[definedParam.GetName()], stepName, definedParam)
+		}
+	}
+
+	for _, param := range jobRef.Parameters {
+		if definedParams[param.Name] == nil {
+			val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
+				param.Range,
+				fmt.Sprintf("Parameter %s is not defined in %s", param.Name, stepName)),
+			)
 		}
 	}
 }

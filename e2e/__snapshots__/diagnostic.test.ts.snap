@@ -21,6 +21,45 @@ DiagnosticList {
 }
 `;
 
+exports[`Diagnostic testing files Undefined parameter 1`] = `
+DiagnosticList {
+  "list": [
+    {
+      "data": [],
+      "message": "Parameter not-defined-param is not defined in build",
+      "range": {
+        "end": {
+          "character": 32,
+          "line": 26,
+        },
+        "start": {
+          "character": 10,
+          "line": 26,
+        },
+      },
+      "severity": 1,
+      "source": "cci-language-server",
+    },
+    {
+      "data": [],
+      "message": "Parameter not-defined-param is not defined for build",
+      "range": {
+        "end": {
+          "character": 32,
+          "line": 19,
+        },
+        "start": {
+          "character": 10,
+          "line": 19,
+        },
+      },
+      "severity": 1,
+      "source": "cci-language-server",
+    },
+  ],
+}
+`;
+
 exports[`Diagnostic testing files autocomplete-jobs.yml 1`] = `
 DiagnosticList {
   "list": [
