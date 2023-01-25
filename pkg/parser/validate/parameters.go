@@ -75,7 +75,19 @@ func (val Validate) checkParamSimpleType(param ast.ParameterValue, stepName stri
 			return
 		}
 		for _, value := range values {
-			if value.Type != "steps" {
+			if value.Type == "string" {
+				commandName := value.Value.(string)
+				_, commandExists := val.Doc.Commands[commandName]
+
+				if !commandExists {
+					val.addDiagnostic(
+						utils.CreateErrorDiagnosticFromRange(
+							value.Range,
+							fmt.Sprintf("Cannot find a definition for command named %s", commandName),
+						),
+					)
+				}
+			} else if value.Type != "steps" {
 				val.createParameterError(value, stepName, definedParam.GetType())
 			}
 		}
