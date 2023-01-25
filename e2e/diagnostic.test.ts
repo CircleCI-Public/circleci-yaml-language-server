@@ -23,7 +23,14 @@ describe('Diagnostic testing files', () => {
   });
 
   it('Matrix alias', async () => {
-    const testingFile = 'config4.yml';
+    const testingFile = 'matrix-alias.yml';
+    const diagnostics = await commands.didOpen(testingFile);
+
+    expect(diagnostics).toMatchSnapshot();
+  });
+
+  it('Inline parameter', async () => {
+    const testingFile = 'parameter-inline.yml';
     const diagnostics = await commands.didOpen(testingFile);
 
     expect(diagnostics).toMatchSnapshot();

@@ -10,26 +10,20 @@ jobs:
         default: "prod"
     steps:
       - run: echo "building for << parameters.build-mode >>"
-
+      - test: { foo: "bar" }
 
   test:
     docker:
       - image: cimg/node:latest
+    parameters:
+      foo:
+        type: string
     steps:
       - run: echo testing
 
 workflows:
   build-wf:
     jobs:
-      - build:
-          matrix:
-            alias: matrix-building
-            parameters:
-              build-mode: ["prod", "staging", "dev"]
-
-      - test:
-          requires:
-            - matrix-building
-
+      - build: { build-mode: "prod" }
 
 # VS Code Extension Version: 1.5.1
