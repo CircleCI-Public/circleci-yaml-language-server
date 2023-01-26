@@ -219,8 +219,8 @@ func (doc *YamlDocument) IsBuiltIn(commandName string) bool {
 	return utils.FindInArray(builtInCommands, commandName) != -1
 }
 
-func (doc *YamlDocument) IsOrbReference(commandName string) bool {
-	splittedCommand := strings.Split(commandName, "/")
+func (doc *YamlDocument) IsOrbReference(orbReference string) bool {
+	splittedCommand := strings.Split(orbReference, "/")
 
 	if len(splittedCommand) != 2 {
 		return false

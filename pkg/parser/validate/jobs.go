@@ -37,44 +37,30 @@ func (val Validate) validateSingleJob(job ast.Job) {
 			_, paramName := utils.ExtractParameterName(job.Executor)
 			param := job.Parameters[paramName]
 
+			checkParam := func(executorDefault string, rng protocol.Range) {
+				isOrbExecutor, err := val.doesOrbExecutorExist(executorDefault, rng)
+				if val.Context.Api.UseDefaultInstance() && !val.Doc.DoesExecutorExist(executorDefault) &&
+					(!isOrbExecutor && err == nil) {
+					// Error on the default value
+					val.addDiagnostic(
+						protocol.Diagnostic{
+							Range: rng,
+							Message: fmt.Sprintf(
+								"Parameter is used as executor but executor `%s` does not exist.",
+								executorDefault,
+							),
+							Severity: protocol.DiagnosticSeverityError,
+						},
+					)
+				}
+			}
+
 			if param != nil {
 				switch param := param.(type) {
 				case ast.StringParameter:
-
-					isOrbExecutor, err := val.doesOrbExecutorExist(param.Default, param.DefaultRange)
-					if param.IsOptional() &&
-						!val.Doc.DoesExecutorExist(param.Default) &&
-						(!isOrbExecutor && err == nil) {
-						// Error on the default value
-						val.addDiagnostic(
-							protocol.Diagnostic{
-								Range: param.DefaultRange,
-								Message: fmt.Sprintf(
-									"Parameter is used as executor but executor `%s` does not exist.",
-									param.Default,
-								),
-								Severity: protocol.DiagnosticSeverityError,
-							},
-						)
-					}
+					checkParam(param.Default, param.DefaultRange)
 				case ast.ExecutorParameter:
-					isOrbExecutor, err := val.doesOrbExecutorExist(param.Default, param.DefaultRange)
-
-					if param.IsOptional() && !val.Doc.DoesExecutorExist(param.Default) &&
-						!val.Doc.DoesExecutorExist(param.Default) &&
-						(!isOrbExecutor && err == nil) {
-						// Error on the default value
-						val.addDiagnostic(
-							protocol.Diagnostic{
-								Range: param.DefaultRange,
-								Message: fmt.Sprintf(
-									"Parameter is used as executor but executor `%s` does not exist.",
-									param.Default,
-								),
-								Severity: protocol.DiagnosticSeverityError,
-							},
-						)
-					}
+					checkParam(param.Default, param.DefaultRange)
 				}
 
 			}
