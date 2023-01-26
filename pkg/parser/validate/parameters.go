@@ -54,6 +54,7 @@ func (val Validate) checkParamSimpleType(param ast.ParameterValue, stepName stri
 	case "enum":
 		if param.Type != "string" {
 			val.createParameterError(param, stepName, "string")
+			return
 		}
 
 		value := param.Value.(string)
@@ -71,6 +72,7 @@ func (val Validate) checkParamSimpleType(param ast.ParameterValue, stepName stri
 		values, ok := param.Value.([]ast.ParameterValue)
 		if !ok {
 			val.createParameterError(param, stepName, definedParam.GetType())
+			return
 		}
 		for _, value := range values {
 			if value.Type == "string" {
@@ -93,6 +95,7 @@ func (val Validate) checkParamSimpleType(param ast.ParameterValue, stepName stri
 	case "env_variable":
 		if param.Type != "string" && param.Type != "integer" {
 			val.createParameterError(param, stepName, definedParam.GetType())
+			return
 		}
 		// TODO: check if POSIX_REGEX is valid
 	}
@@ -186,14 +189,14 @@ func (val Validate) CheckIfParamsExist() {
 	parser.ExecQuery(val.Doc.RootNode, "(block_scalar) @string", checkOnNode)
 }
 
-func (val Validate) validateParametersValue(paramsValue map[string]ast.ParameterValue, calledEntity string, entityRange protocol.Range, definedParams map[string]ast.Parameter, usableParams map[string]ast.Parameter) {
-	for _, definedParam := range definedParams {
+func (val Validate) validateParametersValue(paramsValue map[string]ast.ParameterValue, calledEntity string, entityRange protocol.Range, calledEntityDefinedParams map[string]ast.Parameter, usableParams map[string]ast.Parameter) {
+	for _, calledEntityDefinedParam := range calledEntityDefinedParams {
 		// TODO: find a better place to do this
-		if definedParam.GetType() == "enum" {
-			val.checkEnumTypeDefinition(definedParam.(ast.EnumParameter))
+		if calledEntityDefinedParam.GetType() == "enum" {
+			val.checkEnumTypeDefinition(calledEntityDefinedParam.(ast.EnumParameter))
 		}
 
-		assigned := val.checkIfParamAssigned(paramsValue, definedParam, calledEntity, entityRange)
+		assigned := val.checkIfParamAssigned(paramsValue, calledEntityDefinedParam, calledEntity, entityRange)
 
 		// If the parameter is not assigned but is optional,
 		// we don't need to check the parameter
@@ -201,16 +204,16 @@ func (val Validate) validateParametersValue(paramsValue map[string]ast.Parameter
 			continue
 		}
 
-		param := paramsValue[definedParam.GetName()]
+		param := paramsValue[calledEntityDefinedParam.GetName()]
 		if param.Type == "string" && utils.CheckIfOnlyParamUsed(param.Value.(string)) {
-			val.checkParamUsedWithParam(param, calledEntity, definedParam, usableParams)
+			val.checkParamUsedWithParam(param, calledEntity, calledEntityDefinedParam, usableParams)
 		} else {
-			val.checkParamSimpleType(param, calledEntity, definedParam)
+			val.checkParamSimpleType(param, calledEntity, calledEntityDefinedParam)
 		}
 	}
 
 	for _, param := range paramsValue {
-		if _, ok := definedParams[param.Name]; !ok {
+		if _, ok := calledEntityDefinedParams[param.Name]; !ok {
 			val.addDiagnostic(
 				utils.CreateErrorDiagnosticFromRange(
 					param.Range,

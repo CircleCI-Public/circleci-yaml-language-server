@@ -178,6 +178,11 @@ func (val Validate) validateOrbExecutor(executorName string, executorRange proto
 func (val Validate) doesOrbExecutorExist(executorName string, executorRange protocol.Range) (bool, error) {
 	splittedName := strings.Split(executorName, "/")
 
+	if len(splittedName) != 2 {
+		// Not an orb
+		return false, nil
+	}
+
 	orb, ok := val.Doc.Orbs[splittedName[0]]
 	if !ok {
 		err := fmt.Errorf("unknown orb referenced: %s", splittedName[0])

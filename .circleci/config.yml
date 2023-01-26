@@ -358,22 +358,13 @@ workflows:
             #     requires:
             #         - extract-licenses
             - build-linux
-            - build-macos:
-                filters:
-                    branches:
-                        only: main
-            - build-windows:
-                filters:
-                    branches:
-                        only: main
+            - build-macos
+            - build-windows
             - build-vsix:
                 requires:
                     - build-linux
                     - build-macos
                     - build-windows
-                filters:
-                    branches:
-                        only: main
 
             - test-e2e:
                 requires:
@@ -421,4 +412,4 @@ workflows:
                     branches:
                         ignore: /.*/
 
-# VS Code Extension Version: 1.4.0
+# VS Code Extension Version: 1.5.1

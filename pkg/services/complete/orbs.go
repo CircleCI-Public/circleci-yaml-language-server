@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	sitter "github.com/smacker/go-tree-sitter"
 )
@@ -25,14 +26,10 @@ func (ch *CompletionHandler) completeOrbs() {
 			continue
 		}
 
-		child := orb.ValueNode.Child(0)
+		child := parser.GetFirstChild(orb.ValueNode)
 
 		if child == nil {
 			continue
-		}
-
-		if child.Type() == "anchor" {
-			child = child.NextSibling()
 		}
 
 		ch.completeOrbName(child)

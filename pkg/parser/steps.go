@@ -54,7 +54,7 @@ func (doc *YamlDocument) parseSingleStep(stepNode *sitter.Node) []ast.Step {
 
 	switch child.Type() {
 	case "flow_node":
-		if child.Child(0).Type() != "alias" {
+		if GetFirstChild(child).Type() != "alias" {
 			return []ast.Step{ast.NamedStep{Name: doc.GetNodeText(child), Range: NodeToRange(child)}}
 		}
 		step := doc.YamlAnchors[doc.GetNodeText(child)[1:]].ValueNode
