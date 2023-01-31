@@ -16,6 +16,7 @@ orbs:
     go: circleci/go@1.7.1
     node: circleci/node@5.0.2
     snyk: snyk/snyk@1.4.0
+    slack: circleci/slack@4.12.1
 
 commands:
     install-zig:
@@ -240,6 +241,24 @@ jobs:
                         # This is a standard release
                         ghr -name $TAG -delete -replace -c `git rev-parse HEAD` $TAG ~/project/bin/
                     fi
+            - when:
+                condition:
+                    equal: ['false', << parameters.is_prerelease >>]
+                steps:
+                    - slack/notify:
+                        channel: fr_push-to-prod
+                        custom: |
+                            {
+                                "blocks": [
+                                    {
+                                        "type": "section",
+                                        "text": {
+                                            "type": "mrkdwn",
+                                            "text": "CircleCI LS version $CIRCLE_TAG has successfully been released! :luffy:"
+                                        }
+                                    }
+                                ]
+                            }
 
     extract-licenses:
         docker:
@@ -411,6 +430,7 @@ workflows:
                         ignore: /.*/
             - release:
                 is_prerelease: 'false'
+                context: cpe-slack
                 requires:
                     - build-linux
                     - build-macos
