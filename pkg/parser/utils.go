@@ -55,6 +55,16 @@ func GetChildMapping(node *sitter.Node) *sitter.Node {
 	return GetChildOfType(node, "flow_mapping")
 }
 
+func GetChildSequence(node *sitter.Node) *sitter.Node {
+	blockMappingNode := GetChildOfType(node, "block_sequence")
+
+	if blockMappingNode != nil {
+		return blockMappingNode
+	}
+
+	return GetChildOfType(node, "flow_sequence")
+}
+
 func GetBlockMappingNode(streamNode *sitter.Node) *sitter.Node {
 	documentNode := GetChildOfType(streamNode, "document")
 	if documentNode.Type() != "document" {
@@ -113,7 +123,7 @@ func (doc *YamlDocument) getNodeTextArrayWithRange(valueNode *sitter.Node) []Tex
 	texts := make([]TextAndRange, 0)
 
 	if blockSequenceNode == nil {
-		blockSequenceNode = GetChildOfType(valueNode, "flow_sequence")
+		blockSequenceNode = GetChildSequence(valueNode)
 		if blockSequenceNode == nil {
 			return texts
 		}
