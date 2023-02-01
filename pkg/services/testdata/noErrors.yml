@@ -40,6 +40,16 @@ jobs:
     steps:
       - checkout
 
+  dummyJobWithStepParam:
+    executor:
+      name: &execRefBis go
+    parameters:
+      stepParam:
+        type: steps
+        default: []
+    steps:
+      - steps: << parameters.stepParam >>
+
 workflows:
   test-build:
     jobs:
@@ -61,6 +71,8 @@ workflows:
                 token_name: atoken
                 environment_type: something
                 environment: another thing
+      
+      - dummyJobWithStepParam
       
       - somejob:
           myparam: some-value

@@ -101,7 +101,7 @@ func (doc *YamlDocument) buildJobsDAG(jobRefs []ast.JobRef) map[string][]string 
 
 func (doc *YamlDocument) parseJobReferences(jobsRefsNode *sitter.Node) []ast.JobRef {
 	// jobsRefsNode is block_node
-	blockSequenceNode := GetChildOfType(jobsRefsNode, "block_sequence")
+	blockSequenceNode := GetChildSequence(jobsRefsNode)
 	jobReferences := []ast.JobRef{}
 	if blockSequenceNode == nil {
 		return jobReferences

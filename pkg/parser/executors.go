@@ -217,7 +217,7 @@ func (doc *YamlDocument) parseSingleExecutorDocker(nameNode *sitter.Node, valueN
 
 	parseDocker := func(blockNode *sitter.Node) {
 		// blockNode is a block_node
-		blockSequence := GetChildOfType(blockNode, "block_sequence")
+		blockSequence := GetChildSequence(blockNode)
 
 		if blockSequence == nil { //TODO: deal with errors
 			return
