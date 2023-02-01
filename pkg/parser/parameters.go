@@ -246,12 +246,12 @@ func (doc *YamlDocument) parseStepsParameter(paramName string, paramNode *sitter
 		keyName := doc.GetNodeText(keyNode)
 		switch keyName {
 		case "default":
-			stepsNode := GetChildOfType(valueNode, "block_sequence")
+			stepsNode := GetChildSequence(valueNode)
 			if stepsNode == nil {
 				return
 			}
 			rng := NodeToRange(child)
-			astDefault, _ := doc.parseArrayParameterValue(paramName, stepsNode, rng)
+			astDefault, _ := doc.parseArrayParameterValue(paramName, stepsNode, rng, true)
 			stepsParam.Default = astDefault
 			stepsParam.DefaultRange = doc.getDefaultParameterRange(child)
 			stepsParam.HasDefault = true
@@ -327,9 +327,9 @@ func (doc *YamlDocument) parseParameterValue(child *sitter.Node) (ast.ParameterV
 		return doc.parseSimpleParameterValue(paramName, flowNodeChild, rng)
 
 	case "block_sequence":
-		return doc.parseArrayParameterValue(paramName, flowNodeChild, rng)
+		return doc.parseArrayParameterValue(paramName, flowNodeChild, rng, false)
 	case "flow_sequence":
-		return doc.parseArrayParameterValue(paramName, flowNodeChild, rng)
+		return doc.parseArrayParameterValue(paramName, flowNodeChild, rng, false)
 
 	case "double_quote_scalar":
 		return ast.ParameterValue{
@@ -390,12 +390,12 @@ func (doc *YamlDocument) parseParameterValue(child *sitter.Node) (ast.ParameterV
 	return ast.ParameterValue{Name: paramName}, nil // not supported atm by the parser
 }
 
-func (doc *YamlDocument) parseArrayParameterValue(paramName string, arrayParamNode *sitter.Node, rng protocol.Range) (ast.ParameterValue, error) {
+func (doc *YamlDocument) parseArrayParameterValue(paramName string, arrayParamNode *sitter.Node, rng protocol.Range, forceSteps bool) (ast.ParameterValue, error) {
 	// arrayParamNode is a flow_sequence or a block sequence
 	values := make([]ast.ParameterValue, 0)
 	iterateOnBlockSequence(arrayParamNode, func(child *sitter.Node) {
 		if child.Type() == "block_sequence_item" || child.Type() == "flow_node" {
-			if isStep(doc, child) {
+			if isStep(doc, child) || forceSteps {
 				steps := doc.parseSingleStep(child)
 				values = append(values, ast.ParameterValue{
 					Value:      steps,

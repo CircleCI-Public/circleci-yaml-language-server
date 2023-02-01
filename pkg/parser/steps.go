@@ -12,7 +12,7 @@ func (doc *YamlDocument) parseSteps(stepsNode *sitter.Node) []ast.Step {
 	// stepsNode is a block_node
 	steps := make([]ast.Step, 0)
 
-	blockSequenceNode := GetChildOfType(stepsNode, "block_sequence")
+	blockSequenceNode := GetChildSequence(stepsNode)
 	iterateOnBlockSequence(blockSequenceNode, func(child *sitter.Node) {
 		if child.Type() == "block_sequence_item" {
 			steps = append(steps, doc.parseSingleStep(child)...)
@@ -126,7 +126,7 @@ func (doc *YamlDocument) parseStep(blockMapping *sitter.Node) []ast.Step {
 
 func (doc *YamlDocument) parseAnchorStep(blockNode *sitter.Node) []ast.Step {
 	blockMapping := GetChildOfType(blockNode, "block_mapping")
-	blockSequence := GetChildOfType(blockNode, "block_sequence")
+	blockSequence := GetChildSequence(blockNode)
 
 	if blockSequence != nil {
 		blockSequenceItem := GetChildOfType(blockSequence, "block_sequence_item")
