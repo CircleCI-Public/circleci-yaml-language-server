@@ -247,6 +247,7 @@ jobs:
                 steps:
                     - slack/notify:
                         channel: fr_push-to-prod
+                        event: pass
                         custom: |
                             {
                                 "blocks": [
@@ -255,6 +256,22 @@ jobs:
                                         "text": {
                                             "type": "mrkdwn",
                                             "text": "CircleCI LS version $CIRCLE_TAG has successfully been released! :luffy:"
+                                        }
+                                    }
+                                ]
+                            }
+                    
+                    - slack/notify:
+                        channel: fr_push-to-prod
+                        event: fail
+                        custom: |
+                            {
+                                "blocks": [
+                                    {
+                                        "type": "section",
+                                        "text": {
+                                            "type": "mrkdwn",
+                                            "text": "There were an error while trying to release the CircleCI LS version $CIRCLE_TAG :sadblob: [Click here to see]($CIRCLE_BUILD_URL)"
                                         }
                                     }
                                 ]
