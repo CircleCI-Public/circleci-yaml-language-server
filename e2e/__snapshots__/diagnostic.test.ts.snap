@@ -42,6 +42,121 @@ DiagnosticList {
 }
 `;
 
+exports[`Diagnostic testing files Shellcheck 1`] = `
+DiagnosticList {
+  "list": [
+    {
+      "code": "SC2086",
+      "codeDescription": {
+        "href": "https://www.shellcheck.net/wiki/SC2086",
+      },
+      "message": "Double quote to prevent globbing and word splitting.",
+      "range": {
+        "end": {
+          "character": 59,
+          "line": 19,
+        },
+        "start": {
+          "character": 42,
+          "line": 19,
+        },
+      },
+      "severity": 3,
+    },
+    {
+      "code": "SC2086",
+      "codeDescription": {
+        "href": "https://www.shellcheck.net/wiki/SC2086",
+      },
+      "message": "Double quote to prevent globbing and word splitting.",
+      "range": {
+        "end": {
+          "character": 59,
+          "line": 18,
+        },
+        "start": {
+          "character": 42,
+          "line": 18,
+        },
+      },
+      "severity": 3,
+    },
+    {
+      "code": "SC2086",
+      "codeDescription": {
+        "href": "https://www.shellcheck.net/wiki/SC2086",
+      },
+      "message": "Double quote to prevent globbing and word splitting.",
+      "range": {
+        "end": {
+          "character": 56,
+          "line": 14,
+        },
+        "start": {
+          "character": 39,
+          "line": 14,
+        },
+      },
+      "severity": 3,
+    },
+    {
+      "code": "SC2086",
+      "codeDescription": {
+        "href": "https://www.shellcheck.net/wiki/SC2086",
+      },
+      "message": "Double quote to prevent globbing and word splitting.",
+      "range": {
+        "end": {
+          "character": 57,
+          "line": 13,
+        },
+        "start": {
+          "character": 40,
+          "line": 13,
+        },
+      },
+      "severity": 3,
+    },
+    {
+      "code": "SC2086",
+      "codeDescription": {
+        "href": "https://www.shellcheck.net/wiki/SC2086",
+      },
+      "message": "Double quote to prevent globbing and word splitting.",
+      "range": {
+        "end": {
+          "character": 63,
+          "line": 12,
+        },
+        "start": {
+          "character": 46,
+          "line": 12,
+        },
+      },
+      "severity": 3,
+    },
+    {
+      "code": "SC2086",
+      "codeDescription": {
+        "href": "https://www.shellcheck.net/wiki/SC2086",
+      },
+      "message": "Double quote to prevent globbing and word splitting.",
+      "range": {
+        "end": {
+          "character": 62,
+          "line": 9,
+        },
+        "start": {
+          "character": 45,
+          "line": 9,
+        },
+      },
+      "severity": 3,
+    },
+  ],
+}
+`;
+
 exports[`Diagnostic testing files Undefined parameter 1`] = `
 DiagnosticList {
   "list": [

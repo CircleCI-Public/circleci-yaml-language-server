@@ -1,0 +1,27 @@
+version: 2.1
+
+jobs:
+  dummyJob:
+    docker:
+      - image: cimg/node@latest
+    steps:
+      - run:
+          name: Docker Login
+          command: docker push super-project.$CIRCLE_BUILD_NUM-alpine
+      - run:
+          name: Docker Login
+          command: "docker push super-project.$CIRCLE_BUILD_NUM-alpine && echo \"Hello world\""
+      - run: "docker push super-project.$CIRCLE_BUILD_NUM-alpine && echo \"Hello world\""
+      - run: docker push super-project.$CIRCLE_BUILD_NUM-alpine && echo \"Hello world\"
+      - run:
+          name: Deploy Alpine Docker Image
+          command: |
+            docker push     super-project.$CIRCLE_BUILD_NUM-alpine
+            docker tag      super-project.$CIRCLE_BUILD_NUM-alpine super-project:alpine
+            docker push     super-project:alpine
+
+
+workflows:
+  dummyWf:
+    jobs:
+      - dummyJob

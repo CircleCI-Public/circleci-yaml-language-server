@@ -70,6 +70,7 @@ func GetBlockMappingNode(streamNode *sitter.Node) *sitter.Node {
 
 func (doc *YamlDocument) GetNodeText(node *sitter.Node) string {
 	res := doc.GetRawNodeText(node)
+	res = strings.ReplaceAll(res, "\r\n", "\n")
 
 	if strings.HasPrefix(res, "\"") && strings.HasSuffix(res, "\"") {
 		res = strings.Trim(res, "\"")
@@ -92,6 +93,7 @@ func (doc *YamlDocument) GetCommandTextForShellCheck(cmd string) (res string, li
 	lineRemoved = 0
 	characterRemoved = 0
 	res = cmd
+	res = strings.ReplaceAll(res, "\r\n", "\n")
 
 	if strings.HasPrefix(res, "\"") && strings.HasSuffix(res, "\"") {
 		res = strings.Trim(res, "\"")

@@ -372,6 +372,7 @@ jobs:
       environment:
         RPC_SERVER_BIN: ~/project/bin/linux-amd64-lsp
         PORT: 10001
+        CCI_DEV: true
       steps:
         - checkout
         - attach_workspace:
@@ -396,22 +397,22 @@ workflows:
             #     requires:
             #         - extract-licenses
             - build-linux
-            - build-macos:
-                filters:
-                    branches:
-                        only: main
-            - build-windows:
-                filters:
-                    branches:
-                        only: main
+            - build-macos
+                # filters:
+                #     branches:
+                #         only: main
+            - build-windows
+                # filters:
+                #     branches:
+                #         only: main
             - build-vsix:
                 requires:
                     - build-linux
                     - build-macos
                     - build-windows
-                filters:
-                    branches:
-                        only: main
+                # filters:
+                #     branches:
+                #         only: main
 
             - test-e2e:
                 requires:

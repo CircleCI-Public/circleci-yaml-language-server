@@ -36,6 +36,13 @@ describe('Diagnostic testing files', () => {
     expect(diagnostics).toMatchSnapshot();
   });
 
+  it('Shellcheck', async () => {
+    const testingFile = 'shellcheck.yml';
+    const diagnostics = await commands.didOpen(testingFile);
+
+    expect(diagnostics).toMatchSnapshot();
+  });
+
   it('Undefined parameter', async () => {
     const testingFile = 'invalid-files/not-defined-param.yml';
     const diagnostics = await commands.didOpen(testingFile);

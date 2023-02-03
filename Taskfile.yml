@@ -98,6 +98,7 @@ tasks:
     env:
       SPAWN_LSP_SERVER: '{{.SPAWN_LSP_SERVER | default true}}'
       PORT: 10001
+      CCI_DEV: true
     cmds:
       - task: build
       - yarn test:e2e {{.JEST_ARGS}}
