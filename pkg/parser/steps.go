@@ -209,7 +209,8 @@ func (doc *YamlDocument) parseRunStep(runNode *sitter.Node) ast.Run {
 	// runNode is either flow_node or block_node
 	if runNode.Type() == "flow_node" {
 		commandString := doc.GetNodeText(runNode)
-		return ast.Run{Command: commandString, Range: NodeToRange(runNode.Parent().ChildByFieldName("key"))}
+		rawCommand := doc.GetRawNodeText(runNode)
+		return ast.Run{Command: commandString, RawCommand: rawCommand, CommandRange: NodeToRange(runNode), Range: NodeToRange(runNode.Parent().ChildByFieldName("key"))}
 	} else { // block_node
 		blockScalarNode := GetChildOfType(runNode, "block_scalar")
 		if blockScalarNode != nil {

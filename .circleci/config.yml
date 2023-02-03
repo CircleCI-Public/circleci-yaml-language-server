@@ -163,6 +163,7 @@ jobs:
             - run: cp publicschema.json editors/vscode
 
             - run: cp -R bin editors/vscode/bin
+            - run: cp -R shellcheck editors/vscode/bin
             - run:
                   name: Build VSIX
                   command: |
@@ -232,6 +233,7 @@ jobs:
                     set -ex
                     cd /tmp/to-deploy
                     cp ~/project/schema.json ~/project/bin
+                    cp -R ~/project/shellcheck ~/project/bin
                     export TAG=$(cd ~/project && go run ~/project/scripts/get_next_release.go)
                     if [[ << parameters.is_prerelease >> == "true" ]];
                     then

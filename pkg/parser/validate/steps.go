@@ -30,13 +30,18 @@ func (val Validate) validateSteps(steps []ast.Step, name string, jobOrCommandPar
 }
 
 func (val Validate) validateRunCommand(step ast.Run, jobOrCommandParameters map[string]ast.Parameter) {
+	val.shellCheck(step)
+	val.validateRunCommandWhenField(step, jobOrCommandParameters)
+}
+
+func (val Validate) validateRunCommandWhenField(step ast.Run, jobOrCommandParameters map[string]ast.Parameter) {
 	var value string
-	// If the when field is a parameter, such as:
-	// when: << parameters.my_param >>
 	if step.When == "" && step.WhenRange.Start.Line == 0 {
 		return
 	}
 
+	// If the when field is a parameter, such as:
+	// when: << parameters.my_param >>
 	if utils.CheckIfOnlyParamUsed(step.When) {
 		paramName, isPipelineParam := utils.GetParamNameUsedAtPos(val.Doc.Content, step.WhenRange.End)
 		var param ast.Parameter

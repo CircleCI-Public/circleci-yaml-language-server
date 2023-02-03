@@ -100,6 +100,7 @@ export class LSP {
                 SCHEMA_LOCATION: schemaLocation,
                 HOME: os.homedir(),
                 PORT: port.toString(),
+                CCI_DEV: inDevMode ? 'true' : 'false',
             },
         });
         const promise = createDeferredPromise<cp.ChildProcess>();

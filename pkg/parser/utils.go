@@ -85,6 +85,39 @@ func (doc *YamlDocument) GetNodeText(node *sitter.Node) string {
 	return res
 }
 
+// Only use to remove '|' from the beginning of a string
+// and inform the caller that we've done so
+// Note: only used for ShellCheck
+func (doc *YamlDocument) GetCommandTextForShellCheck(cmd string) (res string, lineRemoved, characterRemoved int) {
+	lineRemoved = 0
+	characterRemoved = 0
+	res = cmd
+
+	if strings.HasPrefix(res, "\"") && strings.HasSuffix(res, "\"") {
+		res = strings.Trim(res, "\"")
+		characterRemoved += 1
+	} else if strings.HasPrefix(res, "'") && strings.HasSuffix(res, "'") {
+		res = strings.Trim(res, "'")
+		characterRemoved += 1
+	}
+
+	if strings.HasPrefix(res, "|\n") {
+		res = strings.TrimPrefix(res, "|\n")
+		lineRemoved += 1
+		characterRemoved = 0
+	} else if strings.HasPrefix(res, ">-\n") {
+		res = strings.TrimPrefix(res, ">-\n")
+		lineRemoved += 1
+		characterRemoved = 0
+	} else if strings.HasPrefix(res, ">\n") {
+		res = strings.TrimPrefix(res, ">\n")
+		lineRemoved += 1
+		characterRemoved = 0
+	}
+
+	return res, lineRemoved, characterRemoved
+}
+
 func (doc *YamlDocument) GetRawNodeText(node *sitter.Node) string {
 	if node == nil {
 		return ""
