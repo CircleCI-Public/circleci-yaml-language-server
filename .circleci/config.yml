@@ -66,8 +66,9 @@ jobs:
 
             - when:
                 condition:
-                    and:
+                    or:
                         - equal: [ main, << pipeline.git.branch >> ]
+                        - equal: [ develop, << pipeline.git.branch >> ]
                 steps:
                     - run:
                         name: Build for Linux Arm 64
@@ -260,7 +261,7 @@ jobs:
                                     }
                                 ]
                             }
-                    
+
                     - slack/notify:
                         channel: fr_push-to-prod
                         event: fail
@@ -341,11 +342,13 @@ jobs:
                     git config --global url."https://$GITHUB_USER:$GITHUB_TOKEN@github.com/circleci/".insteadOf "https://github.com/circleci/"
             - when:
                 condition:
-                    equal: [ main, << pipeline.git.branch >> ]
+                  or:
+                    - equal: [ main, << pipeline.git.branch >> ]
+                    - equal: [ develop, << pipeline.git.branch >> ]
                 steps:
                     - run:
                         name: Launching Snyk Orb Scanning
-                        command: echo "Running snyk/scan on main; uploading the results"
+                        command: echo "Running snyk/scan on main and develop; uploading the results"
                     - snyk/scan:
                         fail-on-issues: false
                         severity-threshold: high
@@ -353,7 +356,9 @@ jobs:
                         project: '${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}'
             - unless:
                 condition:
-                    equal: [ main, << pipeline.git.branch >> ]
+                    or:
+                      - equal: [ main, << pipeline.git.branch >> ]
+                      - equal: [ develop, << pipeline.git.branch >> ]
                 steps:
                     - run:
                         name: Launching Snyk Orb Scanning
@@ -397,11 +402,15 @@ workflows:
             - build-macos:
                 filters:
                     branches:
-                        only: main
+                        only:
+                          - main
+                          - develop
             - build-windows:
                 filters:
                     branches:
-                        only: main
+                        only:
+                          - main
+                          - develop
             - build-vsix:
                 requires:
                     - build-linux
@@ -409,7 +418,9 @@ workflows:
                     - build-windows
                 filters:
                     branches:
-                        only: main
+                        only:
+                          - main
+                          - develop
 
             - test-e2e:
                 requires:
@@ -424,7 +435,9 @@ workflows:
                     - build-windows
                 filters:
                     branches:
-                        only: main
+                        only:
+                          - main
+                          - develop
     deploy:
         jobs:
             - build-linux:
