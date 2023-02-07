@@ -97,6 +97,7 @@ func (doc *YamlDocument) parseBaseExecutor(base *ast.BaseExecutor, nameNode *sit
 			base.BuiltInParameters.WorkingDirectory = doc.GetNodeText(valueNode)
 		case "environment":
 			base.BuiltInParameters.Environment = doc.parseDictionary(GetChildOfType(valueNode, "block_mapping"))
+			base.Environment = doc.parseEnvs(valueNode)
 		case "parameters":
 			base.UserParametersRange = NodeToRange(child)
 			base.UserParameters = doc.parseParameters(valueNode)

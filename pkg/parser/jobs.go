@@ -106,6 +106,14 @@ func (doc *YamlDocument) parseSingleJob(jobNode *sitter.Node) ast.Job {
 				machineNode = child
 				machineNodeFound = true
 
+				// TODO: Check this ish better. (will have to rework parseSingleExecMachine ...)
+				res.Machine = doc.parseSingleExecutorMachine(keyNode, valueNode)
+				res.MachineRange = NodeToRange(child)
+
+			case "macos":
+				res.MacOS = doc.parseSingleExecutorMacOS(keyNode, valueNode)
+				res.MacOSRange = NodeToRange(child)
+
 			case "environment":
 				blockMapping := GetChildMapping(valueNode)
 				res.Environment = doc.parseDictionary(blockMapping)
