@@ -70,10 +70,10 @@ func (methods *Methods) DidClose(reply jsonrpc2.Replier, req jsonrpc2.Request) e
 	}
 
 	// removed due to a bug in remote orbs
-	// methods.Cache.FileCache.RemoveFile(params.TextDocument.URI)
 	isOrb, _ := methods.isOrb(params.TextDocument.URI)
 	if isOrb {
-		methods.Conn.Notify(
+		methods.Cache.FileCache.RemoveFile(params.TextDocument.URI)
+		defer methods.Conn.Notify(
 			methods.Ctx,
 			protocol.MethodTextDocumentPublishDiagnostics,
 			protocol.PublishDiagnosticsParams{
@@ -105,7 +105,7 @@ func (methods *Methods) notificationMethods(cache utils.FileCache, textDocument 
 
 	// Compare the version
 	// To avoid notifying based on an older version document
-	if original.Version == textDocument.Version {
+	if original != nil && original.Version == textDocument.Version {
 		err := methods.Conn.Notify(
 			methods.Ctx,
 			protocol.MethodTextDocumentPublishDiagnostics,
