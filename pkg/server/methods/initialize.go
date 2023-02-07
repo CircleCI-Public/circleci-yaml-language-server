@@ -75,6 +75,7 @@ func (methods *Methods) Initialize(reply jsonrpc2.Replier) error {
 					ResolveProvider: true,
 				},
 			},
+			DocumentSymbolProvider: true,
 		},
 		ServerInfo: &protocol.ServerInfo{
 			Name:    "circleci-language-server",

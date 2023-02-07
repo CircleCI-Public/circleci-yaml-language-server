@@ -38,7 +38,13 @@ type Job struct {
 	Environment      map[string]string
 	EnvironmentRange protocol.Range
 
-	Contexts       *[]string
+	Contexts     *[]string
+	Machine      MachineExecutor
+	MachineRange protocol.Range
+
+	MacOS      MacOSExecutor
+	MacOSRange protocol.Range
+
 	CompletionItem *[]protocol.CompletionItem
 }
 

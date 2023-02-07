@@ -6,10 +6,13 @@ type Workflow struct {
 	protocol.Range
 	Name      string
 	NameRange protocol.Range
+	JobsRange protocol.Range
 	JobRefs   []JobRef
 	JobsDAG   map[string][]string // maps each job ref to its requirements, should be a directed acyclic graph
 
-	HasTrigger bool
+	HasTrigger    bool
+	Triggers      []WorkflowTrigger
+	TriggersRange protocol.Range
 }
 
 type JobRef struct {
@@ -38,4 +41,35 @@ type JobRef struct {
 
 	HasMatrix    bool
 	MatrixParams map[string][]ParameterValue
+}
+
+type Require struct {
+	Name  string
+	Range protocol.Range
+}
+
+type WorkflowTrigger struct {
+	Schedule ScheduleTrigger
+	Range    protocol.Range
+}
+
+type ScheduleTrigger struct {
+	Cron    string
+	Filters WorkflowFilters
+	Range   protocol.Range
+}
+
+type WorkflowFilters struct {
+	Range    protocol.Range
+	Branches BranchesFilter
+}
+
+type BranchesFilter struct {
+	Range protocol.Range
+
+	Only      []string
+	OnlyRange protocol.Range
+
+	Ignore      []string
+	IgnoreRange protocol.Range
 }
