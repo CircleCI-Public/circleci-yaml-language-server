@@ -34,13 +34,24 @@ func (val Validate) validateSingleOrb(orb ast.Orb) {
 		return
 	}
 
+	if !orb.Url.IsLocal && !val.Doc.DoesOrbExist(orb, val.Cache) {
+		val.addDiagnostic(
+			utils.CreateErrorDiagnosticFromRange(
+				orb.Range,
+				fmt.Sprintf("Orb %s does not exist", orb.Url.Name),
+			),
+		)
+
+		return
+	}
+
 	orbVersion, err := val.Doc.GetOrFetchOrbInfo(orb, val.Cache)
 
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "could not find orb") {
 			val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
 				orb.Range,
-				fmt.Sprintf("Cannot find remote orb %s", orb.Url.GetOrbID()),
+				fmt.Sprintf("Unknown version %s for orb %s", orb.Url.Version, orb.Url.Name),
 			))
 		} else {
 			val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(

@@ -16,6 +16,15 @@ type OrbResponse struct {
 	OrbVersion OrbQuery
 }
 
+type OrbGQLData struct {
+	ID   string
+	Name string
+}
+
+type OrbByNameResponse struct {
+	Orb OrbGQLData
+}
+
 type OrbQuery struct {
 	Id      string
 	Version string
@@ -37,6 +46,50 @@ func GetOrbInfo(orbVersionCode string, cache *utils.Cache, context *utils.LsCont
 	}
 
 	return cache.OrbCache.GetOrb(orbVersionCode), nil
+}
+
+func GetOrbByName(orbName string, context *utils.LsContext) (OrbGQLData, error) {
+	httpClient := &http.Client{
+		Timeout: 30 * time.Second,
+		Transport: &http.Transport{
+			ExpectContinueTimeout: 1 * time.Second,
+			IdleConnTimeout:       90 * time.Second,
+			MaxIdleConns:          10,
+			TLSHandshakeTimeout:   10 * time.Second,
+		},
+	}
+
+	if context.Api.HostUrl == "" {
+		return OrbGQLData{}, errors.New("host URL not defined")
+	}
+
+	client := utils.NewClient(httpClient, context.Api.HostUrl, "graphql-unstable", context.Api.Token, false)
+	query := `
+		query($orbName: String!) {
+			orb(name: $orbName) {
+				id
+				name
+			}
+		}
+	`
+
+	request := utils.NewRequest(query)
+	request.SetToken(client.Token)
+	request.SetUserId(context.UserId)
+	request.Var("orbName", orbName)
+
+	var response OrbByNameResponse
+	err := client.Run(request, &response)
+
+	if err != nil {
+		return OrbGQLData{}, err
+	}
+
+	if response.Orb.Name == "" {
+		return OrbGQLData{}, fmt.Errorf("Orb does not exists")
+	}
+
+	return response.Orb, nil
 }
 
 func ParseRemoteOrbs(orbs map[string]ast.Orb, cache *utils.Cache, context *utils.LsContext) {

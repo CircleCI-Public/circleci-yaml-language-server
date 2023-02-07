@@ -115,7 +115,34 @@ jobs:
 					Start: protocol.Position{Line: 3, Character: 2},
 					End:   protocol.Position{Line: 3, Character: 28},
 				},
-					"Cannot find remote orb circleci/toto@1.0.0"),
+					"Orb circleci/toto does not exist"),
+				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+					Start: protocol.Position{Line: 7, Character: 4},
+					End:   protocol.Position{Line: 7, Character: 24},
+				},
+					"Cannot find executor exec in orb slack"),
+			},
+		},
+		{
+			Name:       "Invalid remote orb version",
+			OnlyErrors: true,
+			YamlContent: `version: 2.1
+
+orbs:
+  slack: circleci/slack@10000.0.0
+
+jobs:
+  localjob:
+    executor: slack/exec
+  steps:
+    - run: echo "Hello world"`,
+			// We want an error on the orb and a warning on the executor
+			Diagnostics: []protocol.Diagnostic{
+				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+					Start: protocol.Position{Line: 3, Character: 2},
+					End:   protocol.Position{Line: 3, Character: 33},
+				},
+					"Unknown version 10000.0.0 for orb circleci/slack"),
 				utils.CreateErrorDiagnosticFromRange(protocol.Range{
 					Start: protocol.Position{Line: 7, Character: 4},
 					End:   protocol.Position{Line: 7, Character: 24},
