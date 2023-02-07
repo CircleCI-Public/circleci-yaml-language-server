@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"net/http"
-	"time"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
@@ -11,16 +9,7 @@ import (
 func main() {
 	orbname := "circleci/go@1.7.1"
 
-	httpClient := &http.Client{
-		Timeout: 30 * time.Second,
-		Transport: &http.Transport{
-			ExpectContinueTimeout: 1 * time.Second,
-			IdleConnTimeout:       90 * time.Second,
-			MaxIdleConns:          10,
-			TLSHandshakeTimeout:   10 * time.Second,
-		},
-	}
-	cl := utils.NewClient(httpClient, "https://circleci.com", "graphql-unstable", "", false)
+	cl := utils.NewClient("https://circleci.com", "graphql-unstable", "", false)
 
 	query := `query($orbVersionRef: String!) {
 		orbVersion(orbVersionRef: $orbVersionRef) {

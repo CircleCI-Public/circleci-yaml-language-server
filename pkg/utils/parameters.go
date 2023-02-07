@@ -135,7 +135,7 @@ func GetParamsInString(content string) ([]struct {
 	}{}
 
 	for _, param := range params {
-		length := uint32(param[1] - param[0])
+		length := param[1] - param[0]
 
 		if length < 0 {
 			continue
@@ -146,7 +146,7 @@ func GetParamsInString(content string) ([]struct {
 		startPos := IndexToPos(param[0], byteContent)
 		endPos := protocol.Position{
 			Line:      startPos.Line,
-			Character: startPos.Character + length,
+			Character: startPos.Character + uint32(length),
 		}
 
 		totalRange := protocol.Range{
