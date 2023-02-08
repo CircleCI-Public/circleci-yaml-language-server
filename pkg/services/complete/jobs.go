@@ -28,7 +28,7 @@ func (ch *CompletionHandler) completeJobs() {
 			nodeToComplete = nodeToComplete.PrevSibling()
 		}
 
-		ch.completeSteps(true, nodeToComplete)
+		ch.completeSteps(job.Name, true, true, nodeToComplete)
 		return
 	case utils.PosInRange(job.DockerRange, ch.Params.Position):
 		ch.completeDockerExecutor(job.Docker)

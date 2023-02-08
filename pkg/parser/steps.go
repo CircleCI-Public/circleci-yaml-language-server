@@ -209,7 +209,13 @@ func (doc *YamlDocument) parseRunStep(runNode *sitter.Node) ast.Run {
 	// runNode is either flow_node or block_node
 	if runNode.Type() == "flow_node" {
 		commandString := doc.GetNodeText(runNode)
-		return ast.Run{Command: commandString, Range: NodeToRange(runNode.Parent().ChildByFieldName("key"))}
+		return ast.Run{
+			Name:         "run",
+			Command:      commandString,
+			CommandRange: NodeToRange(runNode),
+			Range:        NodeToRange(runNode.Parent().ChildByFieldName("key")),
+			RawCommand:   doc.GetRawNodeText(runNode),
+		}
 	} else { // block_node
 		blockScalarNode := GetChildOfType(runNode, "block_scalar")
 		if blockScalarNode != nil {
@@ -218,11 +224,17 @@ func (doc *YamlDocument) parseRunStep(runNode *sitter.Node) ast.Run {
 			//   	echo "Hello World"
 
 			commandString := doc.GetNodeText(blockScalarNode)
-			return ast.Run{Command: commandString}
+			return ast.Run{
+				Name:         "run",
+				Command:      commandString,
+				CommandRange: NodeToRange(blockScalarNode),
+				Range:        NodeToRange(runNode.Parent().ChildByFieldName("key")),
+				RawCommand:   doc.GetRawNodeText(blockScalarNode),
+			}
 		}
 
 		blockMappingNode := GetChildMapping(runNode)
-		res := ast.Run{Range: NodeToRange(runNode.Parent().ChildByFieldName("key"))}
+		res := ast.Run{Name: "run", Range: NodeToRange(runNode.Parent().ChildByFieldName("key"))}
 		doc.iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
 			keyNode, valueNode := doc.GetKeyValueNodes(child)
 			if keyNode == nil || valueNode == nil {

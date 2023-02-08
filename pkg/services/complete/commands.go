@@ -25,7 +25,7 @@ func (ch *CompletionHandler) completeCommands() {
 		if nodeToComplete.Type() == ":" {
 			nodeToComplete = nodeToComplete.PrevSibling()
 		}
-		ch.completeSteps(false, nodeToComplete)
+		ch.completeSteps(command.Name, false, true, nodeToComplete)
 		return
 	}
 

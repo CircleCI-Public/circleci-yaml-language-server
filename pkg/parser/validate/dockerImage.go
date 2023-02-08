@@ -34,7 +34,7 @@ func ValidateDockerImage(img *ast.DockerImage, cache *utils.DockerCache) (bool, 
 
 /*
 Not all Docker image syntaxes are supported
-Unsuported syntaxes:
+Unsupported syntaxes:
   - Direct URL, not on Docker HUB (Example: 183081753049.dkr.ecr.us-east-1.amazonaws.com/circleci/ecs-test-kms:0.1)
   - Using aliases (Example: image: *my_alias)
   - When authentication is required
