@@ -21,12 +21,12 @@ jobs:
 
     dummyJob:
         steps:
-            - echo Dummy job
+            - run: echo Dummy job
 
 commands:
     dummyCommand:
         steps:
-            - echo Hello world
+            - run: echo Hello world $
     super:        
         
 executors:
