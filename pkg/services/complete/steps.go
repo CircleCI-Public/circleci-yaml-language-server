@@ -61,13 +61,19 @@ func (ch *CompletionHandler) isWritingAnEnvVariableInRunStep(entityName string, 
 }
 
 func (ch *CompletionHandler) addCompleteEnvVariables(contexts []string) {
+	for _, project := range ch.Cache.ProjectCache.GetAllProjects() {
+		for _, env := range project.EnvVariables {
+			ch.addCompletionItemWithDetail(env, "From project "+project.Slug, "A")
+		}
+	}
+
 	contextEnvVariables := utils.GetAllContextEnvVariables(ch.Context.Api.Token, ch.Cache, contexts)
 	for _, env := range contextEnvVariables {
-		ch.addCompletionItem(env)
+		ch.addCompletionItemWithDetail(env.Name, "From context "+env.AssociatedContext, "A")
 	}
 
 	for _, env := range BUILT_IN_ENV {
-		ch.addCompletionItem(env)
+		ch.addCompletionItemWithDetail(env, "Built-in environment variable", "B")
 	}
 }
 
@@ -97,5 +103,4 @@ var BUILT_IN_ENV = []string{
 	"CIRCLE_WORKFLOW_JOB_ID",
 	"CIRCLE_WORKFLOW_WORKSPACE_ID",
 	"CIRCLE_WORKING_DIRECTORY",
-	"CIRCLE_INTERNAL_TASK_DATA",
 }

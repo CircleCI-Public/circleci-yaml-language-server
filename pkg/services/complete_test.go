@@ -37,7 +37,9 @@ func TestComplete(t *testing.T) {
 	builtInEnvsComplete := []protocol.CompletionItem{}
 	for _, env := range complete.BUILT_IN_ENV {
 		builtInEnvsComplete = append(builtInEnvsComplete, protocol.CompletionItem{
-			Label: env,
+			Label:    env,
+			Detail:   "Built-in environment variable",
+			SortText: "B",
 		})
 	}
 

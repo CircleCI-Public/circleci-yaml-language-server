@@ -15,6 +15,7 @@ type Cache struct {
 	OrbCache     OrbCache
 	DockerCache  DockerCache
 	ContextCache ContextCache
+	ProjectCache ProjectCache
 }
 
 type DockerCache struct {
@@ -42,6 +43,11 @@ type ContextCache struct {
 	contextCache map[string]*Context
 }
 
+type ProjectCache struct {
+	cacheMutex   *sync.Mutex
+	projectCache map[string]*Project
+}
+
 func (c *Cache) init() {
 	c.FileCache.fileCache = make(map[protocol.URI]*protocol.TextDocumentItem)
 	c.FileCache.cacheMutex = &sync.Mutex{}
@@ -54,6 +60,9 @@ func (c *Cache) init() {
 
 	c.ContextCache.cacheMutex = &sync.Mutex{}
 	c.ContextCache.contextCache = make(map[string]*Context)
+
+	c.ProjectCache.cacheMutex = &sync.Mutex{}
+	c.ProjectCache.projectCache = make(map[string]*Project)
 }
 
 // FILE
@@ -227,4 +236,42 @@ func (c *ContextCache) GetAllContext() map[string]*Context {
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()
 	return c.contextCache
+}
+
+// Project cache
+
+func (c *ProjectCache) SetProject(project *Project) *Project {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	c.projectCache[project.Slug] = project
+	return project
+}
+
+func (c *ProjectCache) GetProject(name string) *Project {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	return c.projectCache[name]
+}
+
+func (c *ProjectCache) RemoveProject(name string) {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	delete(c.projectCache, name)
+}
+
+func (c *ProjectCache) GetAllProjects() map[string]*Project {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	return c.projectCache
+}
+
+func (c *ProjectCache) AddEnvVariableToProject(name string, envVariable string) {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	project := c.projectCache[name]
+
+	if FindInArray(project.EnvVariables, envVariable) < 0 {
+		project.EnvVariables = append(project.EnvVariables, envVariable)
+	}
+	c.projectCache[name] = project
 }

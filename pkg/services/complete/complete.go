@@ -64,6 +64,14 @@ func (ch *CompletionHandler) addCompletionItem(label string) {
 	})
 }
 
+func (ch *CompletionHandler) addCompletionItemWithDetail(label string, detail string, sortText string) {
+	ch.Items = append(ch.Items, protocol.CompletionItem{
+		Label:    label,
+		Detail:   detail,
+		SortText: sortText,
+	})
+}
+
 func (ch *CompletionHandler) addReplaceTextCompletionItem(node *sitter.Node, newText string) {
 	ch.Items = append(ch.Items, protocol.CompletionItem{
 		Label: newText,
