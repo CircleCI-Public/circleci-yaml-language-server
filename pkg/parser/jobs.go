@@ -40,7 +40,7 @@ func (doc *YamlDocument) parseJobs(jobsNode *sitter.Node) {
 func (doc *YamlDocument) parseSingleJob(jobNode *sitter.Node) ast.Job {
 	// jobNode is a block_mapping_pair
 	jobNameNode, valueNode := doc.GetKeyValueNodes(jobNode)
-	res := ast.Job{CompletionItem: &[]protocol.CompletionItem{}, Parallelism: -1}
+	res := ast.Job{CompletionItem: &[]protocol.CompletionItem{}, Parallelism: -1, Contexts: &[]string{}}
 
 	if jobNameNode == nil || valueNode == nil {
 		return res

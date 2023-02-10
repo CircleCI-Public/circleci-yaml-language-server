@@ -119,14 +119,11 @@ func (doc *YamlDocument) getNodeTextArray(valueNode *sitter.Node) []string {
 
 func (doc *YamlDocument) getNodeTextArrayWithRange(valueNode *sitter.Node) []TextAndRange {
 	// valueNode is block_node which has a block_sequence child
-	blockSequenceNode := GetChildOfType(valueNode, "block_sequence")
+	blockSequenceNode := GetChildSequence(valueNode)
 	texts := make([]TextAndRange, 0)
 
 	if blockSequenceNode == nil {
-		blockSequenceNode = GetChildSequence(valueNode)
-		if blockSequenceNode == nil {
-			return texts
-		}
+		return texts
 	}
 
 	iterateOnBlockSequence(blockSequenceNode, func(child *sitter.Node) {

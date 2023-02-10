@@ -108,6 +108,8 @@ func (doc *YamlDocument) ParseYAML(context *utils.LsContext) {
 			}
 		}
 	})
+
+	doc.assignContexts()
 }
 
 func (doc *YamlDocument) ValidateYAML() {

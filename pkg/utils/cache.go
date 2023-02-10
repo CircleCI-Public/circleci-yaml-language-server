@@ -11,9 +11,10 @@ import (
 )
 
 type Cache struct {
-	FileCache   FileCache
-	OrbCache    OrbCache
-	DockerCache DockerCache
+	FileCache    FileCache
+	OrbCache     OrbCache
+	DockerCache  DockerCache
+	ContextCache ContextCache
 }
 
 type DockerCache struct {
@@ -36,6 +37,11 @@ type OrbCache struct {
 	orbsCache  map[string]*ast.OrbInfo
 }
 
+type ContextCache struct {
+	cacheMutex   *sync.Mutex
+	contextCache map[string]*Context
+}
+
 func (c *Cache) init() {
 	c.FileCache.fileCache = make(map[protocol.URI]*protocol.TextDocumentItem)
 	c.FileCache.cacheMutex = &sync.Mutex{}
@@ -45,6 +51,9 @@ func (c *Cache) init() {
 
 	c.DockerCache.cacheMutex = &sync.Mutex{}
 	c.DockerCache.dockerCache = make(map[string]*CachedDockerImage)
+
+	c.ContextCache.cacheMutex = &sync.Mutex{}
+	c.ContextCache.contextCache = make(map[string]*Context)
 }
 
 // FILE
@@ -180,4 +189,42 @@ func GetOrbCacheFSPath(orbYaml string) string {
 func (cache *Cache) ClearHostData() {
 	cache.RemoveOrbFiles()
 	cache.OrbCache.RemoveOrbs()
+}
+
+// Context cache
+
+func (c *ContextCache) SetContext(ctx *Context) *Context {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	c.contextCache[ctx.Name] = ctx
+	return ctx
+}
+
+func (c *ContextCache) GetContext(name string) *Context {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	return c.contextCache[name]
+}
+
+func (c *ContextCache) RemoveContext(name string) {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	delete(c.contextCache, name)
+}
+
+func (c *ContextCache) AddEnvVariableToContext(name string, envVariable string) {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	ctx := c.contextCache[name]
+
+	if FindInArray(ctx.envVariables, envVariable) < 0 {
+		ctx.envVariables = append(ctx.envVariables, envVariable)
+	}
+	c.contextCache[name] = ctx
+}
+
+func (c *ContextCache) GetAllContext() map[string]*Context {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	return c.contextCache
 }

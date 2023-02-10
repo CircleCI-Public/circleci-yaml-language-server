@@ -23,10 +23,11 @@ func Complete(params protocol.CompletionParams, cache *utils.Cache, context *uti
 	}
 
 	completionHandler := complete.CompletionHandler{
-		Params: params,
-		Doc:    yamlDocument,
-		Cache:  cache,
-		Items:  []protocol.CompletionItem{},
+		Params:  params,
+		Doc:     yamlDocument,
+		Cache:   cache,
+		Items:   []protocol.CompletionItem{},
+		Context: context,
 	}
 	completionHandler.GetCompletionItems()
 

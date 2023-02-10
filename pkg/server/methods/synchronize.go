@@ -94,7 +94,14 @@ func (methods *Methods) notificationMethods(cache utils.FileCache, textDocument 
 		methods.SchemaLocation,
 	)
 
-	// TODO: Handle error
+	if methods.LsContext.Api.Token != "" {
+		go (func() {
+			hasBeenUpdated, _ := utils.GetAllContext(methods.LsContext, "ec6887ec-7d44-4b31-b468-7e552408ee32", "", methods.Cache)
+			if hasBeenUpdated {
+				utils.GetAllContextAllEnvVariables(methods.LsContext, methods.Cache)
+			}
+		})()
+	}
 
 	diagnosticParams := protocol.PublishDiagnosticsParams{
 		URI:         textDocument.URI,

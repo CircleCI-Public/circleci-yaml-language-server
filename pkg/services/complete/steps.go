@@ -8,7 +8,6 @@ import (
 
 func (ch *CompletionHandler) completeSteps(entityName string, inJob bool, includeJobSteps bool, completionNode *sitter.Node) {
 	if ch.isWritingAnEnvVariableInRunStep(entityName, inJob) {
-		ch.addCompleteEnvVariables()
 		return
 	}
 	// We have two ifs to keep the order of the steps in the completion list.
@@ -38,12 +37,20 @@ func (ch *CompletionHandler) isWritingAnEnvVariableInRunStep(entityName string, 
 		steps = ch.Doc.Commands[entityName].Steps
 	}
 
+	var contexts []string
+	if inJob {
+		contexts = *ch.Doc.Jobs[entityName].Contexts
+	} else {
+		contexts = *ch.Doc.Commands[entityName].Contexts
+	}
+
 	for _, step := range steps {
 		switch step := step.(type) {
 		case ast.Run:
 			if utils.PosInRange(step.CommandRange, ch.Params.Position) {
 				idx := utils.PosToIndex(ch.Params.Position, ch.Doc.Content)
 				if idx > 0 && string(ch.Doc.Content[idx-1]) == "$" {
+					ch.addCompleteEnvVariables(contexts)
 					return true
 				}
 			}
@@ -53,7 +60,12 @@ func (ch *CompletionHandler) isWritingAnEnvVariableInRunStep(entityName string, 
 	return false
 }
 
-func (ch *CompletionHandler) addCompleteEnvVariables() {
+func (ch *CompletionHandler) addCompleteEnvVariables(contexts []string) {
+	contextEnvVariables := utils.GetAllContextEnvVariables(ch.Context.Api.Token, ch.Cache, contexts)
+	for _, env := range contextEnvVariables {
+		ch.addCompletionItem(env)
+	}
+
 	for _, env := range BUILT_IN_ENV {
 		ch.addCompletionItem(env)
 	}

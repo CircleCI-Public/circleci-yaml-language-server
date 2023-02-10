@@ -17,8 +17,9 @@ type CompletionHandler struct {
 	DocTag  string
 	DocDiff string
 
-	Items []protocol.CompletionItem
-	Cache *utils.Cache
+	Items   []protocol.CompletionItem
+	Cache   *utils.Cache
+	Context *utils.LsContext
 }
 
 func (ch *CompletionHandler) GetCompletionItems() {
