@@ -39,7 +39,7 @@ func TestComplete(t *testing.T) {
 		builtInEnvsComplete = append(builtInEnvsComplete, protocol.CompletionItem{
 			Label:    env,
 			Detail:   "Built-in environment variable",
-			SortText: "B",
+			SortText: "C",
 		})
 	}
 
@@ -89,7 +89,7 @@ func TestComplete(t *testing.T) {
 					Label: "steps",
 				},
 				{
-					Label: "env_variable",
+					Label: "env_var_name",
 				},
 			},
 		},

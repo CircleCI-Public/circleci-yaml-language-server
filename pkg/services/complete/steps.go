@@ -38,10 +38,15 @@ func (ch *CompletionHandler) isWritingAnEnvVariableInRunStep(entityName string, 
 	}
 
 	var contexts []string
+	var parameters map[string]ast.Parameter
+	environmentField := map[string]string{}
 	if inJob {
 		contexts = *ch.Doc.Jobs[entityName].Contexts
+		parameters = ch.Doc.Jobs[entityName].Parameters
+		environmentField = ch.Doc.Jobs[entityName].Environment
 	} else {
 		contexts = *ch.Doc.Commands[entityName].Contexts
+		parameters = ch.Doc.Commands[entityName].Parameters
 	}
 
 	for _, step := range steps {
@@ -50,7 +55,7 @@ func (ch *CompletionHandler) isWritingAnEnvVariableInRunStep(entityName string, 
 			if utils.PosInRange(step.CommandRange, ch.Params.Position) {
 				idx := utils.PosToIndex(ch.Params.Position, ch.Doc.Content)
 				if idx > 0 && string(ch.Doc.Content[idx-1]) == "$" {
-					ch.addCompleteEnvVariables(contexts)
+					ch.addCompleteEnvVariables(contexts, parameters, environmentField)
 					return true
 				}
 			}
@@ -60,20 +65,31 @@ func (ch *CompletionHandler) isWritingAnEnvVariableInRunStep(entityName string, 
 	return false
 }
 
-func (ch *CompletionHandler) addCompleteEnvVariables(contexts []string) {
+func (ch *CompletionHandler) addCompleteEnvVariables(contexts []string, parameters map[string]ast.Parameter, environmentField map[string]string) {
+	for _, param := range parameters {
+		switch param.(type) {
+		case ast.EnvVariableParameter:
+			ch.addCompletionItemFieldWithCustomText(param.GetName(), "<< parameters.", " >>", "From parameter "+param.GetName(), "A")
+		}
+	}
+
+	for env := range environmentField {
+		ch.addCompletionItemWithDetail(env, "From environment defined in the job", "A")
+	}
+
 	for _, project := range ch.Cache.ProjectCache.GetAllProjects() {
 		for _, env := range project.EnvVariables {
-			ch.addCompletionItemWithDetail(env, "From project "+project.Slug, "A")
+			ch.addCompletionItemWithDetail(env, "From project "+project.Slug, "B")
 		}
 	}
 
 	contextEnvVariables := utils.GetAllContextEnvVariables(ch.Context.Api.Token, ch.Cache, contexts)
 	for _, env := range contextEnvVariables {
-		ch.addCompletionItemWithDetail(env.Name, "From context "+env.AssociatedContext, "A")
+		ch.addCompletionItemWithDetail(env.Name, "From context "+env.AssociatedContext, "B")
 	}
 
 	for _, env := range BUILT_IN_ENV {
-		ch.addCompletionItemWithDetail(env, "Built-in environment variable", "B")
+		ch.addCompletionItemWithDetail(env, "Built-in environment variable", "C")
 	}
 }
 

@@ -274,7 +274,7 @@ func (p EnvVariableParameter) GetName() string {
 }
 
 func (p EnvVariableParameter) GetType() string {
-	return "env_variable"
+	return "env_var_name"
 }
 
 func (p EnvVariableParameter) GetNameRange() protocol.Range {
