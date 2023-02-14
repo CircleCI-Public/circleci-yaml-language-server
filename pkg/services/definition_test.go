@@ -401,9 +401,13 @@ func TestDefinition(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			content, _ := os.ReadFile(tt.args.filePath)
-			cache.FileCache.SetFile(&protocol.TextDocumentItem{
-				URI:  uri.File(tt.args.filePath),
-				Text: string(content),
+			cache.FileCache.SetFile(utils.CachedFile{
+				TextDocument: protocol.TextDocumentItem{
+					URI:  uri.File(tt.args.filePath),
+					Text: string(content),
+				},
+				ProjectSlug:  "",
+				EnvVariables: make([]string, 0),
 			})
 
 			params := protocol.DefinitionParams{

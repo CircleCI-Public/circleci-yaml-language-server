@@ -141,13 +141,13 @@ func ParseFromURI(URI protocol.URI, context *utils.LsContext) (YamlDocument, err
 }
 
 func ParseFromUriWithCache(URI protocol.URI, cache *utils.Cache, context *utils.LsContext) (YamlDocument, error) {
-	textDocument := cache.FileCache.GetFile(URI)
+	cachedFile := cache.FileCache.GetFile(URI)
 
-	if textDocument == nil {
+	if cachedFile == nil {
 		return YamlDocument{}, fmt.Errorf("file hasn't been opened: %s", URI.Filename())
 	}
 
-	content := []byte(textDocument.Text)
+	content := []byte(cachedFile.TextDocument.Text)
 
 	doc, err := ParseFromContent(content, context, URI)
 

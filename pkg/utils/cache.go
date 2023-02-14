@@ -15,7 +15,6 @@ type Cache struct {
 	OrbCache     OrbCache
 	DockerCache  DockerCache
 	ContextCache ContextCache
-	ProjectCache ProjectCache
 }
 
 type DockerCache struct {
@@ -28,9 +27,15 @@ type CachedDockerImage struct {
 	Exists  bool
 }
 
+type CachedFile struct {
+	TextDocument protocol.TextDocumentItem
+	ProjectSlug  string
+	EnvVariables []string
+}
+
 type FileCache struct {
 	cacheMutex *sync.Mutex
-	fileCache  map[protocol.URI]*protocol.TextDocumentItem
+	fileCache  map[protocol.URI]*CachedFile
 }
 
 type OrbCache struct {
@@ -43,13 +48,8 @@ type ContextCache struct {
 	contextCache map[string]*Context
 }
 
-type ProjectCache struct {
-	cacheMutex   *sync.Mutex
-	projectCache map[string]*Project
-}
-
 func (c *Cache) init() {
-	c.FileCache.fileCache = make(map[protocol.URI]*protocol.TextDocumentItem)
+	c.FileCache.fileCache = make(map[protocol.URI]*CachedFile)
 	c.FileCache.cacheMutex = &sync.Mutex{}
 
 	c.OrbCache.orbsCache = make(map[string]*ast.OrbInfo)
@@ -60,27 +60,24 @@ func (c *Cache) init() {
 
 	c.ContextCache.cacheMutex = &sync.Mutex{}
 	c.ContextCache.contextCache = make(map[string]*Context)
-
-	c.ProjectCache.cacheMutex = &sync.Mutex{}
-	c.ProjectCache.projectCache = make(map[string]*Project)
 }
 
 // FILE
 
-func (c *FileCache) SetFile(file *protocol.TextDocumentItem) protocol.TextDocumentItem {
+func (c *FileCache) SetFile(cachedFile CachedFile) CachedFile {
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()
-	c.fileCache[file.URI] = file
-	return *file
+	c.fileCache[cachedFile.TextDocument.URI] = &cachedFile
+	return cachedFile
 }
 
-func (c *FileCache) GetFile(uri protocol.URI) *protocol.TextDocumentItem {
+func (c *FileCache) GetFile(uri protocol.URI) *CachedFile {
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()
 	return c.fileCache[uri]
 }
 
-func (c *FileCache) GetFiles() map[protocol.URI]*protocol.TextDocumentItem {
+func (c *FileCache) GetFiles() map[protocol.URI]*CachedFile {
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()
 	return c.fileCache
@@ -90,6 +87,37 @@ func (c *FileCache) RemoveFile(uri protocol.URI) {
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()
 	delete(c.fileCache, uri)
+}
+
+func (c *FileCache) AddEnvVariableToProjectLinkedToFile(uri protocol.URI, envVariable string) {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	project := c.fileCache[uri]
+
+	if FindInArray(project.EnvVariables, envVariable) < 0 {
+		project.EnvVariables = append(project.EnvVariables, envVariable)
+	}
+	c.fileCache[uri] = project
+}
+
+func (c *FileCache) AddProjectSlugToFile(uri protocol.URI, projectSlug string) {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	file := c.fileCache[uri]
+
+	file.ProjectSlug = projectSlug
+
+	c.fileCache[uri] = file
+}
+
+func (c *FileCache) UpdateTextDocument(uri protocol.URI, textDocument protocol.TextDocumentItem) {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	file := c.fileCache[uri]
+
+	file.TextDocument = textDocument
+
+	c.fileCache[uri] = file
 }
 
 // ORBS
@@ -236,42 +264,4 @@ func (c *ContextCache) GetAllContext() map[string]*Context {
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()
 	return c.contextCache
-}
-
-// Project cache
-
-func (c *ProjectCache) SetProject(project *Project) *Project {
-	c.cacheMutex.Lock()
-	defer c.cacheMutex.Unlock()
-	c.projectCache[project.Slug] = project
-	return project
-}
-
-func (c *ProjectCache) GetProject(name string) *Project {
-	c.cacheMutex.Lock()
-	defer c.cacheMutex.Unlock()
-	return c.projectCache[name]
-}
-
-func (c *ProjectCache) RemoveProject(name string) {
-	c.cacheMutex.Lock()
-	defer c.cacheMutex.Unlock()
-	delete(c.projectCache, name)
-}
-
-func (c *ProjectCache) GetAllProjects() map[string]*Project {
-	c.cacheMutex.Lock()
-	defer c.cacheMutex.Unlock()
-	return c.projectCache
-}
-
-func (c *ProjectCache) AddEnvVariableToProject(name string, envVariable string) {
-	c.cacheMutex.Lock()
-	defer c.cacheMutex.Unlock()
-	project := c.projectCache[name]
-
-	if FindInArray(project.EnvVariables, envVariable) < 0 {
-		project.EnvVariables = append(project.EnvVariables, envVariable)
-	}
-	c.projectCache[name] = project
 }

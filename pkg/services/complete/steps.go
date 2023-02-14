@@ -77,10 +77,11 @@ func (ch *CompletionHandler) addCompleteEnvVariables(contexts []string, paramete
 		ch.addCompletionItemWithDetail(env, "From environment defined in the job", "A")
 	}
 
-	for _, project := range ch.Cache.ProjectCache.GetAllProjects() {
-		for _, env := range project.EnvVariables {
-			ch.addCompletionItemWithDetail(env, "From project "+project.Slug, "B")
+	if cachedFile := ch.Cache.FileCache.GetFile(ch.Doc.URI); cachedFile != nil {
+		for _, env := range cachedFile.EnvVariables {
+			ch.addCompletionItemWithDetail(env, "From project "+cachedFile.ProjectSlug, "B")
 		}
+
 	}
 
 	contextEnvVariables := utils.GetAllContextEnvVariables(ch.Context.Api.Token, ch.Cache, contexts)

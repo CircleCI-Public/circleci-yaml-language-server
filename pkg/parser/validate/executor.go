@@ -231,7 +231,7 @@ func (val Validate) validateExecutorNamespace(resourceClass string, resourceClas
 	request := utils.NewRequest(query)
 	request.SetToken(val.Context.Api.Token)
 	request.Var("name", resourceClass)
-	request.SetUserId(val.Context.UserId)
+	request.SetUserId(val.Context.UserIdForTelemetry)
 
 	var response RegistryNamespace
 	err := client.Run(request, &response)

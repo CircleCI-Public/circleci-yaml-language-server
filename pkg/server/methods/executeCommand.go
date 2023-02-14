@@ -37,14 +37,6 @@ func (methods *Methods) ExecuteCommand(reply jsonrpc2.Replier, req jsonrpc2.Requ
 			return reply(methods.Ctx, nil, nil)
 		}
 		methods.setUserId(param)
-
-	case "setProjectSlug":
-		param, ok := arguments[0].(string)
-		if !ok {
-			return reply(methods.Ctx, nil, nil)
-		}
-		methods.setProjectSlug(param)
-
 	}
 
 	return reply(methods.Ctx, nil, nil)
@@ -58,7 +50,7 @@ func (methods *Methods) setToken(token string) {
 	methods.LsContext.Api.Token = token
 	filesCache := methods.Cache.FileCache.GetFiles()
 	for _, file := range filesCache {
-		go methods.notificationMethods(methods.Cache.FileCache, *file)
+		go methods.notificationMethods(methods.Cache.FileCache, file.TextDocument)
 	}
 
 	methods.updateProjectsEnvVariables()
@@ -77,40 +69,12 @@ func (methods *Methods) setHostUrl(hostUrl string) {
 
 	filesCache := methods.Cache.FileCache.GetFiles()
 	for _, file := range filesCache {
-		go methods.notificationMethods(methods.Cache.FileCache, *file)
+		go methods.notificationMethods(methods.Cache.FileCache, file.TextDocument)
 	}
 
 	methods.updateProjectsEnvVariables()
 }
 
 func (methods *Methods) setUserId(userId string) {
-	methods.LsContext.UserId = userId
-}
-
-func (methods *Methods) setProjectSlug(projectSlug string) {
-	if projectSlug == "" {
-		return
-	}
-
-	methods.Cache.ProjectCache.SetProject(&utils.Project{
-		Slug: projectSlug,
-	})
-	if methods.LsContext.Api.Token != "" {
-		utils.GetAllProjectEnvVariables(methods.LsContext, methods.Cache, projectSlug)
-	}
-}
-
-func (methods *Methods) updateProjectsEnvVariables() {
-	for _, project := range methods.Cache.ProjectCache.GetAllProjects() {
-		methods.updateProjectEnvVariables(project.Slug)
-	}
-}
-
-func (methods *Methods) updateProjectEnvVariables(projectSlug string) {
-	project := methods.Cache.ProjectCache.GetProject(projectSlug)
-	project.EnvVariables = []string{}
-	methods.Cache.ProjectCache.SetProject(project)
-	if methods.LsContext.Api.Token != "" {
-		utils.GetAllProjectEnvVariables(methods.LsContext, methods.Cache, project.Slug)
-	}
+	methods.LsContext.UserIdForTelemetry = userId
 }

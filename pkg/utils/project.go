@@ -20,13 +20,13 @@ type ProjectRes struct {
 	NextPageToken string `json:"next_page_token,omitempty"`
 }
 
-func GetAllProjectEnvVariables(lsContext *LsContext, cache *Cache, project string) {
+func GetAllProjectEnvVariables(lsContext *LsContext, cache *Cache, cachedFile *CachedFile) {
 	var projectEnvVariables []string
 
-	fetchAllProjectEnvVariables(lsContext, project, "", cache, &projectEnvVariables)
+	fetchAllProjectEnvVariables(lsContext, cachedFile.ProjectSlug, "", cache, &projectEnvVariables)
 
 	for _, projectEnvVariable := range projectEnvVariables {
-		cache.ProjectCache.AddEnvVariableToProject(project, projectEnvVariable)
+		cache.FileCache.AddEnvVariableToProjectLinkedToFile(cachedFile.TextDocument.URI, projectEnvVariable)
 	}
 }
 
