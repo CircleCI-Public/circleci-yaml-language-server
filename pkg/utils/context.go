@@ -7,19 +7,6 @@ import (
 	"net/http"
 )
 
-func GetAllContextEnvVariables(token string, cache *Cache, contexts []string) []string {
-	var contextEnvVariables []string
-	for _, context := range contexts {
-		cachedContext := cache.ContextCache.GetContext(context)
-		if cachedContext == nil {
-			continue
-		}
-		contextEnvVariables = append(contextEnvVariables, cachedContext.envVariables...)
-	}
-
-	return contextEnvVariables
-}
-
 type ContextRes struct {
 	Items         []Context
 	NextPageToken string `json:"next_page_token,omitempty"`
@@ -30,6 +17,29 @@ type Context struct {
 	Name         string
 	CreatedAt    string `json:"created_at"`
 	envVariables []string
+}
+
+type ContextEnvVariable struct {
+	Name              string
+	AssociatedContext string
+}
+
+func GetAllContextEnvVariables(token string, cache *Cache, contexts []string) []ContextEnvVariable {
+	var contextEnvVariables []ContextEnvVariable
+	for _, context := range contexts {
+		cachedContext := cache.ContextCache.GetContext(context)
+		if cachedContext == nil {
+			continue
+		}
+		for _, envVariable := range cachedContext.envVariables {
+			contextEnvVariables = append(contextEnvVariables, ContextEnvVariable{
+				Name:              envVariable,
+				AssociatedContext: context,
+			})
+		}
+	}
+
+	return contextEnvVariables
 }
 
 func GetAllContext(lsContext *LsContext, ownerSlug string, nextPageToken string, cache *Cache) (bool, error) {

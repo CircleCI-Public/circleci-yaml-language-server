@@ -9,6 +9,9 @@ func (doc *YamlDocument) assignContexts() {
 	for _, workflow := range doc.Workflows {
 		for _, jobRef := range workflow.JobRefs {
 			for _, context := range jobRef.Context {
+				if !doc.DoesJobExist(jobRef.JobName) {
+					continue
+				}
 				job := doc.Jobs[jobRef.JobName]
 				doc.addContextToJob(job, context)
 				for _, step := range job.Steps {

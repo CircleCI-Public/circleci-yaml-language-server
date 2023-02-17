@@ -37,7 +37,9 @@ func TestComplete(t *testing.T) {
 	builtInEnvsComplete := []protocol.CompletionItem{}
 	for _, env := range complete.BUILT_IN_ENV {
 		builtInEnvsComplete = append(builtInEnvsComplete, protocol.CompletionItem{
-			Label: env,
+			Label:    env,
+			Detail:   "Built-in environment variable",
+			SortText: "C",
 		})
 	}
 
@@ -87,7 +89,7 @@ func TestComplete(t *testing.T) {
 					Label: "steps",
 				},
 				{
-					Label: "env_variable",
+					Label: "env_var_name",
 				},
 			},
 		},
@@ -371,9 +373,13 @@ func TestComplete(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			content, _ := os.ReadFile(tt.args.filePath)
-			cache.FileCache.SetFile(&protocol.TextDocumentItem{
-				URI:  uri.File(tt.args.filePath),
-				Text: string(content),
+			cache.FileCache.SetFile(utils.CachedFile{
+				TextDocument: protocol.TextDocumentItem{
+					URI:  uri.File(tt.args.filePath),
+					Text: string(content),
+				},
+				ProjectSlug:  "",
+				EnvVariables: make([]string, 0),
 			})
 
 			param := protocol.CompletionParams{

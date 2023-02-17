@@ -188,18 +188,28 @@ export class LSP {
         await client.start();
 
         const token = process.env.TOKEN;
-
-        const registerCommand = {
+        const setTokenCommand = {
             command: 'setToken',
             arguments: [token],
         };
-        await client.sendRequest('workspace/executeCommand', registerCommand);
+        await client.sendRequest('workspace/executeCommand', setTokenCommand);
+
         const selfHostedUrl = process.env.SELF_HOSTED_URL;
-        const registerCommand2 = {
+        const setHostUrlCommand = {
             command: 'setSelfHostedUrl',
             arguments: [selfHostedUrl],
         };
-        await client.sendRequest('workspace/executeCommand', registerCommand2);
+        await client.sendRequest('workspace/executeCommand', setHostUrlCommand);
+
+        const projectSlug = 'gh/CircleCI-Public/circleci-yaml-language-server';
+        const setProjectSlugCommand = {
+            command: 'setProjectSlug',
+            arguments: [projectSlug],
+        };
+        await client.sendRequest(
+            'workspace/executeCommand',
+            setProjectSlugCommand,
+        );
 
         return client;
     }

@@ -92,7 +92,7 @@ func (val Validate) checkParamSimpleType(param ast.ParameterValue, stepName stri
 			}
 		}
 
-	case "env_variable":
+	case "env_var_name":
 		if param.Type != "string" && param.Type != "integer" {
 			val.createParameterError(param, stepName, definedParam.GetType())
 			return
