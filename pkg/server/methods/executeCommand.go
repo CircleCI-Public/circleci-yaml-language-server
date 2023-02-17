@@ -78,7 +78,3 @@ func (methods *Methods) setHostUrl(hostUrl string) {
 func (methods *Methods) setUserId(userId string) {
 	methods.LsContext.UserIdForTelemetry = userId
 }
-
-func (methods *Methods) setUserId(userId string) {
-	methods.LsContext.UserId = userId
-}
