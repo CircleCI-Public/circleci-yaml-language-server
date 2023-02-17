@@ -7,12 +7,7 @@ import (
 	"net/http"
 )
 
-type Project struct {
-	Slug         string
-	EnvVariables []string
-}
-
-type ProjectRes struct {
+type ProjectEnvVariableRes struct {
 	Items []struct {
 		Name  string
 		Value string
@@ -23,7 +18,7 @@ type ProjectRes struct {
 func GetAllProjectEnvVariables(lsContext *LsContext, cache *Cache, cachedFile *CachedFile) {
 	var projectEnvVariables []string
 
-	fetchAllProjectEnvVariables(lsContext, cachedFile.ProjectSlug, "", cache, &projectEnvVariables)
+	fetchAllProjectEnvVariables(lsContext, cachedFile.Project.Slug, "", cache, &projectEnvVariables)
 
 	for _, projectEnvVariable := range projectEnvVariables {
 		cache.FileCache.AddEnvVariableToProjectLinkedToFile(cachedFile.TextDocument.URI, projectEnvVariable)
@@ -55,7 +50,7 @@ func fetchAllProjectEnvVariables(lsContext *LsContext, projectSlug string, nextP
 		return err
 	}
 
-	var projectRes ProjectRes
+	var projectRes ProjectEnvVariableRes
 	err = json.Unmarshal(body, &projectRes)
 	if err != nil {
 		return err

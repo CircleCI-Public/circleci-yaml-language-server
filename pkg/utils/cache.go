@@ -29,7 +29,7 @@ type CachedDockerImage struct {
 
 type CachedFile struct {
 	TextDocument protocol.TextDocumentItem
-	ProjectSlug  string
+	Project      Project
 	EnvVariables []string
 }
 
@@ -45,7 +45,7 @@ type OrbCache struct {
 
 type ContextCache struct {
 	cacheMutex   *sync.Mutex
-	contextCache map[string]*Context
+	contextCache map[string]map[string]*Context
 }
 
 func (c *Cache) init() {
@@ -59,7 +59,7 @@ func (c *Cache) init() {
 	c.DockerCache.dockerCache = make(map[string]*CachedDockerImage)
 
 	c.ContextCache.cacheMutex = &sync.Mutex{}
-	c.ContextCache.contextCache = make(map[string]*Context)
+	c.ContextCache.contextCache = make(map[string]map[string]*Context)
 }
 
 // FILE
@@ -100,12 +100,12 @@ func (c *FileCache) AddEnvVariableToProjectLinkedToFile(uri protocol.URI, envVar
 	c.fileCache[uri] = project
 }
 
-func (c *FileCache) AddProjectSlugToFile(uri protocol.URI, projectSlug string) {
+func (c *FileCache) AddProjectSlugToFile(uri protocol.URI, project Project) {
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()
 	file := c.fileCache[uri]
 
-	file.ProjectSlug = projectSlug
+	file.Project = project
 
 	c.fileCache[uri] = file
 }
@@ -230,38 +230,42 @@ func (cache *Cache) ClearHostData() {
 
 // Context cache
 
-func (c *ContextCache) SetContext(ctx *Context) *Context {
+func (c *ContextCache) SetOrganizationContext(organizationId string, ctx *Context) *Context {
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()
-	c.contextCache[ctx.Name] = ctx
+	if c.contextCache[organizationId] == nil {
+		c.contextCache[organizationId] = make(map[string]*Context)
+	}
+	c.contextCache[organizationId][ctx.Name] = ctx
 	return ctx
 }
 
-func (c *ContextCache) GetContext(name string) *Context {
+func (c *ContextCache) GetOrganizationContext(organizationId string, name string) *Context {
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()
-	return c.contextCache[name]
+	return c.contextCache[organizationId][name]
 }
 
-func (c *ContextCache) RemoveContext(name string) {
+func (c *ContextCache) RemoveOrganizationContext(organizationId string, name string) {
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()
-	delete(c.contextCache, name)
+	org := c.contextCache[organizationId]
+	delete(org, name)
 }
 
-func (c *ContextCache) AddEnvVariableToContext(name string, envVariable string) {
+func (c *ContextCache) AddEnvVariableToOrganizationContext(organizationId string, name string, envVariable string) {
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()
-	ctx := c.contextCache[name]
+	ctx := c.contextCache[organizationId][name]
 
 	if FindInArray(ctx.envVariables, envVariable) < 0 {
 		ctx.envVariables = append(ctx.envVariables, envVariable)
 	}
-	c.contextCache[name] = ctx
+	c.contextCache[organizationId][name] = ctx
 }
 
-func (c *ContextCache) GetAllContext() map[string]*Context {
+func (c *ContextCache) GetAllContextOfOrganization(organizationId string) map[string]*Context {
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()
-	return c.contextCache
+	return c.contextCache[organizationId]
 }

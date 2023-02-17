@@ -37,10 +37,21 @@ func (val Validate) validateSingleWorkflow(workflow ast.Workflow) error {
 			val.validateWorkflowParameters(jobRef, jobRef.JobName, jobRef.JobRefRange)
 		}
 		for _, require := range jobRef.Requires {
-			if !val.doesJobRefExist(workflow, require.Name) && !utils.CheckIfMatrixParamIsPartiallyReferenced(require.Name) {
+			if !val.doesJobRefExist(workflow, require.Text) && !utils.CheckIfMatrixParamIsPartiallyReferenced(require.Text) {
 				val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
 					require.Range,
-					fmt.Sprintf("Cannot find declaration for job reference %s", require.Name)))
+					fmt.Sprintf("Cannot find declaration for job reference %s", require.Text)))
+			}
+		}
+
+		if cachedFile := val.Cache.FileCache.GetFile(val.Doc.URI); val.Context.Api.Token != "" &&
+			cachedFile != nil && cachedFile.Project.OrganizationName != "" {
+			for _, context := range jobRef.Context {
+				if context.Text != "org-global" && val.Cache.ContextCache.GetOrganizationContext(cachedFile.Project.OrganizationName, context.Text) == nil {
+					val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
+						context.Range,
+						fmt.Sprintf("Context %s does not exist", context.Text)))
+				}
 			}
 		}
 	}

@@ -7,16 +7,17 @@ import (
 
 func (methods *Methods) getAllEnvVariables(textDocument protocol.TextDocumentItem) {
 	cachedFile := methods.Cache.FileCache.GetFile(textDocument.URI)
-	if cachedFile.ProjectSlug == "" {
+	if cachedFile.Project.Slug == "" {
 		projectSlug := utils.GetProjectSlug(textDocument.URI.Filename())
-		methods.Cache.FileCache.AddProjectSlugToFile(textDocument.URI, projectSlug)
+		project, err := utils.GetProjectId(projectSlug, methods.LsContext)
+		if err != nil {
+			return
+		}
+		methods.Cache.FileCache.AddProjectSlugToFile(textDocument.URI, project)
 		methods.updateProjectEnvVariables(cachedFile)
 	}
 
-	hasBeenUpdated, _ := utils.GetAllContext(methods.LsContext, methods.LsContext.Api.GetUserId(), "", methods.Cache)
-	if hasBeenUpdated {
-		utils.GetAllContextAllEnvVariables(methods.LsContext, methods.Cache)
-	}
+	utils.GetAllContext(methods.LsContext, cachedFile.Project.OrganizationName, cachedFile.Project.VcsInfo.Provider, methods.Cache)
 }
 
 func (methods *Methods) updateProjectsEnvVariables() {

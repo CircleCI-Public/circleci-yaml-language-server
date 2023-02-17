@@ -52,7 +52,7 @@ func main() {
 			URI:  uri.File(filepath),
 			Text: string(content),
 		},
-		ProjectSlug:  "",
+		Project:      utils.Project{},
 		EnvVariables: make([]string, 0),
 	})
 

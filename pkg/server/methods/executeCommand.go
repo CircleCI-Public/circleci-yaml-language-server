@@ -50,7 +50,7 @@ func (methods *Methods) setToken(token string) {
 	methods.LsContext.Api.Token = token
 	filesCache := methods.Cache.FileCache.GetFiles()
 	for _, file := range filesCache {
-		go methods.notificationMethods(methods.Cache.FileCache, file.TextDocument)
+		go methods.notificationMethods(file.TextDocument)
 	}
 
 	methods.updateProjectsEnvVariables()
@@ -69,7 +69,7 @@ func (methods *Methods) setHostUrl(hostUrl string) {
 
 	filesCache := methods.Cache.FileCache.GetFiles()
 	for _, file := range filesCache {
-		go methods.notificationMethods(methods.Cache.FileCache, file.TextDocument)
+		go methods.notificationMethods(file.TextDocument)
 	}
 
 	methods.updateProjectsEnvVariables()

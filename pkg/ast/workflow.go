@@ -24,8 +24,8 @@ type JobRef struct {
 	// not the job that will be executed
 	StepName      string
 	StepNameRange protocol.Range
-	Requires      []Require
-	Context       []string
+	Requires      []TextAndRange
+	Context       []TextAndRange
 	Type          string
 	TypeRange     protocol.Range
 	Parameters    map[string]ParameterValue
@@ -38,9 +38,4 @@ type JobRef struct {
 
 	HasMatrix    bool
 	MatrixParams map[string][]ParameterValue
-}
-
-type Require struct {
-	Name  string
-	Range protocol.Range
 }

@@ -1,10 +1,15 @@
 package utils
 
 import (
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
 	"net/url"
 	"strings"
 
 	"github.com/go-git/go-git/v5"
+	gitUrl "github.com/whilp/git-urls"
 )
 
 func GetProjectSlug(configPath string) string {
@@ -34,7 +39,11 @@ func GetProjectSlug(configPath string) string {
 func fromUrlToProjectSlug(projectUrl string) string {
 	parsedUrl, err := url.Parse(projectUrl)
 	if err != nil {
-		return ""
+		parsedUrl, err = gitUrl.ParseScp(projectUrl)
+		if err != nil {
+			return ""
+		}
+		parsedUrl.Path = "/" + strings.TrimSuffix(parsedUrl.Path, ".git")
 	}
 
 	switch parsedUrl.Host {
@@ -45,4 +54,46 @@ func fromUrlToProjectSlug(projectUrl string) string {
 	}
 
 	return ""
+}
+
+type Project struct {
+	Slug             string
+	Name             string
+	Id               string
+	OrganizationName string `json:"organization_name"`
+	OrganizationSlug string `json:"organization_slug"`
+	OrganizationId   string `json:"organization_id"`
+	VcsInfo          struct {
+		VcsUrl         string `json:"vcs_url"`
+		Provider       string
+		Default_branch string `json:"default_branch"`
+	} `json:"vcs_info"`
+}
+
+func GetProjectId(projectSlug string, lsContext *LsContext) (Project, error) {
+	url := fmt.Sprintf("%s/api/v2/project/%s", lsContext.Api.HostUrl, projectSlug)
+
+	req, _ := http.NewRequest("GET", url, nil)
+
+	req.Header.Add("Circle-Token", lsContext.Api.Token)
+
+	res, err := http.DefaultClient.Do(req)
+
+	if err != nil {
+		return Project{}, err
+	}
+
+	defer res.Body.Close()
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return Project{}, err
+	}
+
+	var projectIdRes Project
+	err = json.Unmarshal(body, &projectIdRes)
+	if err != nil {
+		return Project{}, err
+	}
+
+	return projectIdRes, nil
 }

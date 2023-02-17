@@ -93,7 +93,7 @@ func (doc *YamlDocument) buildJobsDAG(jobRefs []ast.JobRef) map[string][]string 
 	res := make(map[string][]string)
 	for _, jobRef := range jobRefs {
 		for _, requirement := range jobRef.Requires {
-			res[requirement.Name] = append(res[requirement.Name], jobRef.StepName)
+			res[requirement.Text] = append(res[requirement.Text], jobRef.StepName)
 		}
 	}
 	return res
@@ -225,23 +225,23 @@ func (doc *YamlDocument) parseSingleJobReference(jobRefNode *sitter.Node) ast.Jo
 	}
 }
 
-func (doc *YamlDocument) parseContext(node *sitter.Node) []string {
+func (doc *YamlDocument) parseContext(node *sitter.Node) []ast.TextAndRange {
 	if node.ChildCount() != 1 {
-		return []string{}
+		return []ast.TextAndRange{}
 	}
 
 	if node.Type() == "flow_node" && node.ChildCount() == 1 && node.Child(0).Type() == "plain_scalar" {
-		return []string{doc.GetNodeText(node)}
+		return []ast.TextAndRange{doc.GetNodeTextWithRange(node)}
 	}
 
-	return doc.getNodeTextArray(node.Child(0))
+	return doc.getNodeTextArrayWithRange(node)
 }
 
-func (doc *YamlDocument) parseSingleJobRequires(node *sitter.Node) []ast.Require {
+func (doc *YamlDocument) parseSingleJobRequires(node *sitter.Node) []ast.TextAndRange {
 	array := doc.getNodeTextArrayWithRange(node)
-	res := []ast.Require{}
+	res := []ast.TextAndRange{}
 	for _, require := range array {
-		res = append(res, ast.Require{Name: require.Text, Range: require.Range})
+		res = append(res, ast.TextAndRange{Text: require.Text, Range: require.Range})
 	}
 	return res
 }

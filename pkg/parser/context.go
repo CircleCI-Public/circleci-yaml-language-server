@@ -13,14 +13,14 @@ func (doc *YamlDocument) assignContexts() {
 					continue
 				}
 				job := doc.Jobs[jobRef.JobName]
-				doc.addContextToJob(job, context)
+				doc.addContextToJob(job, context.Text)
 				for _, step := range job.Steps {
 					if doc.DoesCommandExist(step.GetName()) {
 						command := doc.Commands[step.GetName()]
-						doc.addContextToCommand(command, context)
+						doc.addContextToCommand(command, context.Text)
 					} else if doc.DoesJobExist(step.GetName()) {
 						job := doc.Jobs[step.GetName()]
-						doc.addContextToJob(job, context)
+						doc.addContextToJob(job, context.Text)
 					}
 				}
 			}

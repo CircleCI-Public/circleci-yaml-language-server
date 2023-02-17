@@ -36,7 +36,7 @@ func (methods *Methods) DidOpen(reply jsonrpc2.Replier, req jsonrpc2.Request) er
 	methods.parsingMethods(params.TextDocument)
 	methods.updateOrbFile([]byte(params.TextDocument.Text), params.TextDocument.URI)
 	go (func() {
-		methods.notificationMethods(methods.Cache.FileCache, params.TextDocument)
+		methods.notificationMethods(params.TextDocument)
 		methods.SendTelemetryEvent(TelemetryEvent{
 			Event:  "DidOpen",
 			Action: "finished",
@@ -67,7 +67,7 @@ func (methods *Methods) DidChange(reply jsonrpc2.Replier, req jsonrpc2.Request) 
 
 	debounceInnerChange(func() {
 		methods.parsingMethods(textDocument)
-		go methods.notificationMethods(methods.Cache.FileCache, textDocument)
+		go methods.notificationMethods(textDocument)
 	})
 	return reply(methods.Ctx, nil, nil)
 }
@@ -95,7 +95,11 @@ func (methods *Methods) DidClose(reply jsonrpc2.Replier, req jsonrpc2.Request) e
 	return reply(methods.Ctx, nil, nil)
 }
 
-func (methods *Methods) notificationMethods(cache utils.FileCache, textDocument protocol.TextDocumentItem) {
+func (methods *Methods) notificationMethods(textDocument protocol.TextDocumentItem) {
+	if methods.LsContext.Api.Token != "" {
+		methods.getAllEnvVariables(textDocument)
+	}
+
 	diagnostic, _ := lsp.DiagnosticFile(
 		textDocument.URI,
 		methods.Cache,
@@ -103,16 +107,12 @@ func (methods *Methods) notificationMethods(cache utils.FileCache, textDocument 
 		methods.SchemaLocation,
 	)
 
-	if methods.LsContext.Api.Token != "" {
-		go methods.getAllEnvVariables(textDocument)
-	}
-
 	diagnosticParams := protocol.PublishDiagnosticsParams{
 		URI:         textDocument.URI,
 		Diagnostics: diagnostic,
 	}
 
-	original := cache.GetFile(textDocument.URI)
+	original := methods.Cache.FileCache.GetFile(textDocument.URI)
 
 	// Compare the version
 	// To avoid notifying based on an older version document

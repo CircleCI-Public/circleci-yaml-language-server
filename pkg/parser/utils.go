@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	sitter "github.com/smacker/go-tree-sitter"
 	ymlgrammar "github.com/smacker/go-tree-sitter/yaml"
 	"go.lsp.dev/protocol"
@@ -78,7 +79,11 @@ func GetBlockMappingNode(streamNode *sitter.Node) *sitter.Node {
 	return GetChildOfType(blockNode, "block_mapping")
 }
 
-func (doc *YamlDocument) GetNodeText(node *sitter.Node) string {
+func (doc *YamlDocument) GetNodeTextWithRange(node *sitter.Node) ast.TextAndRange {
+	if node == nil {
+		return ast.TextAndRange{Text: "", Range: protocol.Range{}}
+	}
+
 	res := doc.GetRawNodeText(node)
 
 	if strings.HasPrefix(res, "\"") && strings.HasSuffix(res, "\"") {
@@ -92,7 +97,14 @@ func (doc *YamlDocument) GetNodeText(node *sitter.Node) string {
 	res = strings.TrimPrefix(res, ">\n")
 	res = strings.TrimSpace(res)
 
-	return res
+	return ast.TextAndRange{
+		Text:  res,
+		Range: NodeToRange(node),
+	}
+}
+
+func (doc *YamlDocument) GetNodeText(node *sitter.Node) string {
+	return doc.GetNodeTextWithRange(node).Text
 }
 
 func (doc *YamlDocument) GetRawNodeText(node *sitter.Node) string {
@@ -101,11 +113,6 @@ func (doc *YamlDocument) GetRawNodeText(node *sitter.Node) string {
 	}
 	res := string(doc.Content[node.StartByte():node.EndByte()])
 	return res
-}
-
-type TextAndRange struct {
-	Text  string
-	Range protocol.Range
 }
 
 func (doc *YamlDocument) getNodeTextArray(valueNode *sitter.Node) []string {
@@ -117,28 +124,27 @@ func (doc *YamlDocument) getNodeTextArray(valueNode *sitter.Node) []string {
 	return texts
 }
 
-func (doc *YamlDocument) getNodeTextArrayWithRange(valueNode *sitter.Node) []TextAndRange {
+func (doc *YamlDocument) getNodeTextArrayWithRange(valueNode *sitter.Node) []ast.TextAndRange {
 	// valueNode is block_node which has a block_sequence child
 	blockSequenceNode := GetChildSequence(valueNode)
-	texts := make([]TextAndRange, 0)
+	texts := make([]ast.TextAndRange, 0)
 
 	if blockSequenceNode == nil {
 		return texts
 	}
 
 	iterateOnBlockSequence(blockSequenceNode, func(child *sitter.Node) {
-		getText := func(node *sitter.Node) TextAndRange {
+		getText := func(node *sitter.Node) ast.TextAndRange {
 			if alias := GetChildOfType(node, "alias"); alias != nil {
 				anchor, ok := doc.YamlAnchors[strings.TrimLeft(doc.GetNodeText(alias), "*")]
 				if !ok {
-					return TextAndRange{Text: "wtf"}
+					return ast.TextAndRange{Text: ""}
 				}
 				anchorValueNode := GetFirstChild(anchor.ValueNode)
 				text := doc.GetNodeText(anchorValueNode)
-				return TextAndRange{Text: text, Range: NodeToRange(anchorValueNode)}
+				return ast.TextAndRange{Text: text, Range: NodeToRange(anchorValueNode)}
 			} else {
-
-				return TextAndRange{Text: doc.GetNodeText(node), Range: NodeToRange(node)}
+				return ast.TextAndRange{Text: doc.GetNodeText(node), Range: NodeToRange(node)}
 			}
 		}
 
