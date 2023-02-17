@@ -8,7 +8,6 @@ import (
 
 func (ch *CompletionHandler) completeSteps(entityName string, inJob bool, includeJobSteps bool, completionNode *sitter.Node) {
 	if ch.isWritingAnEnvVariableInRunStep(entityName, inJob) {
-		ch.addCompleteEnvVariables()
 		return
 	}
 	// We have two ifs to keep the order of the steps in the completion list.
@@ -38,12 +37,25 @@ func (ch *CompletionHandler) isWritingAnEnvVariableInRunStep(entityName string, 
 		steps = ch.Doc.Commands[entityName].Steps
 	}
 
+	var contexts []string
+	var parameters map[string]ast.Parameter
+	environmentField := map[string]string{}
+	if inJob {
+		contexts = *ch.Doc.Jobs[entityName].Contexts
+		parameters = ch.Doc.Jobs[entityName].Parameters
+		environmentField = ch.Doc.Jobs[entityName].Environment
+	} else {
+		contexts = *ch.Doc.Commands[entityName].Contexts
+		parameters = ch.Doc.Commands[entityName].Parameters
+	}
+
 	for _, step := range steps {
 		switch step := step.(type) {
 		case ast.Run:
 			if utils.PosInRange(step.CommandRange, ch.Params.Position) {
 				idx := utils.PosToIndex(ch.Params.Position, ch.Doc.Content)
 				if idx > 0 && string(ch.Doc.Content[idx-1]) == "$" {
+					ch.addCompleteEnvVariables(contexts, parameters, environmentField)
 					return true
 				}
 			}
@@ -53,9 +65,32 @@ func (ch *CompletionHandler) isWritingAnEnvVariableInRunStep(entityName string, 
 	return false
 }
 
-func (ch *CompletionHandler) addCompleteEnvVariables() {
+func (ch *CompletionHandler) addCompleteEnvVariables(contexts []string, parameters map[string]ast.Parameter, environmentField map[string]string) {
+	for _, param := range parameters {
+		switch param.(type) {
+		case ast.EnvVariableParameter:
+			ch.addCompletionItemFieldWithCustomText(param.GetName(), "<< parameters.", " >>", "From parameter "+param.GetName(), "A")
+		}
+	}
+
+	for env := range environmentField {
+		ch.addCompletionItemWithDetail(env, "From environment defined in the job", "A")
+	}
+
+	if cachedFile := ch.Cache.FileCache.GetFile(ch.Doc.URI); cachedFile != nil {
+		for _, env := range cachedFile.EnvVariables {
+			ch.addCompletionItemWithDetail(env, "From project "+cachedFile.ProjectSlug, "B")
+		}
+
+	}
+
+	contextEnvVariables := utils.GetAllContextEnvVariables(ch.Context.Api.Token, ch.Cache, contexts)
+	for _, env := range contextEnvVariables {
+		ch.addCompletionItemWithDetail(env.Name, "From context "+env.AssociatedContext, "B")
+	}
+
 	for _, env := range BUILT_IN_ENV {
-		ch.addCompletionItem(env)
+		ch.addCompletionItemWithDetail(env, "Built-in environment variable", "C")
 	}
 }
 
@@ -85,5 +120,4 @@ var BUILT_IN_ENV = []string{
 	"CIRCLE_WORKFLOW_JOB_ID",
 	"CIRCLE_WORKFLOW_WORKSPACE_ID",
 	"CIRCLE_WORKING_DIRECTORY",
-	"CIRCLE_INTERNAL_TASK_DATA",
 }

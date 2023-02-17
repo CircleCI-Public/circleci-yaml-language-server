@@ -60,7 +60,7 @@ func ParseRemoteOrbs(orbs map[string]ast.Orb, cache *utils.Cache, context *utils
 }
 
 func fetchOrbInfo(orbVersionCode string, cache *utils.Cache, context *utils.LsContext) (*ast.OrbInfo, error) {
-	orbQuery, err := GetRemoteOrb(orbVersionCode, context.Api.Token, context.Api.HostUrl, context.UserId)
+	orbQuery, err := GetRemoteOrb(orbVersionCode, context.Api.Token, context.Api.HostUrl, context.UserIdForTelemetry)
 
 	if err != nil {
 		return &ast.OrbInfo{}, err
@@ -262,7 +262,7 @@ func AddOrbToCacheWithContent(orb ast.Orb, uri protocol.URI, content []byte, con
 		return err
 	}
 
-	versions, err := GetOrbVersions(orb.Url.GetOrbID(), context.Api.Token, context.Api.HostUrl, context.UserId)
+	versions, err := GetOrbVersions(orb.Url.GetOrbID(), context.Api.Token, context.Api.HostUrl, context.UserIdForTelemetry)
 
 	if err != nil {
 		return nil

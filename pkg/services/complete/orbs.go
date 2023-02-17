@@ -41,7 +41,7 @@ func (ch *CompletionHandler) completeOrbName(node *sitter.Node) {
 		ch.Doc.GetNodeText(node),
 		ch.Doc.Context.Api.HostUrl,
 		ch.Doc.Context.Api.Token,
-		ch.Doc.Context.UserId,
+		ch.Doc.Context.UserIdForTelemetry,
 	)
 
 	if err != nil {

@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
-	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
 	lsp "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/services"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"github.com/bep/debounce"
@@ -17,13 +16,23 @@ import (
 	"go.lsp.dev/protocol"
 )
 
+func (methods *Methods) setChangeInFileCache(textDocument protocol.TextDocumentItem) {
+	if cachedFile := methods.Cache.FileCache.GetFile(textDocument.URI); cachedFile != nil {
+		methods.Cache.FileCache.UpdateTextDocument(textDocument.URI, textDocument)
+	} else {
+		methods.Cache.FileCache.SetFile(utils.CachedFile{
+			TextDocument: textDocument,
+		})
+	}
+}
+
 func (methods *Methods) DidOpen(reply jsonrpc2.Replier, req jsonrpc2.Request) error {
 	params := protocol.DidOpenTextDocumentParams{}
 	if err := json.Unmarshal(req.Params(), &params); err != nil {
 		return reply(methods.Ctx, nil, fmt.Errorf("%s: %w", jsonrpc2.ErrParse, err))
 	}
 
-	methods.Cache.FileCache.SetFile(&params.TextDocument)
+	methods.setChangeInFileCache(params.TextDocument)
 	methods.parsingMethods(params.TextDocument)
 	methods.updateOrbFile([]byte(params.TextDocument.Text), params.TextDocument.URI)
 	go (func() {
@@ -53,7 +62,7 @@ func (methods *Methods) DidChange(reply jsonrpc2.Replier, req jsonrpc2.Request) 
 		Text:    newText,
 		Version: params.TextDocument.Version,
 	}
-	methods.Cache.FileCache.SetFile(&textDocument)
+	methods.setChangeInFileCache(textDocument)
 	methods.updateOrbFile([]byte(newText), params.TextDocument.URI)
 
 	debounceInnerChange(func() {
@@ -94,7 +103,9 @@ func (methods *Methods) notificationMethods(cache utils.FileCache, textDocument 
 		methods.SchemaLocation,
 	)
 
-	// TODO: Handle error
+	if methods.LsContext.Api.Token != "" {
+		go methods.getAllEnvVariables(textDocument)
+	}
 
 	diagnosticParams := protocol.PublishDiagnosticsParams{
 		URI:         textDocument.URI,
@@ -105,33 +116,29 @@ func (methods *Methods) notificationMethods(cache utils.FileCache, textDocument 
 
 	// Compare the version
 	// To avoid notifying based on an older version document
-	if original != nil && original.Version == textDocument.Version {
-		err := methods.Conn.Notify(
+	if original != nil && original.TextDocument.Version == textDocument.Version {
+		methods.Conn.Notify(
 			methods.Ctx,
 			protocol.MethodTextDocumentPublishDiagnostics,
 			diagnosticParams,
 		)
-
-		if err != nil {
-			// TODO: Handle error
-		}
 	}
 
 }
 
 func (methods *Methods) parsingMethods(textDocument protocol.TextDocumentItem) {
-	parsedFile, err := yamlparser.ParseFromUriWithCache(textDocument.URI, methods.Cache, methods.LsContext)
+	parsedFile, err := parser.ParseFromUriWithCache(textDocument.URI, methods.Cache, methods.LsContext)
 
 	if err != nil {
 		return
 	}
 
-	yamlparser.ParseRemoteOrbs(parsedFile.Orbs, methods.Cache, methods.LsContext)
+	parser.ParseRemoteOrbs(parsedFile.Orbs, methods.Cache, methods.LsContext)
 }
 
 func (methods *Methods) applyIncrementalChanges(uri protocol.URI, changes []protocol.TextDocumentContentChangeEvent) string {
 	file := methods.Cache.FileCache.GetFile(uri)
-	content := []byte(file.Text)
+	content := []byte(file.TextDocument.Text)
 
 	for _, change := range changes {
 		start, end := utils.PosToIndex(change.Range.Start, content), utils.PosToIndex(change.Range.End, content)

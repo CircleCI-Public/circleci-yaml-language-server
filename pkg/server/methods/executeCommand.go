@@ -23,7 +23,7 @@ func (methods *Methods) ExecuteCommand(reply jsonrpc2.Replier, req jsonrpc2.Requ
 		if !ok {
 			return reply(methods.Ctx, nil, nil)
 		}
-		methods.setTokenCmd(param)
+		methods.setToken(param)
 
 	case "setSelfHostedUrl":
 		param, ok := arguments[0].(string)
@@ -37,13 +37,12 @@ func (methods *Methods) ExecuteCommand(reply jsonrpc2.Replier, req jsonrpc2.Requ
 			return reply(methods.Ctx, nil, nil)
 		}
 		methods.setUserId(param)
-
 	}
 
 	return reply(methods.Ctx, nil, nil)
 }
 
-func (methods *Methods) setTokenCmd(token string) {
+func (methods *Methods) setToken(token string) {
 	if methods.LsContext.Api.Token != token {
 		methods.Cache.ClearHostData()
 	}
@@ -51,8 +50,10 @@ func (methods *Methods) setTokenCmd(token string) {
 	methods.LsContext.Api.Token = token
 	filesCache := methods.Cache.FileCache.GetFiles()
 	for _, file := range filesCache {
-		go methods.notificationMethods(methods.Cache.FileCache, *file)
+		go methods.notificationMethods(methods.Cache.FileCache, file.TextDocument)
 	}
+
+	methods.updateProjectsEnvVariables()
 }
 
 func (methods *Methods) setHostUrl(hostUrl string) {
@@ -68,10 +69,12 @@ func (methods *Methods) setHostUrl(hostUrl string) {
 
 	filesCache := methods.Cache.FileCache.GetFiles()
 	for _, file := range filesCache {
-		go methods.notificationMethods(methods.Cache.FileCache, *file)
+		go methods.notificationMethods(methods.Cache.FileCache, file.TextDocument)
 	}
+
+	methods.updateProjectsEnvVariables()
 }
 
 func (methods *Methods) setUserId(userId string) {
-	methods.LsContext.UserId = userId
+	methods.LsContext.UserIdForTelemetry = userId
 }

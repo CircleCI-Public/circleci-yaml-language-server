@@ -24,7 +24,7 @@
       "preLaunchTask": "task: task build",
       "env": {
         "CCI_DEV": "true",
-        "TOKEN": "CIRCLE_CI_USER_TOKEN",
+        "TOKEN": "",
         "SELF_HOSTED_URL": ""
       }
     },
