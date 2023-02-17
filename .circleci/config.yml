@@ -261,7 +261,6 @@ jobs:
                                     }
                                 ]
                             }
-
                     - slack/notify:
                         channel: fr_push-to-prod
                         event: fail
