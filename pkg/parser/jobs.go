@@ -40,7 +40,7 @@ func (doc *YamlDocument) parseJobs(jobsNode *sitter.Node) {
 func (doc *YamlDocument) parseSingleJob(jobNode *sitter.Node) ast.Job {
 	// jobNode is a block_mapping_pair
 	jobNameNode, valueNode := doc.GetKeyValueNodes(jobNode)
-	res := ast.Job{CompletionItem: &[]protocol.CompletionItem{}, Parallelism: -1}
+	res := ast.Job{CompletionItem: &[]protocol.CompletionItem{}, Parallelism: -1, Contexts: &[]string{}, Parameters: map[string]ast.Parameter{}}
 
 	if jobNameNode == nil || valueNode == nil {
 		return res
@@ -105,6 +105,11 @@ func (doc *YamlDocument) parseSingleJob(jobNode *sitter.Node) ast.Job {
 			case "machine":
 				machineNode = child
 				machineNodeFound = true
+
+			case "environment":
+				blockMapping := GetChildMapping(valueNode)
+				res.Environment = doc.parseDictionary(blockMapping)
+				res.EnvironmentRange = NodeToRange(child)
 			}
 		}
 	})

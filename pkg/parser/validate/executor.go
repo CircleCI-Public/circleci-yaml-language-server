@@ -197,11 +197,53 @@ func (val Validate) validateWindowsExecutor(executor ast.WindowsExecutor) {
 }
 
 func (val Validate) checkIfValidResourceClass(resourceClass string, validResourceClasses []string, resourceClassRange protocol.Range) {
-	if !utils.CheckIfOnlyParamUsed(resourceClass) && resourceClass != "" && utils.FindInArray(validResourceClasses, resourceClass) == -1 && !val.Doc.IsSelfHostedRunner(resourceClass) {
+	if !utils.CheckIfOnlyParamUsed(resourceClass) && resourceClass != "" &&
+		utils.FindInArray(validResourceClasses, resourceClass) == -1 &&
+		!val.Doc.IsSelfHostedRunner(resourceClass) {
 
 		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
 			resourceClassRange,
 			fmt.Sprintf("Invalid resource class: \"%s\"", resourceClass),
+		))
+	}
+
+	if val.Doc.IsSelfHostedRunner(resourceClass) {
+		namespace := strings.Split(resourceClass, "/")[0]
+		val.validateExecutorNamespace(namespace, resourceClassRange)
+	}
+}
+
+type RegistryNamespace struct {
+	RegistryNameSpace *struct {
+		Name string
+	}
+}
+
+func (val Validate) validateExecutorNamespace(resourceClass string, resourceClassRange protocol.Range) {
+	client := utils.NewClient(val.Context.Api.HostUrl, "graphql-unstable", val.Context.Api.Token, false)
+
+	query := `query($name: String!) {
+		registryNamespace(name: $name) {
+			name
+		}
+	}`
+
+	request := utils.NewRequest(query)
+	request.SetToken(val.Context.Api.Token)
+	request.Var("name", resourceClass)
+	request.SetUserId(val.Context.UserIdForTelemetry)
+
+	var response RegistryNamespace
+	err := client.Run(request, &response)
+
+	if err != nil {
+		return
+	}
+
+	if response.RegistryNameSpace == nil {
+		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
+			resourceClassRange,
+			fmt.Sprintf("Namespace \"%s\" does not exist", resourceClass),
 		))
 	}
 }

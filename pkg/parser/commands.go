@@ -41,7 +41,7 @@ func (doc *YamlDocument) parseCommands(commandsNode *sitter.Node) {
 func (doc *YamlDocument) parseSingleCommand(commandNode *sitter.Node) ast.Command {
 	// commandNode is a block_mapping_pair
 	commandNameNode, blockMappingNode := doc.GetKeyValueNodes(commandNode)
-	res := ast.Command{}
+	res := ast.Command{Contexts: &[]string{}, Parameters: map[string]ast.Parameter{}}
 	if commandNameNode == nil || blockMappingNode == nil {
 		return res
 	}

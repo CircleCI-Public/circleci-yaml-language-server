@@ -5,12 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 )
@@ -24,10 +25,22 @@ type Client struct {
 	httpClient *http.Client
 }
 
+func GetClient() *http.Client {
+	return &http.Client{
+		Timeout: 30 * time.Second,
+		Transport: &http.Transport{
+			ExpectContinueTimeout: 1 * time.Second,
+			IdleConnTimeout:       90 * time.Second,
+			MaxIdleConns:          10,
+			TLSHandshakeTimeout:   10 * time.Second,
+		},
+	}
+}
+
 // NewClient returns a reference to a Client.
-func NewClient(httpClient *http.Client, host, endpoint, token string, debug bool) *Client {
+func NewClient(host, endpoint, token string, debug bool) *Client {
 	return &Client{
-		httpClient: http.DefaultClient,
+		httpClient: GetClient(),
 		Endpoint:   endpoint,
 		Host:       host,
 		Token:      token,
@@ -253,7 +266,7 @@ func (cl *Client) Run(request *Request, resp interface{}) error {
 	if cl.Debug {
 		var bodyBytes []byte
 		if res.Body != nil {
-			bodyBytes, err = ioutil.ReadAll(res.Body)
+			bodyBytes, err = io.ReadAll(res.Body)
 			if err != nil {
 				return errors.Wrap(err, "reading response")
 			}
@@ -261,7 +274,7 @@ func (cl *Client) Run(request *Request, resp interface{}) error {
 			l.Printf("<< %s", string(bodyBytes))
 
 			// Restore the io.ReadCloser to its original state
-			res.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+			res.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 		}
 	}
 

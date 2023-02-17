@@ -3,9 +3,7 @@ package parser
 import (
 	"errors"
 	"fmt"
-	"net/http"
 	"os"
-	"time"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
@@ -62,7 +60,7 @@ func ParseRemoteOrbs(orbs map[string]ast.Orb, cache *utils.Cache, context *utils
 }
 
 func fetchOrbInfo(orbVersionCode string, cache *utils.Cache, context *utils.LsContext) (*ast.OrbInfo, error) {
-	orbQuery, err := GetRemoteOrb(orbVersionCode, context.Api.Token, context.Api.HostUrl, context.UserId)
+	orbQuery, err := GetRemoteOrb(orbVersionCode, context.Api.Token, context.Api.HostUrl, context.UserIdForTelemetry)
 
 	if err != nil {
 		return &ast.OrbInfo{}, err
@@ -158,21 +156,11 @@ func GetVersionInfo(
 }
 
 func GetRemoteOrb(orbId string, token string, hostUrl, userId string) (OrbQuery, error) {
-	httpClient := &http.Client{
-		Timeout: 30 * time.Second,
-		Transport: &http.Transport{
-			ExpectContinueTimeout: 1 * time.Second,
-			IdleConnTimeout:       90 * time.Second,
-			MaxIdleConns:          10,
-			TLSHandshakeTimeout:   10 * time.Second,
-		},
-	}
-
 	if hostUrl == "" {
 		return OrbQuery{}, errors.New("host URL not defined")
 	}
 
-	client := utils.NewClient(httpClient, hostUrl, "graphql-unstable", token, false)
+	client := utils.NewClient(hostUrl, "graphql-unstable", token, false)
 	query := `query($orbVersionRef: String!) {
 		orbVersion(orbVersionRef: $orbVersionRef) {
 			id
@@ -203,22 +191,12 @@ func GetRemoteOrb(orbId string, token string, hostUrl, userId string) (OrbQuery,
 }
 
 func GetOrbVersions(orbId string, token string, hostUrl, userId string) ([]struct{ Version string }, error) {
-	httpClient := &http.Client{
-		Timeout: 30 * time.Second,
-		Transport: &http.Transport{
-			ExpectContinueTimeout: 1 * time.Second,
-			IdleConnTimeout:       90 * time.Second,
-			MaxIdleConns:          10,
-			TLSHandshakeTimeout:   10 * time.Second,
-		},
-	}
-
 	if hostUrl == "" {
 		emptyList := make([]struct{ Version string }, 0)
 		return emptyList, fmt.Errorf("host URL not defined")
 	}
 
-	client := utils.NewClient(httpClient, hostUrl, "graphql-unstable", token, false)
+	client := utils.NewClient(hostUrl, "graphql-unstable", token, false)
 	query := `query($orbVersionRef: String!) {
 		orbVersion(orbVersionRef: $orbVersionRef) {
 			version
@@ -284,7 +262,7 @@ func AddOrbToCacheWithContent(orb ast.Orb, uri protocol.URI, content []byte, con
 		return err
 	}
 
-	versions, err := GetOrbVersions(orb.Url.GetOrbID(), context.Api.Token, context.Api.HostUrl, context.UserId)
+	versions, err := GetOrbVersions(orb.Url.GetOrbID(), context.Api.Token, context.Api.HostUrl, context.UserIdForTelemetry)
 
 	if err != nil {
 		return nil

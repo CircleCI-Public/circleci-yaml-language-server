@@ -47,9 +47,13 @@ func main() {
 	yamlparser.ParseFile(content, context)
 
 	cache := utils.CreateCache()
-	cache.FileCache.SetFile(&protocol.TextDocumentItem{
-		URI:  uri.File(filepath),
-		Text: string(content),
+	cache.FileCache.SetFile(utils.CachedFile{
+		TextDocument: protocol.TextDocumentItem{
+			URI:  uri.File(filepath),
+			Text: string(content),
+		},
+		ProjectSlug:  "",
+		EnvVariables: make([]string, 0),
 	})
 
 	fileURI := uri.File(filepath)

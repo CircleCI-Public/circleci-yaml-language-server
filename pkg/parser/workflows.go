@@ -192,6 +192,7 @@ func (doc *YamlDocument) parseSingleJobReference(jobRefNode *sitter.Node) ast.Jo
 					res.StepNameRange = NodeToRange(valueNode)
 					res.StepName = doc.GetNodeText(GetFirstChild(valueNode))
 				case "context":
+					res.Context = doc.parseContext(valueNode)
 				case "filters":
 				case "branches":
 				case "tags":
@@ -222,6 +223,18 @@ func (doc *YamlDocument) parseSingleJobReference(jobRefNode *sitter.Node) ast.Jo
 		})
 		return res
 	}
+}
+
+func (doc *YamlDocument) parseContext(node *sitter.Node) []string {
+	if node.ChildCount() != 1 {
+		return []string{}
+	}
+
+	if node.Type() == "flow_node" && node.ChildCount() == 1 && node.Child(0).Type() == "plain_scalar" {
+		return []string{doc.GetNodeText(node)}
+	}
+
+	return doc.getNodeTextArray(node.Child(0))
 }
 
 func (doc *YamlDocument) parseSingleJobRequires(node *sitter.Node) []ast.Require {

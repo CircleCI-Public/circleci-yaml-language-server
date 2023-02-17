@@ -10,6 +10,7 @@ import (
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/services/complete"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/testHelpers"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
@@ -31,6 +32,15 @@ func TestComplete(t *testing.T) {
 
 	if err != nil {
 		panic(err)
+	}
+
+	builtInEnvsComplete := []protocol.CompletionItem{}
+	for _, env := range complete.BUILT_IN_ENV {
+		builtInEnvsComplete = append(builtInEnvsComplete, protocol.CompletionItem{
+			Label:    env,
+			Detail:   "Built-in environment variable",
+			SortText: "C",
+		})
 	}
 
 	cache.OrbCache.SetOrb(&ast.OrbInfo{
@@ -79,7 +89,7 @@ func TestComplete(t *testing.T) {
 					Label: "steps",
 				},
 				{
-					Label: "env_variable",
+					Label: "env_var_name",
 				},
 			},
 		},
@@ -347,14 +357,29 @@ func TestComplete(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "Completion for env variables",
+			args: args{
+				filePath: "./testdata/autocomplete1.yml",
+				position: protocol.Position{
+					Line:      28,
+					Character: 37,
+				},
+			},
+			want: builtInEnvsComplete,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			content, _ := os.ReadFile(tt.args.filePath)
-			cache.FileCache.SetFile(&protocol.TextDocumentItem{
-				URI:  uri.File(tt.args.filePath),
-				Text: string(content),
+			cache.FileCache.SetFile(utils.CachedFile{
+				TextDocument: protocol.TextDocumentItem{
+					URI:  uri.File(tt.args.filePath),
+					Text: string(content),
+				},
+				ProjectSlug:  "",
+				EnvVariables: make([]string, 0),
 			})
 
 			param := protocol.CompletionParams{

@@ -17,8 +17,9 @@ type CompletionHandler struct {
 	DocTag  string
 	DocDiff string
 
-	Items []protocol.CompletionItem
-	Cache *utils.Cache
+	Items   []protocol.CompletionItem
+	Cache   *utils.Cache
+	Context *utils.LsContext
 }
 
 func (ch *CompletionHandler) GetCompletionItems() {
@@ -63,6 +64,14 @@ func (ch *CompletionHandler) addCompletionItem(label string) {
 	})
 }
 
+func (ch *CompletionHandler) addCompletionItemWithDetail(label string, detail string, sortText string) {
+	ch.Items = append(ch.Items, protocol.CompletionItem{
+		Label:    label,
+		Detail:   detail,
+		SortText: sortText,
+	})
+}
+
 func (ch *CompletionHandler) addReplaceTextCompletionItem(node *sitter.Node, newText string) {
 	ch.Items = append(ch.Items, protocol.CompletionItem{
 		Label: newText,
@@ -83,17 +92,19 @@ func (ch *CompletionHandler) addReplaceTextCompletionItem(node *sitter.Node, new
 }
 
 func (ch *CompletionHandler) addCompletionItemField(label string) {
-	ch.addCompletionItemFieldWithCustomText(label, ": ")
+	ch.addCompletionItemFieldWithCustomText(label, "", ": ", "", "")
 }
 
 func (ch *CompletionHandler) addCompletionItemFieldWithNewLine(label string) {
-	ch.addCompletionItemFieldWithCustomText(label, ": \n\t")
+	ch.addCompletionItemFieldWithCustomText(label, "", ": \n\t", "", "")
 }
 
-func (ch *CompletionHandler) addCompletionItemFieldWithCustomText(label string, customText string) {
+func (ch *CompletionHandler) addCompletionItemFieldWithCustomText(label string, beforeText string, afterText string, detail string, sortText string) {
 	ch.Items = append(ch.Items, protocol.CompletionItem{
 		Label:      label,
-		InsertText: fmt.Sprintf("%s%s", label, customText),
+		InsertText: fmt.Sprintf("%s%s%s", beforeText, label, afterText),
+		Detail:     detail,
+		SortText:   sortText,
 	})
 }
 

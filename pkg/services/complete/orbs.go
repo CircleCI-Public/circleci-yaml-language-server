@@ -2,10 +2,8 @@ package complete
 
 import (
 	"fmt"
-	"net/http"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
@@ -43,7 +41,7 @@ func (ch *CompletionHandler) completeOrbName(node *sitter.Node) {
 		ch.Doc.GetNodeText(node),
 		ch.Doc.Context.Api.HostUrl,
 		ch.Doc.Context.Api.Token,
-		ch.Doc.Context.UserId,
+		ch.Doc.Context.UserIdForTelemetry,
 	)
 
 	if err != nil {
@@ -83,18 +81,7 @@ func fetchOrbsByRegistry(registry, hostUrl, token, userId string) (*NamespaceOrb
 		return cached, nil
 	}
 
-	httpClient := &http.Client{
-		Timeout: 30 * time.Second,
-		Transport: &http.Transport{
-			ExpectContinueTimeout: 1 * time.Second,
-			IdleConnTimeout:       90 * time.Second,
-			MaxIdleConns:          10,
-			TLSHandshakeTimeout:   10 * time.Second,
-		},
-	}
-
 	client := utils.NewClient(
-		httpClient,
 		hostUrl,
 		"graphql-unstable",
 		token,

@@ -11,9 +11,10 @@ import (
 )
 
 type Cache struct {
-	FileCache   FileCache
-	OrbCache    OrbCache
-	DockerCache DockerCache
+	FileCache    FileCache
+	OrbCache     OrbCache
+	DockerCache  DockerCache
+	ContextCache ContextCache
 }
 
 type DockerCache struct {
@@ -26,9 +27,15 @@ type CachedDockerImage struct {
 	Exists  bool
 }
 
+type CachedFile struct {
+	TextDocument protocol.TextDocumentItem
+	ProjectSlug  string
+	EnvVariables []string
+}
+
 type FileCache struct {
 	cacheMutex *sync.Mutex
-	fileCache  map[protocol.URI]*protocol.TextDocumentItem
+	fileCache  map[protocol.URI]*CachedFile
 }
 
 type OrbCache struct {
@@ -36,8 +43,13 @@ type OrbCache struct {
 	orbsCache  map[string]*ast.OrbInfo
 }
 
+type ContextCache struct {
+	cacheMutex   *sync.Mutex
+	contextCache map[string]*Context
+}
+
 func (c *Cache) init() {
-	c.FileCache.fileCache = make(map[protocol.URI]*protocol.TextDocumentItem)
+	c.FileCache.fileCache = make(map[protocol.URI]*CachedFile)
 	c.FileCache.cacheMutex = &sync.Mutex{}
 
 	c.OrbCache.orbsCache = make(map[string]*ast.OrbInfo)
@@ -45,24 +57,27 @@ func (c *Cache) init() {
 
 	c.DockerCache.cacheMutex = &sync.Mutex{}
 	c.DockerCache.dockerCache = make(map[string]*CachedDockerImage)
+
+	c.ContextCache.cacheMutex = &sync.Mutex{}
+	c.ContextCache.contextCache = make(map[string]*Context)
 }
 
 // FILE
 
-func (c *FileCache) SetFile(file *protocol.TextDocumentItem) protocol.TextDocumentItem {
+func (c *FileCache) SetFile(cachedFile CachedFile) CachedFile {
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()
-	c.fileCache[file.URI] = file
-	return *file
+	c.fileCache[cachedFile.TextDocument.URI] = &cachedFile
+	return cachedFile
 }
 
-func (c *FileCache) GetFile(uri protocol.URI) *protocol.TextDocumentItem {
+func (c *FileCache) GetFile(uri protocol.URI) *CachedFile {
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()
 	return c.fileCache[uri]
 }
 
-func (c *FileCache) GetFiles() map[protocol.URI]*protocol.TextDocumentItem {
+func (c *FileCache) GetFiles() map[protocol.URI]*CachedFile {
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()
 	return c.fileCache
@@ -72,6 +87,37 @@ func (c *FileCache) RemoveFile(uri protocol.URI) {
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()
 	delete(c.fileCache, uri)
+}
+
+func (c *FileCache) AddEnvVariableToProjectLinkedToFile(uri protocol.URI, envVariable string) {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	project := c.fileCache[uri]
+
+	if FindInArray(project.EnvVariables, envVariable) < 0 {
+		project.EnvVariables = append(project.EnvVariables, envVariable)
+	}
+	c.fileCache[uri] = project
+}
+
+func (c *FileCache) AddProjectSlugToFile(uri protocol.URI, projectSlug string) {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	file := c.fileCache[uri]
+
+	file.ProjectSlug = projectSlug
+
+	c.fileCache[uri] = file
+}
+
+func (c *FileCache) UpdateTextDocument(uri protocol.URI, textDocument protocol.TextDocumentItem) {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	file := c.fileCache[uri]
+
+	file.TextDocument = textDocument
+
+	c.fileCache[uri] = file
 }
 
 // ORBS
@@ -180,4 +226,42 @@ func GetOrbCacheFSPath(orbYaml string) string {
 func (cache *Cache) ClearHostData() {
 	cache.RemoveOrbFiles()
 	cache.OrbCache.RemoveOrbs()
+}
+
+// Context cache
+
+func (c *ContextCache) SetContext(ctx *Context) *Context {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	c.contextCache[ctx.Name] = ctx
+	return ctx
+}
+
+func (c *ContextCache) GetContext(name string) *Context {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	return c.contextCache[name]
+}
+
+func (c *ContextCache) RemoveContext(name string) {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	delete(c.contextCache, name)
+}
+
+func (c *ContextCache) AddEnvVariableToContext(name string, envVariable string) {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	ctx := c.contextCache[name]
+
+	if FindInArray(ctx.envVariables, envVariable) < 0 {
+		ctx.envVariables = append(ctx.envVariables, envVariable)
+	}
+	c.contextCache[name] = ctx
+}
+
+func (c *ContextCache) GetAllContext() map[string]*Context {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	return c.contextCache
 }
