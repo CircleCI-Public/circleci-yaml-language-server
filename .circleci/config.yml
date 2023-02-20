@@ -686,10 +686,10 @@ workflows:
     Release management:
         jobs:
             - Prepare release:
-                base-branch: main
+                base-branch: ci/release-please
                 filters: &main-branch-only
                     branches:
-                        only: main
+                        only: ci/release-please
                     tags:
                         ignore: /.*/
                 context:
@@ -697,7 +697,7 @@ workflows:
 
             - Github Release:
                 name: Github Release ?
-                base-branch: main
+                base-branch: ci/release-please
                 filters:
                     <<: *main-branch-only
                 context:
