@@ -49,21 +49,11 @@ func GetOrbInfo(orbVersionCode string, cache *utils.Cache, context *utils.LsCont
 }
 
 func GetOrbByName(orbName string, context *utils.LsContext) (OrbGQLData, error) {
-	httpClient := &http.Client{
-		Timeout: 30 * time.Second,
-		Transport: &http.Transport{
-			ExpectContinueTimeout: 1 * time.Second,
-			IdleConnTimeout:       90 * time.Second,
-			MaxIdleConns:          10,
-			TLSHandshakeTimeout:   10 * time.Second,
-		},
-	}
-
 	if context.Api.HostUrl == "" {
 		return OrbGQLData{}, errors.New("host URL not defined")
 	}
 
-	client := utils.NewClient(httpClient, context.Api.HostUrl, "graphql-unstable", context.Api.Token, false)
+	client := utils.NewClient(context.Api.HostUrl, "graphql-unstable", context.Api.Token, false)
 	query := `
 		query($orbName: String!) {
 			orb(name: $orbName) {
@@ -75,7 +65,7 @@ func GetOrbByName(orbName string, context *utils.LsContext) (OrbGQLData, error) 
 
 	request := utils.NewRequest(query)
 	request.SetToken(client.Token)
-	request.SetUserId(context.UserId)
+	request.SetUserId(context.UserIdForTelemetry)
 	request.Var("orbName", orbName)
 
 	var response OrbByNameResponse
