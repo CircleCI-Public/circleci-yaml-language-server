@@ -1470,7 +1470,7 @@
 								{
 									"type": "object",
 									"maxProperties": 1,
-									"minProperties": 1,
+									"minProperties": 0,
 									"additionalProperties": {
 										"type": "object",
 										"properties": {
