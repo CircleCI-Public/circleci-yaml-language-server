@@ -247,15 +247,5 @@ func (val Validate) checkExecutorParamValue(param ast.ParameterValue) {
 		executorName = param.Value.(string)
 	}
 
-	if executorName != "" && !val.Doc.DoesExecutorExist(executorName) {
-		val.addDiagnostic(
-			utils.CreateErrorDiagnosticFromRange(
-				executorNameRange,
-				fmt.Sprintf(
-					"Executor `%s` does not exist",
-					executorName,
-				),
-			),
-		)
-	}
+	val.validateExecutorReference(executorName, executorNameRange)
 }
