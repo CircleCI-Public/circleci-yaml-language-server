@@ -24,6 +24,7 @@ jobs:
 		[]byte(yaml),
 		testHelpers.GetDefaultLsContext(),
 		uri.File(""),
+		protocol.Position{},
 	)
 
 	assert.Equal(t, err, nil)
@@ -52,6 +53,7 @@ jobs:
 		[]byte(yaml),
 		testHelpers.GetDefaultLsContext(),
 		uri.File(""),
+		protocol.Position{},
 	)
 
 	assert.Equal(t, err, nil)
@@ -72,6 +74,7 @@ jobs:
 		[]byte(yaml),
 		testHelpers.GetLsContextForHost("https://mycircleci.example.com"),
 		uri.File(""),
+		protocol.Position{},
 	)
 
 	assert.Equal(t, err, nil)
@@ -97,6 +100,7 @@ jobs:
 		[]byte(yaml),
 		testHelpers.GetDefaultLsContext(),
 		uri.File(""),
+		protocol.Position{},
 	)
 
 	assert.Equal(t, err, nil)
@@ -127,6 +131,7 @@ jobs:
 		[]byte(yaml),
 		testHelpers.GetDefaultLsContext(),
 		uri.File(""),
+		protocol.Position{},
 	)
 
 	assert.Equal(t, err, nil)
@@ -153,6 +158,7 @@ jobs:
 		[]byte(yaml),
 		testHelpers.GetDefaultLsContext(),
 		uri.File(""),
+		protocol.Position{},
 	)
 
 	assert.Equal(t, err, nil)
@@ -177,6 +183,7 @@ jobs:
 		[]byte(yaml),
 		testHelpers.GetDefaultLsContext(),
 		uri.File(""),
+		protocol.Position{},
 	)
 
 	assert.Equal(t, err, nil)

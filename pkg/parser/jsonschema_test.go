@@ -33,7 +33,7 @@ testFinal:
 	err := yaml.Unmarshal(content, m)
 
 	context := testHelpers.GetDefaultLsContext()
-	yamlDocument, _ := ParseFromContent(content, context, uri.File(""))
+	yamlDocument, _ := ParseFromContent(content, context, uri.File(""), protocol.Position{})
 
 	actualDiagnostics, err := handleYAMLErrors(err.Error(), content, yamlDocument.RootNode)
 
@@ -55,7 +55,7 @@ test:
 	err := yaml.Unmarshal(content, m)
 
 	context := testHelpers.GetDefaultLsContext()
-	yamlDocument, _ := ParseFromContent(content, context, uri.File(""))
+	yamlDocument, _ := ParseFromContent(content, context, uri.File(""), protocol.Position{})
 
 	diagnostics, err := handleYAMLErrors(err.Error(), content, yamlDocument.RootNode)
 

@@ -5,6 +5,7 @@ import (
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/testHelpers"
 	"github.com/stretchr/testify/assert"
+	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 )
 
@@ -24,7 +25,7 @@ orbs:
         steps:
           - run: echo "Hello << parameter.name >>"`
 	context := testHelpers.GetDefaultLsContext()
-	doc, err := ParseFromContent([]byte(content), context, uri.File(""))
+	doc, err := ParseFromContent([]byte(content), context, uri.File(""), protocol.Position{})
 	assert.Nil(t, err)
 
 	// Test job
@@ -73,7 +74,7 @@ orbs:
         steps:
           - run: echo "Hello << parameter.name >>"`
 	context := testHelpers.GetDefaultLsContext()
-	doc, err := ParseFromContent([]byte(content), context, uri.File(""))
+	doc, err := ParseFromContent([]byte(content), context, uri.File(""), protocol.Position{})
 	assert.Nil(t, err)
 
 	// Test job
@@ -116,7 +117,7 @@ orbs:
                   description: Specify the Terraform Docker image tag for the executor
                   type: string`
 	context := testHelpers.GetDefaultLsContext()
-	doc, err := ParseFromContent([]byte(content), context, uri.File(""))
+	doc, err := ParseFromContent([]byte(content), context, uri.File(""), protocol.Position{})
 	assert.Nil(t, err)
 
 	// Test executor
@@ -147,7 +148,7 @@ orbs:
         steps:
           - run: echo "Hello << parameter.name >>"`
 	context := testHelpers.GetDefaultLsContext()
-	doc, err := ParseFromContent([]byte(content), context, uri.File(""))
+	doc, err := ParseFromContent([]byte(content), context, uri.File(""), protocol.Position{})
 	assert.Nil(t, err)
 
 	// Test command
@@ -195,7 +196,7 @@ workflows:
     jobs:
       - localorb/localjob`
 	context := testHelpers.GetDefaultLsContext()
-	doc, err := ParseFromContent([]byte(content), context, uri.File(""))
+	doc, err := ParseFromContent([]byte(content), context, uri.File(""), protocol.Position{})
 	assert.Nil(t, err)
 
 	assert.Len(t, *doc.Diagnostics, 0)
