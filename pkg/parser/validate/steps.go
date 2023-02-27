@@ -43,7 +43,7 @@ func (val Validate) validateRunCommand(step ast.Run, jobOrCommandParameters map[
 		var ok bool
 
 		if isPipelineParam {
-			param, ok = val.Doc.PipelinesParameters[paramName]
+			param, ok = val.Doc.PipelineParameters[paramName]
 		} else {
 			param, ok = jobOrCommandParameters[paramName]
 		}
