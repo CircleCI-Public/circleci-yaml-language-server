@@ -18,7 +18,18 @@ func (methods *Methods) Complete(reply jsonrpc2.Replier, req jsonrpc2.Request) e
 	if err != nil {
 		return reply(methods.Ctx, nil, fmt.Errorf("%s: %w", jsonrpc2.ErrParse, err))
 	}
+
 	res, err := languageservice.Complete(params, methods.Cache, methods.LsContext)
+	go (func() {
+		methods.SendTelemetryEvent(TelemetryEvent{
+			Event:  "Complete",
+			Action: "finished",
+			Properties: DidOpenFinishedProperties{
+				Filename: params.TextDocument.URI.Filename(),
+			},
+		})
+	})()
+
 	if err != nil {
 		return reply(
 			methods.Ctx,
