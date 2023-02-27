@@ -216,3 +216,23 @@ func (val Validate) doesOrbExecutorExist(executorName string, executorRange prot
 	_, ok = remoteOrb.Executors[splittedName[1]]
 	return ok, nil
 }
+
+func (val Validate) ValidateLocalOrbs() {
+	for _, orb := range val.Doc.Orbs {
+		if orb.Url.IsLocal {
+			orbInfo, err := val.Doc.GetOrFetchOrbInfo(orb, val.Cache)
+
+			if err != nil {
+				continue
+			}
+
+			validateStruct := Validate{
+				Doc:         val.Doc.FromOrbParsedAttributesToYamlDocument(orbInfo.OrbParsedAttributes),
+				Diagnostics: val.Diagnostics,
+				Cache:       val.Cache,
+				Context:     val.Context,
+			}
+			validateStruct.Validate()
+		}
+	}
+}

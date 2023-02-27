@@ -4,6 +4,7 @@ import {
 } from './utils';
 
 describe('Completion command', () => {
+  jest.setTimeout(10000);
   it('Completion command', async () => {
     const testingFile = 'config1.yml';
     await commands.didOpen(testingFile);

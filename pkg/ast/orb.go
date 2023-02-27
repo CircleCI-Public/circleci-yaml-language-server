@@ -41,6 +41,8 @@ type OrbInfo struct {
 }
 
 type OrbParsedAttributes struct {
+	Name string
+
 	Commands           map[string]Command
 	Jobs               map[string]Job
 	Executors          map[string]Executor

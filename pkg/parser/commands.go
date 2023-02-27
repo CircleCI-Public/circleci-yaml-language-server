@@ -51,7 +51,7 @@ func (doc *YamlDocument) parseSingleCommand(commandNode *sitter.Node) ast.Comman
 	if blockMappingNode == nil { //TODO: deal with errors
 		return res
 	}
-	res.Name = commandName
+	res.Name = doc.getAttributeName(commandName)
 	res.Range = doc.NodeToRange(commandNode)
 	res.NameRange = doc.NodeToRange(commandNameNode)
 

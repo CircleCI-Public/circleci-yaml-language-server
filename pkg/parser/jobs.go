@@ -51,7 +51,7 @@ func (doc *YamlDocument) parseSingleJob(jobNode *sitter.Node) ast.Job {
 	if blockMappingNode == nil { //TODO: deal with errors
 		return res
 	}
-	res.Name = jobName
+	res.Name = doc.getAttributeName(jobName)
 	res.Range = doc.NodeToRange(jobNode)
 	res.NameRange = doc.NodeToRange(jobNameNode)
 

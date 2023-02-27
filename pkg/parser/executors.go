@@ -24,7 +24,7 @@ func (doc *YamlDocument) parseExecutors(executorsNode *sitter.Node) {
 func (doc *YamlDocument) parseSingleExecutor(executorNode *sitter.Node) {
 	// jobNode is a block_mapping_pair
 	executorNameNode, blockMappingNode := doc.GetKeyValueNodes(executorNode)
-	executorName := doc.GetNodeText(executorNameNode)
+	executorName := doc.getAttributeName(doc.GetNodeText(executorNameNode))
 	blockMappingNode = GetChildMapping(blockMappingNode)
 	if blockMappingNode == nil {
 		return
@@ -103,7 +103,7 @@ func (doc *YamlDocument) parseBaseExecutor(base *ast.BaseExecutor, nameNode *sit
 		}
 	})
 
-	base.Name = doc.GetNodeText(nameNode)
+	base.Name = doc.getAttributeName(doc.GetNodeText(nameNode))
 	base.NameRange = doc.NodeToRange(nameNode)
 	// We get the range of the parent of the parent to get the
 	// whole definition of the executor (name and definition) and not only

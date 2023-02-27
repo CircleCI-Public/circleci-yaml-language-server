@@ -100,7 +100,7 @@ func (doc *YamlDocument) GetNodeTextWithRange(node *sitter.Node) ast.TextAndRang
 
 	return ast.TextAndRange{
 		Text:  res,
-		Range: NodeToRange(node),
+		Range: doc.NodeToRange(node),
 	}
 }
 

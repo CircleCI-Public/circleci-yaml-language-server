@@ -14,12 +14,10 @@ func (ch *CompletionHandler) completeSteps(entityName string, inJob bool, includ
 	ch.userDefinedCommands()
 	if includeJobSteps {
 		ch.userDefinedJobs()
+		ch.orbsJobs()
 	}
 	ch.builtInSteps()
 	ch.orbCommands(completionNode)
-	if includeJobSteps {
-		ch.orbsJobs()
-	}
 }
 
 func (ch *CompletionHandler) builtInSteps() {

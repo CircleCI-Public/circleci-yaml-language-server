@@ -89,11 +89,11 @@ DiagnosticList {
       "range": {
         "end": {
           "character": 7,
-          "line": 63,
+          "line": 59,
         },
         "start": {
           "character": 2,
-          "line": 63,
+          "line": 59,
         },
       },
       "severity": 4,
@@ -104,11 +104,43 @@ DiagnosticList {
       "range": {
         "end": {
           "character": 14,
-          "line": 48,
+          "line": 44,
         },
         "start": {
           "character": 6,
-          "line": 48,
+          "line": 44,
+        },
+      },
+      "severity": 2,
+      "source": "cci-language-server",
+    },
+    {
+      "data": [],
+      "message": "Parameter node-version is not defined",
+      "range": {
+        "end": {
+          "character": 58,
+          "line": 39,
+        },
+        "start": {
+          "character": 29,
+          "line": 39,
+        },
+      },
+      "severity": 1,
+      "source": "cci-language-server",
+    },
+    {
+      "data": [],
+      "message": "Job is unused",
+      "range": {
+        "end": {
+          "character": 10,
+          "line": 33,
+        },
+        "start": {
+          "character": 6,
+          "line": 33,
         },
       },
       "severity": 2,
@@ -128,6 +160,22 @@ DiagnosticList {
         },
       },
       "severity": 2,
+      "source": "cci-language-server",
+    },
+    {
+      "data": [],
+      "message": "Parameter app-node is not defined",
+      "range": {
+        "end": {
+          "character": 54,
+          "line": 19,
+        },
+        "start": {
+          "character": 29,
+          "line": 19,
+        },
+      },
+      "severity": 1,
       "source": "cci-language-server",
     },
     {
