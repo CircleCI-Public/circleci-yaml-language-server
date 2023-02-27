@@ -66,17 +66,7 @@ func (val Validate) validateSingleJob(job ast.Job) {
 			}
 
 		} else if !val.Doc.DoesExecutorExist(job.Executor) {
-			if val.Doc.IsOrbReference(job.Executor) {
-				val.validateOrbExecutor(job.Executor, job.ExecutorRange)
-			} else {
-				val.addDiagnostic(
-					protocol.Diagnostic{
-						Range:    job.ExecutorRange,
-						Message:  "Executor `" + job.Executor + "` does not exist",
-						Severity: protocol.DiagnosticSeverityError,
-					},
-				)
-			}
+			val.validateExecutorReference(job.Executor, job.ExecutorRange)
 		} else {
 			executor := val.Doc.Executors[job.Executor]
 			val.validateParametersValue(

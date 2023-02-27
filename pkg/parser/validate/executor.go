@@ -247,3 +247,30 @@ func (val Validate) validateExecutorNamespace(resourceClass string, resourceClas
 		))
 	}
 }
+
+func (val Validate) validateExecutorReference(executor string, rng protocol.Range) {
+	if !val.Doc.DoesExecutorExist(executor) {
+		if val.Doc.IsOrbReference(executor) {
+			val.validateOrbExecutor(executor, rng)
+		} else {
+			if possibleOrbName, couldBeOrbReference := val.Doc.CouldBeOrbReference(executor); couldBeOrbReference &&
+				!val.Doc.IsOrbReference(executor) {
+				val.addDiagnostic(
+					protocol.Diagnostic{
+						Range:    rng,
+						Message:  fmt.Sprintf("Cannot find orb %s. Looking for executor named %s.", possibleOrbName, executor),
+						Severity: protocol.DiagnosticSeverityError,
+					},
+				)
+			} else {
+				val.addDiagnostic(
+					protocol.Diagnostic{
+						Range:    rng,
+						Message:  fmt.Sprintf("Executor `%s` does not exist", executor),
+						Severity: protocol.DiagnosticSeverityError,
+					},
+				)
+			}
+		}
+	}
+}

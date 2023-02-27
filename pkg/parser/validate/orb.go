@@ -166,7 +166,7 @@ func (val Validate) orbIsUnused(orb ast.Orb) {
 
 func (val Validate) validateOrbExecutor(executorName string, executorRange protocol.Range) {
 	orbExecutorExist, err := val.doesOrbExecutorExist(executorName, executorRange)
-	if !orbExecutorExist && err != nil {
+	if !orbExecutorExist && err == nil {
 		splittedName := strings.Split(executorName, "/")
 		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
 			executorRange,

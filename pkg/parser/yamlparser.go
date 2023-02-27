@@ -234,6 +234,16 @@ func (doc *YamlDocument) IsOrbReference(orbReference string) bool {
 	return ok
 }
 
+func (doc *YamlDocument) CouldBeOrbReference(orbReference string) (string, bool) {
+	splittedCommand := strings.Split(orbReference, "/")
+
+	if len(splittedCommand) != 2 {
+		return "", false
+	}
+
+	return splittedCommand[0], true
+}
+
 func (doc *YamlDocument) IsOrbCommand(orbCommand string, cache *utils.Cache) bool {
 	splittedCommand := strings.Split(orbCommand, "/")
 
