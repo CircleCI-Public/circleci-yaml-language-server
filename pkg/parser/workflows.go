@@ -19,7 +19,7 @@ func (doc *YamlDocument) parseWorkflows(workflowsNode *sitter.Node) {
 		switch keyName {
 		case "version":
 			if doc.Version >= 2.1 {
-				rng := NodeToRange(child)
+				rng := doc.NodeToRange(child)
 				doc.addDiagnostic(
 					utils.CreateDiagnosticFromRange(
 						rng,
@@ -65,12 +65,12 @@ func (doc *YamlDocument) parseSingleWorkflow(workflowNode *sitter.Node) ast.Work
 	// workflowNode is a block_mapping_pair
 	keyNode, valueNode := doc.GetKeyValueNodes(workflowNode)
 	if keyNode == nil || valueNode == nil {
-		return ast.Workflow{Range: NodeToRange(workflowNode)}
+		return ast.Workflow{Range: doc.NodeToRange(workflowNode)}
 	}
 	workflowName := doc.GetNodeText(keyNode)
 
 	blockMappingNode := GetChildOfType(valueNode, "block_mapping")
-	res := ast.Workflow{Range: NodeToRange(workflowNode), Name: workflowName, NameRange: NodeToRange(keyNode)}
+	res := ast.Workflow{Range: doc.NodeToRange(workflowNode), Name: workflowName, NameRange: doc.NodeToRange(keyNode)}
 	doc.iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
 		keyNode, valueNode := doc.GetKeyValueNodes(child)
 		if keyNode == nil || valueNode == nil {
@@ -118,7 +118,7 @@ func (doc *YamlDocument) parseSingleJobReference(jobRefNode *sitter.Node) ast.Jo
 	if jobRefNode == nil {
 		return res
 	}
-	res.JobRefRange = NodeToRange(jobRefNode)
+	res.JobRefRange = doc.NodeToRange(jobRefNode)
 	if jobRefNode.Type() != "block_sequence_item" {
 		return res
 	}
@@ -155,7 +155,7 @@ func (doc *YamlDocument) parseSingleJobReference(jobRefNode *sitter.Node) ast.Jo
 	if element != nil && element.Type() == "flow_node" {
 		name := GetChildOfType(element, "plain_scalar")
 		res.JobName = doc.GetNodeText(name)
-		res.JobNameRange = NodeToRange(element)
+		res.JobNameRange = doc.NodeToRange(element)
 		res.StepName = res.JobName
 		res.StepNameRange = res.JobNameRange
 		return res
@@ -167,9 +167,9 @@ func (doc *YamlDocument) parseSingleJobReference(jobRefNode *sitter.Node) ast.Jo
 			return res
 		}
 
-		res.JobNameRange = NodeToRange(key)
+		res.JobNameRange = doc.NodeToRange(key)
 		res.JobName = doc.GetNodeText(key)
-		res.StepNameRange = NodeToRange(key)
+		res.StepNameRange = doc.NodeToRange(key)
 		res.StepName = doc.GetNodeText(key)
 		blockMappingNode = GetChildOfType(value, "block_mapping")
 
@@ -185,11 +185,11 @@ func (doc *YamlDocument) parseSingleJobReference(jobRefNode *sitter.Node) ast.Jo
 				switch keyName {
 				case "type":
 					res.Type = doc.GetNodeText(valueNode)
-					res.TypeRange = NodeToRange(valueNode)
+					res.TypeRange = doc.NodeToRange(valueNode)
 				case "requires":
 					res.Requires = doc.parseSingleJobRequires(valueNode)
 				case "name":
-					res.StepNameRange = NodeToRange(valueNode)
+					res.StepNameRange = doc.NodeToRange(valueNode)
 					res.StepName = doc.GetNodeText(GetFirstChild(valueNode))
 				case "context":
 					res.Context = doc.parseContext(valueNode)
@@ -205,11 +205,11 @@ func (doc *YamlDocument) parseSingleJobReference(jobRefNode *sitter.Node) ast.Jo
 					}
 
 				case "pre-steps":
-					res.PreStepsRange = NodeToRange(child)
+					res.PreStepsRange = doc.NodeToRange(child)
 					res.PreSteps = doc.parseSteps(valueNode)
 
 				case "post-steps":
-					res.PostStepsRange = NodeToRange(child)
+					res.PostStepsRange = doc.NodeToRange(child)
 					res.PostSteps = doc.parseSteps(valueNode)
 
 				default:

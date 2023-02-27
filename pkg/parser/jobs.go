@@ -52,8 +52,8 @@ func (doc *YamlDocument) parseSingleJob(jobNode *sitter.Node) ast.Job {
 		return res
 	}
 	res.Name = jobName
-	res.Range = NodeToRange(jobNode)
-	res.NameRange = NodeToRange(jobNameNode)
+	res.Range = doc.NodeToRange(jobNode)
+	res.NameRange = doc.NodeToRange(jobNameNode)
 
 	machineNode := &sitter.Node{}
 	machineNodeFound := false
@@ -83,24 +83,24 @@ func (doc *YamlDocument) parseSingleJob(jobNode *sitter.Node) ast.Job {
 				}
 
 				res.Parallelism = int(parsedInt)
-				res.ParallelismRange = NodeToRange(child)
+				res.ParallelismRange = doc.NodeToRange(child)
 			case "resource_class":
 				res.ResourceClass = doc.GetNodeText(valueNode)
 
 			case "steps":
-				res.StepsRange = NodeToRange(child)
+				res.StepsRange = doc.NodeToRange(child)
 				res.Steps = doc.parseSteps(valueNode)
 
 			case "executor":
 				res.Executor, res.ExecutorRange, res.ExecutorParameters = doc.parseExecutorRef(valueNode, child)
 
 			case "parameters":
-				res.ParametersRange = NodeToRange(child)
+				res.ParametersRange = doc.NodeToRange(child)
 				res.Parameters = doc.parseParameters(valueNode)
 
 			case "docker":
 				res.Docker = doc.parseSingleExecutorDocker(keyNode, blockMappingNode)
-				res.DockerRange = NodeToRange(child)
+				res.DockerRange = doc.NodeToRange(child)
 
 			case "machine":
 				machineNode = child
@@ -109,7 +109,7 @@ func (doc *YamlDocument) parseSingleJob(jobNode *sitter.Node) ast.Job {
 			case "environment":
 				blockMapping := GetChildMapping(valueNode)
 				res.Environment = doc.parseDictionary(blockMapping)
-				res.EnvironmentRange = NodeToRange(child)
+				res.EnvironmentRange = doc.NodeToRange(child)
 			}
 		}
 	})

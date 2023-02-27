@@ -52,8 +52,8 @@ func (doc *YamlDocument) parseSingleCommand(commandNode *sitter.Node) ast.Comman
 		return res
 	}
 	res.Name = commandName
-	res.Range = NodeToRange(commandNode)
-	res.NameRange = NodeToRange(commandNameNode)
+	res.Range = doc.NodeToRange(commandNode)
+	res.NameRange = doc.NodeToRange(commandNameNode)
 
 	doc.iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
 		keyNode, valueNode := doc.GetKeyValueNodes(child)
@@ -63,13 +63,13 @@ func (doc *YamlDocument) parseSingleCommand(commandNode *sitter.Node) ast.Comman
 		}
 		switch keyName {
 		case "description":
-			res.DescriptionRange = NodeToRange(child)
+			res.DescriptionRange = doc.NodeToRange(child)
 			res.Description = doc.parseDescription(valueNode)
 		case "steps":
-			res.StepsRange = NodeToRange(valueNode)
+			res.StepsRange = doc.NodeToRange(valueNode)
 			res.Steps = doc.parseSteps(valueNode)
 		case "parameters":
-			res.ParametersRange = NodeToRange(valueNode)
+			res.ParametersRange = doc.NodeToRange(valueNode)
 			res.Parameters = doc.parseParameters(valueNode)
 		}
 	})

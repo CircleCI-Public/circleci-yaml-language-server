@@ -33,7 +33,7 @@ func (doc *YamlDocument) parseSingleExecutor(executorNode *sitter.Node) {
 	if definedExecutor, ok := doc.Executors[executorName]; ok {
 		doc.addDiagnostic(protocol.Diagnostic{
 			Severity: protocol.DiagnosticSeverityWarning,
-			Range:    NodeToRange(executorNameNode),
+			Range:    doc.NodeToRange(executorNameNode),
 			Message:  "Executor already defined",
 			Source:   "cci-language-server",
 		})
@@ -87,7 +87,7 @@ func (doc *YamlDocument) parseBaseExecutor(base *ast.BaseExecutor, nameNode *sit
 
 		case "resource_class":
 			base.ResourceClass = doc.GetNodeText(valueNode)
-			base.ResourceClassRange = NodeToRange(child)
+			base.ResourceClassRange = doc.NodeToRange(child)
 			if base.ResourceClass == "" {
 				base.ResourceClassRange.End.Character = 999
 			}
@@ -98,13 +98,13 @@ func (doc *YamlDocument) parseBaseExecutor(base *ast.BaseExecutor, nameNode *sit
 		case "environment":
 			base.BuiltInParameters.Environment = doc.parseDictionary(GetChildOfType(valueNode, "block_mapping"))
 		case "parameters":
-			base.UserParametersRange = NodeToRange(child)
+			base.UserParametersRange = doc.NodeToRange(child)
 			base.UserParameters = doc.parseParameters(valueNode)
 		}
 	})
 
 	base.Name = doc.GetNodeText(nameNode)
-	base.NameRange = NodeToRange(nameNode)
+	base.NameRange = doc.NodeToRange(nameNode)
 	// We get the range of the parent of the parent to get the
 	// whole definition of the executor (name and definition) and not only
 	// the definition
@@ -112,7 +112,7 @@ func (doc *YamlDocument) parseBaseExecutor(base *ast.BaseExecutor, nameNode *sit
 		base.Uncomplete = true
 		return
 	}
-	base.Range = NodeToRange(blockMappingNode.Parent().Parent())
+	base.Range = doc.NodeToRange(blockMappingNode.Parent().Parent())
 	base.Uncomplete = false
 }
 
@@ -139,12 +139,12 @@ func (doc *YamlDocument) parseSingleExecutorMachine(nameNode *sitter.Node, value
 			keyName := doc.GetNodeText(keyNode)
 			switch keyName {
 			case "image":
-				res.ImageRange = NodeToRange(child)
+				res.ImageRange = doc.NodeToRange(child)
 				res.Image = doc.GetNodeText(valueNode)
 			case "docker_layer_caching":
 				res.DockerLayerCaching = doc.GetNodeText(valueNode) == "true"
 			case "resource_class":
-				res.ResourceClassRange = NodeToRange(child)
+				res.ResourceClassRange = doc.NodeToRange(child)
 				res.ResourceClass = doc.GetNodeText(valueNode)
 			}
 		})
@@ -173,7 +173,7 @@ func (doc *YamlDocument) parseSingleExecutorMacOS(nameNode *sitter.Node, valueNo
 			keyName := doc.GetNodeText(keyNode)
 			switch keyName {
 			case "xcode":
-				res.XcodeRange = NodeToRange(child)
+				res.XcodeRange = doc.NodeToRange(child)
 				res.Xcode = doc.GetNodeText(valueNode)
 			}
 		})
@@ -257,7 +257,7 @@ func (doc *YamlDocument) parseDockerImage(imageNode *sitter.Node) ast.DockerImag
 		switch keyName {
 		case "image":
 			dockerImg.Image = ParseDockerImageValue(doc.GetNodeText(valueNode))
-			dockerImg.ImageRange = NodeToRange(child)
+			dockerImg.ImageRange = doc.NodeToRange(child)
 		case "name":
 			dockerImg.Name = doc.GetNodeText(valueNode)
 		case "entrypoint":
@@ -289,7 +289,7 @@ func (doc *YamlDocument) parseDockerImage(imageNode *sitter.Node) ast.DockerImag
 func (doc *YamlDocument) parseExecutorRef(valueNode *sitter.Node, child *sitter.Node) (string, protocol.Range, map[string]ast.ParameterValue) {
 	executorParameters := map[string]ast.ParameterValue{}
 	if valueNode == nil {
-		childRange := NodeToRange(child)
+		childRange := doc.NodeToRange(child)
 		return "", protocol.Range{
 			Start: protocol.Position{
 				Line:      childRange.Start.Line,
@@ -311,7 +311,7 @@ func (doc *YamlDocument) parseExecutorRef(valueNode *sitter.Node, child *sitter.
 			flowNodeChild = flowNodeChild.NextSibling()
 		}
 
-		return doc.GetNodeText(flowNodeChild), NodeToRange(child), executorParameters
+		return doc.GetNodeText(flowNodeChild), doc.NodeToRange(child), executorParameters
 	}
 
 	name := ""
@@ -341,7 +341,7 @@ func (doc *YamlDocument) parseExecutorRef(valueNode *sitter.Node, child *sitter.
 		}
 	})
 
-	return name, NodeToRange(child), executorParameters
+	return name, doc.NodeToRange(child), executorParameters
 }
 
 func (doc *YamlDocument) addedMachineTrueDeprecatedDiag(child *sitter.Node, resourceClass string) bool {
@@ -364,7 +364,7 @@ func (doc *YamlDocument) addedMachineTrueDeprecatedDiag(child *sitter.Node, reso
 	doc.addDiagnostic(
 		protocol.Diagnostic{
 			Severity: protocol.DiagnosticSeverityWarning,
-			Range:    NodeToRange(child),
+			Range:    doc.NodeToRange(child),
 			Message:  "Using `machine: true` is deprecated, please instead specify an image to use.",
 			Tags: []protocol.DiagnosticTag{
 				protocol.DiagnosticTagDeprecated,

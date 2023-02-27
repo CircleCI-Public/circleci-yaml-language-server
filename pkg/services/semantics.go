@@ -158,9 +158,9 @@ func (sem SemanticTokenStruct) highlightOrbs(valueNode *sitter.Node) {
 
 			// Highlight orb method
 			sem.addToken(protocol.Position{Line: valueNode.StartPoint().Row, Character: valueNode.StartPoint().Column + orbNameLength}, orbMethodLength, 0, 0)
-		} else if _, ok := sem.doc.Orbs[content]; ok && utils.PosInRange(sem.doc.OrbsRange, parser.NodeToRange(valueNode).Start) {
+		} else if _, ok := sem.doc.Orbs[content]; ok && utils.PosInRange(sem.doc.OrbsRange, sem.doc.NodeToRange(valueNode).Start) {
 			// Orb definition in the orbs section
-			rng := parser.NodeToRange(valueNode)
+			rng := sem.doc.NodeToRange(valueNode)
 			sem.addToken(rng.Start, rng.End.Character-rng.Start.Character, 1, 0)
 		}
 	}
