@@ -97,8 +97,7 @@ orbs:
 		},
 		{
 			// This test is mainly here because checking an orb's executor would cause a crash
-			Name:       "Invalid remote orb",
-			OnlyErrors: true,
+			Name: "Invalid remote orb",
 			YamlContent: `version: 2.1
 
 orbs:
@@ -107,52 +106,30 @@ orbs:
 jobs:
   localjob:
     executor: slack/exec
-  steps:
-    - run: echo "Hello world"`,
+    steps:
+      - run: echo "Hello world"`,
 			// We want an error on the orb and a warning on the executor
 			Diagnostics: []protocol.Diagnostic{
 				utils.CreateErrorDiagnosticFromRange(protocol.Range{
 					Start: protocol.Position{Line: 3, Character: 2},
 					End:   protocol.Position{Line: 3, Character: 28},
 				},
-					"Orb circleci/toto does not exist"),
-				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+					"Cannot find remote orb circleci/toto@1.0.0"),
+				utils.CreateWarningDiagnosticFromRange(protocol.Range{
 					Start: protocol.Position{Line: 7, Character: 4},
 					End:   protocol.Position{Line: 7, Character: 24},
 				},
-					"Cannot find executor exec in orb slack"),
-			},
-		},
-		{
-			Name:       "Invalid remote orb version",
-			OnlyErrors: true,
-			YamlContent: `version: 2.1
-
-orbs:
-  slack: circleci/slack@10000.0.0
-
-jobs:
-  localjob:
-    executor: slack/exec
-  steps:
-    - run: echo "Hello world"`,
-			// We want an error on the orb and a warning on the executor
-			Diagnostics: []protocol.Diagnostic{
-				utils.CreateErrorDiagnosticFromRange(protocol.Range{
-					Start: protocol.Position{Line: 3, Character: 2},
-					End:   protocol.Position{Line: 3, Character: 33},
+					"Invalid orb or error trying to fetch it: could not find orb circleci/toto@1.0.0"),
+				utils.CreateWarningDiagnosticFromRange(protocol.Range{
+					Start: protocol.Position{Line: 6, Character: 2},
+					End:   protocol.Position{Line: 6, Character: 10},
 				},
-					"Unknown version 10000.0.0 for orb circleci/slack"),
-				utils.CreateErrorDiagnosticFromRange(protocol.Range{
-					Start: protocol.Position{Line: 7, Character: 4},
-					End:   protocol.Position{Line: 7, Character: 24},
-				},
-					"Cannot find executor exec in orb slack"),
+					"Job is unused"),
 			},
 		},
 		{
 			Name: "Local orb with job",
-			YamlContent: `version: 2.1
+			YamlContent: `version: 2.1,
 
 orbs:
   localorb:
