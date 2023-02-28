@@ -9,6 +9,8 @@ import (
 	"go.lsp.dev/protocol"
 )
 
+var simpleOrbExistanceCache = make(map[string]bool)
+
 func (doc *YamlDocument) GetOrbInfoFromName(name string, cache *utils.Cache) (*ast.OrbInfo, error) {
 	// Searching within local orbs
 	orbInfo, ok := doc.LocalOrbInfo[name]
@@ -49,6 +51,20 @@ func (doc *YamlDocument) GetOrFetchOrbInfo(orb ast.Orb, cache *utils.Cache) (*as
 	}
 
 	return orbInfo, nil
+}
+
+func (doc *YamlDocument) DoesOrbExist(orb ast.Orb, cache *utils.Cache) bool {
+	lookup := orb.Url.Name
+	exists, inMap := simpleOrbExistanceCache[lookup]
+
+	if inMap {
+		return exists
+	}
+
+	fetchedOrb, err := GetOrbByName(lookup, doc.Context)
+	simpleOrbExistanceCache[lookup] = err == nil && fetchedOrb.Name != ""
+
+	return simpleOrbExistanceCache[lookup]
 }
 
 func (doc *YamlDocument) parseOrbs(orbsNode *sitter.Node) {

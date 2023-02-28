@@ -114,7 +114,7 @@ jobs:
 					Start: protocol.Position{Line: 3, Character: 2},
 					End:   protocol.Position{Line: 3, Character: 28},
 				},
-					"Cannot find remote orb circleci/toto@1.0.0"),
+					"Orb circleci/toto does not exist"),
 				utils.CreateWarningDiagnosticFromRange(protocol.Range{
 					Start: protocol.Position{Line: 7, Character: 4},
 					End:   protocol.Position{Line: 7, Character: 24},

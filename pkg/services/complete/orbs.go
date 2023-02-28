@@ -2,7 +2,6 @@ package complete
 
 import (
 	"fmt"
-	"regexp"
 	"strings"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
@@ -11,8 +10,6 @@ import (
 )
 
 var simpleRegistryOrbsCache = make(map[string]*NamespaceOrbResponse)
-var fullOrbNameRegex = regexp.MustCompile(`^([a-z0-9\-_]+)\/([a-z0-9\-_]+)@(.*)$`)
-var registryAndNameRegex = regexp.MustCompile(`^([a-z0-9\-_]+)\/([a-z0-9\-_]+)$`)
 
 func (ch *CompletionHandler) completeOrbs() {
 	if ch.DocTag != "original" {
