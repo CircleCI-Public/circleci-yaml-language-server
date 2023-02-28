@@ -79,14 +79,13 @@ func (ch *CompletionHandler) addCompleteEnvVariables(contexts []string, paramete
 
 	if cachedFile := ch.Cache.FileCache.GetFile(ch.Doc.URI); cachedFile != nil {
 		for _, env := range cachedFile.EnvVariables {
-			ch.addCompletionItemWithDetail(env, "From project "+cachedFile.ProjectSlug, "B")
+			ch.addCompletionItemWithDetail(env, "From project "+cachedFile.Project.Name, "B")
 		}
 
-	}
-
-	contextEnvVariables := utils.GetAllContextEnvVariables(ch.Context.Api.Token, ch.Cache, contexts)
-	for _, env := range contextEnvVariables {
-		ch.addCompletionItemWithDetail(env.Name, "From context "+env.AssociatedContext, "B")
+		contextEnvVariables := utils.GetAllContextEnvVariables(ch.Context, ch.Cache, cachedFile.Project.OrganizationName, contexts)
+		for _, env := range contextEnvVariables {
+			ch.addCompletionItemWithDetail(env.Name, "From context "+env.AssociatedContext, "B")
+		}
 	}
 
 	for _, env := range BUILT_IN_ENV {

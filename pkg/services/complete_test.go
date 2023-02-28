@@ -378,7 +378,7 @@ func TestComplete(t *testing.T) {
 					URI:  uri.File(tt.args.filePath),
 					Text: string(content),
 				},
-				ProjectSlug:  "",
+				Project:      utils.Project{},
 				EnvVariables: make([]string, 0),
 			})
 

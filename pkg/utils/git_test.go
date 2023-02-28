@@ -14,28 +14,56 @@ func Test_fromUrlToProjectSlug(t *testing.T) {
 		{
 			name: "github",
 			args: args{
-				projectUrl: "https://github.com/circleci/circleci-vscode-extension",
+				projectUrl: "https://github.com/CircleCI-Public/circleci-yaml-language-server",
 			},
-			want: "gh/circleci/circleci-vscode-extension",
+			want: "gh/CircleCI-Public/circleci-yaml-language-server",
+		},
+		{
+			name: "ssh github",
+			args: args{
+				projectUrl: "git@github.com:CircleCI-Public/circleci-yaml-language-server.git",
+			},
+			want: "gh/CircleCI-Public/circleci-yaml-language-server",
 		},
 		{
 			name: "bitbucket",
 			args: args{
-				projectUrl: "https://bitbucket.org/circleci/circleci-vscode-extension",
+				projectUrl: "https://bitbucket.org/CircleCI-Public/circleci-yaml-language-server",
 			},
-			want: "bb/circleci/circleci-vscode-extension",
+			want: "bb/CircleCI-Public/circleci-yaml-language-server",
+		},
+		{
+			name: "ssh bitbucket",
+			args: args{
+				projectUrl: "git@bitbucket.org:CircleCI-Public/circleci-yaml-language-server.git",
+			},
+			want: "bb/CircleCI-Public/circleci-yaml-language-server",
 		},
 		{
 			name: "gitlab",
 			args: args{
-				projectUrl: "https://gitlab.com/circleci/circleci-vscode-extension",
+				projectUrl: "https://gitlab.com/CircleCI-Public/circleci-yaml-language-server",
+			},
+			want: "",
+		},
+		{
+			name: "ssh gitlab",
+			args: args{
+				projectUrl: "git@gitlab.com:CircleCI-Public/circleci-yaml-language-server.git",
 			},
 			want: "",
 		},
 		{
 			name: "invalid",
 			args: args{
-				projectUrl: "https://invalid.com/circleci/circleci-vscode-extension",
+				projectUrl: "https://invalid.com/CircleCI-Public/circleci-yaml-language-server",
+			},
+			want: "",
+		},
+		{
+			name: "ssh invalid",
+			args: args{
+				projectUrl: "git@invalid.com:CircleCI-Public/circleci-yaml-language-server.git",
 			},
 			want: "",
 		},
