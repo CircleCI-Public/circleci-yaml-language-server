@@ -143,6 +143,7 @@ var ValidARMOrMachineImages = []string{
 	// Ubuntu 2204
 	"ubuntu-2204:current",
 	"ubuntu-2204:edge",
+	"ubuntu-2204:2023.02.1",
 	"ubuntu-2204:2022.10.2",
 	"ubuntu-2204:2022.10.1",
 	"ubuntu-2204:2022.07.2",

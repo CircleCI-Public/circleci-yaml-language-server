@@ -273,6 +273,9 @@ func TestComplete(t *testing.T) {
 					Label: "ubuntu-2204:edge",
 				},
 				{
+					Label: "ubuntu-2204:2023.02.1",
+				},
+				{
 					Label: "ubuntu-2204:2022.10.2",
 				},
 				{
