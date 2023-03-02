@@ -17,8 +17,6 @@ func (methods *Methods) DocumentSymbols(reply jsonrpc2.Replier, req jsonrpc2.Req
 
 	res, err := languageservice.DocumentSymbols(params, methods.Cache, methods.LsContext)
 
-	// fmt.Println("Methods DocSymbols", res)
-
 	if err != nil {
 		return reply(
 			methods.Ctx,

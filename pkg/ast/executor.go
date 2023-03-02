@@ -37,7 +37,6 @@ type ExecutableParameters struct {
 	Description      string
 	Shell            string
 	WorkingDirectory string
-	Environment      EnvironmentParameter
 }
 
 func (e BaseExecutor) GetRange() protocol.Range {
