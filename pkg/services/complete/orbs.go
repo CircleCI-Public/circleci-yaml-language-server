@@ -7,9 +7,13 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	sitter "github.com/smacker/go-tree-sitter"
+	"go.lsp.dev/protocol"
 )
 
-var simpleRegistryOrbsCache = make(map[string]*NamespaceOrbResponse)
+var orbCache = OrbCache{
+	registryOrbs: make(map[string]*NamespaceOrbResponse),
+	orbData:      make(map[string]*OrbGQLData),
+}
 
 func (ch *CompletionHandler) completeOrbs() {
 	if ch.DocTag != "original" {
@@ -27,10 +31,75 @@ func (ch *CompletionHandler) completeOrbs() {
 			continue
 		}
 
-		ch.completeOrbName(child)
+		ch.completeOrb(child)
 
 		return
 	}
+}
+
+func (ch *CompletionHandler) completeOrb(node *sitter.Node) {
+	fmt.Printf("ch.wantOrbVersionCompletion(node) = %+v\n", ch.wantOrbVersionCompletion(node))
+	if ch.wantOrbVersionCompletion(node) {
+		ch.completeOrbVersion(node)
+	} else {
+		ch.completeOrbName(node)
+	}
+}
+
+// To know if we want to complete only the orb version or the complete orb, we detect if the cursor
+// is placed on or after the '@' character
+func (ch *CompletionHandler) wantOrbVersionCompletion(node *sitter.Node) bool {
+	def := ch.Doc.GetOrbURLDefinition(node)
+
+	orbHasVersion := utils.IsDefaultRange(def.Version.Range)
+	if !orbHasVersion {
+		return false
+	}
+	cursorIsOnVersion := utils.PosInRange(def.Version.Range, ch.Params.Position)
+
+	return cursorIsOnVersion
+}
+
+func (ch *CompletionHandler) completeOrbVersion(node *sitter.Node) {
+	def := ch.Doc.GetOrbURLDefinition(node)
+	orbName := fmt.Sprintf("%s/%s", def.Namespace.Text, def.Name.Text)
+	completions, err := ch.getOrbVersionCompletions(
+		orbName,
+		ch.Doc.Context.Api.HostUrl,
+		ch.Doc.Context.Api.Token,
+		ch.Doc.Context.UserIdForTelemetry,
+	)
+	if err != nil {
+		return
+	}
+
+	for i, completion := range completions {
+		ch.Items = append(ch.Items, protocol.CompletionItem{
+			Label: completion,
+			// TODO: this sorting implementation may encounter problems for orbs having more than 256
+			// versions
+			SortText: fmt.Sprintf("%c", i),
+			TextEdit: &protocol.TextEdit{
+				Range:   def.Version.Range,
+				NewText: completion,
+			},
+		})
+	}
+}
+
+func (ch *CompletionHandler) getOrbVersionCompletions(name, hostUrl, token, userId string) ([]string, error) {
+	orbName := strings.TrimSuffix(name, "@")
+
+	orbData, err := orbCache.GetVersionsOfOrb(orbName, hostUrl, token, userId)
+	if err != nil {
+		return nil, err
+	}
+
+	versions := make([]string, len(orbData.Versions))
+	for i, version := range orbData.Versions {
+		versions[i] = version.Version
+	}
+	return versions, nil
 }
 
 func (ch *CompletionHandler) completeOrbName(node *sitter.Node) {
@@ -40,7 +109,6 @@ func (ch *CompletionHandler) completeOrbName(node *sitter.Node) {
 		ch.Doc.Context.Api.Token,
 		ch.Doc.Context.UserIdForTelemetry,
 	)
-
 	if err != nil {
 		return
 	}
@@ -54,7 +122,7 @@ func getOrbNameCompletions(name, hostUrl, token, userId string) ([]string, error
 	parts := strings.Split(name, "/")
 	registry := parts[0]
 
-	response, err := fetchOrbsByRegistry(registry, hostUrl, token, userId)
+	response, err := orbCache.GetOrbsOfRegistry(registry, hostUrl, token, userId)
 
 	if err != nil {
 		return nil, err
@@ -69,78 +137,4 @@ func getOrbNameCompletions(name, hostUrl, token, userId string) ([]string, error
 	}
 
 	return completions, nil
-}
-
-func fetchOrbsByRegistry(registry, hostUrl, token, userId string) (*NamespaceOrbResponse, error) {
-	cached, cacheExists := simpleRegistryOrbsCache[registry]
-
-	if cacheExists {
-		return cached, nil
-	}
-
-	client := utils.NewClient(
-		hostUrl,
-		"graphql-unstable",
-		token,
-		false,
-	)
-
-	query := `
-		query OrbsByRegistry($name: String!) {
-			registryNamespace(name: $name) {
-				orbs(first: 1000){
-					edges {
-						cursor
-						node {
-							id
-							name
-							versions(count: 10) {version}
-						}
-					}
-				}
-			}
-		}
-	`
-
-	request := utils.NewRequest(query)
-	request.SetToken(client.Token)
-	request.SetUserId(userId)
-	request.Var("name", registry)
-
-	var response NamespaceOrbResponse
-	err := client.Run(request, &response)
-
-	if err != nil {
-		return nil, err
-	}
-
-	simpleRegistryOrbsCache[registry] = &response
-
-	return &response, nil
-}
-
-type OrbGQLData struct {
-	ID       string
-	Name     string
-	Versions []struct {
-		Version string `json:"version"`
-		Source  string `json:"source"`
-	} `json:"versions"`
-}
-
-type NamespaceOrbResponse struct {
-	RegistryNamespace struct {
-		ID   string
-		Name string
-		Orbs struct {
-			Edges []struct {
-				Cursor string
-				Node   OrbGQLData
-			}
-			TotalCount int
-			PageInfo   struct {
-				HasNextPage bool
-			}
-		}
-	}
 }

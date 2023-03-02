@@ -162,3 +162,54 @@ func (doc *YamlDocument) getOrbVersionRange(orbNode *sitter.Node) protocol.Range
 		End: orbRange.End,
 	}
 }
+
+func (doc *YamlDocument) GetOrbURLDefinition(node *sitter.Node) ast.OrbURLDefinition {
+	orbText := doc.GetNodeText(node)
+	orbRange := NodeToRange(node)
+	return getOrbDefinitionFromTextAndRange(orbText, orbRange)
+}
+
+func getOrbDefinitionFromTextAndRange(orbText string, orbRange protocol.Range) (def ast.OrbURLDefinition) {
+	//
+	// Namespace
+	//
+	endOfNs := strings.Index(orbText, "/")
+	if endOfNs == -1 {
+		endOfNs = len(orbText)
+	}
+
+	def.Namespace.Text = orbText[:endOfNs]
+	def.Namespace.Range.Start = orbRange.Start
+	def.Namespace.Range.End = orbRange.Start
+	def.Namespace.Range.End.Character += uint32(endOfNs)
+	if endOfNs == len(orbText) {
+		return
+	}
+
+	//
+	// Name
+	//
+	endOfName := strings.Index(orbText, "@")
+	if endOfName == -1 {
+		endOfName = len(orbText)
+	}
+
+	def.Name.Text = orbText[endOfNs+1 : endOfName]
+	def.Name.Range.Start = def.Namespace.Range.End
+	def.Name.Range.Start.Character += 1
+	def.Name.Range.End = orbRange.Start
+	def.Name.Range.End.Character += uint32(endOfName)
+	if endOfName == len(orbText) {
+		return
+	}
+
+	//
+	// Version
+	//
+	def.Version.Text = orbText[endOfName+1:]
+	def.Version.Range.Start = def.Name.Range.End
+	def.Version.Range.Start.Character += 1
+	def.Version.Range.End = orbRange.End
+
+	return
+}
