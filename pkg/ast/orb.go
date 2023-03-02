@@ -23,6 +23,12 @@ type OrbURL struct {
 	Version string
 }
 
+type OrbURLDefinition struct {
+	Namespace TextAndRange
+	Name      TextAndRange
+	Version   TextAndRange
+}
+
 func (orb *OrbURL) GetOrbID() string {
 	if orb.IsLocal {
 		return orb.Name
