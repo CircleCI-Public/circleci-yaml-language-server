@@ -21,6 +21,7 @@ fi
 echo "Scanning for secrets..."
 SECRETS=`detect-secrets scan -n \
     --exclude-files .husky/hooks/pre-commit \
+    --exclude-files .circleci/release/release-please-config.json \
     | jq .results`
     
 SECRETS_NUMBER=`echo $SECRETS | jq length`
