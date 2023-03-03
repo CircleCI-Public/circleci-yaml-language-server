@@ -179,6 +179,8 @@ export class LSP {
             clientOptions,
         );
 
+        client.onTelemetry((event) => console.log('Telemetry event', event));
+
         return client;
     }
 

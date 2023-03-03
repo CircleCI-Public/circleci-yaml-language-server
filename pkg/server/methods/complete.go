@@ -22,10 +22,9 @@ func (methods *Methods) Complete(reply jsonrpc2.Replier, req jsonrpc2.Request) e
 	res, err := languageservice.Complete(params, methods.Cache, methods.LsContext)
 	go (func() {
 		methods.SendTelemetryEvent(TelemetryEvent{
-			Event:  "Complete",
-			Action: "finished",
-			Properties: DidOpenFinishedProperties{
-				Filename: params.TextDocument.URI.Filename(),
+			Action: "autocompleted",
+			Properties: map[string]interface{}{
+				"filename": params.TextDocument.URI.Filename(),
 			},
 		})
 	})()

@@ -38,10 +38,9 @@ func (methods *Methods) DidOpen(reply jsonrpc2.Replier, req jsonrpc2.Request) er
 	go (func() {
 		methods.notificationMethods(params.TextDocument)
 		methods.SendTelemetryEvent(TelemetryEvent{
-			Event:  "DidOpen",
-			Action: "finished",
-			Properties: DidOpenFinishedProperties{
-				Filename: params.TextDocument.URI.Filename(),
+			Action: "opened_file",
+			Properties: map[string]interface{}{
+				"filename": params.TextDocument.URI.Filename(),
 			},
 		})
 	})()
