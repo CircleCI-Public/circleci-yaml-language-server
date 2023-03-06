@@ -30,6 +30,12 @@ jobs:
     steps:
       - checkout
       - run: <<parameters.myparam>>
+  someanotherjob:
+    <<: *buildJob
+    executor: { name: go }
+    steps:
+      - checkout
+      - run: <<parameters.myparam>>
 
   anotherjob:
     executor:
@@ -77,3 +83,5 @@ workflows:
       - somejob:
           myparam: some-value
       - anotherjob
+      - someanotherjob:
+          myparam: some-value

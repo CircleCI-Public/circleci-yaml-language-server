@@ -304,9 +304,7 @@ func (doc *YamlDocument) parseExecutorRef(valueNode *sitter.Node, child *sitter.
 	}
 
 	// valueNode is either a flow_node or a block_node containing a block_mapping_pair
-	if valueNode.Type() == "flow_node" {
-		flowNodeChild := GetFirstChild(valueNode)
-
+	if flowNodeChild := GetFirstChild(valueNode); valueNode.Type() == "flow_node" && flowNodeChild != nil && flowNodeChild.Type() != "flow_mapping" {
 		if flowNodeChild != nil && flowNodeChild.Type() == "anchor" {
 			flowNodeChild = flowNodeChild.NextSibling()
 		}
