@@ -52,7 +52,6 @@ type RequestConfig struct {
 }
 
 func (cache *OrbCache) request(config RequestConfig) (err error) {
-	fmt.Printf("config = %+v\n", config)
 	client := utils.NewClient(
 		config.HostUrl,
 		"graphql-unstable",
