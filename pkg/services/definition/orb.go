@@ -101,7 +101,8 @@ func (def DefinitionStruct) getOrbParamLocation(name string, paramName string) (
 		return []protocol.Location{}, fmt.Errorf("orb not found")
 	}
 
-	orbFile, err := def.GetOrbInfo(name)
+	orbName := splittedName[0]
+	orbFile, err := def.GetOrbInfo(orbName)
 
 	if err != nil {
 		return []protocol.Location{}, err

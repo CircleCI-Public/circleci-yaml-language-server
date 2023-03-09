@@ -1,5 +1,8 @@
 version: 2.1
 
+orbs:
+  macos: circleci/macos@2
+
 jobs:
   build:
     docker:
@@ -10,6 +13,8 @@ jobs:
     steps:
         - checkout
         - run: echo "hello world"
+        - macos/switch-ruby:
+            version: "3"
 
 workflows:
   test-build:

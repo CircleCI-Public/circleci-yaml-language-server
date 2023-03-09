@@ -1,0 +1,25 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Definition Definition on parameter 1`] = `
+DiagnosticList {
+  "list": [],
+}
+`;
+
+exports[`Definition Definition on parameter 2`] = `
+[
+  {
+    "range": {
+      "end": {
+        "character": 28,
+        "line": 428,
+      },
+      "start": {
+        "character": 12,
+        "line": 425,
+      },
+    },
+    "uri": "file:///home/circleci/.cache/cci/orbs/.circleci/circleci/macos@2.yml",
+  },
+]
+`;
