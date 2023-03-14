@@ -21,7 +21,7 @@ func ParseYamlAnchors(doc *YamlDocument) map[string]YamlAnchor {
 			valueNode := node.Parent()
 
 			anchorMap[name] = YamlAnchor{
-				DefinitionRange: NodeToRange(node),
+				DefinitionRange: doc.NodeToRange(node),
 				References:      &[]protocol.Range{},
 				ValueNode:       valueNode,
 			}
@@ -34,7 +34,7 @@ func ParseYamlAnchors(doc *YamlDocument) map[string]YamlAnchor {
 			node := capture.Node
 			name := doc.GetNodeText(node)[1:]
 
-			aliasRange := NodeToRange(node)
+			aliasRange := doc.NodeToRange(node)
 			anchor, ok := anchorMap[name]
 
 			if !ok {

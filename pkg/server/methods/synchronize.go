@@ -155,7 +155,7 @@ func (methods *Methods) applyIncrementalChanges(uri protocol.URI, changes []prot
 func (methods *Methods) updateOrbFile(content []byte, uri protocol.URI) {
 	isOrb, orbId := methods.isOrb(uri)
 	if isOrb {
-		parsedOrbSource, err := parser.ParseFromContent([]byte(content), methods.LsContext, uri)
+		parsedOrbSource, err := parser.ParseFromContent([]byte(content), methods.LsContext, uri, protocol.Position{})
 		if err == nil {
 			methods.Cache.OrbCache.UpdateOrbParsedAttributes(orbId, parsedOrbSource.ToOrbParsedAttributes())
 		}

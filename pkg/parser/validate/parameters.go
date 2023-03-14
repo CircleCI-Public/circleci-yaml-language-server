@@ -12,9 +12,9 @@ import (
 )
 
 func (val Validate) ValidatePipelineParameters() {
-	if len(val.Doc.PipelinesParameters) == 0 && !utils.IsDefaultRange(val.Doc.PipelinesParametersRange) {
+	if len(val.Doc.PipelineParameters) == 0 && !utils.IsDefaultRange(val.Doc.PipelineParametersRange) {
 		val.addDiagnostic(
-			utils.CreateEmptyAssignationWarning(val.Doc.PipelinesParametersRange),
+			utils.CreateEmptyAssignationWarning(val.Doc.PipelineParametersRange),
 		)
 	}
 }
@@ -107,7 +107,7 @@ func (val Validate) checkParamUsedWithParam(param ast.ParameterValue, stepName s
 	var paramUsedAsValue ast.Parameter
 	var ok bool
 	if isPipelineParam {
-		paramUsedAsValue, ok = val.Doc.PipelinesParameters[paramName]
+		paramUsedAsValue, ok = val.Doc.PipelineParameters[paramName]
 	} else {
 		paramUsedAsValue, ok = parameters[paramName]
 	}
@@ -139,9 +139,9 @@ func (val Validate) CheckIfParamsExist() {
 				var parameters map[string]ast.Parameter
 
 				if isPipeline {
-					parameters = val.Doc.PipelinesParameters
+					parameters = val.Doc.PipelineParameters
 				} else {
-					parameters = val.Doc.GetParamsWithPosition(parser.NodeToRange(node).Start)
+					parameters = val.Doc.GetParamsWithPosition(val.Doc.NodeToRange(node).Start)
 				}
 
 				_, parameterFound := parameters[param.Name]

@@ -122,7 +122,7 @@ async function immediateDiagnostics(sortDiagnostics = true): Promise<DiagnosticL
         }
 
         if (!payload?.params) {
-          throw new Error(`Invalid payload: ${payload}`);
+          throw new Error(`Invalid payload: ${JSON.stringify(payload)}`);
         }
 
         resolve(normalize(payload.params));

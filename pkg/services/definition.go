@@ -15,5 +15,5 @@ func Definition(params protocol.DefinitionParams, cache *utils.Cache, context *u
 
 	def := definition.DefinitionStruct{Cache: cache, Params: params, Doc: yamlDocument}
 
-	return def.Definition(yamlDocument)
+	return def.Definition()
 }

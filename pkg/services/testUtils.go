@@ -62,7 +62,7 @@ func (root ExpDiag) File(context *utils.LsContext, uri protocol.URI) ExpDiagStru
 
 // ExpectDiagnostic.String
 func (root ExpDiag) String(context *utils.LsContext, content string) ExpDiagStruct {
-	yamlDocument, err := parser.ParseFromContent([]byte(content), context, uri.File(""))
+	yamlDocument, err := parser.ParseFromContent([]byte(content), context, uri.File(""), protocol.Position{})
 
 	return buildExDiag(root.t, yamlDocument, err)
 }

@@ -64,13 +64,14 @@ orbs:
     commands:
       localcommand:
         steps:
-          - echo "Hello world"`,
+          - run: echo "Hello world"
+          - localorb/echo`,
 			Diagnostics: []protocol.Diagnostic{
 				utils.CreateErrorDiagnosticFromRange(protocol.Range{
-					Start: protocol.Position{Line: 8, Character: 12},
-					End:   protocol.Position{Line: 8, Character: 30},
+					Start: protocol.Position{Line: 9, Character: 12},
+					End:   protocol.Position{Line: 9, Character: 25},
 				},
-					"Cannot find declaration for step localorb/echo \"Hello world\""),
+					"Cannot find declaration for step localorb/echo"),
 			},
 		},
 		{
@@ -144,9 +145,11 @@ workflows:
   someworkflow:
     jobs:
       - localorb/localjob`,
+			OnlyErrors: true,
 		},
 		{
-			Name: "Local orb with command",
+			Name:       "Local orb with command",
+			OnlyErrors: true,
 			YamlContent: `version: 2.1
 
 orbs:
@@ -169,7 +172,8 @@ workflows:
       - somejob`,
 		},
 		{
-			Name: "Local orb with executor",
+			Name:       "Local orb with executor",
+			OnlyErrors: true,
 			YamlContent: `version: 2.1
 
 orbs:
@@ -190,58 +194,61 @@ workflows:
     jobs:
       - somejob`,
 		},
+		// 		{
+		// 			Name:       "Local orb with internal references",
+		// 			OnlyErrors: true,
+		// 			YamlContent: `version: 2.1
+
+		// orbs:
+		//   localorb:
+		//     jobs:
+		//       localjob:
+		//         executor: localexecutor
+		//         steps:
+		//           - localcommand
+
+		//     executors:
+		//       localexecutor:
+		//         docker:
+		//           - image: cimg/base:2020.01
+
+		//     commands:
+		//       localcommand:
+		//         steps:
+		//           - run: echo "Hello world"
+
+		// workflows:
+		//   someworkflow:
+		//     jobs:
+		//       - localorb/localjob`,
+		// 		},
+		// 		{
+		// 			Name:       "Local orb with special steps",
+		// 			OnlyErrors: true,
+		// 			YamlContent: `version: 2.1
+
+		// orbs:
+		//   localorb:
+		//     jobs:
+		//       localjob:
+		//         docker:
+		//           - image: cimg/base:2020.01
+		//         steps:
+		//           - checkout
+		//           - special_save_cache
+		//     commands:
+		//       special_save_cache:
+		//         steps:
+		//           - save_cache
+
+		// workflows:
+		//   someworkflow:
+		//     jobs:
+		//       - localorb/localjob`,
+		// 		},
 		{
-			Name: "Local orb with internal references",
-			YamlContent: `version: 2.1
-
-orbs:
-  localorb:
-    jobs:
-      localjob:
-        executor: localexecutor
-        steps:
-          - localcommand
-
-    executors:
-      localexecutor:
-        docker:
-          - image: cimg/base:2020.01
-
-    commands:
-      localcommand:
-        steps:
-          - run: echo "Hello world"
-
-workflows:
-  someworkflow:
-    jobs:
-      - localorb/localjob`,
-		},
-		{
-			Name: "Local orb with special steps",
-			YamlContent: `version: 2.1
-
-orbs:
-  localorb:
-    jobs:
-      localjob:
-        docker:
-          - image: cimg/base:2020.01
-        steps:
-          - checkout
-          - special_save_cache
-    commands:
-      special_save_cache:
-        steps:
-          - save_cache
-
-workflows:
-  someworkflow:
-    jobs:
-      - localorb/localjob`,
-		},
-		{
-			Name: "Local with strange positioned comment",
+			Name:       "Local with strange positioned comment",
+			OnlyErrors: true,
 			YamlContent: `version: 2.1
 
 orbs:

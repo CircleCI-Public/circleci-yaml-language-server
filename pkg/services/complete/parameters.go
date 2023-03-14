@@ -74,7 +74,7 @@ func (ch *CompletionHandler) addParameterReferenceCompletion(node *sitter.Node) 
 
 func (ch *CompletionHandler) addPipelineParametersReferenceCompletion() {
 	shouldAddClosingBrackets := ch.shouldAddParamsClosingBrackets()
-	for _, param := range ch.Doc.PipelinesParameters {
+	for _, param := range ch.Doc.PipelineParameters {
 		if shouldAddClosingBrackets {
 			ch.addCompletionItemFieldWithCustomText(param.GetName(), "", " >>", "", "")
 		} else {

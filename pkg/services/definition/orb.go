@@ -13,12 +13,21 @@ import (
 func (def DefinitionStruct) getOrbDefinition() ([]protocol.Location, error) {
 	var orb ast.Orb
 	for _, currentOrb := range def.Doc.Orbs {
-		if utils.PosInRange(currentOrb.NameRange, def.Params.Position) {
+		if utils.PosInRange(currentOrb.NameRange, def.Params.Position) ||
+			utils.PosInRange(currentOrb.Range, def.Params.Position) {
 			orb = currentOrb
 		}
 	}
 
 	orbInfo, err := def.GetOrbInfo(orb.Name)
+
+	if orb.Url.IsLocal {
+		return DefinitionStruct{
+			Cache:  def.Cache,
+			Params: def.Params,
+			Doc:    def.Doc.FromOrbParsedAttributesToYamlDocument(orbInfo.OrbParsedAttributes),
+		}.Definition()
+	}
 
 	if err != nil {
 		return nil, err
