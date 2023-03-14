@@ -95,18 +95,7 @@ func (val Validate) validateSingleJob(job ast.Job) {
 		)
 	}
 
-	for _, img := range job.Docker.Image {
-		isValid, errMessage := ValidateDockerImage(&img, &val.Cache.DockerCache)
-
-		if !isValid {
-			val.addDiagnostic(
-				utils.CreateErrorDiagnosticFromRange(
-					img.ImageRange,
-					errMessage,
-				),
-			)
-		}
-	}
+	val.validateDockerExecutor(job.Docker)
 }
 
 func (val Validate) checkIfJobIsUsed(job ast.Job) bool {

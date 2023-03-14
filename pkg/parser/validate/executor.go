@@ -187,6 +187,27 @@ func (val Validate) validateDockerExecutor(executor ast.DockerExecutor) {
 				),
 			)
 		}
+
+		if img.Image.Namespace == "circleci" {
+			val.addDiagnostic(
+				utils.CreateDiagnosticFromRange(
+					img.ImageRange,
+					protocol.DiagnosticSeverityWarning,
+					"Docker images from `circleci` namespace are deprecated. Please use its `cimg` namespace's alternative.",
+					[]protocol.CodeAction{
+						utils.CreateCodeActionTextEdit(
+							"Use `cimg` namespace's alternative",
+							val.Doc.URI, []protocol.TextEdit{
+								{
+									Range:   img.ImageRange,
+									NewText: fmt.Sprintf("image: %s", strings.Replace(img.Image.FullPath, "circleci", "cimg", 1)),
+								},
+							}, true,
+						),
+					},
+				),
+			)
+		}
 	}
 }
 
