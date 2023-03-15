@@ -28,7 +28,7 @@ func (doc *YamlDocument) parseEnvs(node *sitter.Node) ast.Environment {
 	)
 
 	return ast.Environment{
-		Range: NodeToRange(node),
+		Range: doc.NodeToRange(node),
 		Keys:  keys,
 	}
 }

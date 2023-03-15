@@ -10,13 +10,13 @@ import (
 )
 
 func resolvePipelineParametersSymbols(document *parser.YamlDocument) []protocol.DocumentSymbol {
-	if utils.IsDefaultRange(document.PipelinesParametersRange) {
+	if utils.IsDefaultRange(document.PipelineParametersRange) {
 		return nil
 	}
 
 	children := []protocol.DocumentSymbol{}
 
-	for _, param := range document.PipelinesParameters {
+	for _, param := range document.PipelineParameters {
 		children = append(children, parameterDefinitionSymbols(param))
 	}
 
@@ -24,8 +24,8 @@ func resolvePipelineParametersSymbols(document *parser.YamlDocument) []protocol.
 		{
 			Name:           "Pipeline Parameters",
 			Kind:           1,
-			Range:          document.PipelinesParametersRange,
-			SelectionRange: document.PipelinesParametersRange,
+			Range:          document.PipelineParametersRange,
+			SelectionRange: document.PipelineParametersRange,
 			Children:       children,
 		},
 	}

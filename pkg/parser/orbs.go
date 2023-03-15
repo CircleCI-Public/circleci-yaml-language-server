@@ -164,7 +164,7 @@ func (doc *YamlDocument) getOrbVersionRange(orbNode *sitter.Node) protocol.Range
 
 func (doc *YamlDocument) GetOrbURLDefinition(node *sitter.Node) ast.OrbURLDefinition {
 	orbText := doc.GetNodeText(node)
-	orbRange := NodeToRange(node)
+	orbRange := doc.NodeToRange(node)
 	return getOrbDefinitionFromTextAndRange(orbText, orbRange)
 }
 
