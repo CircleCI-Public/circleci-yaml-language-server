@@ -85,6 +85,23 @@ func singleJobSymbols(job ast.Job) protocol.DocumentSymbol {
 		)
 	}
 
+	if !utils.IsDefaultRange(job.MacOSRange) {
+		jobSymbol.Children = append(jobSymbol.Children, protocol.DocumentSymbol{
+			Name:           "MacOS",
+			Range:          job.MacOSRange,
+			SelectionRange: job.MacOSRange,
+			Kind:           protocol.SymbolKind(ExecutorsSymbol),
+			Children: []protocol.DocumentSymbol{
+				{
+					Name:           "xcode",
+					Detail:         job.MacOS.Xcode,
+					Range:          job.MacOS.Range,
+					SelectionRange: job.MacOS.Range,
+				},
+			},
+		})
+	}
+
 	return jobSymbol
 }
 

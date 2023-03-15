@@ -10,11 +10,20 @@ import (
 func machineExecutorSymbols(machineExec ast.MachineExecutor) protocol.DocumentSymbol {
 	splits := strings.Split(machineExec.Image, ":")
 
-	machineName := splits[0]
+	machineName := ""
 	machineVersion := ""
 
-	if len(splits) > 1 {
-		machineVersion = splits[1]
+	if machineExec.IsDeprecated {
+		// There is no image when using machine: true
+		// set the name & version to different values to reflect this
+		machineName = "default machine"
+		machineVersion = "[deprecated]"
+	} else {
+		machineName = splits[0]
+
+		if len(splits) > 1 {
+			machineVersion = splits[1]
+		}
 	}
 
 	symbol := protocol.DocumentSymbol{
@@ -23,6 +32,7 @@ func machineExecutorSymbols(machineExec ast.MachineExecutor) protocol.DocumentSy
 		SelectionRange: machineExec.Range,
 		Detail:         machineVersion,
 		Kind:           protocol.SymbolKind(DockerSymbol),
+		Deprecated:     true,
 	}
 
 	return symbol
