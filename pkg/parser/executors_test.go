@@ -152,10 +152,18 @@ func TestYamlDocument_parseExecutors(t *testing.T) {
 								Character: 29,
 							},
 						},
-						BuiltInParameters: ast.ExecutableParameters{
-							Environment: map[string]string{
-								"AWS_ECR_REGISTRY_ID": "183081753049",
+						Environment: ast.Environment{
+							Range: protocol.Range{
+								Start: protocol.Position{
+									Line:      16,
+									Character: 12,
+								},
+								End: protocol.Position{
+									Line:      16,
+									Character: 47,
+								},
 							},
+							Keys: []string{"AWS_ECR_REGISTRY_ID"},
 						},
 					},
 				},

@@ -16,6 +16,8 @@ type Executor interface {
 
 	GetParameters() map[string]Parameter
 	GetParametersRange() protocol.Range
+
+	GetEnvs() Environment
 }
 
 type BaseExecutor struct {
@@ -28,13 +30,13 @@ type BaseExecutor struct {
 	UserParameters      map[string]Parameter
 	UserParametersRange protocol.Range
 	Uncomplete          bool
+	Environment         Environment
 }
 
 type ExecutableParameters struct {
 	Description      string
 	Shell            string
 	WorkingDirectory string
-	Environment      EnvironmentParameter
 }
 
 func (e BaseExecutor) GetRange() protocol.Range {
@@ -63,6 +65,10 @@ func (e BaseExecutor) GetParameters() map[string]Parameter {
 
 func (e BaseExecutor) GetParametersRange() protocol.Range {
 	return e.UserParametersRange
+}
+
+func (e BaseExecutor) GetEnvs() Environment {
+	return e.Environment
 }
 
 type DockerExecutor struct {
@@ -97,6 +103,10 @@ func (e DockerExecutor) GetParameters() map[string]Parameter {
 
 func (e DockerExecutor) GetParametersRange() protocol.Range {
 	return e.UserParametersRange
+}
+
+func (e DockerExecutor) GetEnvs() Environment {
+	return e.Environment
 }
 
 type DockerImage struct {
@@ -166,6 +176,10 @@ func (e MachineExecutor) GetParametersRange() protocol.Range {
 	return e.UserParametersRange
 }
 
+func (e MachineExecutor) GetEnvs() Environment {
+	return e.Environment
+}
+
 type MacOSExecutor struct {
 	BaseExecutor
 	Xcode      string
@@ -200,6 +214,10 @@ func (e MacOSExecutor) GetParametersRange() protocol.Range {
 	return e.UserParametersRange
 }
 
+func (e MacOSExecutor) GetEnvs() Environment {
+	return e.Environment
+}
+
 type WindowsExecutor struct {
 	BaseExecutor
 	Image string
@@ -231,6 +249,10 @@ func (e WindowsExecutor) GetParameters() map[string]Parameter {
 
 func (e WindowsExecutor) GetParametersRange() protocol.Range {
 	return e.UserParametersRange
+}
+
+func (e WindowsExecutor) GetEnvs() Environment {
+	return e.Environment
 }
 
 type EnvironmentParameter map[string]string
