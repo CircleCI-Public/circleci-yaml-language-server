@@ -45,8 +45,6 @@ func singleWorkflowSymbols(workflow ast.Workflow) protocol.DocumentSymbol {
 	}
 
 	if workflow.HasTrigger {
-		fmt.Println("Triggers symbols", workflow.Triggers)
-
 		symbol.Children = append(symbol.Children, protocol.DocumentSymbol{
 			Name:           "Triggers",
 			Range:          workflow.TriggersRange,

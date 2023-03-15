@@ -37,8 +37,6 @@ func resolveOrbSymbols(document *parser.YamlDocument) []protocol.DocumentSymbol 
 	return []protocol.DocumentSymbol{symbol}
 }
 
-// TODO: Remove this
-
 func symbolFromRange(rng protocol.Range, label string, symbol float64) protocol.DocumentSymbol {
 	return protocol.DocumentSymbol{
 		Name:           label,
