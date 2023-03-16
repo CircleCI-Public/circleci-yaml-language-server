@@ -13,7 +13,7 @@ func machineExecutorSymbols(machineExec ast.MachineExecutor) protocol.DocumentSy
 	machineName := ""
 	machineVersion := ""
 
-	if machineExec.IsDeprecated {
+	if machineExec.Machine {
 		// There is no image when using machine: true
 		// set the name & version to different values to reflect this
 		machineName = "default machine"

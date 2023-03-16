@@ -127,6 +127,17 @@ func (doc *YamlDocument) parseSingleExecutorMachine(nameNode *sitter.Node, value
 	parseMachine := func(blockNode *sitter.Node) {
 		machineNode = blockNode
 
+		if blockNode.Type() == "flow_node" {
+			machineBoolValueNode := GetChildOfType(
+				GetChildOfType(blockNode, "plain_scalar"),
+				"boolean_scalar",
+			)
+
+			if machineBoolValueNode != nil {
+				res.Machine = utils.GetYAMLBooleanValue(doc.GetNodeText(machineBoolValueNode))
+			}
+		}
+
 		// blockNode is a block_node
 		blockMappingNode := GetChildMapping(blockNode)
 
@@ -137,12 +148,15 @@ func (doc *YamlDocument) parseSingleExecutorMachine(nameNode *sitter.Node, value
 		doc.iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
 			keyNode, valueNode := doc.GetKeyValueNodes(child)
 			keyName := doc.GetNodeText(keyNode)
+
 			switch keyName {
 			case "image":
 				res.ImageRange = doc.NodeToRange(child)
 				res.Image = doc.GetNodeText(valueNode)
+
 			case "docker_layer_caching":
 				res.DockerLayerCaching = doc.GetNodeText(valueNode) == "true"
+
 			case "resource_class":
 				res.ResourceClassRange = doc.NodeToRange(child)
 				res.ResourceClass = doc.GetNodeText(valueNode)
