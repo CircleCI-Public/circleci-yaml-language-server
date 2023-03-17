@@ -145,6 +145,7 @@ type MachineExecutor struct {
 	Image              string
 	ImageRange         protocol.Range
 	DockerLayerCaching bool
+	Machine            bool
 	IsDeprecated       bool // This field is true when using `machine: true`
 }
 

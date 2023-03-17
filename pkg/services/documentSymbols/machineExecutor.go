@@ -12,12 +12,14 @@ func machineExecutorSymbols(machineExec ast.MachineExecutor) protocol.DocumentSy
 
 	machineName := ""
 	machineVersion := ""
+	deprecated := false
 
-	if machineExec.IsDeprecated {
+	if machineExec.Machine {
 		// There is no image when using machine: true
 		// set the name & version to different values to reflect this
 		machineName = "default machine"
 		machineVersion = "[deprecated]"
+		deprecated = true
 	} else {
 		machineName = splits[0]
 
@@ -32,7 +34,7 @@ func machineExecutorSymbols(machineExec ast.MachineExecutor) protocol.DocumentSy
 		SelectionRange: machineExec.Range,
 		Detail:         machineVersion,
 		Kind:           protocol.SymbolKind(DockerSymbol),
-		Deprecated:     true,
+		Deprecated:     deprecated,
 	}
 
 	return symbol
