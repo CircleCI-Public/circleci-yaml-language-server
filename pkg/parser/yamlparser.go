@@ -324,6 +324,23 @@ func (doc *YamlDocument) DoesWorkflowExist(workflowName string) bool {
 	return ok
 }
 
+func (doc *YamlDocument) GetWorkflows() []ast.TextAndRange {
+	workflows := doc.Workflows
+
+	workflowRes := []ast.TextAndRange{}
+	for _, workflow := range workflows {
+		workflowRes = append(workflowRes, ast.TextAndRange{
+			Text: workflow.Name,
+			Range: protocol.Range{
+				Start: workflow.NameRange.Start,
+				End:   workflow.NameRange.End,
+			},
+		})
+	}
+
+	return workflowRes
+}
+
 func (doc *YamlDocument) parseVersion(versionNode *sitter.Node) {
 	parsedVersion, err := strconv.ParseFloat(doc.GetNodeText(versionNode), 32)
 	if err != nil {

@@ -3,10 +3,12 @@ package methods
 import (
 	"fmt"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"github.com/segmentio/encoding/json"
 	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/protocol"
+	"go.lsp.dev/uri"
 )
 
 func (methods *Methods) ExecuteCommand(reply jsonrpc2.Replier, req jsonrpc2.Request) error {
@@ -37,6 +39,21 @@ func (methods *Methods) ExecuteCommand(reply jsonrpc2.Replier, req jsonrpc2.Requ
 			return reply(methods.Ctx, nil, nil)
 		}
 		methods.setUserId(param)
+	case "getWorkflows":
+		content, okContent := arguments[0].(string)
+		fileUri, okUri := arguments[1].(string)
+		if !okContent || !okUri {
+			return reply(methods.Ctx, nil, nil)
+		}
+
+		parsedFile, err := parser.ParseFromContent([]byte(content), methods.LsContext, uri.File(fileUri), protocol.Position{})
+		if err != nil {
+			return reply(methods.Ctx, nil, nil)
+		}
+
+		workflows := parsedFile.GetWorkflows()
+
+		return reply(methods.Ctx, workflows, nil)
 	}
 
 	return reply(methods.Ctx, nil, nil)
