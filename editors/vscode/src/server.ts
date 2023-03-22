@@ -12,6 +12,7 @@ import {
     isAppleSilicon,
     isInDevMode,
 } from './utils';
+import { readFileSync } from 'fs';
 
 export class LSP {
     private _server: cp.ChildProcess | undefined;
@@ -212,6 +213,27 @@ export class LSP {
             'workspace/executeCommand',
             setProjectSlugCommand,
         );
+
+        const filePath = path.join(
+            __dirname,
+            '..',
+            '..',
+            '..',
+            '.circleci',
+            'config.yml',
+        );
+        const content = readFileSync(filePath, {
+            encoding: 'utf-8',
+        });
+        const getWorkflowsCommand = {
+            command: 'getWorkflows',
+            arguments: [content, filePath],
+        };
+        const res = await client.sendRequest(
+            'workspace/executeCommand',
+            getWorkflowsCommand,
+        );
+        console.log(res);
 
         return client;
     }

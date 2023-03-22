@@ -3,6 +3,6 @@ package ast
 import "go.lsp.dev/protocol"
 
 type TextAndRange struct {
-	Text  string
-	Range protocol.Range
+	Text  string         `json:"text"`
+	Range protocol.Range `json:"range"`
 }
