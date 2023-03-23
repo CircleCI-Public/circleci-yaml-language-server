@@ -70,7 +70,11 @@ func (step Run) GetRange() protocol.Range {
 }
 
 func (step Run) GetName() string {
-	return step.Name
+	if step.Name != "" {
+		return step.Name
+	}
+
+	return "run: " + step.Command
 }
 
 type Checkout struct {

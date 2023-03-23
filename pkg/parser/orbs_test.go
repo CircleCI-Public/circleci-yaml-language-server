@@ -57,47 +57,6 @@ orbs:
 	return tests
 }
 
-func TestYamlDocument_parseOrbs(t *testing.T) {
-	tests := getOrbsTest()
-
-	for _, tt := range tests {
-		t.Run(tt.name+": parseOrbs", func(t *testing.T) {
-			doc := &YamlDocument{
-				Commands: make(map[string]ast.Command),
-				Content:  []byte(tt.args.orbsString),
-				Orbs:     make(map[string]ast.Orb),
-
-				LocalOrbInfo: make(map[string]*ast.OrbInfo),
-			}
-			orbNode := getNodeForString(tt.args.orbsString)
-
-			doc.parseOrbs(orbNode)
-
-			for _, orb := range tt.want {
-				if _, ok := doc.Orbs[orb.Name]; !ok {
-					t.Errorf("YamlDocument.parseOrbs() = %s could have not been found or parsed", orb.Name)
-					t.Skip()
-				}
-
-				if !reflect.DeepEqual(doc.Orbs[orb.Name].Name, orb.Name) {
-					t.Errorf("YamlDocument.parseOrbs() = Name %v, want %v", doc.Orbs[orb.Name], orb.Name)
-				}
-				if !reflect.DeepEqual(doc.Orbs[orb.Name].Url.Name, orb.Url.Name) {
-					t.Errorf("YamlDocument.parseOrbs() = Url %v, want %v", doc.Orbs[orb.Name].Url.Name, orb.Url.Name)
-				}
-				if !reflect.DeepEqual(doc.Orbs[orb.Name].Url.Version, orb.Url.Version) {
-					t.Errorf("YamlDocument.parseOrbs() = Url %v, want %v", doc.Orbs[orb.Name].Url.Version, orb.Url.Version)
-				}
-			}
-
-			if _, ok := doc.Commands["localOrb/some_command"]; !ok {
-				t.Error("Orb command is not declared")
-			}
-
-		})
-	}
-}
-
 func TestYamlDocument_parseSingleOrb(t *testing.T) {
 	tests := getOrbsTest()
 

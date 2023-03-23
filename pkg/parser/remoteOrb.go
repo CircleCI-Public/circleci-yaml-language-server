@@ -109,7 +109,7 @@ func fetchOrbInfo(orbVersionCode string, cache *utils.Cache, context *utils.LsCo
 		return &ast.OrbInfo{}, err
 	}
 
-	parsedOrbSource, err := ParseFromContent([]byte(orbQuery.Source), context, uri.File(""))
+	parsedOrbSource, err := ParseFromContent([]byte(orbQuery.Source), context, uri.File(""), protocol.Position{})
 
 	if err != nil {
 		return &ast.OrbInfo{}, err
@@ -299,7 +299,7 @@ func addAlreadyExistingRemoteOrbsToFSCache(orb ast.Orb, cache *utils.Cache, cont
 }
 
 func AddOrbToCacheWithContent(orb ast.Orb, uri protocol.URI, content []byte, context *utils.LsContext, cache *utils.Cache) error {
-	parsedOrbSource, err := ParseFromContent(content, context, uri)
+	parsedOrbSource, err := ParseFromContent(content, context, uri, protocol.Position{})
 
 	if err != nil {
 		return err

@@ -38,7 +38,6 @@ func (ch *CompletionHandler) completeOrbs() {
 }
 
 func (ch *CompletionHandler) completeOrb(node *sitter.Node) {
-	fmt.Printf("ch.wantOrbVersionCompletion(node) = %+v\n", ch.wantOrbVersionCompletion(node))
 	if ch.wantOrbVersionCompletion(node) {
 		ch.completeOrbVersion(node)
 	} else {
@@ -51,7 +50,7 @@ func (ch *CompletionHandler) completeOrb(node *sitter.Node) {
 func (ch *CompletionHandler) wantOrbVersionCompletion(node *sitter.Node) bool {
 	def := ch.Doc.GetOrbURLDefinition(node)
 
-	orbHasVersion := utils.IsDefaultRange(def.Version.Range)
+	orbHasVersion := !utils.IsDefaultRange(def.Version.Range)
 	if !orbHasVersion {
 		return false
 	}

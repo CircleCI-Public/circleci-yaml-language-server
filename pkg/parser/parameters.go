@@ -44,52 +44,52 @@ func (doc *YamlDocument) parseSingleParameter(paramNode *sitter.Node, params map
 	switch paramType {
 	case "string":
 		param := doc.parseStringParameter(paramName, blockMappingNode)
-		param.Range = NodeToRange(paramNode)
-		param.NameRange = NodeToRange(keyNode)
+		param.Range = doc.NodeToRange(paramNode)
+		param.NameRange = doc.NodeToRange(keyNode)
 		param.TypeRange = paramTypeRange
 		params[param.Name] = param
 	case "boolean":
 		param := doc.parseBooleanParameter(paramName, blockMappingNode)
-		param.Range = NodeToRange(paramNode)
-		param.NameRange = NodeToRange(keyNode)
+		param.Range = doc.NodeToRange(paramNode)
+		param.NameRange = doc.NodeToRange(keyNode)
 		param.TypeRange = paramTypeRange
 		params[param.Name] = param
 	case "integer":
 		param := doc.parseIntegerParameter(paramName, blockMappingNode)
-		param.Range = NodeToRange(paramNode)
-		param.NameRange = NodeToRange(keyNode)
+		param.Range = doc.NodeToRange(paramNode)
+		param.NameRange = doc.NodeToRange(keyNode)
 		param.TypeRange = paramTypeRange
 		params[param.Name] = param
 	case "enum":
 		param := doc.parseEnumParameter(paramName, blockMappingNode)
-		param.Range = NodeToRange(paramNode)
-		param.NameRange = NodeToRange(keyNode)
+		param.Range = doc.NodeToRange(paramNode)
+		param.NameRange = doc.NodeToRange(keyNode)
 		param.TypeRange = paramTypeRange
 		params[param.Name] = param
 	case "executor":
 		param := doc.parseExecutorParameter(paramName, blockMappingNode)
-		param.Range = NodeToRange(paramNode)
-		param.NameRange = NodeToRange(keyNode)
+		param.Range = doc.NodeToRange(paramNode)
+		param.NameRange = doc.NodeToRange(keyNode)
 		param.TypeRange = paramTypeRange
 		params[param.Name] = param
 	case "steps":
 		param := doc.parseStepsParameter(paramName, blockMappingNode)
-		param.Range = NodeToRange(paramNode)
-		param.NameRange = NodeToRange(keyNode)
+		param.Range = doc.NodeToRange(paramNode)
+		param.NameRange = doc.NodeToRange(keyNode)
 		param.TypeRange = paramTypeRange
 		params[param.Name] = param
 	case "env_var_name":
 		param := doc.parseEnvVariableParameter(paramName, blockMappingNode)
-		param.Range = NodeToRange(paramNode)
-		param.NameRange = NodeToRange(keyNode)
+		param.Range = doc.NodeToRange(paramNode)
+		param.NameRange = doc.NodeToRange(keyNode)
 		param.TypeRange = paramTypeRange
 		params[param.Name] = param
 	default:
 		params[paramName] = ast.StringParameter{
 			BaseParameter: ast.BaseParameter{
 				Name:      paramName,
-				NameRange: NodeToRange(keyNode),
-				Range:     NodeToRange(blockMappingNode),
+				NameRange: doc.NodeToRange(keyNode),
+				Range:     doc.NodeToRange(blockMappingNode),
 				TypeRange: paramTypeRange,
 			},
 		}
@@ -108,7 +108,7 @@ func (doc *YamlDocument) GetParameterType(paramNode *sitter.Node) (paramType str
 		keyName := doc.GetNodeText(keyNode)
 		switch keyName {
 		case "type":
-			typeRange := NodeToRange(child)
+			typeRange := doc.NodeToRange(child)
 			if valueNode == nil {
 				paramTypeRange = protocol.Range{
 					Start: typeRange.End,
@@ -250,7 +250,7 @@ func (doc *YamlDocument) parseStepsParameter(paramName string, paramNode *sitter
 			if stepsNode == nil {
 				return
 			}
-			rng := NodeToRange(child)
+			rng := doc.NodeToRange(child)
 			astDefault, _ := doc.parseArrayParameterValue(paramName, stepsNode, rng, true)
 			stepsParam.Default = astDefault
 			stepsParam.DefaultRange = doc.getDefaultParameterRange(child)
@@ -319,7 +319,7 @@ func (doc *YamlDocument) parseParameterValue(child *sitter.Node) (ast.ParameterV
 	if flowNodeChild == nil {
 		return ast.ParameterValue{}, fmt.Errorf("error while parsing parameter value")
 	}
-	rng := NodeToRange(child)
+	rng := doc.NodeToRange(child)
 	switch flowNodeChild.Type() {
 	case "plain_scalar":
 		return doc.parseSimpleParameterValue(paramName, flowNodeChild, rng)
@@ -334,7 +334,7 @@ func (doc *YamlDocument) parseParameterValue(child *sitter.Node) (ast.ParameterV
 	case "double_quote_scalar":
 		return ast.ParameterValue{
 			Value:      doc.GetNodeText(flowNodeChild),
-			ValueRange: NodeToRange(flowNodeChild),
+			ValueRange: doc.NodeToRange(flowNodeChild),
 			Name:       paramName,
 			Type:       "string",
 			Range:      rng,
@@ -343,7 +343,7 @@ func (doc *YamlDocument) parseParameterValue(child *sitter.Node) (ast.ParameterV
 	case "single_quote_scalar":
 		return ast.ParameterValue{
 			Value:      doc.GetNodeText(flowNodeChild),
-			ValueRange: NodeToRange(flowNodeChild),
+			ValueRange: doc.NodeToRange(flowNodeChild),
 			Name:       paramName,
 			Type:       "string",
 			Range:      rng,
@@ -353,7 +353,7 @@ func (doc *YamlDocument) parseParameterValue(child *sitter.Node) (ast.ParameterV
 		return ast.ParameterValue{
 			Value:      valueNode.ChildByFieldName("value"),
 			Name:       paramName,
-			ValueRange: NodeToRange(flowNodeChild),
+			ValueRange: doc.NodeToRange(flowNodeChild),
 			Type:       "alias",
 			Range:      rng,
 		}, nil
@@ -381,7 +381,7 @@ func (doc *YamlDocument) parseParameterValue(child *sitter.Node) (ast.ParameterV
 		return ast.ParameterValue{
 			Value:      value,
 			Name:       paramName,
-			ValueRange: NodeToRange(flowNodeChild),
+			ValueRange: doc.NodeToRange(flowNodeChild),
 			Type:       "map",
 			Range:      rng,
 		}, nil
@@ -399,7 +399,7 @@ func (doc *YamlDocument) parseArrayParameterValue(paramName string, arrayParamNo
 				steps := doc.parseSingleStep(child)
 				values = append(values, ast.ParameterValue{
 					Value:      steps,
-					ValueRange: NodeToRange(child),
+					ValueRange: doc.NodeToRange(child),
 					Name:       paramName,
 					Type:       "steps",
 				})
@@ -417,7 +417,7 @@ func (doc *YamlDocument) parseArrayParameterValue(paramName string, arrayParamNo
 	return ast.ParameterValue{
 		Name:       paramName,
 		Value:      values,
-		ValueRange: NodeToRange(arrayParamNode),
+		ValueRange: doc.NodeToRange(arrayParamNode),
 		Type:       "enum",
 		Range:      rng,
 	}, nil
@@ -432,7 +432,7 @@ func parseEnumParamValue(child *sitter.Node, doc *YamlDocument, paramName string
 		if err != nil {
 			return ast.ParameterValue{}, err
 		}
-		param.Range = NodeToRange(child)
+		param.Range = doc.NodeToRange(child)
 		return param, nil
 	}
 	return ast.ParameterValue{}, fmt.Errorf("error while parsing enum parameter value")
@@ -464,7 +464,7 @@ func (doc *YamlDocument) parseSimpleParameterValue(paramName string, simpleParam
 	case "double_quote_scalar":
 		return ast.ParameterValue{
 			Value:      doc.GetNodeText(simpleParamNode),
-			ValueRange: NodeToRange(simpleParamNode),
+			ValueRange: doc.NodeToRange(simpleParamNode),
 			Name:       paramName,
 			Type:       "string",
 			Range:      rng,
@@ -473,7 +473,7 @@ func (doc *YamlDocument) parseSimpleParameterValue(paramName string, simpleParam
 	case "string_scalar":
 		return ast.ParameterValue{
 			Value:      doc.GetNodeText(simpleParamNode),
-			ValueRange: NodeToRange(simpleParamNode),
+			ValueRange: doc.NodeToRange(simpleParamNode),
 			Name:       paramName,
 			Type:       "string",
 			Range:      rng,
@@ -482,7 +482,7 @@ func (doc *YamlDocument) parseSimpleParameterValue(paramName string, simpleParam
 	case "block_scalar":
 		return ast.ParameterValue{
 			Value:      doc.GetNodeText(simpleParamNode),
-			ValueRange: NodeToRange(simpleParamNode),
+			ValueRange: doc.NodeToRange(simpleParamNode),
 			Name:       paramName,
 			Type:       "string",
 			Range:      rng,
@@ -491,7 +491,7 @@ func (doc *YamlDocument) parseSimpleParameterValue(paramName string, simpleParam
 	case "boolean_scalar":
 		return ast.ParameterValue{
 			Value:      utils.GetYAMLBooleanValue(doc.GetNodeText(simpleParamNode)),
-			ValueRange: NodeToRange(simpleParamNode),
+			ValueRange: doc.NodeToRange(simpleParamNode),
 			Name:       paramName,
 			Type:       "boolean",
 			Range:      rng,
@@ -507,7 +507,7 @@ func (doc *YamlDocument) parseSimpleParameterValue(paramName string, simpleParam
 
 		return ast.ParameterValue{
 			Value:      intValue,
-			ValueRange: NodeToRange(simpleParamNode),
+			ValueRange: doc.NodeToRange(simpleParamNode),
 			Name:       paramName,
 			Type:       "integer",
 			Range:      rng,
@@ -524,10 +524,10 @@ func (doc *YamlDocument) getDefaultParameterRange(child *sitter.Node) protocol.R
 	_, value := doc.GetKeyValueNodes(child)
 
 	if value != nil {
-		return NodeToRange(child)
+		return doc.NodeToRange(child)
 	}
 
-	defaultRange := NodeToRange(child)
+	defaultRange := doc.NodeToRange(child)
 	return protocol.Range{
 		Start: defaultRange.Start,
 		End: protocol.Position{

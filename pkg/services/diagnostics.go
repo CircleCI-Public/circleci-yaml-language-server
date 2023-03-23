@@ -36,7 +36,7 @@ func DiagnosticFile(uri protocol.URI, cache *utils.Cache, context *utils.LsConte
 }
 
 func DiagnosticString(content string, cache *utils.Cache, context *utils.LsContext, schemaLocation string) ([]protocol.Diagnostic, error) {
-	yamlDocument, err := yamlparser.ParseFromContent([]byte(content), context, uri.File(""))
+	yamlDocument, err := yamlparser.ParseFromContent([]byte(content), context, uri.File(""), protocol.Position{})
 	yamlDocument.SchemaLocation = schemaLocation
 
 	if err != nil {

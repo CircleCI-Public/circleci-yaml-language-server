@@ -38,6 +38,26 @@ func (ref ReferenceHandler) GetReferences() ([]protocol.Location, error) {
 	cmdName := ""
 	isOrb := false
 
+	if utils.PosInRange(ref.Doc.OrbsRange, ref.Params.Position) {
+		var orb ast.Orb
+		for _, currentOrb := range ref.Doc.Orbs {
+			if utils.PosInRange(currentOrb.NameRange, ref.Params.Position) ||
+				utils.PosInRange(currentOrb.Range, ref.Params.Position) {
+				orb = currentOrb
+			}
+		}
+
+		orbInfo, err := ref.Doc.GetOrbInfoFromName(orb.Name, ref.Cache)
+		if err == nil && orb.Url.IsLocal {
+			return ReferenceHandler{
+				Cache:      ref.Cache,
+				Params:     ref.Params,
+				FoundSteps: ref.FoundSteps,
+				Doc:        ref.Doc.FromOrbParsedAttributesToYamlDocument(orbInfo.OrbParsedAttributes),
+			}.GetReferences()
+		}
+	}
+
 	if anchor, found := ref.Doc.GetYamlAnchorAtPosition(ref.Params.Position); found {
 		locations := []protocol.Location{}
 
@@ -81,9 +101,9 @@ func (ref ReferenceHandler) GetReferences() ([]protocol.Location, error) {
 		cmdName = executorName
 
 	// Pipeline parameters
-	case utils.PosInRange(ref.Doc.PipelinesParametersRange, ref.Params.Position):
-		paramName := utils.GetParamNameDefinedAtPos(ref.Doc.PipelinesParameters, ref.Params.Position)
-		return ref.getReferencesOfParamInRange(paramName, yamlparser.NodeToRange(ref.Doc.RootNode))
+	case utils.PosInRange(ref.Doc.PipelineParametersRange, ref.Params.Position):
+		paramName := utils.GetParamNameDefinedAtPos(ref.Doc.PipelineParameters, ref.Params.Position)
+		return ref.getReferencesOfParamInRange(paramName, ref.Doc.NodeToRange(ref.Doc.RootNode))
 	}
 
 	if paramRefs, err := ref.getParamReferences(cmdName); err == nil {

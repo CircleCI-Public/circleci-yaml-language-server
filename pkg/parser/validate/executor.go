@@ -39,6 +39,7 @@ func (val Validate) validateSingleExecutor(executor ast.Executor) {
 // MacOSExecutor
 
 var ValidXCodeVersions = []string{
+	"14.3.0",
 	"14.2.0",
 	"14.1.0",
 	"14.0.1",
@@ -184,6 +185,27 @@ func (val Validate) validateDockerExecutor(executor ast.DockerExecutor) {
 				utils.CreateErrorDiagnosticFromRange(
 					img.ImageRange,
 					errMessage,
+				),
+			)
+		}
+
+		if img.Image.Namespace == "circleci" {
+			val.addDiagnostic(
+				utils.CreateDiagnosticFromRange(
+					img.ImageRange,
+					protocol.DiagnosticSeverityWarning,
+					"Docker images from `circleci` namespace are deprecated. Please use its `cimg` namespace's alternative.",
+					[]protocol.CodeAction{
+						utils.CreateCodeActionTextEdit(
+							"Use `cimg` namespace's alternative",
+							val.Doc.URI, []protocol.TextEdit{
+								{
+									Range:   img.ImageRange,
+									NewText: fmt.Sprintf("image: %s", strings.Replace(img.Image.FullPath, "circleci", "cimg", 1)),
+								},
+							}, true,
+						),
+					},
 				),
 			)
 		}

@@ -102,22 +102,21 @@ func (doc *YamlDocument) parseSingleOrb(orbNode *sitter.Node) (*ast.Orb, *LocalO
 		orb := ast.Orb{
 			Url:          orbUrl,
 			Name:         orbName,
-			Range:        NodeToRange(orbNode),
-			NameRange:    NodeToRange(orbNameNode),
+			Range:        doc.NodeToRange(orbNode),
+			NameRange:    doc.NodeToRange(orbNameNode),
 			VersionRange: doc.getOrbVersionRange(orbContent),
 			ValueNode:    orbContent,
-			ValueRange:   NodeToRange(orbContent),
+			ValueRange:   doc.NodeToRange(orbContent),
 		}
 		return &orb, nil
 
 	case "block_node":
-		localOrb, err := doc.parseLocalOrb(orbName, orbContent)
+		localOrb, err := doc.parseLocalOrb(orbName, orbContent, doc.NodeToRange(orbNameNode).Start.Line)
 
 		if err != nil {
 			return nil, nil
 		}
 
-		doc.parseLocalOrb(orbName, orbContent)
 		orb := ast.Orb{
 			Url: ast.OrbURL{
 				Name:    orbName,
@@ -125,10 +124,10 @@ func (doc *YamlDocument) parseSingleOrb(orbNode *sitter.Node) (*ast.Orb, *LocalO
 				IsLocal: true,
 			},
 			Name:       orbName,
-			Range:      NodeToRange(orbNode),
-			NameRange:  NodeToRange(orbNameNode),
+			Range:      doc.NodeToRange(orbNode),
+			NameRange:  doc.NodeToRange(orbNameNode),
 			ValueNode:  orbContent,
-			ValueRange: NodeToRange(orbContent),
+			ValueRange: doc.NodeToRange(orbContent),
 		}
 
 		return &orb, localOrb
@@ -149,7 +148,7 @@ func (doc *YamlDocument) getOrbURL(orbUrl string) ast.OrbURL {
 
 func (doc *YamlDocument) getOrbVersionRange(orbNode *sitter.Node) protocol.Range {
 	orbNodeText := doc.GetRawNodeText(orbNode)
-	orbRange := NodeToRange(orbNode)
+	orbRange := doc.NodeToRange(orbNode)
 	atIndex := strings.Index(orbNodeText, "@")
 	if atIndex == -1 {
 		return protocol.Range{}
@@ -165,7 +164,7 @@ func (doc *YamlDocument) getOrbVersionRange(orbNode *sitter.Node) protocol.Range
 
 func (doc *YamlDocument) GetOrbURLDefinition(node *sitter.Node) ast.OrbURLDefinition {
 	orbText := doc.GetNodeText(node)
-	orbRange := NodeToRange(node)
+	orbRange := doc.NodeToRange(node)
 	return getOrbDefinitionFromTextAndRange(orbText, orbRange)
 }
 

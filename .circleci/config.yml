@@ -207,8 +207,10 @@ jobs:
             - when:
                 condition:
                     or:
-                        - equal: [ main, << pipeline.git.branch >> ]
-                        - equal: [ develop, << pipeline.git.branch >> ]
+                        - or:
+                            - equal: [ main, << pipeline.git.branch >> ]
+                        - or:
+                            - equal: [ develop, << pipeline.git.branch >> ]
                 steps:
                     - run:
                         name: Build for Linux Arm 64
@@ -430,6 +432,9 @@ jobs:
 
                     echo "Renaming release from \"$(jq -r '.name' release.json)\" to \"$CIRCLE_TAG\"..."
                     rm release.json
+
+                    echo "Copying schema.json inside bin folder"
+                    cp ~/project/schema.json ~/project/bin
 
                     echo "pwd: $(pwd)"
                     echo "ls -l"

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	sitter "github.com/smacker/go-tree-sitter"
 	ymlgrammar "github.com/smacker/go-tree-sitter/yaml"
 	"go.lsp.dev/protocol"
@@ -99,7 +100,7 @@ func (doc *YamlDocument) GetNodeTextWithRange(node *sitter.Node) ast.TextAndRang
 
 	return ast.TextAndRange{
 		Text:  res,
-		Range: NodeToRange(node),
+		Range: doc.NodeToRange(node),
 	}
 }
 
@@ -142,9 +143,9 @@ func (doc *YamlDocument) getNodeTextArrayWithRange(valueNode *sitter.Node) []ast
 				}
 				anchorValueNode := GetFirstChild(anchor.ValueNode)
 				text := doc.GetNodeText(anchorValueNode)
-				return ast.TextAndRange{Text: text, Range: NodeToRange(anchorValueNode)}
+				return ast.TextAndRange{Text: text, Range: doc.NodeToRange(anchorValueNode)}
 			} else {
-				return ast.TextAndRange{Text: doc.GetNodeText(node), Range: NodeToRange(node)}
+				return ast.TextAndRange{Text: doc.GetNodeText(node), Range: doc.NodeToRange(node)}
 			}
 		}
 
@@ -383,9 +384,15 @@ func FindDeepestNode(rootNode *sitter.Node, content []byte, toFind []string) (*s
 	return node, fmt.Errorf("not found")
 }
 
-func NodeToRange(node *sitter.Node) protocol.Range {
-	return protocol.Range{
-		Start: protocol.Position{Line: node.StartPoint().Row, Character: node.StartPoint().Column},
-		End:   protocol.Position{Line: node.EndPoint().Row, Character: node.EndPoint().Column},
-	}
+func (doc *YamlDocument) NodeToRange(node *sitter.Node) protocol.Range {
+	return utils.AddOffsetToRange(protocol.Range{
+		Start: protocol.Position{
+			Line:      node.StartPoint().Row,
+			Character: node.StartPoint().Column,
+		},
+		End: protocol.Position{
+			Line:      node.EndPoint().Row,
+			Character: node.EndPoint().Column,
+		},
+	}, doc.Offset)
 }

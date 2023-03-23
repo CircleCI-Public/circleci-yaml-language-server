@@ -16,16 +16,16 @@ func ParseFile(content []byte, context *utils.LsContext) YamlDocument {
 	rootNode := GetRootNode(content)
 
 	doc := YamlDocument{
-		Content:             content,
-		Context:             context,
-		RootNode:            rootNode,
-		Commands:            make(map[string]ast.Command),
-		Orbs:                make(map[string]ast.Orb),
-		Jobs:                make(map[string]ast.Job),
-		Workflows:           make(map[string]ast.Workflow),
-		Executors:           make(map[string]ast.Executor),
-		PipelinesParameters: make(map[string]ast.Parameter),
-		Diagnostics:         &[]protocol.Diagnostic{},
+		Content:            content,
+		Context:            context,
+		RootNode:           rootNode,
+		Commands:           make(map[string]ast.Command),
+		Orbs:               make(map[string]ast.Orb),
+		Jobs:               make(map[string]ast.Job),
+		Workflows:          make(map[string]ast.Workflow),
+		Executors:          make(map[string]ast.Executor),
+		PipelineParameters: make(map[string]ast.Parameter),
+		Diagnostics:        &[]protocol.Diagnostic{},
 
 		LocalOrbInfo: make(map[string]*ast.OrbInfo),
 	}
@@ -33,10 +33,11 @@ func ParseFile(content []byte, context *utils.LsContext) YamlDocument {
 	return doc
 }
 
-func (doc *YamlDocument) ParseYAML(context *utils.LsContext) {
+func (doc *YamlDocument) ParseYAML(context *utils.LsContext, offset protocol.Position) {
 	if len(*doc.Diagnostics) > 0 {
 		return
 	}
+	doc.Offset = offset
 	blockMappingNode := GetBlockMappingNode(doc.RootNode)
 	doc.YamlAnchors = ParseYamlAnchors(doc)
 
@@ -50,22 +51,22 @@ func (doc *YamlDocument) ParseYAML(context *utils.LsContext) {
 				doc.parseVersion(valueNode)
 			}
 
-			doc.VersionRange = NodeToRange(child)
+			doc.VersionRange = doc.NodeToRange(child)
 
 		case "orbs":
 			if valueNode != nil {
-				doc.OrbsRange = NodeToRange(valueNode)
+				doc.OrbsRange = doc.NodeToRange(valueNode)
 				doc.parseOrbs(valueNode)
 			} else {
-				doc.OrbsRange = NodeToRange(child)
+				doc.OrbsRange = doc.NodeToRange(child)
 			}
 
 		case "commands":
 			if valueNode != nil {
-				doc.CommandsRange = NodeToRange(valueNode)
+				doc.CommandsRange = doc.NodeToRange(valueNode)
 				doc.parseCommands(valueNode)
 			} else {
-				doc.CommandsRange = NodeToRange(child)
+				doc.CommandsRange = doc.NodeToRange(child)
 			}
 
 		case "jobs":
@@ -73,7 +74,7 @@ func (doc *YamlDocument) ParseYAML(context *utils.LsContext) {
 				break
 			}
 
-			doc.JobsRange = NodeToRange(valueNode)
+			doc.JobsRange = doc.NodeToRange(valueNode)
 			doc.parseJobs(valueNode)
 
 		case "workflows":
@@ -81,15 +82,15 @@ func (doc *YamlDocument) ParseYAML(context *utils.LsContext) {
 				break
 			}
 
-			doc.WorkflowRange = NodeToRange(valueNode)
+			doc.WorkflowRange = doc.NodeToRange(valueNode)
 			doc.parseWorkflows(valueNode)
 
 		case "executors":
 			if valueNode != nil {
-				doc.ExecutorsRange = NodeToRange(valueNode)
+				doc.ExecutorsRange = doc.NodeToRange(valueNode)
 				doc.parseExecutors(valueNode)
 			} else {
-				doc.ExecutorsRange = NodeToRange(child)
+				doc.ExecutorsRange = doc.NodeToRange(child)
 			}
 
 		case "description":
@@ -101,10 +102,10 @@ func (doc *YamlDocument) ParseYAML(context *utils.LsContext) {
 
 		case "parameters":
 			if valueNode != nil {
-				doc.PipelinesParametersRange = NodeToRange(valueNode)
-				doc.PipelinesParameters = doc.parseParameters(valueNode)
+				doc.PipelineParametersRange = doc.NodeToRange(valueNode)
+				doc.PipelineParameters = doc.parseParameters(valueNode)
 			} else {
-				doc.PipelinesParametersRange = NodeToRange(child)
+				doc.PipelineParametersRange = doc.NodeToRange(child)
 			}
 		}
 	})
@@ -135,7 +136,7 @@ func ParseFromURI(URI protocol.URI, context *utils.LsContext) (YamlDocument, err
 	if err != nil {
 		return YamlDocument{}, err
 	}
-	doc, err := ParseFromContent([]byte(content), context, URI)
+	doc, err := ParseFromContent([]byte(content), context, URI, protocol.Position{})
 
 	return doc, err
 }
@@ -149,17 +150,17 @@ func ParseFromUriWithCache(URI protocol.URI, cache *utils.Cache, context *utils.
 
 	content := []byte(cachedFile.TextDocument.Text)
 
-	doc, err := ParseFromContent(content, context, URI)
+	doc, err := ParseFromContent(content, context, URI, protocol.Position{})
 
 	return doc, err
 }
 
-func ParseFromContent(content []byte, context *utils.LsContext, URI protocol.URI) (YamlDocument, error) {
+func ParseFromContent(content []byte, context *utils.LsContext, URI protocol.URI, offset protocol.Position) (YamlDocument, error) {
 	doc := ParseFile([]byte(content), context)
 	doc.URI = URI
 
 	doc.ValidateYAML()
-	doc.ParseYAML(context)
+	doc.ParseYAML(context, offset)
 
 	return doc, nil
 }
@@ -181,24 +182,27 @@ type YamlDocument struct {
 	Context        *utils.LsContext
 	SchemaLocation string
 
-	Orbs                map[string]ast.Orb
-	LocalOrbs           []LocalOrb
-	Executors           map[string]ast.Executor
-	Commands            map[string]ast.Command
-	Jobs                map[string]ast.Job
-	Workflows           map[string]ast.Workflow
-	PipelinesParameters map[string]ast.Parameter
-	YamlAnchors         map[string]YamlAnchor
+	Orbs               map[string]ast.Orb
+	LocalOrbs          []LocalOrb
+	Executors          map[string]ast.Executor
+	Commands           map[string]ast.Command
+	Jobs               map[string]ast.Job
+	Workflows          map[string]ast.Workflow
+	PipelineParameters map[string]ast.Parameter
+	YamlAnchors        map[string]YamlAnchor
 
-	OrbsRange                protocol.Range
-	ExecutorsRange           protocol.Range
-	CommandsRange            protocol.Range
-	JobsRange                protocol.Range
-	WorkflowRange            protocol.Range
-	PipelinesParametersRange protocol.Range
-	VersionRange             protocol.Range
+	OrbsRange               protocol.Range
+	ExecutorsRange          protocol.Range
+	CommandsRange           protocol.Range
+	JobsRange               protocol.Range
+	WorkflowRange           protocol.Range
+	PipelineParametersRange protocol.Range
+	VersionRange            protocol.Range
 
 	LocalOrbInfo map[string]*ast.OrbInfo
+
+	LocalOrbName string
+	Offset       protocol.Position
 }
 
 func (doc *YamlDocument) IsBuiltIn(commandName string) bool {
@@ -320,6 +324,23 @@ func (doc *YamlDocument) DoesWorkflowExist(workflowName string) bool {
 	return ok
 }
 
+func (doc *YamlDocument) GetWorkflows() []ast.TextAndRange {
+	workflows := doc.Workflows
+
+	workflowRes := []ast.TextAndRange{}
+	for _, workflow := range workflows {
+		workflowRes = append(workflowRes, ast.TextAndRange{
+			Text: workflow.Name,
+			Range: protocol.Range{
+				Start: workflow.NameRange.Start,
+				End:   workflow.NameRange.End,
+			},
+		})
+	}
+
+	return workflowRes
+}
+
 func (doc *YamlDocument) parseVersion(versionNode *sitter.Node) {
 	parsedVersion, err := strconv.ParseFloat(doc.GetNodeText(versionNode), 32)
 	if err != nil {
@@ -344,7 +365,7 @@ func (doc *YamlDocument) InsertText(pos protocol.Position, text string) (YamlDoc
 		newContent += string(r)
 	}
 
-	return ParseFromContent([]byte(newContent), doc.Context, doc.URI)
+	return ParseFromContent([]byte(newContent), doc.Context, doc.URI, doc.Offset)
 }
 
 type ModifiedYamlDocument struct {
@@ -569,13 +590,34 @@ func (doc *YamlDocument) ToOrbParsedAttributes() ast.OrbParsedAttributes {
 		Commands:           doc.Commands,
 		Jobs:               doc.Jobs,
 		Executors:          doc.Executors,
-		PipelineParameters: doc.PipelinesParameters,
+		PipelineParameters: doc.PipelineParameters,
 
 		ExecutorsRange:          doc.ExecutorsRange,
 		CommandsRange:           doc.CommandsRange,
 		JobsRange:               doc.JobsRange,
-		PipelineParametersRange: doc.PipelinesParametersRange,
+		PipelineParametersRange: doc.PipelineParametersRange,
 		WorkflowRange:           doc.WorkflowRange,
 		OrbsRange:               doc.OrbsRange,
+	}
+}
+
+func (doc *YamlDocument) FromOrbParsedAttributesToYamlDocument(orb ast.OrbParsedAttributes) YamlDocument {
+	return YamlDocument{
+		LocalOrbName: orb.Name,
+
+		RootNode: doc.RootNode,
+
+		Commands:           orb.Commands,
+		Jobs:               orb.Jobs,
+		Executors:          orb.Executors,
+		PipelineParameters: orb.PipelineParameters,
+
+		ExecutorsRange:          orb.ExecutorsRange,
+		CommandsRange:           orb.CommandsRange,
+		JobsRange:               orb.JobsRange,
+		PipelineParametersRange: orb.PipelineParametersRange,
+		WorkflowRange:           orb.WorkflowRange,
+		OrbsRange:               orb.OrbsRange,
+		Content:                 doc.Content,
 	}
 }

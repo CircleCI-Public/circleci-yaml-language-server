@@ -38,10 +38,9 @@ func (methods *Methods) DidOpen(reply jsonrpc2.Replier, req jsonrpc2.Request) er
 	go (func() {
 		methods.notificationMethods(params.TextDocument)
 		methods.SendTelemetryEvent(TelemetryEvent{
-			Event:  "DidOpen",
-			Action: "finished",
-			Properties: DidOpenFinishedProperties{
-				Filename: params.TextDocument.URI.Filename(),
+			Action: "opened_file",
+			Properties: map[string]interface{}{
+				"filename": params.TextDocument.URI.Filename(),
 			},
 		})
 	})()
@@ -156,7 +155,7 @@ func (methods *Methods) applyIncrementalChanges(uri protocol.URI, changes []prot
 func (methods *Methods) updateOrbFile(content []byte, uri protocol.URI) {
 	isOrb, orbId := methods.isOrb(uri)
 	if isOrb {
-		parsedOrbSource, err := parser.ParseFromContent([]byte(content), methods.LsContext, uri)
+		parsedOrbSource, err := parser.ParseFromContent([]byte(content), methods.LsContext, uri, protocol.Position{})
 		if err == nil {
 			methods.Cache.OrbCache.UpdateOrbParsedAttributes(orbId, parsedOrbSource.ToOrbParsedAttributes())
 		}

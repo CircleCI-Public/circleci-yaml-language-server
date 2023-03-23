@@ -30,10 +30,6 @@ orbs:
           - run: npm start
 
   parameter-within-job:
-    parameters:
-      version:
-        description: "The version of Node use"
-        type: string
     jobs:
       lint:
         parameters:
