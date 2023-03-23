@@ -9,6 +9,21 @@
 -   Fix and refactor Orbs caching
 -   Fixed parameter default values not recognizing orb executors
 
+## [0.3.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.2.0...0.3.0) (2023-03-23)
+
+
+### Features
+
+* Added getWorkflows command ([14957bd](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/14957bd130467b5c80c49b50cc6ba5d19331067d))
+* code outline & breadcrumbs ([#112](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/112)) ([e8390c6](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/e8390c65f09e525249c18ae4aeb2f1af32cd6f12))
+
+
+### Bug Fixes
+
+* added machine bool field to ast for outline fix ([de1dbf2](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/de1dbf23591fea69459c64c2d5e015601bd5114d))
+* updated valid xcode versions ([cf1bd6d](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/cf1bd6d55e9f32d209c06ddfb435af3f0f08a5d3))
+* **definition:** Fix orb parameter definition ([faa58b1](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/faa58b14174468991aca7b7c35af20f7d5578a4e))
+
 ## [0.2.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.1.15...0.2.0) (2023-03-09)
 
 
