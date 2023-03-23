@@ -591,13 +591,10 @@ workflows:
             - Build MacOS:
                 filters:
                     <<: *ignore-release-tag
-            - Build MacOS:
-                filters:
-                    <<: *ignore-release-tag
-                    branches:
-                        only:
-                          - main
-                          - develop
+                    # branches:
+                    #     only:
+                    #       - main
+                    #       - develop
 
             - Build Windows:
                 filters:
