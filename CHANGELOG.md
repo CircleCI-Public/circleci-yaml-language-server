@@ -9,6 +9,13 @@
 -   Fix and refactor Orbs caching
 -   Fixed parameter default values not recognizing orb executors
 
+## [0.3.1](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.3.0...0.3.1) (2023-03-23)
+
+
+### Bug Fixes
+
+* Fix error on spawn ([96a303f](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/96a303f9c4509d85982ff3eff3e3cc4cce34b709))
+
 ## [0.3.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.2.0...0.3.0) (2023-03-23)
 
 
