@@ -224,6 +224,10 @@ jobs:
                             export PATH="$(pwd)/zig-linux-x86_64-0.9.1:$PATH"
                             sh -c "go build $LDFLAGS -o ~/project/bin/linux-arm64-lsp ./cmd/start_server/start_server.go"
 
+            - run:
+                name: Copy schema.json into bin/ directory
+                command: cp ~/project/schema.json ~/project/bin
+
             - store_artifacts:
                   path: ~/project/bin
 
@@ -432,9 +436,6 @@ jobs:
 
                     echo "Renaming release from \"$(jq -r '.name' release.json)\" to \"$CIRCLE_TAG\"..."
                     rm release.json
-
-                    echo "Copying schema.json inside bin folder"
-                    cp ~/project/schema.json ~/project/bin
 
                     echo "pwd: $(pwd)"
                     echo "ls -l"
