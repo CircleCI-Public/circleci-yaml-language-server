@@ -9,6 +9,13 @@
 -   Fix and refactor Orbs caching
 -   Fixed parameter default values not recognizing orb executors
 
+## [0.3.2](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.3.1...0.3.2) (2023-03-24)
+
+
+### Bug Fixes
+
+* Fix LSP not starting because of port already being used ([1d4533c](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/1d4533c542eb569f8afda0eba20987c3f3ac85cc))
+
 ## [0.3.1](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.3.0...0.3.1) (2023-03-23)
 
 
