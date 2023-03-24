@@ -47,7 +47,7 @@ func main() {
 	}
 
 	// Command: stdio
-	if *stdioRef == true {
+	if *stdioRef {
 		lsp.StartServerStdio(schema)
 		return
 	}
@@ -64,20 +64,15 @@ func main() {
 
 	// Parameter: port
 	port := *portRef
-	if port == -1 {
-		portEnv := os.Getenv("PORT")
-		if portEnv == "" {
-			fmt.Print("No port provided. Use --port or define PORT variable")
-			return
-		}
-
+	portEnv := os.Getenv("PORT")
+	if port == -1 && portEnv != "" {
 		var err error
 
 		port, err = strconv.Atoi(portEnv)
 
 		if err != nil {
 			fmt.Printf(
-				"The \"PORT\" environment variable is not a valid number (value: %s)",
+				"The \"PORT\" environment variable is not a valid number (value: %s)\n",
 				portEnv,
 			)
 			return
@@ -85,11 +80,13 @@ func main() {
 
 		if port <= 0 || port > 65535 {
 			fmt.Printf(
-				"The \"PORT\" environment variable is not a valid port number (value: %d)",
+				"The \"PORT\" environment variable is not a valid port number (value: %d)\n",
 				port,
 			)
 			return
 		}
+	} else {
+		fmt.Println("No port defined: the server will find a free port")
 	}
 
 	lsp.StartServer(port, host, schema)
