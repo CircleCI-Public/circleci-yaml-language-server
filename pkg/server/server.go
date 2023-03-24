@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net"
 	"os"
 	"time"
 
@@ -94,17 +95,6 @@ func (server JSONRPCServer) ServeStream(_ context.Context, conn jsonrpc2.Conn) e
 
 func StartServer(port int, host string, schemaLocation string) {
 	ctx := context.Background()
-	// The LSP client waits that the server prints "Server started" on stdout to connect. The best
-	// solution would be to make this the "express way" and give a callback to ListenAndServe that
-	// would print the "Server started" but it seems that doesn't exist in go
-	// https://stackoverflow.com/questions/34312615/log-when-server-is-started
-	// So we just print the log one second after the server started
-	go func() {
-		time.Sleep(1 * time.Second)
-		fmt.Printf("Server started on port %d, version %s\n", port, methods.ServerVersion)
-		fmt.Printf("   JSON Schema: %s", schemaLocation)
-	}()
-
 	server := JSONRPCServer{
 		ctx: ctx,
 		lsContext: &utils.LsContext{
@@ -116,13 +106,34 @@ func StartServer(port int, host string, schemaLocation string) {
 		SchemaLocation: schemaLocation,
 	}
 
-	err := jsonrpc2.ListenAndServe(
-		ctx,
-		"tcp",
-		fmt.Sprintf("%s:%d", host, port),
-		server,
-		0,
-	)
+	if port == -1 {
+		port = 0
+	}
+
+	addr, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", host, port))
+	if err != nil {
+		panic(err)
+	}
+
+	ln, err := net.ListenTCP("tcp", addr)
+	if err != nil {
+		panic(err)
+	}
+
+	port = ln.Addr().(*net.TCPAddr).Port
+
+	// The LSP client waits that the server prints "Server started" on stdout to connect. The best
+	// solution would be to make this the "express way" and give a callback to ListenAndServe that
+	// would print the "Server started" but it seems that doesn't exist in go
+	// https://stackoverflow.com/questions/34312615/log-when-server-is-started
+	// So we just print the log one second after the server started
+	go func() {
+		time.Sleep(1 * time.Second)
+		fmt.Printf("Server started on port %d, version %s\n", port, methods.ServerVersion)
+		fmt.Printf("   JSON Schema: %s", schemaLocation)
+	}()
+
+	err = jsonrpc2.Serve(ctx, ln, server, 0)
 
 	if err != nil {
 		panic(err)
