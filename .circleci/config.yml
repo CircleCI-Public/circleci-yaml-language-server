@@ -207,8 +207,9 @@ jobs:
             - when:
                 condition:
                     or:
-                        - equal: [ main, << pipeline.git.branch >> ]
                         - equal: [ develop, << pipeline.git.branch >> ]
+                        - not:
+                            equal: [ << pipeline.git.tag >>, ""]
                 steps:
                     - run:
                         name: Build for Linux Arm 64
