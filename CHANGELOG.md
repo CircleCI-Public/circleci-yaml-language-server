@@ -1,13 +1,4 @@
-## 0.1.14 (2023-01-17)
-
--   Support for YAML object merging (merge keys)
--   Support for YAML alias and anchors inside step definitions
--   Support for parameter values written as multi-lines
--   Replaced unintelligible diagnostic "Must validate one and only one schema ..." with more meaningful diagnostic
--   Autocompletion for orb names
--   Improved testing
--   Fix and refactor Orbs caching
--   Fixed parameter default values not recognizing orb executors
+# CHANGELOG
 
 ## [0.3.2](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.3.1...0.3.2) (2023-03-24)
 
@@ -74,6 +65,17 @@
 * string values for step type parameters must be existing command name ([#81](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/81)) ([4b27ad5](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/4b27ad5cbe16bf44c103e407808ec7174ea51db1))
 * When hovering on orb's method it doesn't shows issue in the problems tab ([#97](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/97)) ([0b21d32](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/0b21d323affccbef9c9f43460a9df1e53929f61a))
 
+## 0.1.14 (2023-01-17)
+
+-   Support for YAML object merging (merge keys)
+-   Support for YAML alias and anchors inside step definitions
+-   Support for parameter values written as multi-lines
+-   Replaced unintelligible diagnostic "Must validate one and only one schema ..." with more meaningful diagnostic
+-   Autocompletion for orb names
+-   Improved testing
+-   Fix and refactor Orbs caching
+-   Fixed parameter default values not recognizing orb executors
+
 ## 0.1.13 (2022-12-08)
 
 -   Added newly supported xcode versions to validation
@@ -81,7 +83,7 @@
 -   Fix: Empty executors, pipeline parameters, orbs and commands are no longer
     marked as invalid
 -   Fix: Crash when parameter value is not of the expected type
--   Fix: Unknown parameters 
+-   Fix: Unknown parameters
 
 ## 0.1.10 (2022-12-08)
 
