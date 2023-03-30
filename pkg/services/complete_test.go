@@ -317,6 +317,9 @@ func TestComplete(t *testing.T) {
 				{
 					Label: "macos.x86.metal.gen1",
 				},
+				{
+					Label: "macos.m1.large.gen1",
+				},
 			},
 		},
 		{
