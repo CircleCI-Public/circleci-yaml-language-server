@@ -57,6 +57,7 @@ var ValidMacOSResourceClasses = []string{
 	"macos.x86.medium.gen2",
 	"large",
 	"macos.x86.metal.gen1",
+	"macos.m1.large.gen1",
 }
 
 func (val Validate) validateMacOSExecutor(executor ast.MacOSExecutor) {
