@@ -30,6 +30,17 @@ func (val Validate) validateSteps(steps []ast.Step, name string, jobOrCommandPar
 }
 
 func (val Validate) validateRunCommand(step ast.Run, jobOrCommandParameters map[string]ast.Parameter) {
+	if step.IsDeployStep {
+		val.addDiagnostic(protocol.Diagnostic{
+			Range:    step.Range,
+			Message:  "The `deploy` step is deprecated. Please use the `run` job instead.",
+			Severity: protocol.DiagnosticSeverityWarning,
+			Tags: []protocol.DiagnosticTag{
+				protocol.DiagnosticTagDeprecated,
+			},
+		})
+	}
+
 	var value string
 	// If the when field is a parameter, such as:
 	// when: << parameters.my_param >>
@@ -67,6 +78,7 @@ func (val Validate) validateRunCommand(step ast.Run, jobOrCommandParameters map[
 	} else {
 		value = step.When
 	}
+
 	if utils.FindInArray(WHEN_KEYWORDS, value) < 0 {
 		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
 			step.WhenRange,

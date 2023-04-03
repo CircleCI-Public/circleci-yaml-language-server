@@ -63,6 +63,7 @@ type Run struct {
 	When             string
 	WhenRange        protocol.Range
 	Environment      map[string]string
+	IsDeployStep     bool
 }
 
 func (step Run) GetRange() protocol.Range {

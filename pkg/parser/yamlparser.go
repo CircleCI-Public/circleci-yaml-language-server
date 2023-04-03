@@ -218,6 +218,7 @@ func (doc *YamlDocument) IsBuiltIn(commandName string) bool {
 		"attach_workspace",
 		"add_ssh_keys",
 		"steps",
+		"deploy",
 		"when",   // Has nothing to do here, tech debt to resolve
 		"unless", // Has nothing to do here, tech debt to resolve
 	}

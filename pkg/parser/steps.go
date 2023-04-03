@@ -89,6 +89,8 @@ func (doc *YamlDocument) parseStep(blockMapping *sitter.Node) []ast.Step {
 		return nil
 	}
 	switch keyName {
+	case "deploy":
+		return []ast.Step{doc.parseDeployStep(valueNode)}
 	case "run":
 		return []ast.Step{doc.parseRunStep(valueNode)}
 	case "checkout":
@@ -205,6 +207,12 @@ func (doc *YamlDocument) parseNamedStepWithParameters(stepName string, namedStep
 	}
 }
 
+func (doc *YamlDocument) parseDeployStep(blockNode *sitter.Node) ast.Run {
+	runStep := doc.parseRunStep(blockNode)
+	runStep.IsDeployStep = true
+	return runStep
+}
+
 func (doc *YamlDocument) parseRunStep(runNode *sitter.Node) ast.Run {
 	// runNode is either flow_node or block_node
 	if runNode.Type() == "flow_node" {
@@ -215,6 +223,7 @@ func (doc *YamlDocument) parseRunStep(runNode *sitter.Node) ast.Run {
 			CommandRange: doc.NodeToRange(runNode),
 			Range:        doc.NodeToRange(runNode.Parent().ChildByFieldName("key")),
 			RawCommand:   doc.GetRawNodeText(runNode),
+			IsDeployStep: false,
 		}
 	} else { // block_node
 		blockScalarNode := GetChildOfType(runNode, "block_scalar")
@@ -230,11 +239,16 @@ func (doc *YamlDocument) parseRunStep(runNode *sitter.Node) ast.Run {
 				CommandRange: doc.NodeToRange(blockScalarNode),
 				Range:        doc.NodeToRange(runNode.Parent().ChildByFieldName("key")),
 				RawCommand:   doc.GetRawNodeText(blockScalarNode),
+				IsDeployStep: false,
 			}
 		}
 
 		blockMappingNode := GetChildMapping(runNode)
-		res := ast.Run{Name: "run", Range: doc.NodeToRange(runNode.Parent().ChildByFieldName("key"))}
+		res := ast.Run{
+			Name:         "run",
+			Range:        doc.NodeToRange(runNode.Parent().ChildByFieldName("key")),
+			IsDeployStep: false,
+		}
 		doc.iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
 			keyNode, valueNode := doc.GetKeyValueNodes(child)
 			if keyNode == nil || valueNode == nil {
