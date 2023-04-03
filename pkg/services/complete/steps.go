@@ -21,7 +21,20 @@ func (ch *CompletionHandler) completeSteps(entityName string, inJob bool, includ
 }
 
 func (ch *CompletionHandler) builtInSteps() {
-	BUILT_IN_STEPS := []string{"run", "checkout", "setup_remote_docker", "save_cache", "restore_cache", "store_artifacts", "store_test_results", "persist_to_workspace", "attach_workspace", "add_ssh_keys", "unless", "when"}
+	BUILT_IN_STEPS := []string{
+		"run",
+		"checkout",
+		"setup_remote_docker",
+		"save_cache",
+		"restore_cache",
+		"store_artifacts",
+		"store_test_results",
+		"persist_to_workspace",
+		"attach_workspace",
+		"add_ssh_keys",
+		"unless",
+		"when",
+	}
 	for _, stepName := range BUILT_IN_STEPS {
 		ch.addCompletionItem(stepName)
 	}
