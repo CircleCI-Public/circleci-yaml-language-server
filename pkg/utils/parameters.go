@@ -105,7 +105,7 @@ func CheckIfOnlyParamUsed(content string) bool {
 }
 
 func CheckIfParamIsPartiallyReferenced(content string) (bool, bool) {
-	regex, _ := regexp.Compile(`<<\s*(parameters|pipeline.parameters)\.\s*>?>?`)
+	regex, _ := regexp.Compile(`<<\s*(parameters|pipeline.parameters|pipeline.git)\.\s*>?>?`)
 	isPipelineParam := strings.Contains(content, "pipeline.")
 	return regex.Find([]byte(content)) != nil, isPipelineParam
 }
