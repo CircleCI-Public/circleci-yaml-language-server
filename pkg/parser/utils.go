@@ -385,6 +385,9 @@ func FindDeepestNode(rootNode *sitter.Node, content []byte, toFind []string) (*s
 }
 
 func (doc *YamlDocument) NodeToRange(node *sitter.Node) protocol.Range {
+	if node == nil {
+		return protocol.Range{}
+	}
 	return utils.AddOffsetToRange(protocol.Range{
 		Start: protocol.Position{
 			Line:      node.StartPoint().Row,
