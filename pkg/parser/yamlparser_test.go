@@ -1,11 +1,13 @@
 package parser_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/expect"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/testHelpers"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"github.com/stretchr/testify/assert"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
@@ -29,14 +31,25 @@ jobs:
 
 	assert.Equal(t, err, nil)
 	assert.True(t, yamlDocument.Context.Api.UseDefaultInstance())
-
+	img := utils.GetLatestUbuntu2204Image()
+	machineRange := protocol.Range{
+		Start: protocol.Position{Line: 3, Character: 4},
+		End:   protocol.Position{Line: 3, Character: 17},
+	}
 	expect.DiagnosticList(t, *yamlDocument.Diagnostics).To.Include(protocol.Diagnostic{
-		Range: protocol.Range{
-			Start: protocol.Position{Line: 3, Character: 4},
-			End:   protocol.Position{Line: 3, Character: 17},
-		},
+		Range:    machineRange,
 		Severity: protocol.DiagnosticSeverityWarning,
-		Message:  "Using `machine: true` is deprecated, please instead specify an image to use.",
+		Message:  utils.GetMachineTrueMessage(img),
+		Data: []protocol.CodeAction{
+			utils.CreateCodeActionTextEdit("Replace with most updated ubuntu image", yamlDocument.URI,
+				[]protocol.TextEdit{
+					{
+						Range: machineRange,
+						NewText: `machine:
+		` + strings.Repeat(" ", int(machineRange.Start.Character)) + `  image: ` + utils.GetLatestUbuntu2204Image(),
+					},
+				}, false),
+		},
 	})
 }
 
@@ -105,14 +118,26 @@ jobs:
 
 	assert.Equal(t, err, nil)
 	assert.True(t, yamlDocument.Context.Api.UseDefaultInstance())
+	img := utils.GetLatestUbuntu2204Image()
+	machineRange := protocol.Range{
+		Start: protocol.Position{Line: 7, Character: 4},
+		End:   protocol.Position{Line: 7, Character: 17},
+	}
 	expect.DiagnosticList(t, *yamlDocument.Diagnostics).To.Include(
 		protocol.Diagnostic{
-			Range: protocol.Range{
-				Start: protocol.Position{Line: 7, Character: 4},
-				End:   protocol.Position{Line: 7, Character: 17},
-			},
+			Range:    machineRange,
 			Severity: protocol.DiagnosticSeverityWarning,
-			Message:  "Using `machine: true` is deprecated, please instead specify an image to use.",
+			Message:  utils.GetMachineTrueMessage(img),
+			Data: []protocol.CodeAction{
+				utils.CreateCodeActionTextEdit("Replace with most updated ubuntu image", yamlDocument.URI,
+					[]protocol.TextEdit{
+						{
+							Range: machineRange,
+							NewText: `machine:
+		` + strings.Repeat(" ", int(machineRange.Start.Character)) + `  image: ` + utils.GetLatestUbuntu2204Image(),
+						},
+					}, false),
+			},
 		},
 	)
 }
@@ -188,17 +213,29 @@ jobs:
 
 	assert.Equal(t, err, nil)
 	assert.True(t, yamlDocument.Context.Api.UseDefaultInstance())
+	img := utils.GetLatestUbuntu2204Image()
+	machineRange := protocol.Range{
+		Start: protocol.Position{Line: 3, Character: 4},
+		End:   protocol.Position{Line: 3, Character: 17},
+	}
 	expect.DiagnosticList(
 		t,
 		*yamlDocument.Diagnostics,
 	).To.Include(
 		protocol.Diagnostic{
-			Range: protocol.Range{
-				Start: protocol.Position{Line: 3, Character: 4},
-				End:   protocol.Position{Line: 3, Character: 17},
-			},
+			Range:    machineRange,
 			Severity: protocol.DiagnosticSeverityWarning,
-			Message:  "Using `machine: true` is deprecated, please instead specify an image to use.",
+			Message:  utils.GetMachineTrueMessage(img),
+			Data: []protocol.CodeAction{
+				utils.CreateCodeActionTextEdit("Replace with most updated ubuntu image", yamlDocument.URI,
+					[]protocol.TextEdit{
+						{
+							Range: machineRange,
+							NewText: `machine:
+		` + strings.Repeat(" ", int(machineRange.Start.Character)) + `  image: ` + utils.GetLatestUbuntu2204Image(),
+						},
+					}, false),
+			},
 		},
 	)
 }

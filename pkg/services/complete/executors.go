@@ -141,7 +141,7 @@ func (ch *CompletionHandler) completeMachineExecutor(executor ast.MachineExecuto
 	}
 
 	if utils.PosInRange(executor.ImageRange, ch.Params.Position) {
-		for _, img := range validate.ValidARMOrMachineImages {
+		for _, img := range utils.ValidARMOrMachineImages {
 			ch.addCompletionItem(img)
 		}
 		return
@@ -150,7 +150,7 @@ func (ch *CompletionHandler) completeMachineExecutor(executor ast.MachineExecuto
 		extendedRange.End.Character += 999
 
 		if utils.PosInRange(extendedRange, ch.Params.Position) {
-			for _, img := range validate.ValidARMOrMachineImages {
+			for _, img := range utils.ValidARMOrMachineImages {
 				ch.addCompletionItem(img)
 			}
 

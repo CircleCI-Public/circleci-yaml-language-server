@@ -125,6 +125,9 @@ func (doc *YamlDocument) parseSingleExecutorMachine(nameNode *sitter.Node, value
 	var machineNode *sitter.Node
 
 	parseMachine := func(blockNode *sitter.Node) {
+		if blockNode == nil {
+			return
+		}
 		machineNode = blockNode
 
 		if blockNode.Type() == "flow_node" {
@@ -372,18 +375,34 @@ func (doc *YamlDocument) addedMachineTrueDeprecatedDiag(child *sitter.Node, reso
 	if doc.IsSelfHostedRunner(resourceClass) {
 		return false
 	}
+	machineRange := doc.NodeToRange(child)
 
-	doc.addDiagnostic(
-		protocol.Diagnostic{
-			Severity: protocol.DiagnosticSeverityWarning,
-			Range:    doc.NodeToRange(child),
-			Message:  "Using `machine: true` is deprecated, please instead specify an image to use.",
-			Tags: []protocol.DiagnosticTag{
-				protocol.DiagnosticTagDeprecated,
-			},
+	doc.machineTrueFix(machineRange)
+	return true
+}
+
+func (doc *YamlDocument) machineTrueFix(machineRange protocol.Range) {
+	img := utils.GetLatestUbuntu2204Image()
+	diagnostic := utils.CreateDiagnosticFromRange(
+		machineRange,
+		protocol.DiagnosticSeverityWarning,
+		utils.GetMachineTrueMessage(img),
+		[]protocol.CodeAction{
+			utils.CreateCodeActionTextEdit("Replace with most updated ubuntu image", doc.URI,
+				[]protocol.TextEdit{
+					{
+						Range: machineRange,
+						NewText: `machine:
+` + strings.Repeat(" ", int(machineRange.Start.Character)) + `  image: ` + utils.GetLatestUbuntu2204Image(),
+					},
+				}, false),
 		},
 	)
-	return true
+	diagnostic.Tags = []protocol.DiagnosticTag{
+		protocol.DiagnosticTagDeprecated,
+	}
+	doc.addDiagnostic(diagnostic)
+
 }
 
 func (doc *YamlDocument) IsSelfHostedRunner(resourceClass string) bool {
