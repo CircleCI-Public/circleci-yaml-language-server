@@ -3,7 +3,7 @@ package methods
 import "go.lsp.dev/protocol"
 
 type TelemetryEvent struct {
-	Event       string                 `json:"event"`
+	Object      string                 `json:"object"`
 	TriggerType string                 `json:"triggerType"`
 	Action      string                 `json:"action"`
 	Properties  map[string]interface{} `json:"properties"`
@@ -16,8 +16,8 @@ type TelemetryEvent struct {
 // If you don't know what to put in Action and TriggerType, leave them empty
 // The lsp client may add other properties
 func (methods *Methods) SendTelemetryEvent(event TelemetryEvent) {
-	if event.Event == "" {
-		event.Event = "vscode-lsp"
+	if event.Object == "" {
+		event.Object = "lsp"
 	}
 	if event.TriggerType == "" {
 		event.TriggerType = "frontend_interaction"

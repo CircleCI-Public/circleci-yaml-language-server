@@ -42,6 +42,8 @@ func (methods *Methods) DidOpen(reply jsonrpc2.Replier, req jsonrpc2.Request) er
 			Properties: map[string]interface{}{
 				"filename": params.TextDocument.URI.Filename(),
 			},
+			TriggerType: "frontend_interaction",
+			Object:      "lsp",
 		})
 	})()
 

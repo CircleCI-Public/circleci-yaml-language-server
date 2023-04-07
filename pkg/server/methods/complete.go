@@ -26,6 +26,8 @@ func (methods *Methods) Complete(reply jsonrpc2.Replier, req jsonrpc2.Request) e
 			Properties: map[string]interface{}{
 				"filename": params.TextDocument.URI.Filename(),
 			},
+			TriggerType: "frontend_interaction",
+			Object:      "lsp",
 		})
 	})()
 
