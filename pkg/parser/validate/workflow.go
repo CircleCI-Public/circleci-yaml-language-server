@@ -28,7 +28,7 @@ func (val Validate) validateSingleWorkflow(workflow ast.Workflow) error {
 		}
 
 		if !val.Doc.DoesJobExist(jobRef.JobName) &&
-			!(val.Doc.IsOrbReference(jobRef.JobName) && !val.Doc.IsOrbCommand(jobRef.JobName, val.Cache) && val.Doc.IsOrbJob(jobRef.JobName, val.Cache)) {
+			!(val.Doc.IsOrbReference(jobRef.JobName) && (val.Doc.IsOrbCommand(jobRef.JobName, val.Cache) || val.Doc.IsOrbJob(jobRef.JobName, val.Cache))) {
 			val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
 				jobRef.JobRefRange,
 				fmt.Sprintf("Cannot find declaration for job %s", jobRef.JobName)))
