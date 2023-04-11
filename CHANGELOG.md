@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## [0.3.3](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.3.2...0.3.3) (2023-04-11)
+
+
+### Bug Fixes
+
+* Added M1 resource class ([701e9c9](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/701e9c9b98ec83ac8cb1b85d07d4c8d1ac46709c))
+* **DEVEX-870:** orb version w/ git pipeline parameter ([f498207](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/f49820768b4a9e84ffd91c29ed405843802609f7))
+* Fix LS crashing on nil node ([fd573cd](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/fd573cdf1c2957d2cb55085048bd7b72a7e5af3d))
+* Fix orb's references not being recognized ([813a807](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/813a8071c7ef3ffacfc0f6d07c5c229488744ed6))
+* Fix step `deploy` is not recognized ([665fe68](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/665fe6844e74d2e6a54716186f307b7088a0c93c))
+
 ## [0.3.2](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.3.1...0.3.2) (2023-03-24)
 
 
