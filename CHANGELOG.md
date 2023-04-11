@@ -1,5 +1,42 @@
 # CHANGELOG
 
+## [0.4.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/v0.3.3...0.4.0) (2023-04-11)
+
+
+### Features
+
+* Added a detailed parsing of an orb string ([7a8168c](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/7a8168cbf8ee0dea632eda59d568912906e034f0))
+* Added autocomplete of env_var_name parameters and `environment` field ([5018ef5](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/5018ef554c289effa9ba9b81eeb1ab1ffbc30b40))
+* Added autocompletion for context env variables ([d26b851](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/d26b8513f690e621b32e33b6f2f4ff1b95c549cc))
+* Added autocompletion for project env variables ([b8bfffd](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/b8bfffd3e6ef6f8b726bdd10178968d18fcb716a))
+* Added getWorkflows command ([14957bd](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/14957bd130467b5c80c49b50cc6ba5d19331067d))
+* added new ubuntu machine ([#116](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/116)) ([ce25d17](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/ce25d17d4cb486a3fe7027a347a45ade97c56338))
+* Autocomplete orb versions ([5ba2a60](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/5ba2a60311e45e460fdc003b8e2a69613ec5b24e))
+* code outline & breadcrumbs ([#112](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/112)) ([e8390c6](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/e8390c65f09e525249c18ae4aeb2f1af32cd6f12))
+* Support of methods `reference` and `definition` inside local orbs ([795844d](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/795844d0871c24bc6cd9e1d5f959bc96072044ca))
+* telemetry for autocompletion ([#110](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/110)) ([8756e86](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/8756e86ef58b1f3f6bb2ffd5ff68883753952480))
+* Validate `context` variable inside job reference ([b471bab](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/b471babe64dbdf5aa25929dd581b4680eb88cedb))
+* When a deprecated `circleci/xxx` image is used, suggest using `cimg/xxx` instead ([0ea8eba](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/0ea8eba00f4c8ec942d236541c38bb6fb00c8fc5))
+
+
+### Bug Fixes
+
+* Added M1 resource class ([701e9c9](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/701e9c9b98ec83ac8cb1b85d07d4c8d1ac46709c))
+* added machine bool field to ast for outline fix ([de1dbf2](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/de1dbf23591fea69459c64c2d5e015601bd5114d))
+* added machine bool field to ast for outline fix ([eb2dca7](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/eb2dca7b2c37e46cff38897bb03c36b8ab1fb7b3))
+* **definition:** Fix orb parameter definition ([faa58b1](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/faa58b14174468991aca7b7c35af20f7d5578a4e))
+* **DEVEX-870:** orb version w/ git pipeline parameter ([f498207](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/f49820768b4a9e84ffd91c29ed405843802609f7))
+* different error messages for non-existing orbs vs wrong version orbs ([#106](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/106)) ([db534e9](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/db534e95ba5ec89a4360da17c7bcba3f1db77738))
+* Fix error on spawn ([96a303f](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/96a303f9c4509d85982ff3eff3e3cc4cce34b709))
+* Fix executor name not being correctly parsed with short hand syntax ([b8ca5b7](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/b8ca5b7a9ba1707eb1546a99e09d4ca44acff4a1))
+* Fix LS crashing on nil node ([fd573cd](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/fd573cdf1c2957d2cb55085048bd7b72a7e5af3d))
+* Fix LSP not starting because of port already being used ([1d4533c](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/1d4533c542eb569f8afda0eba20987c3f3ac85cc))
+* Fix orb version autocomplete ([d0ae0e9](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/d0ae0e9088aa1ebb0bf1482b37c93abd36eef0ab))
+* Fix orb's references not being recognized ([813a807](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/813a8071c7ef3ffacfc0f6d07c5c229488744ed6))
+* Fix step `deploy` is not recognized ([665fe68](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/665fe6844e74d2e6a54716186f307b7088a0c93c))
+* Improve error message when dealing with an unknown executor reference ([a2a6f20](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/a2a6f209007609a8e2981523d9c01e3013340765))
+* min prop warning when using multiple merge keys ([#107](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/107)) ([225ddf4](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/225ddf4dd05572dfa9e4703eceedb7e0ab4b6565))
+
 ## [0.3.3](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.3.2...0.3.3) (2023-04-11)
 
 
