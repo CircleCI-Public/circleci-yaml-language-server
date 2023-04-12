@@ -97,7 +97,8 @@ func (methods *Methods) DidClose(reply jsonrpc2.Replier, req jsonrpc2.Request) e
 }
 
 func (methods *Methods) notificationMethods(textDocument protocol.TextDocumentItem) {
-	if methods.LsContext.Api.Token != "" {
+	isOrb, _ := methods.isOrb(textDocument.URI)
+	if methods.LsContext.Api.Token != "" && !isOrb {
 		methods.getAllEnvVariables(textDocument)
 	}
 
