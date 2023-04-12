@@ -114,7 +114,6 @@ func (c *FileCache) UpdateTextDocument(uri protocol.URI, textDocument protocol.T
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()
 	file := c.fileCache[uri]
-
 	file.TextDocument = textDocument
 
 	c.fileCache[uri] = file
