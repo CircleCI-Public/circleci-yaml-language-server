@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
-	lsp "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/services"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"github.com/bep/debounce"
 	"github.com/segmentio/encoding/json"
@@ -101,17 +100,7 @@ func (methods *Methods) notificationMethods(textDocument protocol.TextDocumentIt
 		methods.getAllEnvVariables(textDocument)
 	}
 
-	diagnostic, _ := lsp.DiagnosticFile(
-		textDocument.URI,
-		methods.Cache,
-		methods.LsContext,
-		methods.SchemaLocation,
-	)
-
-	diagnosticParams := protocol.PublishDiagnosticsParams{
-		URI:         textDocument.URI,
-		Diagnostics: diagnostic,
-	}
+	diagnostics := methods.Diagnostics(textDocument)
 
 	original := methods.Cache.FileCache.GetFile(textDocument.URI)
 
@@ -121,8 +110,17 @@ func (methods *Methods) notificationMethods(textDocument protocol.TextDocumentIt
 		methods.Conn.Notify(
 			methods.Ctx,
 			protocol.MethodTextDocumentPublishDiagnostics,
-			diagnosticParams,
+			diagnostics,
 		)
+
+		methods.SendTelemetryEvent(TelemetryEvent{
+			Object:      "lsp",
+			TriggerType: "background_event",
+			Action:      "run_diagnostics",
+			Properties: map[string]interface{}{
+				"filename": textDocument.URI.Filename(),
+			},
+		})
 	}
 
 }
