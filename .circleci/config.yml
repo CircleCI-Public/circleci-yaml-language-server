@@ -678,12 +678,22 @@ workflows:
                     - E2E Tests
                     - Security Scan
 
+            - Github Release:
+                name: Github Release
+                base-branch: main
+                filters:
+                    <<: *release-tag-only
+                context:
+                    - devex-release
+                requires:
+                    - Publish ?
+
             - Release:
                 name: Publish
                 filters:
                     <<: *release-tag-only
                 requires:
-                    - Publish ?
+                    - Github Release
                 context:
                     - cpe-slack
                     - devex-release
@@ -697,13 +707,5 @@ workflows:
                         only: main
                     tags:
                         ignore: /.*/
-                context:
-                    - devex-release
-
-            - Github Release:
-                name: Github Release ?
-                base-branch: main
-                filters:
-                    <<: *main-branch-only
                 context:
                     - devex-release
