@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [0.4.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.3.3...0.4.0) (2023-04-25)
+
+
+### Bug Fixes
+
+* Fix LS crashing when trying go-to-def on an orb ([0f54a5a](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/0f54a5a48e081f53dcdd66542b024bbb8b07d55f))
+
 ## [0.3.3](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.3.2...0.3.3) (2023-04-11)
 
 
