@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [0.4.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.3.3...0.4.0) (2023-04-25)
+
+
+### Features
+
+* null feat ([1e0d741](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/1e0d741da4e2baad05d983535a5340580a1808f9))
+
 ## [0.3.3](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.3.2...0.3.3) (2023-04-11)
 
 
