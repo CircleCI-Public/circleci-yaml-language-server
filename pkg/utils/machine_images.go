@@ -6,9 +6,13 @@ import (
 	"time"
 )
 
-var validARMOrMachineImagesUbuntu2004 = []string{
+var ValidARMOrMachineImagesUbuntu2004 = []string{
 	// Ubuntu 2004
 	"ubuntu-2004:current",
+	"ubuntu-2004:edge",
+	"ubuntu-2004:2023.04.2",
+	"ubuntu-2004:2023.04.1",
+	"ubuntu-2004:2023.02.1",
 	"ubuntu-2004:2022.10.1",
 	"ubuntu-2004:2022.07.1",
 	"ubuntu-2004:2022.04.2",
@@ -22,10 +26,12 @@ var validARMOrMachineImagesUbuntu2004 = []string{
 	"ubuntu-2004:202101-01",
 	"ubuntu-2004:202010-01",
 }
-var validARMOrMachineImagesUbuntu2204 = []string{
+var ValidARMOrMachineImagesUbuntu2204 = []string{
 	// Ubuntu 2204
 	"ubuntu-2204:current",
 	"ubuntu-2204:edge",
+	"ubuntu-2204:2023.04.2",
+	"ubuntu-2204:2023.04.1",
 	"ubuntu-2204:2023.02.1",
 	"ubuntu-2204:2022.10.2",
 	"ubuntu-2204:2022.10.1",
@@ -34,11 +40,11 @@ var validARMOrMachineImagesUbuntu2204 = []string{
 	"ubuntu-2204:2022.04.2",
 	"ubuntu-2204:2022.04.1",
 }
-var ValidARMOrMachineImages = append(validARMOrMachineImagesUbuntu2004, validARMOrMachineImagesUbuntu2204...)
+var ValidARMOrMachineImages = append(ValidARMOrMachineImagesUbuntu2004, ValidARMOrMachineImagesUbuntu2204...)
 
 func GetLatestUbuntu2204Image() string {
-	latestImg := validARMOrMachineImagesUbuntu2204[0]
-	for _, img := range validARMOrMachineImagesUbuntu2204 {
+	latestImg := ValidARMOrMachineImagesUbuntu2204[0]
+	for _, img := range ValidARMOrMachineImagesUbuntu2204 {
 		latestImg = getMoreRecentImg(img, latestImg)
 	}
 	return latestImg

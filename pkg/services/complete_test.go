@@ -226,74 +226,7 @@ func TestComplete(t *testing.T) {
 					Character: 19,
 				},
 			},
-			want: []protocol.CompletionItem{
-				{
-					Label: "ubuntu-2004:current",
-				},
-				{
-					Label: "ubuntu-2004:2022.10.1",
-				},
-				{
-					Label: "ubuntu-2004:2022.07.1",
-				},
-				{
-					Label: "ubuntu-2004:2022.04.2",
-				},
-				{
-					Label: "ubuntu-2004:2022.04.1",
-				},
-				{
-					Label: "ubuntu-2004:202201-02",
-				},
-				{
-					Label: "ubuntu-2004:202201-01",
-				},
-				{
-					Label: "ubuntu-2004:202111-02",
-				},
-				{
-					Label: "ubuntu-2004:202111-01",
-				},
-				{
-					Label: "ubuntu-2004:202107-02",
-				},
-				{
-					Label: "ubuntu-2004:202104-01",
-				},
-				{
-					Label: "ubuntu-2004:202101-01",
-				},
-				{
-					Label: "ubuntu-2004:202010-01",
-				},
-				{
-					Label: "ubuntu-2204:current",
-				},
-				{
-					Label: "ubuntu-2204:edge",
-				},
-				{
-					Label: "ubuntu-2204:2023.02.1",
-				},
-				{
-					Label: "ubuntu-2204:2022.10.2",
-				},
-				{
-					Label: "ubuntu-2204:2022.10.1",
-				},
-				{
-					Label: "ubuntu-2204:2022.07.2",
-				},
-				{
-					Label: "ubuntu-2204:2022.07.1",
-				},
-				{
-					Label: "ubuntu-2204:2022.04.2",
-				},
-				{
-					Label: "ubuntu-2204:2022.04.1",
-				},
-			},
+			want: createCompletionItemForUbuntuImages(),
 		},
 		{
 			name: "Completion for resource class",
@@ -420,4 +353,19 @@ func sortCompleteItem(items []protocol.CompletionItem) {
 	sort.Slice(items, func(i, j int) bool {
 		return items[i].Label < items[j].Label
 	})
+}
+
+func createCompletionItemForUbuntuImages() []protocol.CompletionItem {
+	completeItems := make([]protocol.CompletionItem, 0)
+	for _, image := range utils.ValidARMOrMachineImagesUbuntu2004 {
+		completeItems = append(completeItems, protocol.CompletionItem{
+			Label: image,
+		})
+	}
+	for _, image := range utils.ValidARMOrMachineImagesUbuntu2204 {
+		completeItems = append(completeItems, protocol.CompletionItem{
+			Label: image,
+		})
+	}
+	return completeItems
 }
