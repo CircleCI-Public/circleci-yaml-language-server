@@ -11,10 +11,6 @@ import (
 func ValidateDockerImage(img *ast.DockerImage, cache *utils.DockerCache) (bool, string) {
 	cachedDockerImage := cache.Get(img.Image.FullPath)
 
-	if img.Image.Name != "" && img.Image.Tag == "" {
-		return false, "Missing image tag"
-	}
-
 	if !isDockerImageCheckable(img) {
 		// When a Docker image can't be checked, return true (consider it valid)
 		return true, ""

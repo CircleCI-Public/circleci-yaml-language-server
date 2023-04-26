@@ -26,13 +26,7 @@ orbs:
       localexecutor:
         docker:
           - image: circleci/node`,
-			Diagnostics: []protocol.Diagnostic{
-				utils.CreateErrorDiagnosticFromRange(protocol.Range{
-					Start: protocol.Position{Line: 7, Character: 12},
-					End:   protocol.Position{Line: 7, Character: 32},
-				},
-					"Missing image tag"),
-			},
+			Diagnostics: []protocol.Diagnostic{},
 		},
 		{
 			Name:       "Local mac orb executor should give well located errors",
@@ -87,14 +81,7 @@ orbs:
           - image: cimg/base
         steps:
           - run: echo "Hello world"`,
-			Diagnostics: []protocol.Diagnostic{
-				utils.CreateErrorDiagnosticFromRange(protocol.Range{
-					Start: protocol.Position{Line: 7, Character: 12},
-					End:   protocol.Position{Line: 7, Character: 28},
-				},
-					"Missing image tag",
-				),
-			},
+			Diagnostics: []protocol.Diagnostic{},
 		},
 		{
 			// This test is mainly here because checking an orb's executor would cause a crash

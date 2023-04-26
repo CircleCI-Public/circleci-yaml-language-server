@@ -15,6 +15,7 @@ import (
 type ValidateTestCase struct {
 	Name        string
 	YamlContent string
+	// Whether you want to compare the Diagnostics to every diagnostics or only to the error diagnostics
 	OnlyErrors  bool
 	Diagnostics []protocol.Diagnostic
 }
