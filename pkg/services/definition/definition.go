@@ -1,6 +1,8 @@
 package definition
 
 import (
+	"fmt"
+
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
@@ -23,32 +25,38 @@ func (def DefinitionStruct) Definition() ([]protocol.Location, error) {
 		return definition, nil
 	}
 
+	var res []protocol.Location
+	var err error = nil
+
 	switch true {
 	// Workflows
 	case utils.PosInRange(def.Doc.WorkflowRange, def.Params.Position):
-		return def.searchForWorkflows(), nil
+		res = def.searchForWorkflows()
 
 	// Jobs
 	case utils.PosInRange(def.Doc.JobsRange, def.Params.Position):
-		return def.searchForJobs(), nil
+		res = def.searchForJobs()
 
 	// Commands
 	case utils.PosInRange(def.Doc.CommandsRange, def.Params.Position):
-		return def.searchForCommands(), nil
+		res = def.searchForCommands()
 
 	// Orbs
 	case utils.PosInRange(def.Doc.OrbsRange, def.Params.Position):
-		return def.getOrbDefinition()
+		res, err = def.getOrbDefinition()
 
 	// Pipeline's parameters
 	case utils.PosInRange(def.Doc.PipelineParametersRange, def.Params.Position):
-		return def.searchForParamDefinition(def.Doc.PipelineParameters), nil
+		res, err = def.searchForParamDefinition(def.Doc.PipelineParameters), nil
 
 	case utils.PosInRange(def.Doc.ExecutorsRange, def.Params.Position):
-		return def.getExecutorDefinition()
+		res, err = def.getExecutorDefinition()
 	}
 
-	return nil, nil
+	if err != nil {
+		fmt.Println("error occurred during definition:", err)
+	}
+	return res, nil
 }
 
 func (def DefinitionStruct) GetOrbInfo(name string) (*ast.OrbInfo, error) {
