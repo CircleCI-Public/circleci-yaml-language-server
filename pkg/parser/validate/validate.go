@@ -1,13 +1,19 @@
 package validate
 
 import (
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/dockerhub"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 
 	"go.lsp.dev/protocol"
 )
 
+type ValidateAPIs struct {
+	DockerHub dockerhub.DockerHubAPI
+}
+
 type Validate struct {
+	APIs        ValidateAPIs
 	Diagnostics *[]protocol.Diagnostic
 	Doc         parser.YamlDocument
 	Cache       *utils.Cache

@@ -7,7 +7,7 @@ parameters:
 jobs:
   run:
     docker:
-      - image: cimg/node:<< parameters.version >>
+      - image: node:<< parameters.version >>
     steps:
       - checkout
 

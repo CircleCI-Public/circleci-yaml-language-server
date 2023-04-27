@@ -18,6 +18,6 @@ func main() {
 		fmt.Println(results.Next())
 	}
 
-	fmt.Println(dockerhub.DoesImageExist("cimg", "node1", "18.9.0"))
+	fmt.Println(dockerhub.NewAPI().DoesImageExist("cimg", "node1"))
 
 }

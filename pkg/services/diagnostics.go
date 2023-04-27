@@ -1,6 +1,7 @@
 package languageservice
 
 import (
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/dockerhub"
 	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser/validate"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
@@ -74,6 +75,9 @@ func DiagnosticYAML(yamlDocument yamlparser.YamlDocument, cache *utils.Cache, co
 	)
 
 	validateStruct := validate.Validate{
+		APIs: validate.ValidateAPIs{
+			DockerHub: dockerhub.NewAPI(),
+		},
 		Doc:         diag.yamlDocument,
 		Diagnostics: &[]protocol.Diagnostic{},
 		Cache:       cache,

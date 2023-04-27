@@ -297,7 +297,7 @@ jobs:
 
     Build VSIX:
         docker:
-            - image: cimg/node:14.19.0
+            - image: cimg/node:18
         steps:
             - checkout
             - attach_workspace:
@@ -336,7 +336,7 @@ jobs:
         steps:
             - checkout
             - node/install:
-                node-version: '14.19'
+                node-version: '18'
             - node/install-yarn
             - install-vscode-extensions-deps
             - install-e2e-tests-deps

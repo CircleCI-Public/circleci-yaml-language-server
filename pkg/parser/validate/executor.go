@@ -151,15 +151,53 @@ func (val Validate) validateDockerExecutor(executor ast.DockerExecutor) {
 	val.checkIfValidResourceClass(executor.ResourceClass, ValidDockerResourceClasses, executor.ResourceClassRange)
 
 	for _, img := range executor.Image {
-		isValid, errMessage := ValidateDockerImage(&img, &val.Cache.DockerCache)
 
-		if !isValid {
+		if !isDockerImageCheckable(&img) {
+			// When a Docker image can't be checked, skip it (consider it valid)
+			continue
+		}
+
+		imageExists := DoesDockerImageExists(&img, &val.Cache.DockerCache, val.APIs.DockerHub)
+		if !imageExists {
 			val.addDiagnostic(
 				utils.CreateErrorDiagnosticFromRange(
 					img.ImageRange,
-					errMessage,
+					fmt.Sprintf("Docker image not found %s", img.Image.FullPath),
 				),
 			)
+		} else {
+			// Validate image tag
+			imgTag := img.Image.Tag
+
+			if imgTag == "" {
+				imgTag = "latest"
+			}
+
+			tagExists := DoesTagExist(&img, imgTag, &val.Cache.DockerTagsCache, val.APIs.DockerHub)
+
+			if !tagExists {
+				actions := GetImageTagActions(&val.Doc, &img, &val.Cache.DockerTagsCache, val.APIs.DockerHub)
+				val.addDiagnostic(
+					utils.CreateDiagnosticFromRange(
+						img.ImageRange,
+						protocol.DiagnosticSeverityError,
+						fmt.Sprintf("Docker image %s has no tag %s", img.Image.FullPath, imgTag),
+						actions,
+					),
+				)
+			}
+
+			if tagExists && img.Image.Tag == "" {
+				actions := GetImageTagActions(&val.Doc, &img, &val.Cache.DockerTagsCache, val.APIs.DockerHub)
+				val.addDiagnostic(
+					utils.CreateDiagnosticFromRange(
+						img.ImageRange,
+						protocol.DiagnosticSeverityHint,
+						"It is recommended to set explicit tags",
+						actions,
+					),
+				)
+			}
 		}
 
 		if img.Image.Namespace == "circleci" {

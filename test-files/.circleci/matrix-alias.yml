@@ -13,7 +13,7 @@ jobs:
 
   test:
     docker:
-      - image: cimg/node:latest
+      - image: cimg/node:17.2.0
     steps:
       - run: echo testing
 
@@ -25,7 +25,7 @@ workflows:
             alias: matrix-building
             parameters:
               build-mode: ["prod", "staging", "dev"]
-        
+
       - build: { build-mode: "prod" }
 
       - test:

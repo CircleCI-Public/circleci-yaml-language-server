@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/dockerhub"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
@@ -227,6 +228,9 @@ func (val Validate) ValidateLocalOrbs() {
 			}
 
 			validateStruct := Validate{
+				APIs: ValidateAPIs{
+					DockerHub: dockerhub.NewAPI(),
+				},
 				Doc:         val.Doc.FromOrbParsedAttributesToYamlDocument(orbInfo.OrbParsedAttributes),
 				Diagnostics: val.Diagnostics,
 				Cache:       val.Cache,

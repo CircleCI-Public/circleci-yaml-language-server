@@ -4,6 +4,7 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/dockerhub"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/testHelpers"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
@@ -20,20 +21,34 @@ type ValidateTestCase struct {
 	Diagnostics []protocol.Diagnostic
 }
 
+func CreateValidateFromYAML(yaml string) Validate {
+	context := testHelpers.GetDefaultLsContext()
+	context.Api.Token = ""
+	doc, _ := parser.ParseFromContent([]byte(yaml), context, uri.File(""), protocol.Position{})
+	val := Validate{
+		APIs: ValidateAPIs{
+			DockerHub: dockerhub.NewAPI(),
+		},
+		Diagnostics: &[]protocol.Diagnostic{},
+		Cache:       utils.CreateCache(),
+		Doc:         doc,
+		Context:     context,
+	}
+	return val
+}
+
+func CompareDiagnostics(t *testing.T, expected, actual *[]protocol.Diagnostic) {
+	sortDiagnostic(expected)
+	sortDiagnostic(actual)
+	assert.Equal(t, expected, actual)
+}
+
 func CheckYamlErrors(t *testing.T, testCases []ValidateTestCase) {
 	context := testHelpers.GetDefaultLsContext()
 	context.Api.Token = ""
 	for _, tt := range testCases {
 		t.Run(tt.Name, func(t *testing.T) {
-			content := tt.YamlContent
-			doc, err := parser.ParseFromContent([]byte(content), context, uri.File(""), protocol.Position{})
-			assert.Nil(t, err)
-			val := Validate{
-				Diagnostics: &[]protocol.Diagnostic{},
-				Cache:       utils.CreateCache(),
-				Doc:         doc,
-				Context:     context,
-			}
+			val := CreateValidateFromYAML(tt.YamlContent)
 			val.Validate()
 
 			diags := *val.Diagnostics
@@ -44,9 +59,7 @@ func CheckYamlErrors(t *testing.T, testCases []ValidateTestCase) {
 			if tt.Diagnostics == nil {
 				assert.Len(t, diags, 0)
 			} else {
-				sortDiagnostic(&diags)
-				sortDiagnostic(&tt.Diagnostics)
-				assert.Equal(t, tt.Diagnostics, diags)
+				CompareDiagnostics(t, &tt.Diagnostics, &diags)
 			}
 		})
 	}
