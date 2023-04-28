@@ -30,7 +30,7 @@ func (server JSONRPCServer) commandHandler(_ context.Context, reply jsonrpc2.Rep
 	switch req.Method() {
 
 	case protocol.MethodInitialize:
-		return server.methods.Initialize(reply)
+		return server.methods.Initialize(reply, req)
 
 	case protocol.MethodWorkspaceExecuteCommand:
 		return server.methods.ExecuteCommand(reply, req)
@@ -95,16 +95,7 @@ func (server JSONRPCServer) ServeStream(_ context.Context, conn jsonrpc2.Conn) e
 
 func StartServer(port int, host string, schemaLocation string) {
 	ctx := context.Background()
-	server := JSONRPCServer{
-		ctx: ctx,
-		lsContext: &utils.LsContext{
-			Api: utils.ApiContext{
-				HostUrl: utils.CIRCLE_CI_APP_HOST_URL,
-				Token:   "",
-			},
-		},
-		SchemaLocation: schemaLocation,
-	}
+	server := getJsonRpcServer(ctx, schemaLocation)
 
 	if port == -1 {
 		port = 0
@@ -147,24 +138,29 @@ type StdioReadWriteCloser struct {
 
 func (s *StdioReadWriteCloser) Close() error { return nil }
 
-func StartServerStdio(schema string) {
+func StartServerStdio(schemaLocation string) {
 	ctx := context.Background()
 
 	stdioStream := jsonrpc2.NewStream(&StdioReadWriteCloser{os.Stdin, os.Stdout})
 	stdioConn := jsonrpc2.NewConn(stdioStream)
-	server := JSONRPCServer{
+	server := getJsonRpcServer(ctx, schemaLocation)
+
+	if err := server.ServeStream(ctx, stdioConn); err != nil {
+		panic(err)
+	}
+}
+
+func getJsonRpcServer(ctx context.Context, schemaLocation string) JSONRPCServer {
+	return JSONRPCServer{
 		ctx: ctx,
 		lsContext: &utils.LsContext{
 			Api: utils.ApiContext{
 				HostUrl: utils.CIRCLE_CI_APP_HOST_URL,
 				Token:   "",
 			},
+			IsCciExtension: false,
 		},
-		SchemaLocation: schema,
-	}
-
-	if err := server.ServeStream(ctx, stdioConn); err != nil {
-		panic(err)
+		SchemaLocation: schemaLocation,
 	}
 }
 

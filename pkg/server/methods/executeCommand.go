@@ -39,6 +39,7 @@ func (methods *Methods) ExecuteCommand(reply jsonrpc2.Replier, req jsonrpc2.Requ
 			return reply(methods.Ctx, nil, nil)
 		}
 		methods.setUserId(param)
+
 	case "getWorkflows":
 		content, okContent := arguments[0].(string)
 		fileUri, okUri := arguments[1].(string)

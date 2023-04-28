@@ -169,6 +169,9 @@ export class LSP {
                 onTabs: true,
             },
             diagnosticCollectionName: 'cci-diag',
+            initializationOptions: {
+                isCciExtension: true,
+            },
 
             outputChannel: outputChannel(),
         };
