@@ -10,6 +10,7 @@ import (
 type LsContext struct {
 	Api                ApiContext
 	UserIdForTelemetry string
+	IsCciExtension     bool
 }
 
 type ApiContext struct {

@@ -1,6 +1,9 @@
 package methods
 
 import (
+	"fmt"
+
+	"github.com/segmentio/encoding/json"
 	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/protocol"
 )
@@ -29,7 +32,19 @@ var TokenModifiers = []protocol.SemanticTokenModifiers{
 	protocol.SemanticTokenModifierAbstract,
 }
 
-func (methods *Methods) Initialize(reply jsonrpc2.Replier) error {
+func (methods *Methods) Initialize(reply jsonrpc2.Replier, req jsonrpc2.Request) error {
+	params := protocol.InitializeParams{}
+	if err := json.Unmarshal(req.Params(), &params); err != nil {
+		return reply(methods.Ctx, nil, fmt.Errorf("%s: %w", jsonrpc2.ErrParse, err))
+	}
+
+	if params.InitializationOptions != nil {
+		isCciExtension, ok := params.InitializationOptions.(map[string]interface{})["isCciExtension"]
+		if ok && isCciExtension == true {
+			methods.LsContext.IsCciExtension = true
+		}
+	}
+
 	v := protocol.InitializeResult{
 		Capabilities: protocol.ServerCapabilities{
 			RenameProvider: false,
