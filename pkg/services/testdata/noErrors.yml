@@ -8,7 +8,7 @@ orbs:
 executors:
   go:
     docker:
-      - image: cimg/go:latest
+      - image: node:latest
 
 jobs:
   build: &buildJob
@@ -17,7 +17,7 @@ jobs:
         description: "A test parameter"
         type: string
     docker:
-      - image: cimg/node:17.2.0
+      - image: cimg/node:20.0.0
         auth:
           username: mydockerhub-user
           password: $DOCKERHUB_PASSWORD
@@ -80,9 +80,9 @@ workflows:
                 token_name: atoken
                 environment_type: something
                 environment: another thing
-      
+
       - dummyJobWithStepParam
-      
+
       - somejob:
           myparam: some-value
       - anotherjob

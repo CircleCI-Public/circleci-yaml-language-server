@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-func DoesImageExist(namespace, image, tag string) bool {
+func (me *dockerHubAPI) DoesImageExist(namespace, image string) bool {
 	// A quick win is to check locally first, just in case we already found the image
 	ns := hubNamespaces[namespace]
 
@@ -17,20 +17,12 @@ func DoesImageExist(namespace, image, tag string) bool {
 		}
 	}
 
-	url := baseURL.JoinPath(
+	url := me.baseURL.JoinPath(
 		fmt.Sprintf("namespaces/%s/repositories/%s", namespace, image),
 	)
 
-	if tag != "" && tag != "latest" {
-		// "Latest" is a keyword and is not fetchable via API.
-		// in that case, the image is valid as long as a repo with the name exists.
-
-		url = url.JoinPath(
-			fmt.Sprintf("/tags/%s", tag),
-		)
-	}
-
 	req, err := http.NewRequest("GET", url.String(), nil)
+
 	if err != nil {
 		return false
 	}

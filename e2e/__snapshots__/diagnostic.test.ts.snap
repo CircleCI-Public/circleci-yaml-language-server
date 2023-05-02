@@ -119,11 +119,11 @@ DiagnosticList {
       "message": "Parameter node-version is not defined",
       "range": {
         "end": {
-          "character": 58,
+          "character": 53,
           "line": 39,
         },
         "start": {
-          "character": 29,
+          "character": 24,
           "line": 39,
         },
       },
@@ -167,11 +167,11 @@ DiagnosticList {
       "message": "Parameter app-node is not defined",
       "range": {
         "end": {
-          "character": 54,
+          "character": 49,
           "line": 19,
         },
         "start": {
-          "character": 29,
+          "character": 24,
           "line": 19,
         },
       },
@@ -295,7 +295,7 @@ DiagnosticList {
             "changes": {
               "file:///home/circleci/project/test-files/.circleci/diagnostic.yml": [
                 {
-                  "newText": "4.12.1",
+                  "newText": "4.12.3",
                   "range": {
                     "end": {
                       "character": 29,
@@ -318,7 +318,7 @@ DiagnosticList {
             "changes": {
               "file:///home/circleci/project/test-files/.circleci/diagnostic.yml": [
                 {
-                  "newText": "4.12.1",
+                  "newText": "4.12.3",
                   "range": {
                     "end": {
                       "character": 29,
@@ -339,7 +339,7 @@ DiagnosticList {
       ],
       "message": "A newer minor version exists.
 - Current: 4.4.4
-- Latest:  4.12.1",
+- Latest:  4.12.3",
       "range": {
         "end": {
           "character": 29,

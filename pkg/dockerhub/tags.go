@@ -13,7 +13,8 @@ type TagResponse struct {
 }
 
 type RepoTag struct {
-	Name string `json:"name"`
+	TagStatus string `json:"tag_status"`
+	Name      string `json:"name"`
 }
 
 func (t *TagResponse) loadNext() (TagResponse, error) {
@@ -66,4 +67,58 @@ func fetchTagsByURL(queryURL string) (TagResponse, error) {
 	}
 
 	return tagResponse, nil
+}
+
+func (me *dockerHubAPI) GetImageTags(namespace, image string) ([]string, error) {
+	url := me.baseURL.JoinPath(
+		fmt.Sprintf("namespaces/%s/repositories/%s/tags", namespace, image),
+	)
+
+	req, err := http.NewRequest("GET", url.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	decoder := json.NewDecoder(res.Body)
+	body := TagResponse{}
+
+	err = decoder.Decode(&body)
+	if err != nil {
+		return nil, err
+	}
+
+	tags := make([]string, len(body.Results))
+	for i, tag := range body.Results {
+		// Although there is no documentation about this field in the doc, all tags I came across were
+		// tagged as "active" so it feels like it should be verified
+		// https://docs.docker.com/docker-hub/api/latest/#tag/repositories/paths/~1v2~1namespaces~1%7Bnamespace%7D~1repositories~1%7Brepository%7D~1tags/get
+		if tag.TagStatus == "active" {
+			tags[i] = tag.Name
+		}
+	}
+
+	return tags, nil
+}
+
+func (me *dockerHubAPI) ImageHasTag(namespace, image, tag string) bool {
+	url := me.baseURL.JoinPath(
+		fmt.Sprintf("namespaces/%s/repositories/%s/tags/%s", namespace, image, tag),
+	)
+
+	req, err := http.NewRequest("GET", url.String(), nil)
+	if err != nil {
+		return false
+	}
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return false
+	}
+
+	return res.StatusCode == 200
 }

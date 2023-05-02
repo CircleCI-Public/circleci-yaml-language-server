@@ -8,11 +8,11 @@ DiagnosticList {
       "message": "Parameter version is not defined",
       "range": {
         "end": {
-          "character": 49,
+          "character": 44,
           "line": 9,
         },
         "start": {
-          "character": 25,
+          "character": 20,
           "line": 9,
         },
       },

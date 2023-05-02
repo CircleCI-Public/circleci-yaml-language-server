@@ -17,7 +17,7 @@ orbs:
             type: string
 
         docker:
-          - image: cimg/node:<< parameters.app-node >>
+          - image: node:<< parameters.app-node >>
         steps:
           - checkout
           - run: npm start
@@ -37,7 +37,7 @@ orbs:
             description: "The version of Node use"
             type: string
         docker:
-          - image: cimg/node:<< parameters.node-version >>
+          - image: node:<< parameters.node-version >>
         steps:
           - checkout
           - run: npm start

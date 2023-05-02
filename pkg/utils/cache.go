@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"os"
 	"path"
 	"sync"
@@ -11,10 +12,11 @@ import (
 )
 
 type Cache struct {
-	FileCache    FileCache
-	OrbCache     OrbCache
-	DockerCache  DockerCache
-	ContextCache ContextCache
+	FileCache       FileCache
+	OrbCache        OrbCache
+	DockerCache     DockerCache
+	DockerTagsCache DockerTagsCache
+	ContextCache    ContextCache
 }
 
 type DockerCache struct {
@@ -25,6 +27,19 @@ type DockerCache struct {
 type CachedDockerImage struct {
 	Checked bool
 	Exists  bool
+}
+
+type CachedDockerTags struct {
+	// A tag to recommended for untagged images
+	Recommended string
+
+	// The key of the map are the tag checked and the value is whether this tag exists or not
+	CheckedTags map[string]bool
+}
+
+type DockerTagsCache struct {
+	cacheMutex *sync.Mutex
+	tagsCache  map[string]CachedDockerTags
 }
 
 type CachedFile struct {
@@ -57,6 +72,9 @@ func (c *Cache) init() {
 
 	c.DockerCache.cacheMutex = &sync.Mutex{}
 	c.DockerCache.dockerCache = make(map[string]*CachedDockerImage)
+
+	c.DockerTagsCache.cacheMutex = &sync.Mutex{}
+	c.DockerTagsCache.tagsCache = make(map[string]CachedDockerTags)
 
 	c.ContextCache.cacheMutex = &sync.Mutex{}
 	c.ContextCache.contextCache = make(map[string]map[string]*Context)
@@ -204,6 +222,28 @@ func (c *DockerCache) Remove(name string) {
 
 	delete(c.dockerCache, name)
 }
+
+// Docker tags cache
+
+func (c *DockerTagsCache) Add(namespace, image string, value CachedDockerTags) {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+
+	c.tagsCache[fmt.Sprintf("%s/%s", namespace, image)] = value
+}
+
+func (c *DockerTagsCache) Get(namespace, image string) *CachedDockerTags {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+
+	tags, ok := c.tagsCache[fmt.Sprintf("%s/%s", namespace, image)]
+	if !ok {
+		return nil
+	}
+	return &tags
+}
+
+// Cache
 
 func CreateCache() *Cache {
 	cache := Cache{}
