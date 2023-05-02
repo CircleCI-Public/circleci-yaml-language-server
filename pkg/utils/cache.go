@@ -12,11 +12,12 @@ import (
 )
 
 type Cache struct {
-	FileCache       FileCache
-	OrbCache        OrbCache
-	DockerCache     DockerCache
-	DockerTagsCache DockerTagsCache
-	ContextCache    ContextCache
+	FileCache          FileCache
+	OrbCache           OrbCache
+	DockerCache        DockerCache
+	DockerTagsCache    DockerTagsCache
+	ResourceClassCache ResourceClassCache
+	ContextCache       ContextCache
 }
 
 type DockerCache struct {
@@ -63,6 +64,11 @@ type ContextCache struct {
 	contextCache map[string]map[string]*Context
 }
 
+type ResourceClassCache struct {
+	cacheMutex         *sync.Mutex
+	resourceClassCache map[protocol.URI]*[]string
+}
+
 func (c *Cache) init() {
 	c.FileCache.fileCache = make(map[protocol.URI]*CachedFile)
 	c.FileCache.cacheMutex = &sync.Mutex{}
@@ -78,6 +84,9 @@ func (c *Cache) init() {
 
 	c.ContextCache.cacheMutex = &sync.Mutex{}
 	c.ContextCache.contextCache = make(map[string]map[string]*Context)
+
+	c.ResourceClassCache.cacheMutex = &sync.Mutex{}
+	c.ResourceClassCache.resourceClassCache = make(map[protocol.URI]*[]string)
 }
 
 // FILE
@@ -307,4 +316,23 @@ func (c *ContextCache) GetAllContextOfOrganization(organizationId string) map[st
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()
 	return c.contextCache[organizationId]
+}
+
+// Resource class
+
+func (c *ResourceClassCache) SetResourceClassForFile(uri protocol.URI, resourceClass *[]string) *[]string {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	c.resourceClassCache[uri] = resourceClass
+	return resourceClass
+}
+
+func (c *ResourceClassCache) GetResourceClassOfFile(uri protocol.URI) []string {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	resourceClasses, ok := c.resourceClassCache[uri]
+	if !ok {
+		return []string{}
+	}
+	return *resourceClasses
 }

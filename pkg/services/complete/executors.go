@@ -136,6 +136,12 @@ func (ch *CompletionHandler) completeMachineExecutor(executor ast.MachineExecuto
 			ch.addResourceClassCompletion(validate.ValidNvidiaGPUResourceClasses)
 		} else {
 			ch.addResourceClassCompletion(validate.ValidLinuxResourceClasses)
+			if ch.Context.Api.IsLoggedIn() {
+				customResourceClasses := ch.Cache.ResourceClassCache.GetResourceClassOfFile(ch.Doc.URI)
+				for _, resourceClass := range customResourceClasses {
+					ch.addCompletionItem(resourceClass)
+				}
+			}
 		}
 		return
 	}

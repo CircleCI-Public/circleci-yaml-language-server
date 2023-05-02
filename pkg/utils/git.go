@@ -70,6 +70,16 @@ type Project struct {
 	} `json:"vcs_info"`
 }
 
+func GetProjectOrg(projectSlug string) string {
+	splitted := strings.Split(projectSlug, "/")
+
+	if len(splitted) != 3 {
+		return ""
+	}
+
+	return splitted[1]
+}
+
 func GetProjectId(projectSlug string, lsContext *LsContext) (Project, error) {
 	url := fmt.Sprintf("%s/api/v2/project/%s", lsContext.Api.HostUrl, projectSlug)
 

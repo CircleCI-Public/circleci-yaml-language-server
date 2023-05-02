@@ -23,6 +23,10 @@ func (apiContext ApiContext) UseDefaultInstance() bool {
 	return apiContext.HostUrl == CIRCLE_CI_APP_HOST_URL
 }
 
+func (apiContext ApiContext) IsLoggedIn() bool {
+	return apiContext.Token != ""
+}
+
 type MeRes struct {
 	Id    string
 	Login string

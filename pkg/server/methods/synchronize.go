@@ -36,6 +36,7 @@ func (methods *Methods) DidOpen(reply jsonrpc2.Replier, req jsonrpc2.Request) er
 	methods.updateOrbFile([]byte(params.TextDocument.Text), params.TextDocument.URI)
 	go (func() {
 		methods.notificationMethods(params.TextDocument)
+		methods.SetResourceClassOfFile(params)
 		methods.SendTelemetryEvent(TelemetryEvent{
 			Action: "opened_file",
 			Properties: map[string]interface{}{
