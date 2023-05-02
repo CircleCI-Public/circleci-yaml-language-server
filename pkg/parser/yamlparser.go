@@ -239,6 +239,20 @@ func (doc *YamlDocument) IsOrbReference(orbReference string) bool {
 	return ok
 }
 
+func (doc *YamlDocument) IsOrbUrlReference(orbUrlReference string) bool {
+	for _, orb := range doc.Orbs {
+		if orb.Url.IsLocal {
+			continue
+		}
+
+		if orb.Url.GetOrbID() == orbUrlReference {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (doc *YamlDocument) CouldBeOrbReference(orbReference string) (string, bool) {
 	splittedCommand := strings.Split(orbReference, "/")
 
