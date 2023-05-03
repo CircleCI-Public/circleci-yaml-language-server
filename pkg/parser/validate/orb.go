@@ -38,7 +38,7 @@ func (val Validate) validateSingleOrb(orb ast.Orb) {
 	if !orb.Url.IsLocal && !val.Doc.DoesOrbExist(orb, val.Cache) {
 		message := fmt.Sprintf("Orb %s does not exist or is private.", orb.Url.Name)
 
-		if val.Context.IsCciExtension {
+		if val.Context.IsCciExtension && val.Context.Api.Token == "" {
 			message += " Authenticate via the VS Code extension to access your private orbs."
 		}
 
