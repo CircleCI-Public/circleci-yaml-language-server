@@ -26,6 +26,7 @@ func (methods *Methods) ExecuteCommand(reply jsonrpc2.Replier, req jsonrpc2.Requ
 			return reply(methods.Ctx, nil, nil)
 		}
 		methods.setToken(param)
+		methods.updateAllCachedFiles()
 
 	case "setSelfHostedUrl":
 		param, ok := arguments[0].(string)
@@ -33,6 +34,8 @@ func (methods *Methods) ExecuteCommand(reply jsonrpc2.Replier, req jsonrpc2.Requ
 			return reply(methods.Ctx, nil, nil)
 		}
 		methods.setHostUrl(param)
+		methods.updateAllCachedFiles()
+
 	case "setUserId":
 		param, ok := arguments[0].(string)
 		if !ok {

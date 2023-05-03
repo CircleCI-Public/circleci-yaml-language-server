@@ -50,6 +50,18 @@ func (methods *Methods) DidOpen(reply jsonrpc2.Replier, req jsonrpc2.Request) er
 	return reply(methods.Ctx, nil, nil)
 }
 
+var debounceUpdateCachedFile = debounce.New(1000 * time.Millisecond)
+
+func (methods *Methods) updateAllCachedFiles() {
+	debounceUpdateCachedFile(func() {
+		files := methods.Cache.FileCache.GetFiles()
+
+		for _, file := range files {
+			go methods.notificationMethods(file.TextDocument)
+		}
+	})
+}
+
 var debounceInnerChange = debounce.New(1000 * time.Millisecond)
 
 func (methods *Methods) DidChange(reply jsonrpc2.Replier, req jsonrpc2.Request) error {
