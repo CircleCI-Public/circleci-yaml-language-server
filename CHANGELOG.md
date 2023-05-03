@@ -1,5 +1,21 @@
 # CHANGELOG
 
+## [0.5.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.4.0...0.5.0) (2023-05-03)
+
+
+### Features
+
+* Autocomplete custom resource classes ([59480ec](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/59480ec46254e3d40d6d4f8513fce25b85a96556))
+* On "orb does not exist", suggest authenticating ([92cca70](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/92cca700613def609af1f26096c7022f8c351d65))
+
+
+### Bug Fixes
+
+* Allow docker image not to have tags ([8ff989a](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/8ff989a729f87cb2d1a9e26a280e7d307472fe92))
+* Fix `Request testDocument/definition failed` ([f01a7a5](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/f01a7a5621312f13086d658d46b199a609951df8))
+* Semantic not working on some orbs definition ([e25163b](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/e25163b7faa6cb89fa445d2e04c706748aca11c3))
+* Update Ubuntu 2004 and Ubuntu 2204 versions ([312cd86](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/312cd8636a315554a5a80defe26a06e1ac59d15b))
+
 ## [0.4.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.3.3...0.4.0) (2023-04-25)
 
 
