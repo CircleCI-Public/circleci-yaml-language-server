@@ -20,9 +20,11 @@ type Validate struct {
 	Context     *utils.LsContext
 }
 
-func (val *Validate) Validate() {
+func (val *Validate) Validate(inLocalOrb bool) {
 	val.ValidateAnchors()
-	val.CheckIfParamsExist()
+	if !inLocalOrb {
+		val.CheckIfParamsExist()
+	}
 	val.ValidateWorkflows()
 	val.ValidateJobs()
 	val.ValidateCommands()

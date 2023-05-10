@@ -116,22 +116,6 @@ DiagnosticList {
     },
     {
       "data": [],
-      "message": "Parameter node-version is not defined",
-      "range": {
-        "end": {
-          "character": 53,
-          "line": 39,
-        },
-        "start": {
-          "character": 24,
-          "line": 39,
-        },
-      },
-      "severity": 1,
-      "source": "cci-language-server",
-    },
-    {
-      "data": [],
       "message": "Job is unused",
       "range": {
         "end": {
@@ -160,22 +144,6 @@ DiagnosticList {
         },
       },
       "severity": 2,
-      "source": "cci-language-server",
-    },
-    {
-      "data": [],
-      "message": "Parameter app-node is not defined",
-      "range": {
-        "end": {
-          "character": 49,
-          "line": 19,
-        },
-        "start": {
-          "character": 24,
-          "line": 19,
-        },
-      },
-      "severity": 1,
       "source": "cci-language-server",
     },
     {
@@ -295,7 +263,7 @@ DiagnosticList {
             "changes": {
               "file:///home/circleci/project/test-files/.circleci/diagnostic.yml": [
                 {
-                  "newText": "4.12.3",
+                  "newText": "4.12.5",
                   "range": {
                     "end": {
                       "character": 29,
@@ -318,7 +286,7 @@ DiagnosticList {
             "changes": {
               "file:///home/circleci/project/test-files/.circleci/diagnostic.yml": [
                 {
-                  "newText": "4.12.3",
+                  "newText": "4.12.5",
                   "range": {
                     "end": {
                       "character": 29,
@@ -339,7 +307,7 @@ DiagnosticList {
       ],
       "message": "A newer minor version exists.
 - Current: 4.4.4
-- Latest:  4.12.3",
+- Latest:  4.12.5",
       "range": {
         "end": {
           "character": 29,
