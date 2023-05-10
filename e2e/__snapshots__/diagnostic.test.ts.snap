@@ -295,7 +295,7 @@ DiagnosticList {
             "changes": {
               "file:///home/circleci/project/test-files/.circleci/diagnostic.yml": [
                 {
-                  "newText": "4.12.3",
+                  "newText": "4.12.5",
                   "range": {
                     "end": {
                       "character": 29,
@@ -318,7 +318,7 @@ DiagnosticList {
             "changes": {
               "file:///home/circleci/project/test-files/.circleci/diagnostic.yml": [
                 {
-                  "newText": "4.12.3",
+                  "newText": "4.12.5",
                   "range": {
                     "end": {
                       "character": 29,
@@ -339,7 +339,7 @@ DiagnosticList {
       ],
       "message": "A newer minor version exists.
 - Current: 4.4.4
-- Latest:  4.12.3",
+- Latest:  4.12.5",
       "range": {
         "end": {
           "character": 29,
