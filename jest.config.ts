@@ -26,6 +26,7 @@ const config : Config = {
       'jest-junit',
       {
         outputDirectory: 'reports',
+        addFileAttribute: "true"
       },
     ],
   ],
