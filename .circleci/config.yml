@@ -184,14 +184,18 @@ jobs:
             SCHEMA_LOCATION: /home/circleci/project/schema.json
         docker:
             - image: cimg/go:1.19.1
+        parallelism: 5
         steps:
             - checkout
             - go/mod-download-cached
-            - go/test
-            - run: go tool cover -html=cover-source.out -o coverage.html
-            - run: mv coverage.html /tmp/artifacts
-            - store_artifacts:
-                  path: /tmp/artifacts
+            - run: 
+                name: Installing JUnit reporter
+                command: go install github.com/jstemmer/go-junit-report/v2@latest
+            - run: 
+                name: Running tests
+                command: go test -v 2>&1 $(go list ./... | circleci tests split --split-by=timings) | go-junit-report -set-exit-code > report.xml
+            - store_test_results:
+                path: report.xml
 
     Build Linux:
         docker:
@@ -556,6 +560,7 @@ jobs:
       environment:
         RPC_SERVER_BIN: ~/project/bin/linux-amd64-lsp
         PORT: 10001
+      parallelism: 5
       steps:
         - checkout
         - attach_workspace:

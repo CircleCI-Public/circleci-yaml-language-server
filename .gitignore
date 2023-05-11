@@ -9,3 +9,4 @@ node_modules
 coverage
 /reports
 __debug_bin
+report.xml
