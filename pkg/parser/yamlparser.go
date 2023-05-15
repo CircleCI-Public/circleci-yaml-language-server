@@ -492,8 +492,6 @@ func (doc *YamlDocument) GetParamsWithPosition(position protocol.Position) map[s
 
 			return GetOrbParameters(orbInfo, position)
 		}
-
-		return map[string]ast.Parameter{}
 	}
 
 	if utils.PosInRange(doc.ExecutorsRange, position) {

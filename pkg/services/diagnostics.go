@@ -83,7 +83,7 @@ func DiagnosticYAML(yamlDocument yamlparser.YamlDocument, cache *utils.Cache, co
 		Cache:       cache,
 		Context:     context,
 	}
-	validateStruct.Validate()
+	validateStruct.Validate(false)
 	diag.addDiagnostics(*validateStruct.Diagnostics)
 
 	return *diag.diagnostics, nil
