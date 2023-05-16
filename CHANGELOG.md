@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## [0.5.1](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.5.0...0.5.1) (2023-05-16)
+
+
+### Bug Fixes
+
+* Fix `Parameter is not defined` appearing when it shouldn't ([464ecfd](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/464ecfd56cc2a1a26d6663a71a480dbc0e70682f))
+* Fix Authenticate message not updating when logging in ([9bf223f](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/9bf223f08870e1671d5db0dc1361c8cb84974194))
+* Fix semantics not working on orbs ([9fe567a](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/9fe567ad097877fdbf0d8a571c2658545329c703))
+
 ## [0.5.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.4.0...0.5.0) (2023-05-03)
 
 
