@@ -119,7 +119,7 @@ func (doc *YamlDocument) ValidateYAML() {
 	ExecQuery(rootNode, "(ERROR) @flows", func(match *sitter.QueryMatch) {
 		for _, capture := range match.Captures {
 			node := capture.Node
-			diagnostic := utils.CreateErrorDiagnosticFromNode(node, "Error! Please fix you yaml file")
+			diagnostic := utils.CreateErrorDiagnosticFromNode(node, "Error! Please fix your yaml file")
 			doc.addDiagnostic(diagnostic)
 		}
 	})
@@ -159,7 +159,6 @@ func ParseFromContent(content []byte, context *utils.LsContext, URI protocol.URI
 	doc := ParseFile([]byte(content), context)
 	doc.URI = URI
 
-	doc.ValidateYAML()
 	doc.ParseYAML(context, offset)
 
 	return doc, nil
