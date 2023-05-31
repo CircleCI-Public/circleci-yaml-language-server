@@ -69,7 +69,7 @@ func GetChildSequence(node *sitter.Node) *sitter.Node {
 
 func GetBlockMappingNode(streamNode *sitter.Node) *sitter.Node {
 	documentNode := GetChildOfType(streamNode, "document")
-	if documentNode.Type() != "document" {
+	if documentNode != nil && documentNode.Type() != "document" {
 		return nil
 	}
 	blockNode := GetChildOfType(documentNode, "block_node")
