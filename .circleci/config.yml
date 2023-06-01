@@ -188,10 +188,10 @@ jobs:
         steps:
             - checkout
             - go/mod-download-cached
-            - run: 
+            - run:
                 name: Installing JUnit reporter
                 command: go install github.com/jstemmer/go-junit-report/v2@latest
-            - run: 
+            - run:
                 name: Running tests
                 command: go test -v 2>&1 $(go list ./... | circleci tests split --split-by=timings) | go-junit-report -set-exit-code > report.xml
             - store_test_results:

@@ -250,12 +250,12 @@ func (doc *YamlDocument) CouldBeOrbReference(orbReference string) (string, bool)
 
 // Takes the name of anything that may be in an orb and returns if it is inside an orb that we can not use
 func (doc *YamlDocument) IsFromUnfetchableOrb(name string) bool {
-	splittedName := strings.Split(name, "/")
-	if len(splittedName) != 2 {
+	components := strings.Split(name, "/")
+	if len(components) != 2 {
 		return false
 	}
 
-	orb, ok := doc.Orbs[splittedName[0]]
+	orb, ok := doc.Orbs[components[0]]
 	if !ok {
 		return false
 	}
