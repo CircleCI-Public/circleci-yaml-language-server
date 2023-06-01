@@ -53,6 +53,8 @@ jobs:
         type: string
     docker:
       - image: cimg/go:<<parameters.go_version>>
+    steps:
+      - checkout
 
   dummyJobWithStepParam:
     executor:
