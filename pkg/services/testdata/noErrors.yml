@@ -1,9 +1,15 @@
 version: 2.1
 
+parameters:
+  dev-orb-version:
+    type: string
+    default: "dev:alpha"
+
 orbs:
   compass: atlassian-labs/compass@0.1.2
   shellcheck: circleci/shellcheck
   other: atlassian-labs/compass@0.1.2
+  ccc: cci-dev/ccc@<<pipeline.parameters.dev-orb-version>>
 
 executors:
   go:
@@ -46,7 +52,7 @@ jobs:
       SOME_ENV2: *execRefBis
     steps:
       - checkout
-  
+
   morejob:
     parameters:
       go_version:
@@ -56,6 +62,11 @@ jobs:
       - image: cimg/go:<<parameters.go_version>>
     steps:
       - checkout
+
+  jobWithUnaccessibleOrb:
+    executor: ccc/random-executor
+    steps:
+      - ccc/random-step
 
   dummyJobWithStepParam:
     executor:
@@ -112,3 +123,5 @@ workflows:
           name: shellcheck
           dir: ./.circleci/scripts/
       - jobWithAWS_OIDC
+      - ccc/random-job
+      - jobWithUnaccessibleOrb

@@ -239,3 +239,16 @@ jobs:
 		},
 	)
 }
+
+func TestIsFromUnfetchableOrb(t *testing.T) {
+	yamlDocument, err := parser.ParseFromContent([]byte(`version: 2.1
+
+orbs:
+  slack: circleci/slack@4.12.5
+  ccc: cci-dev/ccc@<<pipeline.parameters.dev-orb-version>>
+`), testHelpers.GetDefaultLsContext(), uri.File(""), protocol.Position{})
+
+	assert.Nil(t, err)
+	assert.True(t, yamlDocument.IsFromUnfetchableOrb("ccc/entity"))
+	assert.False(t, yamlDocument.IsFromUnfetchableOrb("slack/entity"))
+}

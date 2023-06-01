@@ -93,6 +93,10 @@ func (val Validate) validateNamedStep(step ast.NamedStep, usableParams map[strin
 		val.Doc.IsOrbCommand(step.Name, val.Cache) ||
 		val.Doc.IsAlias(step.Name)
 
+	if val.Doc.IsFromUnfetchableOrb(step.Name) {
+		return
+	}
+
 	if !commandExists {
 		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
 			step.Range,
