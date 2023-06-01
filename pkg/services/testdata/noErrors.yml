@@ -46,6 +46,16 @@ jobs:
       SOME_ENV2: *execRefBis
     steps:
       - checkout
+  
+  morejob:
+    parameters:
+      go_version:
+        description: the version of Go
+        type: string
+    docker:
+      - image: cimg/go:<<parameters.go_version>>
+    steps:
+      - checkout
 
   dummyJobWithStepParam:
     executor:
@@ -88,6 +98,8 @@ workflows:
       - anotherjob
       - someanotherjob:
           myparam: some-value
+      - morejob:
+          go_version: '1.20'
       - shellcheck/check:
           name: shellcheck
           dir: ./.circleci/scripts/

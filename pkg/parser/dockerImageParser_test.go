@@ -107,6 +107,19 @@ func Test_parseDockerImageValue(t *testing.T) {
 				FullPath:  "cimg/go:",
 			},
 		},
+
+		{
+			name: "",
+			args: args{
+				value: "cimg/go:<<parameters.go_version>>",
+			},
+			want: ast.DockerImageInfo{
+				Namespace: "cimg",
+				Tag:       "<<parameters.go_version>>",
+				Name:      "go",
+				FullPath:  "cimg/go:<<parameters.go_version>>",
+			},
+		},
 	}
 
 	for _, tt := range tests {
