@@ -59,6 +59,14 @@ jobs:
       - shellcheck/check:
           dir: ./.circleci/scripts/
 
+  jobWithAWS_OIDC:
+    docker:
+      - image: node:latest
+        aws_auth:
+          oidc_role_arn: role
+    steps:
+      - run: echo "Hello"
+
 workflows:
   test-build:
     jobs:
@@ -91,3 +99,4 @@ workflows:
       - shellcheck/check:
           name: shellcheck
           dir: ./.circleci/scripts/
+      - jobWithAWS_OIDC
