@@ -4,7 +4,6 @@ import (
 	"regexp"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
 var dockerImageRegex = regexp.MustCompile(`^([a-z0-9\-_]+\/)?([a-z0-9\-_]+)(:(.*))?$`)
@@ -37,11 +36,6 @@ func ParseDockerImageValue(value string) ast.DockerImageInfo {
 	if tag != "" {
 		// The regex includes the leading ":", just snip it
 		tag = tag[1:]
-	}
-
-	// if the tag is a parameter, just consider that it's the "latest" tag for validation purposes
-	if utils.CheckIfOnlyParamUsed(tag) {
-		tag = "latest"
 	}
 
 	return ast.DockerImageInfo{
