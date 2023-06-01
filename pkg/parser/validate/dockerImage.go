@@ -35,6 +35,7 @@ Unsupported syntaxes:
   - Direct URL, not on Docker HUB (Example: 183081753049.dkr.ecr.us-east-1.amazonaws.com/circleci/ecs-test-kms:0.1)
   - Using aliases (Example: image: *my_alias)
   - When authentication is required
+  - When tag uses CircleCI parameter syntax
 */
 func isDockerImageCheckable(img *ast.DockerImage) bool {
 	// For now, just make the name & version mandatory
