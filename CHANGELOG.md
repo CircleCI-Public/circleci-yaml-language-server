@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## [0.5.2](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.5.1...0.5.2) (2023-06-05)
+
+
+### Bug Fixes
+
+* Allow aws_auth to be given with oidc_role_arn ([9494ff2](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/9494ff244d8c020c0552854ac76108ca0812823a))
+* change diagnostic location for param executor default value ([2843cac](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/2843cac7cfa31976d9c70e7a5ce11f9b43efc284))
+* Changed the Xcode supported versions ([49603c8](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/49603c89fbe1bd2d22e8d65550504b5b9b30baec))
+* Do not raise error when the orb can not be downloaded ([61d96d4](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/61d96d4b6a32f5c7e52184b251248f655bc74cc4))
+
 ## [0.5.1](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.5.0...0.5.1) (2023-05-16)
 
 
