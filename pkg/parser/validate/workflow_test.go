@@ -45,6 +45,25 @@ workflows:
 				}, "Type can only be \"approval\""),
 			},
 		},
+		{
+			Name: "Ignore workflow's jobs that are come from uncheckable orbs",
+			YamlContent: `version: 2.1
+
+parameters:
+  dev-orb-version:
+    type: string
+    default: "dev:alpha"
+
+orbs:
+  ccc: cci-dev/ccc@<<pipeline.parameters.dev-orb-version>>
+
+workflows:
+  someworkflow:
+    jobs:
+      - ccc/job
+`,
+			Diagnostics: []protocol.Diagnostic{},
+		},
 	}
 
 	CheckYamlErrors(t, testCases)

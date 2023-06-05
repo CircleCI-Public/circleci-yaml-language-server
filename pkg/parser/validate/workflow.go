@@ -16,6 +16,10 @@ func (val Validate) ValidateWorkflows() {
 
 func (val Validate) validateSingleWorkflow(workflow ast.Workflow) error {
 	for _, jobRef := range workflow.JobRefs {
+		if val.Doc.IsFromUnfetchableOrb(jobRef.JobName) {
+			continue
+		}
+
 		isApprovalJob := jobRef.Type == "approval"
 		if isApprovalJob {
 			continue
