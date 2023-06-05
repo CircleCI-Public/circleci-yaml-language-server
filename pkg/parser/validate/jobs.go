@@ -58,11 +58,9 @@ func (val Validate) validateSingleJob(job ast.Job) {
 			if param != nil {
 				switch param := param.(type) {
 				case ast.StringParameter:
-					checkParam(param.Default, param.DefaultRange)
 				case ast.ExecutorParameter:
-					checkParam(param.Default, param.DefaultRange)
+					checkParam(param.Default, job.ExecutorRange)
 				}
-
 			}
 
 		} else if !val.Doc.DoesExecutorExist(job.Executor) {
