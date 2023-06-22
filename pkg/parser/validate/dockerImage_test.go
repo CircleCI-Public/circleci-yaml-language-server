@@ -3,6 +3,7 @@ package validate
 import (
 	"testing"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/dockerhub"
 	"github.com/stretchr/testify/assert"
 	"go.lsp.dev/protocol"
@@ -262,6 +263,65 @@ func TestChooseTagToRecommend(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.Name, func(t *testing.T) {
 			assert.Equal(t, tt.Output, chooseTagToRecommend(tt.Tags))
+		})
+	}
+}
+func TestCreateTagTextEdit(t *testing.T) {
+	tag := "16.20.1-browsers"
+	img := ast.DockerImage{
+		Image: ast.DockerImageInfo{
+			Namespace: "cimg",
+			Name:      "node",
+			Tag:       "14",
+			FullPath:  "cimg/node:14",
+		},
+		ImageRange: protocol.Range{
+			Start: protocol.Position{
+				Character: 9,
+				Line:      48,
+			},
+			End: protocol.Position{
+				Character: 28,
+				Line:      48,
+			},
+		},
+		Name:        "",
+		Entrypoint:  []string{},
+		Command:     []string{},
+		User:        "",
+		Environment: map[string]string{},
+		Auth:        ast.DockerImageAuth{},
+		AwsAuth:     ast.DockerImageAWSAuth{},
+	}
+	testCases := []struct {
+		Name   string
+		Img    ast.DockerImage
+		Tag    string
+		Output protocol.TextEdit
+	}{
+		{
+			Name: "Image tag action should replace the correct string",
+			Img:  img,
+			Tag:  tag,
+			Output: protocol.TextEdit{
+				NewText: ":" + tag,
+				Range: protocol.Range{
+					Start: protocol.Position{
+						Character: 25,
+						Line:      48,
+					},
+					End: protocol.Position{
+						Character: 26 + uint32(len(tag)),
+						Line:      48,
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.Name, func(t *testing.T) {
+			assert.Equal(t, tt.Output, createTagTextEdit(&img, tag))
 		})
 	}
 }
