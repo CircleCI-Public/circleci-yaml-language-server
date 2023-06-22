@@ -56,8 +56,9 @@ var ValidMacOSResourceClasses = []string{
 	"medium",
 	"macos.x86.medium.gen2",
 	"large",
-	"macos.x86.metal.gen1",
+	"macos.m1.medium.gen1",
 	"macos.m1.large.gen1",
+	"macos.x86.metal.gen1",
 }
 
 func (val Validate) validateMacOSExecutor(executor ast.MacOSExecutor) {
@@ -87,7 +88,7 @@ var ValidARMResourceClasses = []string{
 	"arm.medium",
 	"arm.large",
 	"arm.xlarge",
-	"arm.2xlarg",
+	"arm.2xlarge",
 }
 
 func (val Validate) validateARMMachineExecutor(executor ast.MachineExecutor) {
@@ -111,6 +112,7 @@ var ValidLinuxResourceClasses = []string{
 	"large",
 	"xlarge",
 	"2xlarge",
+	"2xlarge+",
 }
 
 func (val Validate) validateLinuxMachineExecutor(executor ast.MachineExecutor) {
@@ -225,9 +227,16 @@ func (val Validate) validateDockerExecutor(executor ast.DockerExecutor) {
 
 // WindowsExecutor
 
+var ValidWindowsResourceClasses = []string{
+	"medium",
+	"large",
+	"xlarge",
+	"2xlarge",
+}
+
 func (val Validate) validateWindowsExecutor(executor ast.WindowsExecutor) {
 	// Same resource class as Linux
-	val.checkIfValidResourceClass(executor.ResourceClass, ValidLinuxResourceClasses, executor.ResourceClassRange)
+	val.checkIfValidResourceClass(executor.ResourceClass, ValidWindowsResourceClasses, executor.ResourceClassRange)
 }
 
 func (val Validate) checkIfValidResourceClass(resourceClass string, validResourceClasses []string, resourceClassRange protocol.Range) {
