@@ -102,7 +102,7 @@
       "type": "go",
       "request": "attach",
       "mode": "local",
-      "processId": 0
+      "processId": "start_server"
     }
   ]
 }
