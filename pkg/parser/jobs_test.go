@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
+	"github.com/stretchr/testify/assert"
 )
 
 type jobsArgs struct {
@@ -24,8 +25,7 @@ func getJobsTests() []struct {
 		{
 			name: "Jobs test case 1",
 			args: jobsArgs{
-				jobsString: `
-jobs:
+				jobsString: `jobs:
     test:
         parallelism: 2
         working_directory: "~/testJob"
@@ -50,8 +50,7 @@ jobs:
 		{
 			name: "Jobs test case 2",
 			args: jobsArgs{
-				jobsString: `
-jobs:
+				jobsString: `jobs:
     test:
         steps:
             - checkout
@@ -146,5 +145,64 @@ func TestYamlDocument_parseSingleJob(t *testing.T) {
 				t.Errorf("YamlDocument.parseSingleJob() = WorkingDirectory %v, want %v", tt.want[0], job.WorkingDirectory)
 			}
 		})
+	}
+}
+
+func TestYamlDocument_jobExecutors(t *testing.T) {
+	// Docker job executor
+	{
+		yamlInput := `jobs:
+    job-docker:
+        docker:
+            - image: cimg/python:4.3.2
+        resource_class: xlarge`
+
+		node := getNodeForString(yamlInput)
+		doc := &YamlDocument{
+			Content: []byte(yamlInput),
+			Jobs:    make(map[string]ast.Job),
+		}
+		doc.parseJobs(node)
+
+		assert.Equal(t, "cimg/python:4.3.2", doc.Jobs["job-docker"].Docker.Image[0].Image.FullPath)
+		assert.Equal(t, "xlarge", doc.Jobs["job-docker"].ResourceClass)
+	}
+
+	// Machine job executor
+	{
+		yamlInput := `jobs:
+    job-machine:
+        machine:
+            image: ubuntu-2204:edge
+        resource_class: large`
+
+		node := getNodeForString(yamlInput)
+		doc := &YamlDocument{
+			Content: []byte(yamlInput),
+			Jobs:    make(map[string]ast.Job),
+		}
+		doc.parseJobs(node)
+
+		assert.Equal(t, "ubuntu-2204:edge", doc.Jobs["job-machine"].Machine.Image)
+		assert.Equal(t, "large", doc.Jobs["job-machine"].ResourceClass)
+	}
+
+	// MacOS job executor
+	{
+		yamlInput := `jobs:
+    job-macos:
+        macos:
+            xcode: 10.11.12
+        resource_class: macos.m1.large.gen1`
+
+		node := getNodeForString(yamlInput)
+		doc := &YamlDocument{
+			Content: []byte(yamlInput),
+			Jobs:    make(map[string]ast.Job),
+		}
+		doc.parseJobs(node)
+
+		assert.Equal(t, "10.11.12", doc.Jobs["job-macos"].MacOS.Xcode)
+		assert.Equal(t, "macos.m1.large.gen1", doc.Jobs["job-macos"].ResourceClass)
 	}
 }

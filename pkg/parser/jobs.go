@@ -106,11 +106,11 @@ func (doc *YamlDocument) parseSingleJob(jobNode *sitter.Node) ast.Job {
 				machineNode = child
 				machineNodeFound = true
 
-				res.Machine = doc.parseSingleExecutorMachine(keyNode, valueNode)
+				res.Machine = doc.parseSingleExecutorMachine(keyNode, blockMappingNode)
 				res.MachineRange = doc.NodeToRange(child)
 
 			case "macos":
-				res.MacOS = doc.parseSingleExecutorMacOS(keyNode, valueNode)
+				res.MacOS = doc.parseSingleExecutorMacOS(keyNode, blockMappingNode)
 				res.MacOSRange = doc.NodeToRange(child)
 
 			case "environment":
