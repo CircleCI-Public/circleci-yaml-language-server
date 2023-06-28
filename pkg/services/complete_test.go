@@ -238,21 +238,12 @@ func TestComplete(t *testing.T) {
 				},
 			},
 			want: []protocol.CompletionItem{
-				{
-					Label: "medium",
-				},
-				{
-					Label: "macos.x86.medium.gen2",
-				},
-				{
-					Label: "large",
-				},
-				{
-					Label: "macos.x86.metal.gen1",
-				},
-				{
-					Label: "macos.m1.large.gen1",
-				},
+				{Label: "medium"},
+				{Label: "macos.x86.medium.gen2"},
+				{Label: "large"},
+				{Label: "macos.m1.medium.gen1"},
+				{Label: "macos.m1.large.gen1"},
+				{Label: "macos.x86.metal.gen1"},
 			},
 		},
 		{
