@@ -35,6 +35,15 @@ tasks:
           BIN_PATH: bin/start_server
           BUILD_FLAGS: $(./scripts/ldflags.sh)
           GO_FILE: cmd/start_server/start_server.go
+  
+  build:server:debug:
+    desc: Build server binary without optimizations
+    cmds:
+      - task: build:do
+        vars:
+          BIN_PATH: bin/start_server
+          BUILD_FLAGS: $(./scripts/ldflags.sh) -gcflags='all=-N -l'
+          GO_FILE: cmd/start_server/start_server.go
 
   build:test-tree-sitter:
     cmds:

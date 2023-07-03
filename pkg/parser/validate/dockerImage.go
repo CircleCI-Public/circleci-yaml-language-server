@@ -1,6 +1,8 @@
 package validate
 
 import (
+	"strings"
+
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/dockerhub"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
@@ -152,15 +154,18 @@ func chooseTagToRecommend(allTags []string) string {
 }
 
 func createTagTextEdit(img *ast.DockerImage, tag string) protocol.TextEdit {
+	imgArray := strings.Split(img.Image.FullPath, ":")
+	version := imgArray[len(imgArray)-1]
+	versionLength := uint32(len(version)) + 1
 	return protocol.TextEdit{
 		NewText: ":" + tag,
 		Range: protocol.Range{
 			Start: protocol.Position{
-				Character: img.ImageRange.End.Character + 1,
+				Character: img.ImageRange.End.Character - versionLength,
 				Line:      img.ImageRange.End.Line,
 			},
 			End: protocol.Position{
-				Character: img.ImageRange.End.Character + 1 + uint32(len(tag)),
+				Character: img.ImageRange.End.Character + 1 + uint32(len(tag)) - versionLength,
 				Line:      img.ImageRange.End.Line,
 			},
 		},

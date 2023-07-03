@@ -93,7 +93,13 @@ func (val Validate) validateSingleJob(job ast.Job) {
 		)
 	}
 
-	val.validateDockerExecutor(job.Docker)
+	if len(job.Docker.Image) > 0 {
+		val.validateDockerExecutor(job.Docker)
+	} else if job.MacOS.Xcode != "" {
+		val.validateMacOSExecutor(job.MacOS)
+	} else if job.Machine.Image != "" {
+		val.validateMachineExecutor(job.Machine)
+	}
 }
 
 func (val Validate) checkIfJobIsUsed(job ast.Job) bool {
