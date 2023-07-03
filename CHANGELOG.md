@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## [0.6.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.5.2...0.6.0) (2023-07-03)
+
+
+### Features
+
+* validate resource_class in job definition ([b8f5bc7](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/b8f5bc772cad34726f813edfdbe553e27a55c70c))
+
+
+### Bug Fixes
+
+* docker image replace ([37926a1](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/37926a1e1396d9c885218e3b3c75ac8e11be199c))
+* Update public schema to match docker versions ([7cb67aa](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/7cb67aafd18dffa3818c3b155979fa9bd38d1e03))
+
 ## [0.5.2](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.5.1...0.5.2) (2023-06-05)
 
 
