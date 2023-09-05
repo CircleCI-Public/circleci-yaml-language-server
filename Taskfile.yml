@@ -35,7 +35,7 @@ tasks:
           BIN_PATH: bin/start_server
           BUILD_FLAGS: $(./scripts/ldflags.sh)
           GO_FILE: cmd/start_server/start_server.go
-  
+
   build:server:debug:
     desc: Build server binary without optimizations
     cmds:
@@ -105,6 +105,7 @@ tasks:
 
   test:e2e:
     env:
+      ROLLBAR_TOKEN: ""
       SPAWN_LSP_SERVER: '{{.SPAWN_LSP_SERVER | default true}}'
       PORT: 10001
     cmds:

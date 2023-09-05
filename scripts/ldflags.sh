@@ -12,6 +12,7 @@ BUILD_TIMESTAMP=$(date '+%Y-%m-%dT%H:%M:%S')
 LDFLAGS=(
   "-X '${PACKAGE}.ServerVersion=${VERSION}'"
   "-X '${PACKAGE}.BuildTime=${BUILD_TIMESTAMP}'"
+  "-X '${PACKAGE}.RollbarToken=${ROLLBAR_TOKEN}'"
 )
 
 echo -n "-ldflags=\"${LDFLAGS[*]} $SUFFIX\""

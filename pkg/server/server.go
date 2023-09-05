@@ -13,6 +13,7 @@ import (
 
 	methods "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/server/methods"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
+	"github.com/rollbar/rollbar-go"
 )
 
 type JSONRPCServer struct {
@@ -88,7 +89,15 @@ func (server JSONRPCServer) ServeStream(_ context.Context, conn jsonrpc2.Conn) e
 		LsContext:      server.lsContext,
 		SchemaLocation: server.SchemaLocation,
 	}
-	conn.Go(server.ctx, server.commandHandler)
+	conn.Go(server.ctx, func(ctx context.Context, reply jsonrpc2.Replier, req jsonrpc2.Request) error {
+		v := rollbar.WrapAndWait(server.commandHandler, ctx, reply, req)
+		// Although rollbar.WrapAndWait doc indicates that the function returns an error, its protocol actually returns
+		// an interface{} thus forcing us to cast it
+		if err, ok := v.(error); ok {
+			return err
+		}
+		return nil
+	})
 	<-conn.Done()
 	return conn.Err()
 }
