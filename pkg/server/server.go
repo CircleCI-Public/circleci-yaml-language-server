@@ -28,6 +28,15 @@ type JSONRPCServer struct {
 func (server JSONRPCServer) commandHandler(_ context.Context, reply jsonrpc2.Replier, req jsonrpc2.Request) error {
 	fmt.Println("Called method: " + req.Method())
 
+	defer func() {
+		err := recover()
+		rollbar.LogPanic(err, true)
+
+		if err != nil {
+			panic(err)
+		}
+	}()
+
 	switch req.Method() {
 
 	case protocol.MethodInitialize:
@@ -80,6 +89,7 @@ func (server JSONRPCServer) commandHandler(_ context.Context, reply jsonrpc2.Rep
 
 func (server JSONRPCServer) ServeStream(_ context.Context, conn jsonrpc2.Conn) error {
 	fmt.Println("New client connection")
+
 	server.conn = conn
 	server.cache = utils.CreateCache()
 	server.methods = methods.Methods{
@@ -89,16 +99,11 @@ func (server JSONRPCServer) ServeStream(_ context.Context, conn jsonrpc2.Conn) e
 		LsContext:      server.lsContext,
 		SchemaLocation: server.SchemaLocation,
 	}
-	conn.Go(server.ctx, func(ctx context.Context, reply jsonrpc2.Replier, req jsonrpc2.Request) error {
-		v := rollbar.WrapAndWait(server.commandHandler, ctx, reply, req)
-		// Although rollbar.WrapAndWait doc indicates that the function returns an error, its protocol actually returns
-		// an interface{} thus forcing us to cast it
-		if err, ok := v.(error); ok {
-			return err
-		}
-		return nil
-	})
+	conn.Go(server.ctx, server.commandHandler)
 	<-conn.Done()
+
+	rollbar.Close()
+
 	return conn.Err()
 }
 

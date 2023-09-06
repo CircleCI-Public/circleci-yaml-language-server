@@ -8,25 +8,9 @@ import (
 	"strconv"
 
 	lsp "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/server"
-	"github.com/rollbar/rollbar-go"
-)
-
-var (
-	RollbarToken = ""
 )
 
 func main() {
-	rollbar.SetToken(RollbarToken)
-	rollbar.SetEnvironment("production")
-	rollbar.SetCodeVersion(lsp.GetServerVersion())
-	rollbar.SetServerRoot("github.com/CircleCI-Public/circleci-yaml-language-server")
-
-	startServer()
-
-	rollbar.Close()
-}
-
-func startServer() {
 	hostRef := flag.String("host", "", "Hostname of the server")
 	portRef := flag.Int("port", -1, "port number")
 	schemaRef := flag.String("schema", "", "Location of the schema")

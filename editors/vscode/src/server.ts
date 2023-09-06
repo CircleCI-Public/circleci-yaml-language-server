@@ -171,6 +171,8 @@ export class LSP {
             diagnosticCollectionName: 'cci-diag',
             initializationOptions: {
                 isCciExtension: true,
+                isCrashTelemetryEnabled: true,
+                telemetryID: 'id',
             },
 
             outputChannel: outputChannel(),

@@ -3,6 +3,7 @@ package methods
 import (
 	"fmt"
 
+	"github.com/rollbar/rollbar-go"
 	"github.com/segmentio/encoding/json"
 	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/protocol"
@@ -32,18 +33,28 @@ var TokenModifiers = []protocol.SemanticTokenModifiers{
 	protocol.SemanticTokenModifierAbstract,
 }
 
+type InitializationOptions struct {
+	IsCCIExtension          bool   `json:"isCciExtension"`
+	IsCrashTelemetryEnabled bool   `json:"isCrashTelemetryEnabled"`
+	TelemetryID             string `json:"telemetryID"`
+}
+
 func (methods *Methods) Initialize(reply jsonrpc2.Replier, req jsonrpc2.Request) error {
 	params := protocol.InitializeParams{}
 	if err := json.Unmarshal(req.Params(), &params); err != nil {
 		return reply(methods.Ctx, nil, fmt.Errorf("%s: %w", jsonrpc2.ErrParse, err))
 	}
 
-	if params.InitializationOptions != nil {
-		isCciExtension, ok := params.InitializationOptions.(map[string]interface{})["isCciExtension"]
-		if ok && isCciExtension == true {
-			methods.LsContext.IsCciExtension = true
-		}
+	content, _ := json.Marshal(params.InitializationOptions)
+	opts := InitializationOptions{}
+	_ = json.Unmarshal(content, &opts)
+	enableRollbar := opts.IsCrashTelemetryEnabled && isRollbarEnabled()
+	rollbar.SetEnabled(enableRollbar)
+	if enableRollbar {
+		rollbar.SetCodeVersion(ServerVersion)
+		rollbar.SetPerson(opts.TelemetryID, "", "")
 	}
+	methods.LsContext.IsCciExtension = opts.IsCCIExtension
 
 	v := protocol.InitializeResult{
 		Capabilities: protocol.ServerCapabilities{
