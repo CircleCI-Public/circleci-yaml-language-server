@@ -30,9 +30,9 @@ func (server JSONRPCServer) commandHandler(_ context.Context, reply jsonrpc2.Rep
 
 	defer func() {
 		err := recover()
-		rollbar.LogPanic(err, true)
 
 		if err != nil {
+			rollbar.LogPanic(err, true)
 			panic(err)
 		}
 	}()
@@ -88,6 +88,7 @@ func (server JSONRPCServer) commandHandler(_ context.Context, reply jsonrpc2.Rep
 }
 
 func (server JSONRPCServer) ServeStream(_ context.Context, conn jsonrpc2.Conn) error {
+	defer rollbar.Close()
 	fmt.Println("New client connection")
 
 	server.conn = conn
@@ -101,8 +102,6 @@ func (server JSONRPCServer) ServeStream(_ context.Context, conn jsonrpc2.Conn) e
 	}
 	conn.Go(server.ctx, server.commandHandler)
 	<-conn.Done()
-
-	rollbar.Close()
 
 	return conn.Err()
 }
