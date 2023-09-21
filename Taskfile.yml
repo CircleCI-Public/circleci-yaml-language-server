@@ -105,7 +105,6 @@ tasks:
 
   test:e2e:
     env:
-      ROLLBAR_TOKEN: ""
       SPAWN_LSP_SERVER: '{{.SPAWN_LSP_SERVER | default true}}'
       PORT: 10001
     cmds:
