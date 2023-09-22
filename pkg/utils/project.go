@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
 type ProjectEnvVariableRes struct {
@@ -37,6 +39,7 @@ func fetchAllProjectEnvVariables(lsContext *LsContext, projectSlug string, nextP
 	req, _ := http.NewRequest("GET", url, nil)
 
 	req.Header.Add("Circle-Token", lsContext.Api.Token)
+	req.Header.Set("User-Agent", utils.UserAgent)
 
 	res, err := http.DefaultClient.Do(req)
 
