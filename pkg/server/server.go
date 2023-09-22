@@ -176,7 +176,3 @@ func getJsonRpcServer(ctx context.Context, schemaLocation string) JSONRPCServer 
 		SchemaLocation: schemaLocation,
 	}
 }
-
-func GetServerVersion() string {
-	return utils.ServerVersion
-}

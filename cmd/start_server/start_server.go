@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	lsp "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/server"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
 func main() {
@@ -21,7 +22,7 @@ func main() {
 	// Parameter: version
 	version := *versionRef
 	if version {
-		fmt.Println(lsp.GetServerVersion())
+		fmt.Println(utils.ServerVersion)
 		return
 	}
 
