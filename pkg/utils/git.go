@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"github.com/go-git/go-git/v5"
 	gitUrl "github.com/whilp/git-urls"
 )
@@ -87,7 +86,7 @@ func GetProjectId(projectSlug string, lsContext *LsContext) (Project, error) {
 	req, _ := http.NewRequest("GET", url, nil)
 
 	req.Header.Add("Circle-Token", lsContext.Api.Token)
-	req.Header.Set("User-Agent", utils.UserAgent)
+	req.Header.Set("User-Agent", UserAgent)
 
 	res, err := http.DefaultClient.Do(req)
 

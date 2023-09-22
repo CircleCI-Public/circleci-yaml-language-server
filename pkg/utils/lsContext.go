@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
 type LsContext struct {
@@ -44,7 +42,7 @@ func (apiContext ApiContext) GetUserId() string {
 	req, _ := http.NewRequest("GET", url, nil)
 
 	req.Header.Add("Circle-Token", apiContext.Token)
-	req.Header.Set("User-Agent", utils.UserAgent)
+	req.Header.Set("User-Agent", UserAgent)
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return ""
