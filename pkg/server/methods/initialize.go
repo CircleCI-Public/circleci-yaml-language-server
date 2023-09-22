@@ -40,6 +40,13 @@ func (methods *Methods) Initialize(reply jsonrpc2.Replier, req jsonrpc2.Request)
 		if ok && isCciExtension == true {
 			methods.LsContext.IsCciExtension = true
 		}
+		userAgent, ok := params.InitializationOptions.(map[string]interface{})["userAgent"]
+		if ok {
+			userAgentString, ok := userAgent.(string)
+			if ok {
+				utils.UserAgent += " " + userAgentString
+			}
+		}
 	}
 
 	v := protocol.InitializeResult{
