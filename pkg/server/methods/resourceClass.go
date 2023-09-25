@@ -45,6 +45,7 @@ func getResourceClassOfOrg(textDocumentUri protocol.URI, context *utils.LsContex
 	req, _ := http.NewRequest("GET", url, nil)
 
 	req.Header.Add("Circle-Token", context.Api.Token)
+	req.Header.Set("User-Agent", utils.UserAgent)
 
 	res, err := http.DefaultClient.Do(req)
 

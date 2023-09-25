@@ -200,7 +200,7 @@ func prepareRequest(ctx context.Context, address string, request *Request) (*htt
 	if err != nil {
 		return nil, err
 	}
-	r.Header.Set("User-Agent", "CircleCI-Language-Server")
+	r.Header.Set("User-Agent", UserAgent)
 	r.Header.Set("Content-Type", "application/json; charset=utf-8")
 	r.Header.Set("Accept", "application/json; charset=utf-8")
 	for key, values := range request.Header {

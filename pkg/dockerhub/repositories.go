@@ -8,6 +8,8 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
 type BaseHUBResponse struct {
@@ -81,6 +83,8 @@ func (h *HubNamespace) loadNext() ([]Repository, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Failed to load next")
 	}
+
+	req.Header.Set("User-Agent", utils.UserAgent)
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {

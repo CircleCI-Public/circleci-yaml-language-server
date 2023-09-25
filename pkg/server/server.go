@@ -133,7 +133,7 @@ func StartServer(port int, host string, schemaLocation string) {
 	// So we just print the log one second after the server started
 	go func() {
 		time.Sleep(1 * time.Second)
-		fmt.Printf("Server started on port %d, version %s\n", port, methods.ServerVersion)
+		fmt.Printf("Server started on port %d, version %s\n", port, utils.ServerVersion)
 		fmt.Printf("   JSON Schema: %s", schemaLocation)
 	}()
 
@@ -175,8 +175,4 @@ func getJsonRpcServer(ctx context.Context, schemaLocation string) JSONRPCServer 
 		},
 		SchemaLocation: schemaLocation,
 	}
-}
-
-func GetServerVersion() string {
-	return methods.ServerVersion
 }

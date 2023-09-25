@@ -42,6 +42,7 @@ func (apiContext ApiContext) GetUserId() string {
 	req, _ := http.NewRequest("GET", url, nil)
 
 	req.Header.Add("Circle-Token", apiContext.Token)
+	req.Header.Set("User-Agent", UserAgent)
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return ""
