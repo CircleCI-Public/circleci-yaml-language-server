@@ -185,6 +185,25 @@ export class LSP {
 
         client.onTelemetry((event) => console.log('Telemetry event', event));
 
+        /*
+         * Example of request to activate rollbar
+         *
+         * client.sendRequest('workspace/executeCommand', {
+         *     command: 'setRollbarInformation',
+         *     arguments: [
+         *         {
+         *             enabled: true,
+         *             environment: 'development',
+         *             sessionId: vscode.env.sessionId,
+         *             machineId: vscode.env.machineId,
+         *             machine: `${os.platform}/${os.arch}`,
+         *             personId: 'id',
+         *             requestIp: '1.2.4.8',
+         *         },
+         *     ],
+         * });
+         */
+
         return client;
     }
 

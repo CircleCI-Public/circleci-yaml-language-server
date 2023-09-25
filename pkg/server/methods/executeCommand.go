@@ -5,6 +5,7 @@ import (
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
+	"github.com/rollbar/rollbar-go"
 	"github.com/segmentio/encoding/json"
 	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/protocol"
@@ -58,6 +59,33 @@ func (methods *Methods) ExecuteCommand(reply jsonrpc2.Replier, req jsonrpc2.Requ
 		workflows := parsedFile.GetWorkflows()
 
 		return reply(methods.Ctx, workflows, nil)
+
+	case "setRollbarInformation":
+		parameters, ok := arguments[0].(map[string]interface{})
+		if !ok {
+			return reply(methods.Ctx, nil, nil)
+		}
+
+		for key, value := range parameters {
+			switch key {
+			case "enabled":
+				if enabled, ok := value.(bool); ok {
+					rollbar.SetEnabled(enabled)
+					delete(parameters, key)
+				}
+			case "environment":
+				if env, ok := value.(string); ok {
+					rollbar.SetEnvironment(env)
+					delete(parameters, key)
+				}
+			case "personId":
+				if personId, ok := value.(string); ok {
+					rollbar.SetPerson(personId, "", "")
+					delete(parameters, key)
+				}
+			}
+		}
+		rollbar.SetCustom(parameters)
 	}
 
 	return reply(methods.Ctx, nil, nil)
