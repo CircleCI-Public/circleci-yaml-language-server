@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## [0.6.1](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.6.0...0.6.1) (2023-09-26)
+
+
+### Bug Fixes
+
+* add spawning process user agent ([#202](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/202)) ([c309045](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/c309045c448c870bbdb9a88ccac8d250951c286b))
+* add user agent and version ([#201](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/201)) ([677d518](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/677d518420fb820a159c393fda470422080f61d6))
+
 ## [0.6.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.5.2...0.6.0) (2023-07-03)
 
 
