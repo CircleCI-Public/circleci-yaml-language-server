@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/circleci/circleci-yaml-language-server/pkg/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	sitter "github.com/smacker/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
@@ -128,11 +128,11 @@ func TestYamlDocument_parseSingleJobReference(t *testing.T) {
 						Character: 6,
 					},
 				},
-				Requires: []ast.Require{
+				Requires: []ast.TextAndRange{
 					{
-						Name: "setup",
+						Text: "setup",
 						Range: protocol.Range{
-							Start: protocol.Position{Line: 3, Character: 8},
+							Start: protocol.Position{Line: 3, Character: 10},
 							End:   protocol.Position{Line: 3, Character: 15},
 						},
 					},

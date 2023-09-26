@@ -5,9 +5,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/circleci/circleci-yaml-language-server/pkg/ast"
-	"github.com/circleci/circleci-yaml-language-server/pkg/parser"
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	sitter "github.com/smacker/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
@@ -28,8 +28,8 @@ type SemanticTokenStruct struct {
 
 var PARAM_REGEX, _ = regexp.Compile(`<<\s*(parameters|pipeline.parameters)\.([A-z0-9-_]*)\s*>>`)
 
-func SemanticTokens(params protocol.SemanticTokensParams, cache utils.Cache) protocol.SemanticTokens {
-	doc, err := parser.GetParsedYAMLWithCache(params.TextDocument.URI, cache)
+func SemanticTokens(params protocol.SemanticTokensParams, cache *utils.Cache, context *utils.LsContext) protocol.SemanticTokens {
+	doc, err := parser.ParseFromUriWithCache(params.TextDocument.URI, cache, context)
 
 	if err != nil {
 		return protocol.SemanticTokens{}
@@ -45,17 +45,17 @@ func SemanticTokens(params protocol.SemanticTokensParams, cache utils.Cache) pro
 	iter := sitter.NewIterator(doc.RootNode, sitter.DFSMode)
 	iter.ForEach(func(node *sitter.Node) error {
 		if node.Type() == "block_mapping_pair" {
-			key, value := node.ChildByFieldName("key"), node.ChildByFieldName("value")
+			keyNode, valueNode := doc.GetKeyValueNodes(node)
 
-			if key != nil {
-				semanticTokens.highlightBuiltInKeywords(key)
-				semanticTokens.highlightOrbs(key)
+			if keyNode != nil {
+				semanticTokens.highlightOrbs(keyNode)
+				semanticTokens.highlightBuiltInKeywords(keyNode)
 			}
 
-			if value != nil {
-				semanticTokens.highlightParameters(value)
-				semanticTokens.highlightCacheKeys(value)
-				semanticTokens.highlightOrbs(value)
+			if valueNode != nil {
+				semanticTokens.highlightParameters(valueNode)
+				semanticTokens.highlightCacheKeys(valueNode)
+				semanticTokens.highlightOrbs(valueNode)
 			}
 		}
 
@@ -142,7 +142,7 @@ func (sem SemanticTokenStruct) highlightCacheKeys(valueNode *sitter.Node) {
 func (sem SemanticTokenStruct) highlightOrbs(valueNode *sitter.Node) {
 	if valueNode.Type() == "flow_node" {
 		content := sem.doc.GetRawNodeText(valueNode)
-		if sem.doc.IsOrb(content) {
+		if sem.doc.IsOrbReference(content) {
 			// Orb method
 			slashIdx := strings.Index(content, "/")
 			if slashIdx == -1 {
@@ -158,16 +158,16 @@ func (sem SemanticTokenStruct) highlightOrbs(valueNode *sitter.Node) {
 
 			// Highlight orb method
 			sem.addToken(protocol.Position{Line: valueNode.StartPoint().Row, Character: valueNode.StartPoint().Column + orbNameLength}, orbMethodLength, 0, 0)
-		} else if _, ok := sem.doc.Orbs[content]; ok && utils.PosInRange(sem.doc.OrbsRange, parser.NodeToRange(valueNode).Start) {
+		} else if _, ok := sem.doc.Orbs[content]; ok && utils.PosInRange(sem.doc.OrbsRange, sem.doc.NodeToRange(valueNode).Start) {
 			// Orb definition in the orbs section
-			rng := parser.NodeToRange(valueNode)
+			rng := sem.doc.NodeToRange(valueNode)
 			sem.addToken(rng.Start, rng.End.Character-rng.Start.Character, 1, 0)
 		}
 	}
 }
 
 func (sem SemanticTokenStruct) highlightWithRegex(valueNode *sitter.Node, regex *regexp.Regexp) {
-	child := valueNode.Child(0)
+	child := parser.GetFirstChild(valueNode)
 	isFlowNode := valueNode.Type() == "flow_node"
 	isBlockScalar := valueNode.Type() == "block_node" && child != nil && child.Type() == "block_scalar"
 

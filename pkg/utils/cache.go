@@ -1,16 +1,23 @@
 package utils
 
 import (
+	"fmt"
+	"os"
+	"path"
 	"sync"
 
-	"github.com/circleci/circleci-yaml-language-server/pkg/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
+	"github.com/adrg/xdg"
 	"go.lsp.dev/protocol"
 )
 
 type Cache struct {
-	FileCache   FileCache
-	OrbCache    OrbCache
-	DockerCache DockerCache
+	FileCache          FileCache
+	OrbCache           OrbCache
+	DockerCache        DockerCache
+	DockerTagsCache    DockerTagsCache
+	ResourceClassCache ResourceClassCache
+	ContextCache       ContextCache
 }
 
 type DockerCache struct {
@@ -23,46 +30,120 @@ type CachedDockerImage struct {
 	Exists  bool
 }
 
+type CachedDockerTags struct {
+	// A tag to recommended for untagged images
+	Recommended string
+
+	// The key of the map are the tag checked and the value is whether this tag exists or not
+	CheckedTags map[string]bool
+}
+
+type DockerTagsCache struct {
+	cacheMutex *sync.Mutex
+	tagsCache  map[string]CachedDockerTags
+}
+
+type CachedFile struct {
+	TextDocument protocol.TextDocumentItem
+	Project      Project
+	EnvVariables []string
+}
+
 type FileCache struct {
 	cacheMutex *sync.Mutex
-	fileCache  map[protocol.URI]*protocol.TextDocumentItem
+	fileCache  map[protocol.URI]*CachedFile
 }
 
 type OrbCache struct {
 	cacheMutex *sync.Mutex
-	orbsCache  map[string]*ast.CachedOrb
+	orbsCache  map[string]*ast.OrbInfo
+}
+
+type ContextCache struct {
+	cacheMutex   *sync.Mutex
+	contextCache map[string]map[string]*Context
+}
+
+type ResourceClassCache struct {
+	cacheMutex         *sync.Mutex
+	resourceClassCache map[protocol.URI]*[]string
 }
 
 func (c *Cache) init() {
-	c.FileCache.fileCache = make(map[protocol.URI]*protocol.TextDocumentItem)
+	c.FileCache.fileCache = make(map[protocol.URI]*CachedFile)
 	c.FileCache.cacheMutex = &sync.Mutex{}
 
-	c.OrbCache.orbsCache = make(map[string]*ast.CachedOrb)
+	c.OrbCache.orbsCache = make(map[string]*ast.OrbInfo)
 	c.OrbCache.cacheMutex = &sync.Mutex{}
 
 	c.DockerCache.cacheMutex = &sync.Mutex{}
 	c.DockerCache.dockerCache = make(map[string]*CachedDockerImage)
+
+	c.DockerTagsCache.cacheMutex = &sync.Mutex{}
+	c.DockerTagsCache.tagsCache = make(map[string]CachedDockerTags)
+
+	c.ContextCache.cacheMutex = &sync.Mutex{}
+	c.ContextCache.contextCache = make(map[string]map[string]*Context)
+
+	c.ResourceClassCache.cacheMutex = &sync.Mutex{}
+	c.ResourceClassCache.resourceClassCache = make(map[protocol.URI]*[]string)
 }
 
 // FILE
 
-func (c *FileCache) SetFile(file *protocol.TextDocumentItem) protocol.TextDocumentItem {
+func (c *FileCache) SetFile(cachedFile CachedFile) CachedFile {
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()
-	c.fileCache[file.URI] = file
-	return *file
+	c.fileCache[cachedFile.TextDocument.URI] = &cachedFile
+	return cachedFile
 }
 
-func (c *FileCache) GetFile(uri protocol.URI) *protocol.TextDocumentItem {
+func (c *FileCache) GetFile(uri protocol.URI) *CachedFile {
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()
 	return c.fileCache[uri]
+}
+
+func (c *FileCache) GetFiles() map[protocol.URI]*CachedFile {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	return c.fileCache
 }
 
 func (c *FileCache) RemoveFile(uri protocol.URI) {
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()
 	delete(c.fileCache, uri)
+}
+
+func (c *FileCache) AddEnvVariableToProjectLinkedToFile(uri protocol.URI, envVariable string) {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	project := c.fileCache[uri]
+
+	if FindInArray(project.EnvVariables, envVariable) < 0 {
+		project.EnvVariables = append(project.EnvVariables, envVariable)
+	}
+	c.fileCache[uri] = project
+}
+
+func (c *FileCache) AddProjectSlugToFile(uri protocol.URI, project Project) {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	file := c.fileCache[uri]
+
+	file.Project = project
+
+	c.fileCache[uri] = file
+}
+
+func (c *FileCache) UpdateTextDocument(uri protocol.URI, textDocument protocol.TextDocumentItem) {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	file := c.fileCache[uri]
+	file.TextDocument = textDocument
+
+	c.fileCache[uri] = file
 }
 
 // ORBS
@@ -76,14 +157,21 @@ func (c *OrbCache) HasOrb(orbID string) bool {
 	return ok
 }
 
-func (c *OrbCache) SetOrb(orb *ast.CachedOrb, orbID string) ast.CachedOrb {
+func (c *OrbCache) SetOrb(orb *ast.OrbInfo, orbID string) ast.OrbInfo {
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()
 	c.orbsCache[orbID] = orb
 	return *orb
 }
 
-func (c *OrbCache) GetOrb(orbID string) *ast.CachedOrb {
+func (c *OrbCache) UpdateOrbParsedAttributes(orbID string, parsedOrbAttributes ast.OrbParsedAttributes) ast.OrbParsedAttributes {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	c.orbsCache[orbID].OrbParsedAttributes = parsedOrbAttributes
+	return parsedOrbAttributes
+}
+
+func (c *OrbCache) GetOrb(orbID string) *ast.OrbInfo {
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()
 	return c.orbsCache[orbID]
@@ -93,6 +181,27 @@ func (c *OrbCache) RemoveOrb(orbID string) {
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()
 	delete(c.orbsCache, orbID)
+}
+
+func (c *OrbCache) RemoveOrbs() {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	for k := range c.orbsCache {
+		delete(c.orbsCache, k)
+	}
+}
+
+func (c *Cache) RemoveOrbFiles() {
+	c.OrbCache.cacheMutex.Lock()
+	defer c.OrbCache.cacheMutex.Unlock()
+	c.FileCache.cacheMutex.Lock()
+	defer c.FileCache.cacheMutex.Unlock()
+
+	for _, orb := range c.OrbCache.orbsCache {
+		if _, err := os.Stat(orb.RemoteInfo.FilePath); err == nil {
+			os.Remove(orb.RemoteInfo.FilePath)
+		}
+	}
 }
 
 // Docker images cache
@@ -123,8 +232,107 @@ func (c *DockerCache) Remove(name string) {
 	delete(c.dockerCache, name)
 }
 
-func CreateCache() Cache {
+// Docker tags cache
+
+func (c *DockerTagsCache) Add(namespace, image string, value CachedDockerTags) {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+
+	c.tagsCache[fmt.Sprintf("%s/%s", namespace, image)] = value
+}
+
+func (c *DockerTagsCache) Get(namespace, image string) *CachedDockerTags {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+
+	tags, ok := c.tagsCache[fmt.Sprintf("%s/%s", namespace, image)]
+	if !ok {
+		return nil
+	}
+	return &tags
+}
+
+// Cache
+
+func CreateCache() *Cache {
 	cache := Cache{}
 	cache.init()
-	return cache
+	return &cache
+}
+
+func GetOrbCacheFSPath(orbYaml string) string {
+	file := path.Join("cci", "orbs", ".circleci", orbYaml+".yml")
+	filePath, err := xdg.CacheFile(file)
+
+	if err != nil {
+		filePath = path.Join(xdg.Home, ".cache", file)
+	}
+
+	return filePath
+}
+
+func (cache *Cache) ClearHostData() {
+	cache.RemoveOrbFiles()
+	cache.OrbCache.RemoveOrbs()
+}
+
+// Context cache
+
+func (c *ContextCache) SetOrganizationContext(organizationId string, ctx *Context) *Context {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	if c.contextCache[organizationId] == nil {
+		c.contextCache[organizationId] = make(map[string]*Context)
+	}
+	c.contextCache[organizationId][ctx.Name] = ctx
+	return ctx
+}
+
+func (c *ContextCache) GetOrganizationContext(organizationId string, name string) *Context {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	return c.contextCache[organizationId][name]
+}
+
+func (c *ContextCache) RemoveOrganizationContext(organizationId string, name string) {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	org := c.contextCache[organizationId]
+	delete(org, name)
+}
+
+func (c *ContextCache) AddEnvVariableToOrganizationContext(organizationId string, name string, envVariable string) {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	ctx := c.contextCache[organizationId][name]
+
+	if FindInArray(ctx.envVariables, envVariable) < 0 {
+		ctx.envVariables = append(ctx.envVariables, envVariable)
+	}
+	c.contextCache[organizationId][name] = ctx
+}
+
+func (c *ContextCache) GetAllContextOfOrganization(organizationId string) map[string]*Context {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	return c.contextCache[organizationId]
+}
+
+// Resource class
+
+func (c *ResourceClassCache) SetResourceClassForFile(uri protocol.URI, resourceClass *[]string) *[]string {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	c.resourceClassCache[uri] = resourceClass
+	return resourceClass
+}
+
+func (c *ResourceClassCache) GetResourceClassOfFile(uri protocol.URI) []string {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	resourceClasses, ok := c.resourceClassCache[uri]
+	if !ok {
+		return []string{}
+	}
+	return *resourceClasses
 }

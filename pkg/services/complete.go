@@ -1,15 +1,19 @@
 package languageservice
 
 import (
-	yamlparser "github.com/circleci/circleci-yaml-language-server/pkg/parser"
-	"github.com/circleci/circleci-yaml-language-server/pkg/services/complete"
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/services/complete"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 
 	"go.lsp.dev/protocol"
 )
 
-func Complete(params protocol.CompletionParams, cache utils.Cache) (protocol.CompletionList, error) {
-	yamlDocument, _ := yamlparser.GetParsedYAMLWithCache(params.TextDocument.URI, cache)
+func Complete(params protocol.CompletionParams, cache *utils.Cache, context *utils.LsContext) (protocol.CompletionList, error) {
+	yamlDocument, err := yamlparser.ParseFromUriWithCache(params.TextDocument.URI, cache, context)
+
+	if err != nil {
+		return protocol.CompletionList{}, err
+	}
 
 	if yamlDocument.Version < 2.1 {
 		return protocol.CompletionList{
@@ -19,10 +23,11 @@ func Complete(params protocol.CompletionParams, cache utils.Cache) (protocol.Com
 	}
 
 	completionHandler := complete.CompletionHandler{
-		Params: params,
-		Doc:    yamlDocument,
-		Cache:  cache,
-		Items:  []protocol.CompletionItem{},
+		Params:  params,
+		Doc:     yamlDocument,
+		Cache:   cache,
+		Items:   []protocol.CompletionItem{},
+		Context: context,
 	}
 	completionHandler.GetCompletionItems()
 

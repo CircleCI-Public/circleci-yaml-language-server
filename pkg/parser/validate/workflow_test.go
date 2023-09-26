@@ -3,7 +3,7 @@ package validate
 import (
 	"testing"
 
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
 )
 
@@ -44,6 +44,25 @@ workflows:
 					End:   protocol.Position{Line: 0x6, Character: 0x17},
 				}, "Type can only be \"approval\""),
 			},
+		},
+		{
+			Name: "Ignore workflow's jobs that are come from uncheckable orbs",
+			YamlContent: `version: 2.1
+
+parameters:
+  dev-orb-version:
+    type: string
+    default: "dev:alpha"
+
+orbs:
+  ccc: cci-dev/ccc@<<pipeline.parameters.dev-orb-version>>
+
+workflows:
+  someworkflow:
+    jobs:
+      - ccc/job
+`,
+			Diagnostics: []protocol.Diagnostic{},
 		},
 	}
 

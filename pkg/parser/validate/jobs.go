@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/circleci/circleci-yaml-language-server/pkg/ast"
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
 )
 
@@ -16,7 +16,7 @@ func (val Validate) ValidateJobs() {
 }
 
 func (val Validate) validateSingleJob(job ast.Job) {
-	val.validateSteps(job.Steps, job.Name)
+	val.validateSteps(job.Steps, job.Name, job.Parameters)
 
 	if !val.checkIfJobIsUsed(job) {
 		val.jobIsUnused(job)
@@ -37,56 +37,34 @@ func (val Validate) validateSingleJob(job ast.Job) {
 			_, paramName := utils.ExtractParameterName(job.Executor)
 			param := job.Parameters[paramName]
 
-			if param != nil {
-				switch param.(type) {
-				case ast.StringParameter:
-					str := param.(ast.StringParameter)
-
-					if !val.Doc.DoesExecutorExist(str.Default) {
-						// Error on the default value
-						val.addDiagnostic(
-							protocol.Diagnostic{
-								Range: str.DefaultRange,
-								Message: fmt.Sprintf(
-									"Parameter is used as executor but executor `%s` does not exist.",
-									str.Default,
-								),
-								Severity: protocol.DiagnosticSeverityError,
-							},
-						)
-					}
-				case ast.ExecutorParameter:
-					exec := param.(ast.ExecutorParameter)
-
-					if !val.Doc.DoesExecutorExist(exec.Default) {
-						// Error on the default value
-						val.addDiagnostic(
-							protocol.Diagnostic{
-								Range: exec.DefaultRange,
-								Message: fmt.Sprintf(
-									"Parameter is used as executor but executor `%s` does not exist.",
-									exec.Default,
-								),
-								Severity: protocol.DiagnosticSeverityError,
-							},
-						)
-					}
+			checkParam := func(executorDefault string, rng protocol.Range) {
+				isOrbExecutor, err := val.doesOrbExecutorExist(executorDefault, rng)
+				if val.Context.Api.UseDefaultInstance() && !val.Doc.DoesExecutorExist(executorDefault) &&
+					(!isOrbExecutor && err == nil) {
+					// Error on the default value
+					val.addDiagnostic(
+						protocol.Diagnostic{
+							Range: rng,
+							Message: fmt.Sprintf(
+								"Parameter is used as executor but executor `%s` does not exist.",
+								executorDefault,
+							),
+							Severity: protocol.DiagnosticSeverityError,
+						},
+					)
 				}
+			}
 
+			if param != nil {
+				switch param := param.(type) {
+				case ast.StringParameter:
+				case ast.ExecutorParameter:
+					checkParam(param.Default, job.ExecutorRange)
+				}
 			}
 
 		} else if !val.Doc.DoesExecutorExist(job.Executor) {
-			if val.Doc.IsOrb(job.Executor) {
-				val.validateOrbExecutor(job.Executor, job.ExecutorRange)
-			} else {
-				val.addDiagnostic(
-					protocol.Diagnostic{
-						Range:    job.ExecutorRange,
-						Message:  "Executor `" + job.Executor + "` does not exist",
-						Severity: protocol.DiagnosticSeverityError,
-					},
-				)
-			}
+			val.validateExecutorReference(job.Executor, job.ExecutorRange)
 		} else {
 			executor := val.Doc.Executors[job.Executor]
 			val.validateParametersValue(
@@ -115,17 +93,12 @@ func (val Validate) validateSingleJob(job ast.Job) {
 		)
 	}
 
-	for _, img := range job.Docker.Image {
-		isValid, errMessage := ValidateDockerImage(&img, &val.Cache.DockerCache)
-
-		if !isValid {
-			val.addDiagnostic(
-				utils.CreateErrorDiagnosticFromRange(
-					img.ImageRange,
-					errMessage,
-				),
-			)
-		}
+	if len(job.Docker.Image) > 0 {
+		val.validateDockerExecutor(job.Docker)
+	} else if job.MacOS.Xcode != "" {
+		val.validateMacOSExecutor(job.MacOS)
+	} else if job.Machine.Image != "" {
+		val.validateMachineExecutor(job.Machine)
 	}
 }
 

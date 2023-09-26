@@ -1,13 +1,13 @@
 package methods
 
 import (
+	"fmt"
+
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
+	"github.com/segmentio/encoding/json"
 	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/protocol"
 )
-
-// Defined at build time by ldflags.sh
-var ServerVersion string = "<dev build>"
-var BuildTime string
 
 type SemanticTokensOptions struct {
 	WorkDoneProgress bool                          `json:"workDoneProgress,omitempty"`
@@ -29,7 +29,26 @@ var TokenModifiers = []protocol.SemanticTokenModifiers{
 	protocol.SemanticTokenModifierAbstract,
 }
 
-func (methods *Methods) Initialize(reply jsonrpc2.Replier) error {
+func (methods *Methods) Initialize(reply jsonrpc2.Replier, req jsonrpc2.Request) error {
+	params := protocol.InitializeParams{}
+	if err := json.Unmarshal(req.Params(), &params); err != nil {
+		return reply(methods.Ctx, nil, fmt.Errorf("%s: %w", jsonrpc2.ErrParse, err))
+	}
+
+	if params.InitializationOptions != nil {
+		isCciExtension, ok := params.InitializationOptions.(map[string]interface{})["isCciExtension"]
+		if ok && isCciExtension == true {
+			methods.LsContext.IsCciExtension = true
+		}
+		userAgent, ok := params.InitializationOptions.(map[string]interface{})["userAgent"]
+		if ok {
+			userAgentString, ok := userAgent.(string)
+			if ok {
+				utils.UserAgent += " " + userAgentString
+			}
+		}
+	}
+
 	v := protocol.InitializeResult{
 		Capabilities: protocol.ServerCapabilities{
 			RenameProvider: false,
@@ -64,10 +83,22 @@ func (methods *Methods) Initialize(reply jsonrpc2.Replier) error {
 					WorkDoneProgress: true,
 				},
 			},
+			ExecuteCommandProvider: &protocol.ExecuteCommandOptions{
+				Commands: []string{"setToken"},
+			},
+			CodeActionProvider: &protocol.CodeActionRegistrationOptions{
+				CodeActionOptions: protocol.CodeActionOptions{
+					CodeActionKinds: []protocol.CodeActionKind{
+						"quickfix",
+					},
+					ResolveProvider: true,
+				},
+			},
+			DocumentSymbolProvider: true,
 		},
 		ServerInfo: &protocol.ServerInfo{
 			Name:    "circleci-language-server",
-			Version: ServerVersion,
+			Version: utils.ServerVersion,
 		},
 	}
 	return reply(methods.Ctx, v, nil)

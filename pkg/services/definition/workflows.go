@@ -1,8 +1,8 @@
 package definition
 
 import (
-	"github.com/circleci/circleci-yaml-language-server/pkg/ast"
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
 )
 
@@ -29,11 +29,11 @@ func (def DefinitionStruct) searchForWorkflows() []protocol.Location {
 	return []protocol.Location{}
 }
 
-func (def DefinitionStruct) searchForWorkflowJobsRequires(requires []ast.Require, workflow ast.Workflow) []protocol.Location {
+func (def DefinitionStruct) searchForWorkflowJobsRequires(requires []ast.TextAndRange, workflow ast.Workflow) []protocol.Location {
 	for _, require := range requires {
 		if utils.PosInRange(require.Range, def.Params.Position) {
 			for _, jobRef := range workflow.JobRefs {
-				if jobRef.JobName == require.Name {
+				if jobRef.JobName == require.Text {
 					return []protocol.Location{
 						{
 							URI:   def.Params.TextDocument.URI,

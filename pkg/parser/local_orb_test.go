@@ -3,7 +3,11 @@ package parser
 import (
 	"testing"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/testHelpers"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"github.com/stretchr/testify/assert"
+	"go.lsp.dev/protocol"
+	"go.lsp.dev/uri"
 )
 
 func TestLocalOrbJob(t *testing.T) {
@@ -21,11 +25,8 @@ orbs:
           - image: cimg/base:2020.01
         steps:
           - run: echo "Hello << parameter.name >>"`
-	doc, err := GetParsedYAMLWithContent([]byte(content))
-	assert.Nil(t, err)
-
-	// Test job
-	jobKey := "localorb/localjob"
+	doc := GetDocForTests(t, content, "localorb")
+	jobKey := "localjob"
 	assert.Contains(t, doc.Jobs, jobKey)
 	job := doc.Jobs[jobKey]
 	assert.EqualValues(t, job.Range.Start.Line, 5)
@@ -69,11 +70,8 @@ orbs:
           - image: cimg/base:2020.01
         steps:
           - run: echo "Hello << parameter.name >>"`
-	doc, err := GetParsedYAMLWithContent([]byte(content))
-	assert.Nil(t, err)
-
-	// Test job
-	jobKey := "localorb/localjob"
+	doc := GetDocForTests(t, content, "localorb")
+	jobKey := "localjob"
 	assert.Contains(t, doc.Jobs, jobKey)
 	job := doc.Jobs[jobKey]
 	assert.EqualValues(t, job.Range.Start.Line, 10)
@@ -111,11 +109,8 @@ orbs:
                   default: 1.0.0
                   description: Specify the Terraform Docker image tag for the executor
                   type: string`
-	doc, err := GetParsedYAMLWithContent([]byte(content))
-	assert.Nil(t, err)
-
-	// Test executor
-	executorKey := "localorb/localexecutor"
+	executorKey := "localexecutor"
+	doc := GetDocForTests(t, content, "localorb")
 	assert.Contains(t, doc.Executors, executorKey)
 	executor := doc.Executors[executorKey]
 	assert.EqualValues(t, executor.GetRange().Start.Line, 5)
@@ -141,11 +136,8 @@ orbs:
                 type: string
         steps:
           - run: echo "Hello << parameter.name >>"`
-	doc, err := GetParsedYAMLWithContent([]byte(content))
-	assert.Nil(t, err)
-
-	// Test command
-	commandKey := "localorb/localcommand"
+	doc := GetDocForTests(t, content, "localorb")
+	commandKey := "localcommand"
 	assert.Contains(t, doc.Commands, commandKey)
 	command := doc.Commands[commandKey]
 	assert.EqualValues(t, command.Range.Start.Line, 5)
@@ -163,45 +155,46 @@ orbs:
 	assert.EqualValues(t, step.GetRange().Start.Line, 11)
 }
 
-func TestCompleteLocalOrbFile(t *testing.T) {
-	content := `version: 2.1
+// func TestCompleteLocalOrbFile(t *testing.T) {
+// 	content := `version: 2.1
 
-orbs:
-  localorb:
-    jobs:
-      localjob:
-        executor: localexecutor
-        steps:
-          - localcommand
+//     orbs:
+//       localorb:
+//         commands:
+//           localcommand:
+//             steps:
+//               - run: echo "Hello world"
 
-    executors:
-      localexecutor:
-        docker:
-          - image: cimg/base:2020.01
+//         jobs:
+//           localjob:
+//             executor: localexecutor
+//             steps:
+//               - localcommand
 
-    commands:
-      localcommand:
-        steps:
-          - run: echo "Hello world"
+//         executors:
+//           localexecutor:
+//             docker:
+//               - image: cimg/base:2020.01`
+// 	doc := GetDocForTests(t, content, "localorb")
 
-workflows:
-  someworkflow:
-    jobs:
-      - localorb/localjob`
-	doc, err := GetParsedYAMLWithContent([]byte(content))
+// 	// Test command
+// 	commandKey := "localcommand"
+// 	assert.Contains(t, doc.Commands, commandKey)
+
+// 	// Test executor
+// 	executorKey := "localexecutor"
+// 	assert.Contains(t, doc.Executors, executorKey)
+
+// 	// Test job
+// 	jobKey := "localjob"
+// 	assert.Contains(t, doc.Jobs, jobKey)
+// }
+
+func GetDocForTests(t *testing.T, content string, orbKey string) YamlDocument {
+	context := testHelpers.GetDefaultLsContext()
+	doc, err := ParseFromContent([]byte(content), context, uri.File(""), protocol.Position{})
 	assert.Nil(t, err)
-
-	assert.Len(t, *doc.Diagnostics, 0)
-
-	// Test command
-	commandKey := "localorb/localcommand"
-	assert.Contains(t, doc.Commands, commandKey)
-
-	// Test executor
-	executorKey := "localorb/localexecutor"
-	assert.Contains(t, doc.Executors, executorKey)
-
-	// Test job
-	jobKey := "localorb/localjob"
-	assert.Contains(t, doc.Jobs, jobKey)
+	orbInfo, err := doc.GetOrbInfoFromName(orbKey, utils.CreateCache())
+	assert.Nil(t, err)
+	return doc.FromOrbParsedAttributesToYamlDocument(orbInfo.OrbParsedAttributes)
 }

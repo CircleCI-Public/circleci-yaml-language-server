@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	sitter "github.com/smacker/go-tree-sitter"
 	ymlgrammar "github.com/smacker/go-tree-sitter/yaml"
 	"go.lsp.dev/protocol"
@@ -32,6 +34,19 @@ func GetChildOfType(node *sitter.Node, typeName string) *sitter.Node {
 	return nil
 }
 
+func GetFirstChild(node *sitter.Node) *sitter.Node {
+	if node == nil {
+		return nil
+	}
+	if node.ChildCount() > 0 {
+		if node.Child(0).Type() == "comment" || node.Child(0).Type() == "anchor" {
+			return node.Child(1)
+		}
+		return node.Child(0)
+	}
+	return nil
+}
+
 func GetChildMapping(node *sitter.Node) *sitter.Node {
 	blockMappingNode := GetChildOfType(node, "block_mapping")
 
@@ -42,9 +57,19 @@ func GetChildMapping(node *sitter.Node) *sitter.Node {
 	return GetChildOfType(node, "flow_mapping")
 }
 
+func GetChildSequence(node *sitter.Node) *sitter.Node {
+	blockMappingNode := GetChildOfType(node, "block_sequence")
+
+	if blockMappingNode != nil {
+		return blockMappingNode
+	}
+
+	return GetChildOfType(node, "flow_sequence")
+}
+
 func GetBlockMappingNode(streamNode *sitter.Node) *sitter.Node {
 	documentNode := GetChildOfType(streamNode, "document")
-	if documentNode.Type() != "document" {
+	if documentNode != nil && documentNode.Type() != "document" {
 		return nil
 	}
 	blockNode := GetChildOfType(documentNode, "block_node")
@@ -55,7 +80,11 @@ func GetBlockMappingNode(streamNode *sitter.Node) *sitter.Node {
 	return GetChildOfType(blockNode, "block_mapping")
 }
 
-func (doc *YamlDocument) GetNodeText(node *sitter.Node) string {
+func (doc *YamlDocument) GetNodeTextWithRange(node *sitter.Node) ast.TextAndRange {
+	if node == nil {
+		return ast.TextAndRange{Text: "", Range: protocol.Range{}}
+	}
+
 	res := doc.GetRawNodeText(node)
 
 	if strings.HasPrefix(res, "\"") && strings.HasSuffix(res, "\"") {
@@ -65,9 +94,18 @@ func (doc *YamlDocument) GetNodeText(node *sitter.Node) string {
 	}
 
 	res = strings.TrimPrefix(res, "|\n")
+	res = strings.TrimPrefix(res, ">-\n")
+	res = strings.TrimPrefix(res, ">\n")
 	res = strings.TrimSpace(res)
 
-	return res
+	return ast.TextAndRange{
+		Text:  res,
+		Range: doc.NodeToRange(node),
+	}
+}
+
+func (doc *YamlDocument) GetNodeText(node *sitter.Node) string {
+	return doc.GetNodeTextWithRange(node).Text
 }
 
 func (doc *YamlDocument) GetRawNodeText(node *sitter.Node) string {
@@ -76,11 +114,6 @@ func (doc *YamlDocument) GetRawNodeText(node *sitter.Node) string {
 	}
 	res := string(doc.Content[node.StartByte():node.EndByte()])
 	return res
-}
-
-type TextAndRange struct {
-	Text  string
-	Range protocol.Range
 }
 
 func (doc *YamlDocument) getNodeTextArray(valueNode *sitter.Node) []string {
@@ -92,44 +125,43 @@ func (doc *YamlDocument) getNodeTextArray(valueNode *sitter.Node) []string {
 	return texts
 }
 
-func (doc *YamlDocument) getNodeTextArrayWithRange(valueNode *sitter.Node) []TextAndRange {
+func (doc *YamlDocument) getNodeTextArrayWithRange(valueNode *sitter.Node) []ast.TextAndRange {
 	// valueNode is block_node which has a block_sequence child
-	blockSequenceNode := GetChildOfType(valueNode, "block_sequence")
-	texts := make([]TextAndRange, 0)
+	blockSequenceNode := GetChildSequence(valueNode)
+	texts := make([]ast.TextAndRange, 0)
 
 	if blockSequenceNode == nil {
-		blockSequenceNode = GetChildOfType(valueNode, "flow_sequence")
-		if blockSequenceNode == nil {
-			return texts
-		}
+		return texts
 	}
 
 	iterateOnBlockSequence(blockSequenceNode, func(child *sitter.Node) {
+		getText := func(node *sitter.Node) ast.TextAndRange {
+			if alias := GetChildOfType(node, "alias"); alias != nil {
+				anchor, ok := doc.YamlAnchors[strings.TrimLeft(doc.GetNodeText(alias), "*")]
+				if !ok {
+					return ast.TextAndRange{Text: ""}
+				}
+				anchorValueNode := GetFirstChild(anchor.ValueNode)
+				text := doc.GetNodeText(anchorValueNode)
+				return ast.TextAndRange{Text: text, Range: doc.NodeToRange(anchorValueNode)}
+			} else {
+				return ast.TextAndRange{Text: doc.GetNodeText(node), Range: doc.NodeToRange(node)}
+			}
+		}
+
 		// If blockSequence is a flow_sequence, then the child is
 		// directly a flow_node
 		if child.Type() == "flow_node" {
-			texts = append(texts, TextAndRange{Text: doc.GetNodeText(child), Range: NodeToRange(child)})
+			texts = append(texts, getText(child))
 		} else {
 			// But if the blockSequence is a block_sequence, then the child is
 			// a block_sequence_item
 			element := GetChildOfType(child, "flow_node")
 			hyphenNode := child.Child(0)
 			if element != nil {
-				texts = append(texts, TextAndRange{Text: doc.GetNodeText(element), Range: NodeToRange(child)})
+				texts = append(texts, getText(element))
 			} else if hyphenNode != nil {
-				texts = append(texts, TextAndRange{
-					Text: doc.GetNodeText(element),
-					Range: protocol.Range{
-						Start: protocol.Position{
-							Line:      hyphenNode.StartPoint().Row,
-							Character: hyphenNode.StartPoint().Column + 1,
-						},
-						End: protocol.Position{
-							Line:      hyphenNode.EndPoint().Row,
-							Character: hyphenNode.EndPoint().Column + 2,
-						},
-					},
-				})
+				texts = append(texts, getText(hyphenNode.NextSibling()))
 			}
 		}
 	})
@@ -148,12 +180,12 @@ func (doc *YamlDocument) getNodeTextArrayOrText(valueNode *sitter.Node) []string
 func (doc *YamlDocument) parseDictionary(valueNode *sitter.Node) map[string]string {
 	dictionary := make(map[string]string)
 
-	iterateOnBlockMapping(valueNode, func(child *sitter.Node) {
+	doc.iterateOnBlockMapping(valueNode, func(child *sitter.Node) {
 		if child.Type() == "block_mapping_pair" || child.Type() == "flow_pair" {
-			key := child.ChildByFieldName("key")
-			value := child.ChildByFieldName("value")
-			if key != nil && value != nil {
-				dictionary[doc.GetNodeText(key)] = doc.GetNodeText(value)
+			keyNode, valueNode := doc.GetKeyValueNodes(child)
+
+			if keyNode != nil && valueNode != nil {
+				dictionary[doc.GetNodeText(keyNode)] = doc.GetNodeText(valueNode)
 			}
 		}
 	})
@@ -165,10 +197,35 @@ func (doc *YamlDocument) parseDescription(descriptionNode *sitter.Node) string {
 	return doc.GetNodeText(descriptionNode)
 }
 
-func iterateOnBlockMapping(blockMappingNode *sitter.Node, fn func(child *sitter.Node)) {
+func (doc *YamlDocument) GetKeyValueNodes(node *sitter.Node) (keyNode *sitter.Node, valueNode *sitter.Node) {
+	if node != nil && (node.Type() == "block_mapping_pair" || node.Type() == "flow_pair") {
+		keyNode = node.ChildByFieldName("key")
+		valueNode = node.ChildByFieldName("value")
+
+		aliasNode := GetChildOfType(valueNode, "alias")
+		if aliasNode != nil {
+			aliasNode = GetChildOfType(aliasNode, "alias_name")
+			valueName := doc.GetNodeText(aliasNode)
+			anchor, ok := doc.YamlAnchors[valueName]
+			if ok {
+				valueNode = anchor.ValueNode
+			}
+		}
+	}
+	return
+}
+
+func (doc *YamlDocument) iterateOnBlockMapping(blockMappingNode *sitter.Node, fn func(child *sitter.Node)) {
 	if blockMappingNode == nil || (blockMappingNode.Type() != "block_mapping" && blockMappingNode.Type() != "flow_mapping") {
 		return
 	}
+
+	// Save keys that are mapped on, to support merge keys (<<: *someAlias)
+	// For common keys between a map using a merge key & the mapped alias
+	// the merged value does NOT override the parent block-mapping defined key
+	// For this reason, it is important to know which keys have already been evaluated or not
+	mappedKeys := map[string]bool{}
+	mergeKeys := map[string]bool{}
 
 	for i := 0; uint32(i) < blockMappingNode.ChildCount(); i++ {
 		child := blockMappingNode.Child(i)
@@ -177,8 +234,90 @@ func iterateOnBlockMapping(blockMappingNode *sitter.Node, fn func(child *sitter.
 			continue
 		}
 
+		keyNode := child.ChildByFieldName("key")
+		keyText := doc.GetNodeText(keyNode)
+
+		// When a merge key is encountered, skip it.
+		// it will be handled after other keys, to avoid potential falsy override
+		if keyText == "<<" {
+			valueNode := child.ChildByFieldName("value")
+			anchorsToMerge := extractMergeAnchorNames(valueNode, doc)
+
+			for _, anchorName := range anchorsToMerge {
+				mergeKeys[anchorName] = true
+			}
+
+			continue
+		}
+
 		fn(child)
+		mappedKeys[keyText] = true
 	}
+
+	for anchorName := range mergeKeys {
+		anchor, ok := doc.YamlAnchors[anchorName]
+
+		if !ok || anchor.ValueNode == nil {
+			return
+		}
+
+		anchorValue := GetFirstChild(anchor.ValueNode)
+
+		// Recursively call iterateOnBlockMapping to handle merged block that contain merged blocks themselves
+		doc.iterateOnBlockMapping(
+			anchorValue,
+			func(child *sitter.Node) {
+				keyNode, _ := doc.GetKeyValueNodes(child)
+				keyName := doc.GetNodeText(keyNode)
+
+				// On each key defined by the to-merge block;
+				// check if the key has already been evaluated by the
+				// parent definition or not
+				if mappedKeys[keyName] {
+					return
+				}
+
+				// If it hasn't, call the original callback and store the key too
+				fn(child)
+				mappedKeys[keyName] = true
+			},
+		)
+	}
+
+}
+
+func extractMergeAnchorNames(node *sitter.Node, doc *YamlDocument) []string {
+	if node == nil {
+		return nil
+	}
+
+	child := node.Child(0)
+
+	if child == nil {
+		return nil
+	}
+
+	// One alias; just return the alias name
+	// example: <<: *myAlias
+	if child.Type() == "alias" {
+		txt := doc.GetNodeText(child)
+
+		return []string{txt[1:]}
+	}
+
+	// List of aliases; return all of em dude
+	// example: <<: [*alias1, *alias2, ..., *aliasN]
+	if child.Type() == "flow_sequence" {
+		names := []string{}
+
+		for i := 0; uint32(i) < child.ChildCount(); i++ {
+			names = append(names, extractMergeAnchorNames(child.Child(i), doc)...)
+		}
+
+		return names
+	}
+
+	return []string{}
 }
 
 func iterateOnBlockSequence(blockSequenceNode *sitter.Node, fn func(child *sitter.Node)) {
@@ -245,17 +384,18 @@ func FindDeepestNode(rootNode *sitter.Node, content []byte, toFind []string) (*s
 	return node, fmt.Errorf("not found")
 }
 
-func NodeToRange(node *sitter.Node) protocol.Range {
-	return protocol.Range{
-		Start: protocol.Position{Line: node.StartPoint().Row, Character: node.StartPoint().Column},
-		End:   protocol.Position{Line: node.EndPoint().Row, Character: node.EndPoint().Column},
+func (doc *YamlDocument) NodeToRange(node *sitter.Node) protocol.Range {
+	if node == nil {
+		return protocol.Range{}
 	}
-}
-
-func getKeyValueNodes(node *sitter.Node) (keyNode *sitter.Node, valueNode *sitter.Node) {
-	if node != nil && (node.Type() == "block_mapping_pair" || node.Type() == "flow_pair") {
-		keyNode = node.ChildByFieldName("key")
-		valueNode = node.ChildByFieldName("value")
-	}
-	return
+	return utils.AddOffsetToRange(protocol.Range{
+		Start: protocol.Position{
+			Line:      node.StartPoint().Row,
+			Character: node.StartPoint().Column,
+		},
+		End: protocol.Position{
+			Line:      node.EndPoint().Row,
+			Character: node.EndPoint().Column,
+		},
+	}, doc.Offset)
 }

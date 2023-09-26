@@ -3,8 +3,8 @@ package complete
 import (
 	"strings"
 
-	"github.com/circleci/circleci-yaml-language-server/pkg/ast"
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	sitter "github.com/smacker/go-tree-sitter"
 )
 
@@ -18,7 +18,7 @@ func (ch *CompletionHandler) addParametersDefinitionCompletion(parameters map[st
 				ch.addCompletionItem("enum")
 				ch.addCompletionItem("executor")
 				ch.addCompletionItem("steps")
-				ch.addCompletionItem("env_variable")
+				ch.addCompletionItem("env_var_name")
 				return
 			}
 			if param.GetType() == "enum" && utils.PosInRange(param.GetDefaultRange(), ch.Params.Position) {
@@ -74,9 +74,9 @@ func (ch *CompletionHandler) addParameterReferenceCompletion(node *sitter.Node) 
 
 func (ch *CompletionHandler) addPipelineParametersReferenceCompletion() {
 	shouldAddClosingBrackets := ch.shouldAddParamsClosingBrackets()
-	for _, param := range ch.Doc.PipelinesParameters {
+	for _, param := range ch.Doc.PipelineParameters {
 		if shouldAddClosingBrackets {
-			ch.addCompletionItemFieldWithCustomText(param.GetName(), " >>")
+			ch.addCompletionItemFieldWithCustomText(param.GetName(), "", " >>", "", "")
 		} else {
 			ch.addCompletionItem(param.GetName())
 		}
@@ -87,7 +87,7 @@ func (ch *CompletionHandler) addParametersReferenceCompletion() {
 	shouldAddClosingBrackets := ch.shouldAddParamsClosingBrackets()
 	for _, param := range ch.Doc.GetParamsWithPosition(ch.Params.Position) {
 		if shouldAddClosingBrackets {
-			ch.addCompletionItemFieldWithCustomText(param.GetName(), " >>")
+			ch.addCompletionItemFieldWithCustomText(param.GetName(), "", " >>", "", "")
 		} else {
 			ch.addCompletionItem(param.GetName())
 		}

@@ -1,11 +1,11 @@
 package hover
 
 import (
-	yamlparser "github.com/circleci/circleci-yaml-language-server/pkg/parser"
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
-func HoverInOrbs(doc yamlparser.YamlDocument, path []string, cache utils.Cache) string {
+func HoverInOrbs(doc yamlparser.YamlDocument, path []string, cache *utils.Cache) string {
 	if len(path) == 0 {
 		return commands
 	}
@@ -18,11 +18,13 @@ func HoverInOrbs(doc yamlparser.YamlDocument, path []string, cache utils.Cache) 
 	return ""
 }
 
-func orbDefinition(doc yamlparser.YamlDocument, orbName string, cache utils.Cache) string {
+func orbDefinition(doc yamlparser.YamlDocument, orbName string, cache *utils.Cache) string {
 	orbInDoc := doc.Orbs[orbName]
-	orb := cache.OrbCache.GetOrb(orbInDoc.Url.GetOrbID())
-	if orb != nil {
-		return orb.Description
+	orb, err := doc.GetOrbInfoFromName(orbInDoc.Name, cache)
+
+	if err != nil || orb == nil {
+		return ""
 	}
-	return ""
+
+	return orb.Description
 }

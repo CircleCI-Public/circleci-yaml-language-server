@@ -2,12 +2,11 @@ package parser
 
 import (
 	"fmt"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
 
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	sitter "github.com/smacker/go-tree-sitter"
 	"github.com/xeipuuv/gojsonschema"
 	"go.lsp.dev/protocol"
@@ -17,32 +16,27 @@ import (
 
 type JSONSchemaValidator struct {
 	schema *gojsonschema.Schema
+	Doc    YamlDocument
 }
 
-func (validator *JSONSchemaValidator) ParseJsonSchema() (*gojsonschema.Schema, error) {
-	schemaLocation := os.Getenv("SCHEMA_LOCATION")
-
-	if schemaLocation == "" {
-		return nil, fmt.Errorf("could not load JSON Schema: SCHEMA_LOCATION not set")
-	}
-
+func (validator *JSONSchemaValidator) LoadJsonSchema(schemaLocation string) error {
 	URI := uri.New(schemaLocation)
 	loader := gojsonschema.NewReferenceLoader(string(URI))
 
 	schema, err := gojsonschema.NewSchema(loader)
 	if err != nil {
-		return nil, err
+		fmt.Printf("Error while loading JSON Schema \"%s\"\n", schemaLocation)
+		fmt.Println(err.Error())
+		return err
 	}
 
 	validator.schema = schema
 
-	return schema, err
+	return nil
 }
 
-func handleYAMLErrors(err string, content []byte, node *sitter.Node) ([]protocol.Diagnostic, error) {
+func handleYAMLErrors(err string, content []byte, rootNode *sitter.Node) ([]protocol.Diagnostic, error) {
 	diagnostics := []protocol.Diagnostic{}
-
-	reWithLine, _ := regexp.Compile(`(?s)^yaml:\s(?P<Error>[\w\d\s]+):\n(?P<Lines>\s+line \d+:.+\n?)+`)
 
 	if strings.Contains(err, "yaml: unknown anchor") {
 		anchorName := strings.Split(err, "'")[1]
@@ -58,19 +52,49 @@ func handleYAMLErrors(err string, content []byte, node *sitter.Node) ([]protocol
 				Start: utils.IndexToPos(match[0], content),
 				End:   utils.IndexToPos(match[1], content),
 			}
-
-			diagnostics = append(diagnostics, utils.CreateErrorDiagnosticFromRange(rng, err))
+			node, _, _ := utils.NodeAtPos(rootNode, rng.Start)
+			if node.Type() == "alias_name" {
+				diagnostics = append(diagnostics, utils.CreateErrorDiagnosticFromRange(rng, err))
+			}
 		}
 		return diagnostics, nil
 	}
 
-	if !reWithLine.MatchString(err) {
-		return []protocol.Diagnostic{utils.CreateErrorDiagnosticFromNode(node, err)}, nil
+	if strings.Contains(err, "yaml: map merge requires map or sequence of maps as the value") {
+		return []protocol.Diagnostic{}, nil
+	}
+
+	reError, _ := regexp.Compile(`(?s)^yaml: line (?P<Lines>\d+):\s(?P<Error>.+)`)
+
+	if reError.MatchString(err) {
+		info := reError.FindAllStringSubmatch(err, -1)[0]
+		lineError := info[2]
+		lineNumber, error := strconv.Atoi(info[1])
+
+		// If, for some reason, the Atoi fail, we return the original error
+		if error != nil {
+			return []protocol.Diagnostic{utils.CreateErrorDiagnosticFromNode(rootNode, err)}, nil
+		}
+
+		lineRange := utils.AllLineContentRange([]int{lineNumber}, content)[0]
+
+		diagnostic := utils.CreateErrorDiagnosticFromRange(
+			lineRange,
+			utils.ToDiagnosticMessage(lineError),
+		)
+
+		return []protocol.Diagnostic{diagnostic}, nil
+	}
+
+	reMultilineError, _ := regexp.Compile(`(?s)^yaml:\s(?P<Error>[\w\d\s]+):\n(?P<Lines>\s+line \d+:.+\n?)+`)
+
+	if !reMultilineError.MatchString(err) {
+		return []protocol.Diagnostic{utils.CreateErrorDiagnosticFromNode(rootNode, err)}, nil
 	}
 
 	// For errors providing line numbers, we add a diagnostic on the
 	// specified lines
-	mes := reWithLine.FindAllStringSubmatch(err, -1)[0]
+	mes := reMultilineError.FindAllStringSubmatch(err, -1)[0]
 	lines := strings.Split(mes[2], "\n")
 
 	re := regexp.MustCompile(`^\s+line\s+(\d+):\s(.+)$`)
@@ -86,7 +110,7 @@ func handleYAMLErrors(err string, content []byte, node *sitter.Node) ([]protocol
 
 		// If, for some reason, the Atoi fail, we return the original error
 		if error != nil {
-			return []protocol.Diagnostic{utils.CreateErrorDiagnosticFromNode(node, err)}, nil
+			return []protocol.Diagnostic{utils.CreateErrorDiagnosticFromNode(rootNode, err)}, nil
 		}
 
 		lineIndexes = append(lineIndexes, lineNumber-1)
@@ -97,6 +121,10 @@ func handleYAMLErrors(err string, content []byte, node *sitter.Node) ([]protocol
 
 	for i, lineContentRange := range lineContentRanges {
 		lineError := lineErrors[i]
+
+		if duplicateMergeKeyErrorRegex.MatchString(lineError) {
+			continue
+		}
 
 		diagnostic := utils.CreateErrorDiagnosticFromRange(
 			lineContentRange,
@@ -120,42 +148,106 @@ func (validator *JSONSchemaValidator) ValidateWithJSONSchema(rootNode *sitter.No
 		// Can only happen if anchor or alias are not properly defined and/or referenced
 		yamlError, _ := handleYAMLErrors(err.Error(), content, rootNode)
 		diagnostics = append(diagnostics, yamlError...)
-
-		return diagnostics
 	}
 
-	// This is needed so that the yaml library resolves anchor and aliases for us
-	tmpYML, err := yaml.Marshal(file)
+	yamlLoader := gojsonschema.NewGoLoader(file)
+
+	result, err := validator.schema.Validate(yamlLoader)
+
 	if err != nil {
 		// Should never happen
 		return []protocol.Diagnostic{utils.CreateErrorDiagnosticFromNode(rootNode, err.Error())}
 	}
-	yaml.Unmarshal(tmpYML, &file)
 
-	yamlloader := gojsonschema.NewGoLoader(file)
-	result, err := validator.schema.Validate(yamlloader)
-	if err != nil {
-		// Should never happen
-		return []protocol.Diagnostic{utils.CreateErrorDiagnosticFromNode(rootNode, err.Error())}
-	}
+	jsonSchemaDiags := []protocol.Diagnostic{}
 
 	if !result.Valid() {
 		for _, resErr := range result.Errors() {
 			fields := strings.Split(resErr.Field(), ".")
 			if len(fields) == 1 && fields[0] == "(root)" {
 				diagnostic := utils.CreateErrorDiagnosticFromNode(rootNode, resErr.Description())
-				diagnostics = append(diagnostics, diagnostic)
+				jsonSchemaDiags = append(jsonSchemaDiags, diagnostic)
 			} else {
 				node, err := FindDeepestNode(rootNode, content, fields)
 				if err != nil {
 					continue
 				}
 
+				if validator.doesNodeUseParameter(node) {
+					continue
+				}
+
 				diagnostic := utils.CreateErrorDiagnosticFromNode(node, resErr.Description())
-				diagnostics = append(diagnostics, diagnostic)
+				jsonSchemaDiags = append(jsonSchemaDiags, diagnostic)
 			}
 		}
 	}
 
+	jsonSchemaDiags = removeUselessMustValidateError(jsonSchemaDiags)
+	diagnostics = append(diagnostics, jsonSchemaDiags...)
+
 	return diagnostics
 }
+
+// Keys that can have only a parameter inside it,
+// and therefore the JSON Schema validation is not necessary for these keys.
+//
+// Example:
+//
+//	`when: << parameters.my_param >>`
+//
+//	But in the JSON Schema, the `when` key is defined as an object, so the validation
+//	will fail if we don't ignore it.
+var PARAMS_KEYS = []string{
+	"when",
+}
+
+func (validator *JSONSchemaValidator) doesNodeUseParameter(node *sitter.Node) bool {
+	if node.Type() == "block_mapping_pair" {
+		keyNode, valueNode := validator.Doc.GetKeyValueNodes(node)
+		if keyNode == nil || valueNode == nil {
+			return false
+		}
+		key := validator.Doc.GetNodeText(keyNode)
+		value := validator.Doc.GetNodeText(valueNode)
+
+		if isInArray := utils.FindInArray(PARAMS_KEYS, key); utils.CheckIfOnlyParamUsed(value) && isInArray > 0 {
+			return true
+		}
+	}
+
+	return false
+}
+
+func removeUselessMustValidateError(diags []protocol.Diagnostic) []protocol.Diagnostic {
+	resDiags := []protocol.Diagnostic{}
+	for i, diag := range diags {
+		if diag.Message == "Must validate one and only one schema (oneOf)" {
+			if hasAnotherDiagInsideRange(diags, diag.Range) {
+				continue
+			}
+			resDiags = append(resDiags, utils.CreateDiagnosticFromRange(
+				diag.Range,
+				diag.Severity,
+				"Invalid structure",
+				[]protocol.CodeAction{},
+			))
+		} else {
+			resDiags = append(resDiags, diags[i])
+		}
+	}
+
+	return resDiags
+}
+
+func hasAnotherDiagInsideRange(diags []protocol.Diagnostic, rangeToCheck protocol.Range) bool {
+	for _, diag := range diags {
+		if utils.PosInRange(rangeToCheck, diag.Range.Start) {
+			return true
+		}
+	}
+
+	return false
+}
+
+var duplicateMergeKeyErrorRegex = regexp.MustCompile(`mapping key "<<" already defined at line \d+\n?`)

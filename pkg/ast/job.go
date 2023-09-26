@@ -35,6 +35,16 @@ type Job struct {
 	Docker      DockerExecutor
 	DockerRange protocol.Range
 
+	Environment      map[string]string
+	EnvironmentRange protocol.Range
+
+	Contexts     *[]string
+	Machine      MachineExecutor
+	MachineRange protocol.Range
+
+	MacOS      MacOSExecutor
+	MacOSRange protocol.Range
+
 	CompletionItem *[]protocol.CompletionItem
 }
 

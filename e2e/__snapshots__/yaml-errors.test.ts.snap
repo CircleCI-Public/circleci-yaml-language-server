@@ -1,0 +1,72 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`YAML Errors parameter key not defined 1`] = `
+DiagnosticList {
+  "list": [
+    {
+      "data": [],
+      "message": "Parameter version is not defined",
+      "range": {
+        "end": {
+          "character": 44,
+          "line": 9,
+        },
+        "start": {
+          "character": 20,
+          "line": 9,
+        },
+      },
+      "severity": 1,
+      "source": "cci-language-server",
+    },
+    {
+      "data": [],
+      "message": "Empty assignation",
+      "range": {
+        "end": {
+          "character": 18,
+          "line": 5,
+        },
+        "start": {
+          "character": 2,
+          "line": 3,
+        },
+      },
+      "severity": 2,
+      "source": "cci-language-server",
+    },
+    {
+      "data": [],
+      "message": "Did not find expected key",
+      "range": {
+        "end": {
+          "character": 5,
+          "line": 3,
+        },
+        "start": {
+          "character": 2,
+          "line": 3,
+        },
+      },
+      "severity": 1,
+      "source": "cci-language-server",
+    },
+    {
+      "data": [],
+      "message": "Invalid type. Expected: object, given: null",
+      "range": {
+        "end": {
+          "character": 0,
+          "line": 20,
+        },
+        "start": {
+          "character": 0,
+          "line": 0,
+        },
+      },
+      "severity": 1,
+      "source": "cci-language-server",
+    },
+  ],
+}
+`;

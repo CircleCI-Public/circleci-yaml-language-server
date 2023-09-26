@@ -13,7 +13,7 @@ resources:
 
 ## Requirements
 
--   Go 1.18+
+-   Go 1.19+
 -   [Task](https://taskfile.dev/)
 -   [detect-secrets](https://github.com/Yelp/detect-secrets)
 
@@ -40,7 +40,13 @@ order to use Go modules. We recommend cloning the repo outside of `$GOPATH` as
 you would any other source code project, for example
 `~/code/circleci-yaml-language-server`.
 
-### 2. Build the binary
+### 2. Install dependencies
+
+```
+$ task init
+```
+
+### 3. Build the binary
 
 ```
 $ task build
@@ -48,7 +54,7 @@ $ task build
 
 Note: `bin/start_server` is the entry point for the language server.
 
-### 3. Run tests
+### 4. Run tests
 
 ```
 $ task test
@@ -56,7 +62,7 @@ $ task test
 
 ## Managing Dependencies
 
-We use Go 1.18 Modules for managing our dependencies.
+We use Go 1.19 Modules for managing our dependencies.
 
 You can read more about it on the wiki:
 https://github.com/golang/go/wiki/Modules
@@ -97,3 +103,98 @@ For example, I've the following in my `.emacs.d/init.el`:
 (add-hook 'before-save-hook 'gofmt-before-save)
 (require 'go-rename)
 ```
+
+## Testing within VSCode
+
+This repository embed a VSCode extension (located at `editors/vscode`) so you
+can test your code within the editor.
+
+1. In order to run the extension, you must first prepare installation. This
+   command will install the necessary node packages and build the extension:
+
+```
+task prepare:vscode
+```
+
+2. You need to disable the CircleCI marketplace extension before testing in
+   order to avoid conflicts between the two extensions (the local one and the
+   marketplace one). To do so, please go to the `Extensions` tab, click on the
+   CircleCI extension and click on `Disable`
+
+3. Next, open a VSCode instance at the root of the project, open the
+   `Run and Debug` tab and run it via the `Run Extension` on the dropdown menu
+   at the top of the tab.
+
+## Running End-2-End tests
+
+End-to-end tests are tests performed on a running LSP server.
+Tests are written in typescript (using Jest) and located in the `e2e` folder.
+
+### Prepare your environment
+You can run E2E tests, you will need NodeJS (16+) installed in your environment.
+
+Prepare the tests with the command:
+
+```
+task prepare:test:e2e
+```
+
+This command will install all NodeJS dependencies needed for the tests (see `e2e/package.json`).
+
+### Run tests
+
+
+(Re)-build the server binary using the command:
+```
+task build
+```
+
+You can now run the test at any time using the command:
+
+```
+task test:e2e
+```
+
+This will:
+* start a LSP server on port 10001 (update `PORT` env variable to change this)
+* run all tests in `e2e/src` folders
+* close the LSP server
+
+If you want your tests to reach a already running server, use the following command:
+```
+task test:e2e:standalone
+```
+
+You may have to set the `PORT`.
+
+### Debug in VSCode
+It is possible to easily debug tests in VSCode.
+
+#### Scenario 1: debug tests
+
+You can simply debug your tests by running the configuration "E2E tests" in the "run and debug" menu:
+The debugger will stop on any breakpoints you will place in the `*.ts` file in the `e2e/` folder.
+
+#### Scenario 2: debug LSP code
+
+Run the two following configuration:
+* `Start server`: this will start a LSP server on port 10001.
+* `E2E tests (standalone)`: this will run the tests without spawning the LSP server. Tests will try to reach the LSP server on port 10001.
+
+By running those two configuration simultaneously, you will be able to add breakpoints on both Go and `e2e/*.ts` files.
+
+### Update snapshots
+
+To update snapshots, run:
+
+```
+task test:e2e:update
+```
+
+Snapshots are located at `e2e/src/snapshots`.
+
+### Related environment variables
+* `SPAWN_LSP_SERVER`: (default: `yes`) If truthy, then the LSP server will be spawn for tests and stopped at the end. Accepted value: `true`, `false`, `on`, `off`, `yes`, `no`, `1`, `0`.
+* `PORT` (default: 10001) Port where to reach (and spawn if requested) the LSP server
+* `LSP_SERVER_HOST`: Default: `localhost`. Host address of the LSP server
+* `RPC_SERVER_BIN`: Default: `bin/start_server`. Name of the binary to use if the LSP server spawn has been requested.

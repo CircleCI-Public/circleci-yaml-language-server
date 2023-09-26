@@ -3,12 +3,12 @@ package main
 import (
 	"fmt"
 
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/dockerhub"
 )
 
 func main() {
 
-	results := utils.SearchDockerHUB("cimg/")
+	results := dockerhub.Search("cimg/")
 	if !results.HasNext() {
 		fmt.Println("No images found")
 		panic("No images found")
@@ -18,6 +18,6 @@ func main() {
 		fmt.Println(results.Next())
 	}
 
-	fmt.Println(utils.DoesDockerImageExist("cimg", "node1", "18.9.0"))
+	fmt.Println(dockerhub.NewAPI().DoesImageExist("cimg", "node1"))
 
 }

@@ -4,12 +4,20 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/circleci/circleci-yaml-language-server/pkg/ast"
-	"github.com/circleci/circleci-yaml-language-server/pkg/parser"
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	sitter "github.com/smacker/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
+
+func (val Validate) ValidatePipelineParameters() {
+	if len(val.Doc.PipelineParameters) == 0 && !utils.IsDefaultRange(val.Doc.PipelineParametersRange) {
+		val.addDiagnostic(
+			utils.CreateEmptyAssignationWarning(val.Doc.PipelineParametersRange),
+		)
+	}
+}
 
 // Check if the parameter is defined if it's not optional,
 // otherwise add a diagnostic error if the needed parameter is not assigned
@@ -46,6 +54,7 @@ func (val Validate) checkParamSimpleType(param ast.ParameterValue, stepName stri
 	case "enum":
 		if param.Type != "string" {
 			val.createParameterError(param, stepName, "string")
+			return
 		}
 
 		value := param.Value.(string)
@@ -60,15 +69,33 @@ func (val Validate) checkParamSimpleType(param ast.ParameterValue, stepName stri
 		val.checkExecutorParamValue(param)
 
 	case "steps":
-		for _, value := range param.Value.([]ast.ParameterValue) {
-			if value.Type != "steps" {
+		values, ok := param.Value.([]ast.ParameterValue)
+		if !ok {
+			val.createParameterError(param, stepName, definedParam.GetType())
+			return
+		}
+		for _, value := range values {
+			if value.Type == "string" {
+				commandName := value.Value.(string)
+				_, commandExists := val.Doc.Commands[commandName]
+
+				if !commandExists {
+					val.addDiagnostic(
+						utils.CreateErrorDiagnosticFromRange(
+							value.Range,
+							fmt.Sprintf("Cannot find a definition for command named %s", commandName),
+						),
+					)
+				}
+			} else if value.Type != "steps" {
 				val.createParameterError(value, stepName, definedParam.GetType())
 			}
 		}
 
-	case "env_variable":
+	case "env_var_name":
 		if param.Type != "string" && param.Type != "integer" {
 			val.createParameterError(param, stepName, definedParam.GetType())
+			return
 		}
 		// TODO: check if POSIX_REGEX is valid
 	}
@@ -80,16 +107,13 @@ func (val Validate) checkParamUsedWithParam(param ast.ParameterValue, stepName s
 	var paramUsedAsValue ast.Parameter
 	var ok bool
 	if isPipelineParam {
-		paramUsedAsValue, ok = val.Doc.PipelinesParameters[paramName]
+		paramUsedAsValue, ok = val.Doc.PipelineParameters[paramName]
 	} else {
 		paramUsedAsValue, ok = parameters[paramName]
 	}
 
 	if !ok {
-		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
-			param.ValueRange,
-			fmt.Sprintf("Parameter %s is not defined", paramName),
-		))
+		// check already done before in `CheckIfParamsExist`
 		return
 	}
 
@@ -110,16 +134,19 @@ func (val Validate) CheckIfParamsExist() {
 			}
 
 			for _, param := range params {
-				ok := true
 				isPipeline := strings.HasPrefix(param.FullName, "pipeline")
 
+				var parameters map[string]ast.Parameter
+
 				if isPipeline {
-					_, ok = val.Doc.PipelinesParameters[param.Name]
+					parameters = val.Doc.PipelineParameters
 				} else {
-					_, ok = val.Doc.GetParamsWithPosition(parser.NodeToRange(node).Start)[param.Name]
+					parameters = val.Doc.GetParamsWithPosition(val.Doc.NodeToRange(node).Start)
 				}
 
-				if ok {
+				_, parameterFound := parameters[param.Name]
+
+				if parameterFound {
 					continue
 				}
 
@@ -162,14 +189,14 @@ func (val Validate) CheckIfParamsExist() {
 	parser.ExecQuery(val.Doc.RootNode, "(block_scalar) @string", checkOnNode)
 }
 
-func (val Validate) validateParametersValue(paramsValue map[string]ast.ParameterValue, calledEntity string, entityRange protocol.Range, definedParams map[string]ast.Parameter, usableParams map[string]ast.Parameter) {
-	for _, definedParam := range definedParams {
+func (val Validate) validateParametersValue(paramsValue map[string]ast.ParameterValue, calledEntity string, entityRange protocol.Range, calledEntityDefinedParams map[string]ast.Parameter, usableParams map[string]ast.Parameter) {
+	for _, calledEntityDefinedParam := range calledEntityDefinedParams {
 		// TODO: find a better place to do this
-		if definedParam.GetType() == "enum" {
-			val.checkEnumTypeDefinition(definedParam.(ast.EnumParameter))
+		if calledEntityDefinedParam.GetType() == "enum" {
+			val.checkEnumTypeDefinition(calledEntityDefinedParam.(ast.EnumParameter))
 		}
 
-		assigned := val.checkIfParamAssigned(paramsValue, definedParam, calledEntity, entityRange)
+		assigned := val.checkIfParamAssigned(paramsValue, calledEntityDefinedParam, calledEntity, entityRange)
 
 		// If the parameter is not assigned but is optional,
 		// we don't need to check the parameter
@@ -177,16 +204,16 @@ func (val Validate) validateParametersValue(paramsValue map[string]ast.Parameter
 			continue
 		}
 
-		param := paramsValue[definedParam.GetName()]
+		param := paramsValue[calledEntityDefinedParam.GetName()]
 		if param.Type == "string" && utils.CheckIfOnlyParamUsed(param.Value.(string)) {
-			val.checkParamUsedWithParam(param, calledEntity, definedParam, usableParams)
+			val.checkParamUsedWithParam(param, calledEntity, calledEntityDefinedParam, usableParams)
 		} else {
-			val.checkParamSimpleType(param, calledEntity, definedParam)
+			val.checkParamSimpleType(param, calledEntity, calledEntityDefinedParam)
 		}
 	}
 
 	for _, param := range paramsValue {
-		if _, ok := definedParams[param.Name]; !ok {
+		if _, ok := calledEntityDefinedParams[param.Name]; !ok {
 			val.addDiagnostic(
 				utils.CreateErrorDiagnosticFromRange(
 					param.Range,
@@ -220,15 +247,5 @@ func (val Validate) checkExecutorParamValue(param ast.ParameterValue) {
 		executorName = param.Value.(string)
 	}
 
-	if executorName != "" && !val.Doc.DoesExecutorExist(executorName) {
-		val.addDiagnostic(
-			utils.CreateErrorDiagnosticFromRange(
-				executorNameRange,
-				fmt.Sprintf(
-					"Executor `%s` does not exist",
-					executorName,
-				),
-			),
-		)
-	}
+	val.validateExecutorReference(executorName, executorNameRange)
 }

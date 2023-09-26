@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"strings"
 
-	yamlparser "github.com/circleci/circleci-yaml-language-server/pkg/parser"
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
-func HoverInJobs(doc yamlparser.YamlDocument, path []string, cache utils.Cache) string {
+func HoverInJobs(doc yamlparser.YamlDocument, path []string, cache *utils.Cache) string {
 	if len(path) == 0 {
 		return "Jobs are collections of steps. All of the steps in the job are executed in a single unit, either within a fresh container or VM."
 	}
@@ -21,7 +21,7 @@ func HoverInJobs(doc yamlparser.YamlDocument, path []string, cache utils.Cache) 
 	return hoverSingleJob(doc, path[1:], cache)
 }
 
-func hoverSingleJob(doc yamlparser.YamlDocument, path []string, cache utils.Cache) string {
+func hoverSingleJob(doc yamlparser.YamlDocument, path []string, cache *utils.Cache) string {
 	if len(path) == 0 {
 		return ""
 	}
@@ -37,7 +37,7 @@ func hoverSingleJob(doc yamlparser.YamlDocument, path []string, cache utils.Cach
 
 }
 
-func hoverSteps(doc yamlparser.YamlDocument, path []string, cache utils.Cache) string {
+func hoverSteps(doc yamlparser.YamlDocument, path []string, cache *utils.Cache) string {
 	if len(path) == 0 {
 		return "Steps are the individual units of work in a job. Each step is a command, or a job."
 	}
@@ -54,10 +54,10 @@ func hoverSteps(doc yamlparser.YamlDocument, path []string, cache utils.Cache) s
 	return hoverOrb(doc, stepName, cache)
 }
 
-func hoverOrb(doc yamlparser.YamlDocument, stepName string, cache utils.Cache) string {
+func hoverOrb(doc yamlparser.YamlDocument, stepName string, cache *utils.Cache) string {
 	splittedStep := strings.Split(stepName, "/")
 	orbInDoc := doc.Orbs[splittedStep[0]]
-	orb := cache.OrbCache.GetOrb(orbInDoc.Url.GetOrbID())
+	orb, _ := doc.GetOrFetchOrbInfo(orbInDoc, cache)
 	if orb == nil {
 		return ""
 	}

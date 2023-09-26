@@ -1,17 +1,29 @@
 version: 2.1
 
+parameters:
+  dev-orb-version:
+    type: string
+    default: "dev:alpha"
+
 orbs:
-  compass: atlassian-labs/compass@0.1.2
-  other: atlassian-labs/compass@0.1.2
+  compass: atlassian-labs/compass@0.1.3
+  shellcheck: circleci/shellcheck
+  other: atlassian-labs/compass@0.1.3
+  ccc: cci-dev/ccc@<<pipeline.parameters.dev-orb-version>>
+
+executors:
+  go:
+    docker:
+      - image: node:latest
 
 jobs:
-  build:
+  build: &buildJob
     parameters:
       myparam:
         description: "A test parameter"
         type: string
     docker:
-      - image: cimg/node:17.2.0
+      - image: cimg/node:20.0.0
         auth:
           username: mydockerhub-user
           password: $DOCKERHUB_PASSWORD
@@ -19,7 +31,62 @@ jobs:
       - checkout
       - run: echo "hello world"
       - run: <<parameters.myparam>>
-    
+  somejob:
+    <<: *buildJob
+    executor: &executorRef go
+    steps:
+      - checkout
+      - run: <<parameters.myparam>>
+  someanotherjob:
+    <<: *buildJob
+    executor: { name: go }
+    steps:
+      - checkout
+      - run: <<parameters.myparam>>
+
+  anotherjob:
+    executor:
+      name: &execRefBis go
+    environment:
+      SOME_ENV: *executorRef
+      SOME_ENV2: *execRefBis
+    steps:
+      - checkout
+
+  morejob:
+    parameters:
+      go_version:
+        description: the version of Go
+        type: string
+    docker:
+      - image: cimg/go:<<parameters.go_version>>
+    steps:
+      - checkout
+
+  jobWithUnaccessibleOrb:
+    executor: ccc/random-executor
+    steps:
+      - ccc/random-step
+
+  dummyJobWithStepParam:
+    executor:
+      name: &execRefBis go
+    parameters:
+      stepParam:
+        type: steps
+        default: []
+    steps:
+      - steps: << parameters.stepParam >>
+      - shellcheck/check:
+          dir: ./.circleci/scripts/
+
+  jobWithAWS_OIDC:
+    docker:
+      - image: node:latest
+        aws_auth:
+          oidc_role_arn: role
+    steps:
+      - run: echo "Hello"
 
 workflows:
   test-build:
@@ -42,3 +109,19 @@ workflows:
                 token_name: atoken
                 environment_type: something
                 environment: another thing
+
+      - dummyJobWithStepParam
+
+      - somejob:
+          myparam: some-value
+      - anotherjob
+      - someanotherjob:
+          myparam: some-value
+      - morejob:
+          go_version: '1.20'
+      - shellcheck/check:
+          name: shellcheck
+          dir: ./.circleci/scripts/
+      - jobWithAWS_OIDC
+      - ccc/random-job
+      - jobWithUnaccessibleOrb

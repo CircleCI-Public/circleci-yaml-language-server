@@ -1,0 +1,21 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Completion command Complete list of jobs 1`] = `
+{
+  "isIncomplete": true,
+  "items": [
+    {
+      "insertText": "trigger: 
+	",
+      "label": "trigger",
+    },
+  ],
+}
+`;
+
+exports[`Completion command Completion command 1`] = `
+{
+  "isIncomplete": true,
+  "items": [],
+}
+`;

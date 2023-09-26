@@ -1,6 +1,6 @@
 package utils
 
-import "github.com/circleci/circleci-yaml-language-server/pkg/ast"
+import "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 
 func HasStoreTestResultStep(step []ast.Step) bool {
 	for _, s := range step {

@@ -140,20 +140,36 @@
 															]
 														},
 														"aws_auth": {
-															"type": "object",
-															"properties": {
-																"aws_access_key_id": {
-																	"type": "string"
+															"oneOf": [
+																{
+																	"type": "object",
+																	"properties": {
+																		"aws_access_key_id": {
+																			"type": "string"
+																		},
+																		"aws_secret_access_key": {
+																			"type": "string"
+																		}
+																	},
+																	"required": [
+																		"aws_access_key_id",
+																		"aws_secret_access_key"
+																	],
+																	"additionalProperties": false
 																},
-																"aws_secret_access_key": {
-																	"type": "string"
+																{
+																	"type": "object",
+																	"properties": {
+																		"oidc_role_arn": {
+																			"type": "string"
+																		}
+																	},
+																	"required": [
+																		"oidc_role_arn"
+																	],
+																	"additionalProperties": false
 																}
-															},
-															"required": [
-																"aws_access_key_id",
-																"aws_secret_access_key"
-															],
-															"additionalProperties": false
+															]
 														},
 														"auth": {
 															"type": "object",
@@ -602,20 +618,36 @@
 															]
 														},
 														"aws_auth": {
-															"type": "object",
-															"properties": {
-																"aws_access_key_id": {
-																	"type": "string"
+															"oneOf": [
+																{
+																	"type": "object",
+																	"properties": {
+																		"aws_access_key_id": {
+																			"type": "string"
+																		},
+																		"aws_secret_access_key": {
+																			"type": "string"
+																		}
+																	},
+																	"required": [
+																		"aws_access_key_id",
+																		"aws_secret_access_key"
+																	],
+																	"additionalProperties": false
 																},
-																"aws_secret_access_key": {
-																	"type": "string"
+																{
+																	"type": "object",
+																	"properties": {
+																		"oidc_role_arn": {
+																			"type": "string"
+																		}
+																	},
+																	"required": [
+																		"oidc_role_arn"
+																	],
+																	"additionalProperties": false
 																}
-															},
-															"required": [
-																"aws_access_key_id",
-																"aws_secret_access_key"
-															],
-															"additionalProperties": false
+															]
 														},
 														"auth": {
 															"type": "object",
@@ -1024,7 +1056,7 @@
 	"type": "object",
 	"properties": {
 		"executors": {
-			"type": "object",
+			"type": ["object", "null"],
 			"propertyNames": {
 				"pattern": "^[a-z][a-z\\d_-]*$"
 			},
@@ -1124,20 +1156,36 @@
 											]
 										},
 										"aws_auth": {
-											"type": "object",
-											"properties": {
-												"aws_access_key_id": {
-													"type": "string"
+											"oneOf": [
+												{
+													"type": "object",
+													"properties": {
+														"aws_access_key_id": {
+															"type": "string"
+														},
+														"aws_secret_access_key": {
+															"type": "string"
+														}
+													},
+													"required": [
+														"aws_access_key_id",
+														"aws_secret_access_key"
+													],
+													"additionalProperties": false
 												},
-												"aws_secret_access_key": {
-													"type": "string"
+												{
+													"type": "object",
+													"properties": {
+														"oidc_role_arn": {
+															"type": "string"
+														}
+													},
+													"required": [
+														"oidc_role_arn"
+													],
+													"additionalProperties": false
 												}
-											},
-											"required": [
-												"aws_access_key_id",
-												"aws_secret_access_key"
-											],
-											"additionalProperties": false
+											]
 										},
 										"auth": {
 											"type": "object",
@@ -1470,7 +1518,7 @@
 								{
 									"type": "object",
 									"maxProperties": 1,
-									"minProperties": 1,
+									"minProperties": 0,
 									"additionalProperties": {
 										"type": "object",
 										"properties": {
@@ -1748,20 +1796,36 @@
 											]
 										},
 										"aws_auth": {
-											"type": "object",
-											"properties": {
-												"aws_access_key_id": {
-													"type": "string"
+											"oneOf": [
+												{
+													"type": "object",
+													"properties": {
+														"aws_access_key_id": {
+															"type": "string"
+														},
+														"aws_secret_access_key": {
+															"type": "string"
+														}
+													},
+													"required": [
+														"aws_access_key_id",
+														"aws_secret_access_key"
+													],
+													"additionalProperties": false
 												},
-												"aws_secret_access_key": {
-													"type": "string"
+												{
+													"type": "object",
+													"properties": {
+														"oidc_role_arn": {
+															"type": "string"
+														}
+													},
+													"required": [
+														"oidc_role_arn"
+													],
+													"additionalProperties": false
 												}
-											},
-											"required": [
-												"aws_access_key_id",
-												"aws_secret_access_key"
-											],
-											"additionalProperties": false
+											]
 										},
 										"auth": {
 											"type": "object",
@@ -2018,7 +2082,7 @@
 			}
 		},
 		"orbs": {
-			"type": "object",
+			"type": ["object", "null"],
 			"additionalProperties": {
 				"oneOf": [
 					{
@@ -2157,20 +2221,36 @@
 																]
 															},
 															"aws_auth": {
-																"type": "object",
-																"properties": {
-																	"aws_access_key_id": {
-																		"type": "string"
+																"oneOf": [
+																	{
+																		"type": "object",
+																		"properties": {
+																			"aws_access_key_id": {
+																				"type": "string"
+																			},
+																			"aws_secret_access_key": {
+																				"type": "string"
+																			}
+																		},
+																		"required": [
+																			"aws_access_key_id",
+																			"aws_secret_access_key"
+																		],
+																		"additionalProperties": false
 																	},
-																	"aws_secret_access_key": {
-																		"type": "string"
+																	{
+																		"type": "object",
+																		"properties": {
+																			"oidc_role_arn": {
+																				"type": "string"
+																			}
+																		},
+																		"required": [
+																			"oidc_role_arn"
+																		],
+																		"additionalProperties": false
 																	}
-																},
-																"required": [
-																	"aws_access_key_id",
-																	"aws_secret_access_key"
-																],
-																"additionalProperties": false
+																]
 															},
 															"auth": {
 																"type": "object",
@@ -2625,20 +2705,36 @@
 																]
 															},
 															"aws_auth": {
-																"type": "object",
-																"properties": {
-																	"aws_access_key_id": {
-																		"type": "string"
+																"oneOf": [
+																	{
+																		"type": "object",
+																		"properties": {
+																			"aws_access_key_id": {
+																				"type": "string"
+																			},
+																			"aws_secret_access_key": {
+																				"type": "string"
+																			}
+																		},
+																		"required": [
+																			"aws_access_key_id",
+																			"aws_secret_access_key"
+																		],
+																		"additionalProperties": false
 																	},
-																	"aws_secret_access_key": {
-																		"type": "string"
+																	{
+																		"type": "object",
+																		"properties": {
+																			"oidc_role_arn": {
+																				"type": "string"
+																			}
+																		},
+																		"required": [
+																			"oidc_role_arn"
+																		],
+																		"additionalProperties": false
 																	}
-																},
-																"required": [
-																	"aws_access_key_id",
-																	"aws_secret_access_key"
-																],
-																"additionalProperties": false
+																]
 															},
 															"auth": {
 																"type": "object",
@@ -2852,7 +2948,7 @@
 			}
 		},
 		"commands": {
-			"type": "object",
+			"type": ["object", "null"],
 			"propertyNames": {
 				"pattern": "^[a-z][a-z\\d_-]*$"
 			},
@@ -2971,7 +3067,7 @@
 			"enum": ["2.1", 2.1]
 		},
 		"parameters": {
-			"type": "object",
+			"type": ["object", "null"],
 			"additionalProperties": {
 				"type": "object",
 				"properties": {

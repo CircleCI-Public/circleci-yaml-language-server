@@ -1,7 +1,7 @@
 package parser
 
 import (
-	"github.com/circleci/circleci-yaml-language-server/pkg/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	sitter "github.com/smacker/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
@@ -13,7 +13,7 @@ func (doc *YamlDocument) parseCommands(commandsNode *sitter.Node) {
 		return
 	}
 
-	iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
+	doc.iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
 		command := doc.parseSingleCommand(child)
 		if definedCommand, ok := doc.Commands[command.Name]; ok {
 			doc.addDiagnostic(protocol.Diagnostic{
@@ -40,8 +40,8 @@ func (doc *YamlDocument) parseCommands(commandsNode *sitter.Node) {
 
 func (doc *YamlDocument) parseSingleCommand(commandNode *sitter.Node) ast.Command {
 	// commandNode is a block_mapping_pair
-	commandNameNode, blockMappingNode := getKeyValueNodes(commandNode)
-	res := ast.Command{}
+	commandNameNode, blockMappingNode := doc.GetKeyValueNodes(commandNode)
+	res := ast.Command{Contexts: &[]string{}, Parameters: map[string]ast.Parameter{}}
 	if commandNameNode == nil || blockMappingNode == nil {
 		return res
 	}
@@ -51,25 +51,25 @@ func (doc *YamlDocument) parseSingleCommand(commandNode *sitter.Node) ast.Comman
 	if blockMappingNode == nil { //TODO: deal with errors
 		return res
 	}
-	res.Name = commandName
-	res.Range = NodeToRange(commandNode)
-	res.NameRange = NodeToRange(commandNameNode)
+	res.Name = doc.getAttributeName(commandName)
+	res.Range = doc.NodeToRange(commandNode)
+	res.NameRange = doc.NodeToRange(commandNameNode)
 
-	iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
-		keyName := doc.GetNodeText(child.ChildByFieldName("key"))
-		valueNode := child.ChildByFieldName("value")
+	doc.iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
+		keyNode, valueNode := doc.GetKeyValueNodes(child)
+		keyName := doc.GetNodeText(keyNode)
 		if valueNode == nil {
 			return
 		}
 		switch keyName {
 		case "description":
-			res.DescriptionRange = NodeToRange(child)
+			res.DescriptionRange = doc.NodeToRange(child)
 			res.Description = doc.parseDescription(valueNode)
 		case "steps":
-			res.StepsRange = NodeToRange(valueNode)
+			res.StepsRange = doc.NodeToRange(valueNode)
 			res.Steps = doc.parseSteps(valueNode)
 		case "parameters":
-			res.ParametersRange = NodeToRange(valueNode)
+			res.ParametersRange = doc.NodeToRange(valueNode)
 			res.Parameters = doc.parseParameters(valueNode)
 		}
 	})

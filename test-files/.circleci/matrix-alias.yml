@@ -1,0 +1,36 @@
+version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: cimg/node:17.2.0
+    parameters:
+      build-mode:
+        type: string
+        default: "prod"
+    steps:
+      - run: echo "building for << parameters.build-mode >>"
+
+  test:
+    docker:
+      - image: cimg/node:17.2.0
+    steps:
+      - run: echo testing
+
+workflows:
+  build-wf:
+    jobs:
+      - build:
+          matrix:
+            alias: matrix-building
+            parameters:
+              build-mode: ["prod", "staging", "dev"]
+
+      - build: { build-mode: "prod" }
+
+      - test:
+          requires:
+            - matrix-building
+
+
+# VS Code Extension Version: 1.5.1

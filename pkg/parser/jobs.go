@@ -3,7 +3,7 @@ package parser
 import (
 	"strconv"
 
-	"github.com/circleci/circleci-yaml-language-server/pkg/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	sitter "github.com/smacker/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
@@ -15,7 +15,7 @@ func (doc *YamlDocument) parseJobs(jobsNode *sitter.Node) {
 		return
 	}
 
-	iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
+	doc.iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
 		job := doc.parseSingleJob(child)
 		if definedJob, ok := doc.Jobs[job.Name]; ok {
 			doc.addDiagnostic(protocol.Diagnostic{
@@ -39,8 +39,8 @@ func (doc *YamlDocument) parseJobs(jobsNode *sitter.Node) {
 
 func (doc *YamlDocument) parseSingleJob(jobNode *sitter.Node) ast.Job {
 	// jobNode is a block_mapping_pair
-	jobNameNode, valueNode := getKeyValueNodes(jobNode)
-	res := ast.Job{CompletionItem: &[]protocol.CompletionItem{}, Parallelism: -1}
+	jobNameNode, valueNode := doc.GetKeyValueNodes(jobNode)
+	res := ast.Job{CompletionItem: &[]protocol.CompletionItem{}, Parallelism: -1, Contexts: &[]string{}, Parameters: map[string]ast.Parameter{}}
 
 	if jobNameNode == nil || valueNode == nil {
 		return res
@@ -51,16 +51,20 @@ func (doc *YamlDocument) parseSingleJob(jobNode *sitter.Node) ast.Job {
 	if blockMappingNode == nil { //TODO: deal with errors
 		return res
 	}
-	res.Name = jobName
-	res.Range = NodeToRange(jobNode)
-	res.NameRange = NodeToRange(jobNameNode)
+	res.Name = doc.getAttributeName(jobName)
+	res.Range = doc.NodeToRange(jobNode)
+	res.NameRange = doc.NodeToRange(jobNameNode)
 
-	iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
+	machineNode := &sitter.Node{}
+	machineNodeFound := false
+
+	doc.iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
 		if child.Type() == "block_mapping_pair" || child.Type() == "flow_pair" {
-			keyNode, valueNode := getKeyValueNodes(child)
-			if keyNode == nil {
+			keyNode, valueNode := doc.GetKeyValueNodes(child)
+			if keyNode == nil || valueNode == nil {
 				return
 			}
+
 			keyName := doc.GetNodeText(keyNode)
 			switch keyName {
 			case "shell":
@@ -79,31 +83,47 @@ func (doc *YamlDocument) parseSingleJob(jobNode *sitter.Node) ast.Job {
 				}
 
 				res.Parallelism = int(parsedInt)
-				res.ParallelismRange = NodeToRange(child)
+				res.ParallelismRange = doc.NodeToRange(child)
 			case "resource_class":
 				res.ResourceClass = doc.GetNodeText(valueNode)
 
 			case "steps":
-				res.StepsRange = NodeToRange(child)
+				res.StepsRange = doc.NodeToRange(child)
 				res.Steps = doc.parseSteps(valueNode)
 
 			case "executor":
 				res.Executor, res.ExecutorRange, res.ExecutorParameters = doc.parseExecutorRef(valueNode, child)
 
 			case "parameters":
-				res.ParametersRange = NodeToRange(child)
+				res.ParametersRange = doc.NodeToRange(child)
 				res.Parameters = doc.parseParameters(valueNode)
 
 			case "docker":
 				res.Docker = doc.parseSingleExecutorDocker(keyNode, blockMappingNode)
-				res.DockerRange = NodeToRange(child)
+				res.DockerRange = doc.NodeToRange(child)
 
 			case "machine":
-				doc.addedMachineTrueDeprecatedDiag(child)
+				machineNode = child
+				machineNodeFound = true
+
+				res.Machine = doc.parseSingleExecutorMachine(keyNode, blockMappingNode)
+				res.MachineRange = doc.NodeToRange(child)
+
+			case "macos":
+				res.MacOS = doc.parseSingleExecutorMacOS(keyNode, blockMappingNode)
+				res.MacOSRange = doc.NodeToRange(child)
+
+			case "environment":
+				blockMapping := GetChildMapping(valueNode)
+				res.Environment = doc.parseDictionary(blockMapping)
+				res.EnvironmentRange = doc.NodeToRange(child)
 			}
 		}
 	})
 
+	if machineNodeFound {
+		doc.addedMachineTrueDeprecatedDiag(machineNode, res.ResourceClass)
+	}
 	doc.jobCompletionItem(res)
 
 	return res

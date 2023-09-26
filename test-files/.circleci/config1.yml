@@ -1,0 +1,24 @@
+version: 2.1
+
+orbs:
+  macos: circleci/macos@2
+
+jobs:
+  build:
+    docker:
+      - image: cimg/node:17.2.0
+        auth:
+          username: mydockerhub-user
+          password: $DOCKERHUB_PASSWORD
+    steps:
+        - checkout
+        - run: echo "hello world"
+        - macos/switch-ruby:
+            version: "3"
+
+workflows:
+  test-build:
+    jobs:
+      - build
+
+# VS Code Extension Version: 1.1.1

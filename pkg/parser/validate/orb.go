@@ -4,14 +4,23 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/circleci/circleci-yaml-language-server/pkg/ast"
-	"github.com/circleci/circleci-yaml-language-server/pkg/parser"
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/dockerhub"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
 	"golang.org/x/mod/semver"
 )
 
 func (val Validate) ValidateOrbs() {
+	if len(val.Doc.Orbs) == 0 && len(val.Doc.LocalOrbs) == 0 && !utils.IsDefaultRange(val.Doc.OrbsRange) {
+		val.addDiagnostic(
+			utils.CreateEmptyAssignationWarning(val.Doc.OrbsRange),
+		)
+
+		return
+	}
+
 	for _, orb := range val.Doc.Orbs {
 		val.validateSingleOrb(orb)
 	}
@@ -26,31 +35,41 @@ func (val Validate) validateSingleOrb(orb ast.Orb) {
 		return
 	}
 
-	// Checking if the version number is valid
-	if !semver.IsValid("v" + orb.Url.Version) {
+	if !orb.Url.IsLocal && !val.Doc.DoesOrbExist(orb, val.Cache) {
+		message := fmt.Sprintf("Orb %s does not exist or is private.", orb.Url.Name)
+
+		if val.Context.IsCciExtension && val.Context.Api.Token == "" {
+			message += " Authenticate via the VS Code extension to access your private orbs."
+		}
+
 		val.addDiagnostic(
 			utils.CreateErrorDiagnosticFromRange(
 				orb.Range,
-				"Invalid version number",
+				message,
 			),
 		)
 
 		return
 	}
 
-	orbVersion, err := parser.GetOrbInfo(orb.Url.GetOrbID(), val.Cache)
+	orbVersion, err := val.Doc.GetOrFetchOrbInfo(orb, val.Cache)
 
-	if err != nil && strings.HasPrefix(err.Error(), "could not find orb") {
-		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
-			orb.Range,
-			fmt.Sprintf("Cannot find remote orb %s", orb.Url.GetOrbID()),
-		))
-
-		return
+	if err != nil {
+		if strings.HasPrefix(err.Error(), "could not find orb") {
+			val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
+				orb.Range,
+				fmt.Sprintf("Unknown version %s for orb %s", orb.Url.Version, orb.Url.Name),
+			))
+		} else {
+			val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
+				orb.Range,
+				fmt.Sprintf("error while retrieving orb %s", orb.Url.GetOrbID()),
+			))
+		}
 	}
 
 	// Adding diagnostics based on versions
-	if orbVersion.ID == "" {
+	if orbVersion == nil {
 		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
 			orb.Range,
 			"Orb or version not found",
@@ -59,26 +78,70 @@ func (val Validate) validateSingleOrb(orb ast.Orb) {
 		return
 	}
 
-	message, severity := DiagnosticVersion(
-		orbVersion.Version,
-		InfoVersions{
-			LatestVersion:      orbVersion.LatestVersion,
-			LatestMinorVersion: orbVersion.LatestMinorVersion,
-			LatestPatchVersion: orbVersion.LatestPatchVersion,
-		},
-	)
+	// Only check for updates if the orb version
+	// is a valid semver
+	if semver.IsValid("v" + orb.Url.Version) {
+		message, severity := DiagnosticVersion(
+			orbVersion.RemoteInfo.Version,
+			InfoVersions{
+				LatestVersion:      orbVersion.RemoteInfo.LatestVersion,
+				LatestMinorVersion: orbVersion.RemoteInfo.LatestMinorVersion,
+				LatestPatchVersion: orbVersion.RemoteInfo.LatestPatchVersion,
+			},
+		)
 
-	if message == "" {
-		return
+		if message == "" {
+			return
+		}
+
+		val.addDiagnostic(
+			utils.CreateDiagnosticFromRange(
+				orb.Range,
+				severity,
+				message,
+				val.createCodeActions(orb, *orbVersion),
+			),
+		)
+	}
+}
+
+type OrbVersionCodeActionCreator struct {
+	OrbVersion     string
+	CodeActionText string
+}
+
+func (val Validate) createCodeActions(orb ast.Orb, cachedOrb ast.OrbInfo) []protocol.CodeAction {
+	res := []protocol.CodeAction{}
+	versions := []OrbVersionCodeActionCreator{
+		{
+			OrbVersion:     cachedOrb.RemoteInfo.LatestPatchVersion,
+			CodeActionText: "Update to last patch",
+		},
+		{
+			OrbVersion:     cachedOrb.RemoteInfo.LatestMinorVersion,
+			CodeActionText: "Update to last minor",
+		},
+		{
+			OrbVersion:     cachedOrb.RemoteInfo.LatestVersion,
+			CodeActionText: "Update to last version",
+		},
 	}
 
-	val.addDiagnostic(
-		utils.CreateDiagnosticFromRange(
-			orb.Range,
-			severity,
-			message,
-		),
-	)
+	for _, version := range versions {
+		if semver.Compare("v"+orb.Url.Version, "v"+version.OrbVersion) == -1 {
+			res = append(res, utils.CreateCodeActionTextEdit(
+				version.CodeActionText,
+				val.Doc.URI,
+				[]protocol.TextEdit{
+					{
+						Range:   orb.VersionRange,
+						NewText: version.OrbVersion,
+					},
+				}, false))
+		}
+	}
+
+	return res
 }
 
 func (val Validate) checkIfOrbIsUsed(orb ast.Orb) bool {
@@ -89,7 +152,7 @@ func (val Validate) checkIfOrbIsUsed(orb ast.Orb) bool {
 	}
 
 	for _, job := range val.Doc.Jobs {
-		if val.checkIfStepsContainOrb(job.Steps, orb.Name) {
+		if val.checkIfJobUseOrb(job, orb.Name) {
 			return true
 		}
 	}
@@ -120,22 +183,70 @@ func (val Validate) orbIsUnused(orb ast.Orb) {
 }
 
 func (val Validate) validateOrbExecutor(executorName string, executorRange protocol.Range) {
+	if val.Doc.IsFromUnfetchableOrb(executorName) {
+		return
+	}
+
+	orbExecutorExist, err := val.doesOrbExecutorExist(executorName, executorRange)
+	if !orbExecutorExist && err == nil {
+		splittedName := strings.Split(executorName, "/")
+		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
+			executorRange,
+			fmt.Sprintf("Cannot find executor %s in orb %s", splittedName[1], splittedName[0]),
+		))
+	}
+}
+
+func (val Validate) doesOrbExecutorExist(executorName string, executorRange protocol.Range) (bool, error) {
 	splittedName := strings.Split(executorName, "/")
 
-	orb := val.Doc.Orbs[splittedName[0]]
-	remoteOrb, err := parser.GetOrbInfo(orb.Url.GetOrbID(), val.Cache)
+	if len(splittedName) != 2 {
+		// Not an orb
+		return false, nil
+	}
+
+	orb, ok := val.Doc.Orbs[splittedName[0]]
+	if !ok {
+		err := fmt.Errorf("unknown orb referenced: %s", splittedName[0])
+		val.addDiagnostic(utils.CreateWarningDiagnosticFromRange(
+			executorRange,
+			err.Error(),
+		))
+		return false, err
+	}
+
+	remoteOrb, err := parser.GetOrbInfo(orb.Url.GetOrbID(), val.Cache, val.Context)
 	if err != nil {
 		val.addDiagnostic(utils.CreateWarningDiagnosticFromRange(
 			executorRange,
 			fmt.Sprintf("Invalid orb or error trying to fetch it: %+v", err),
 		))
-		return
+		return false, err
 	}
 
-	if _, ok := remoteOrb.Executors[splittedName[1]]; !ok {
-		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
-			executorRange,
-			fmt.Sprintf("Cannot find executor %s in orb %s", splittedName[1], splittedName[0]),
-		))
+	_, ok = remoteOrb.Executors[splittedName[1]]
+	return ok, nil
+}
+
+func (val Validate) ValidateLocalOrbs() {
+	for _, orb := range val.Doc.Orbs {
+		if orb.Url.IsLocal {
+			orbInfo, err := val.Doc.GetOrFetchOrbInfo(orb, val.Cache)
+
+			if err != nil {
+				continue
+			}
+
+			validateStruct := Validate{
+				APIs: ValidateAPIs{
+					DockerHub: dockerhub.NewAPI(),
+				},
+				Doc:         val.Doc.FromOrbParsedAttributesToYamlDocument(orbInfo.OrbParsedAttributes),
+				Diagnostics: val.Diagnostics,
+				Cache:       val.Cache,
+				Context:     val.Context,
+			}
+			validateStruct.Validate(true)
+		}
 	}
 }

@@ -61,7 +61,9 @@ type Run struct {
 	WorkingDirectory string
 	NoOutputTimeout  string
 	When             string
+	WhenRange        protocol.Range
 	Environment      map[string]string
+	IsDeployStep     bool
 }
 
 func (step Run) GetRange() protocol.Range {
@@ -69,7 +71,11 @@ func (step Run) GetRange() protocol.Range {
 }
 
 func (step Run) GetName() string {
-	return step.Name
+	if step.Name != "" {
+		return step.Name
+	}
+
+	return "run: " + step.Command
 }
 
 type Checkout struct {

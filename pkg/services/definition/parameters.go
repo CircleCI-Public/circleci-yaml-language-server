@@ -1,8 +1,8 @@
 package definition
 
 import (
-	"github.com/circleci/circleci-yaml-language-server/pkg/ast"
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
 )
 
@@ -19,7 +19,7 @@ func (def DefinitionStruct) searchParamDefinition() []protocol.Location {
 	path := GetPathFromVisitedNodes(visitedNodes, def.Doc)
 
 	if isPipelineParam {
-		if param, ok := def.Doc.PipelinesParameters[paramName]; ok {
+		if param, ok := def.Doc.PipelineParameters[paramName]; ok {
 			return []protocol.Location{
 				{
 					URI:   def.Params.TextDocument.URI,

@@ -1,0 +1,23 @@
+version: 2.1
+
+jobs:
+  echo:
+    docker:
+      - image: cimg/node:17.2.0
+    steps:
+        - checkout
+        - run: echo "hello world"
+
+  build:
+    docker:
+      - image: cimg/node:17.2.0
+    steps:
+        - checkout
+        - run: echo "hello world"
+
+workflows:
+  test-build:
+    jobs:
+      - build
+
+# VS Code Extension Version: 1.1.1

@@ -4,30 +4,45 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/circleci/circleci-yaml-language-server/pkg/ast"
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 )
 
 func (def DefinitionStruct) getOrbDefinition() ([]protocol.Location, error) {
-	orbId := ""
-	for _, orb := range def.Doc.Orbs {
-		if utils.PosInRange(orb.NameRange, def.Params.Position) {
-			orbId = orb.Url.GetOrbID()
+	var orb ast.Orb
+	for _, currentOrb := range def.Doc.Orbs {
+		if utils.PosInRange(currentOrb.NameRange, def.Params.Position) ||
+			utils.PosInRange(currentOrb.Range, def.Params.Position) {
+			orb = currentOrb
 		}
 	}
 
-	if orb := def.Cache.OrbCache.GetOrb(orbId); orb != nil {
-		return []protocol.Location{
-			{
-				URI:   uri.New(orb.FilePath),
-				Range: protocol.Range{},
-			},
-		}, nil
+	orbInfo, err := def.GetOrbInfo(orb.Name)
+
+	if orb.Url.IsLocal {
+		return DefinitionStruct{
+			Cache:  def.Cache,
+			Params: def.Params,
+			Doc:    def.Doc.FromOrbParsedAttributesToYamlDocument(orbInfo.OrbParsedAttributes),
+		}.Definition()
 	}
 
-	return []protocol.Location{}, nil
+	if err != nil {
+		return nil, err
+	}
+
+	if orbInfo == nil {
+		return []protocol.Location{}, nil
+	}
+
+	return []protocol.Location{
+		{
+			URI:   uri.New(orbInfo.RemoteInfo.FilePath),
+			Range: protocol.Range{},
+		},
+	}, nil
 }
 
 func (def DefinitionStruct) getOrbLocation(name string, redirectToOrbFile bool) ([]protocol.Location, error) {
@@ -36,8 +51,13 @@ func (def DefinitionStruct) getOrbLocation(name string, redirectToOrbFile bool) 
 		if orb, ok := def.Doc.Orbs[splittedName[0]]; ok {
 
 			if redirectToOrbFile {
-				orbFile := def.Cache.OrbCache.GetOrb(orb.Url.GetOrbID())
-				return def.getOrbCommandOrJobLocation(*orbFile, splittedName[1])
+				orbFile, err := def.GetOrbInfo(orb.Name)
+
+				if err != nil {
+					return nil, err
+				}
+
+				return def.getOrbCommandOrJobLocation(orbFile, splittedName[1])
 			}
 
 			return []protocol.Location{
@@ -52,21 +72,31 @@ func (def DefinitionStruct) getOrbLocation(name string, redirectToOrbFile bool) 
 	return []protocol.Location{}, fmt.Errorf("orb not found")
 }
 
-func (def DefinitionStruct) getOrbCommandOrJobLocation(orbFile ast.CachedOrb, name string) ([]protocol.Location, error) {
-	if orbCommand, ok := orbFile.Commands[name]; ok {
+func (def DefinitionStruct) getOrbCommandOrJobLocation(orbInfo *ast.OrbInfo, name string) ([]protocol.Location, error) {
+	var fileUri protocol.DocumentURI
+
+	if orbInfo.IsLocal {
+		fileUri = def.Doc.URI
+	} else {
+		fileUri = uri.New(orbInfo.RemoteInfo.FilePath)
+	}
+
+	command, ok := orbInfo.Commands[name]
+	if ok {
 		return []protocol.Location{
 			{
-				URI:   uri.New(orbFile.FilePath),
-				Range: orbCommand.Range,
+				URI:   fileUri,
+				Range: command.Range,
 			},
 		}, nil
 	}
 
-	if orbJob, ok := orbFile.Jobs[name]; ok {
+	job, ok := orbInfo.Jobs[name]
+	if ok {
 		return []protocol.Location{
 			{
-				URI:   uri.New(orbFile.FilePath),
-				Range: orbJob.Range,
+				URI:   fileUri,
+				Range: job.Range,
 			},
 		}, nil
 	}
@@ -76,34 +106,51 @@ func (def DefinitionStruct) getOrbCommandOrJobLocation(orbFile ast.CachedOrb, na
 
 func (def DefinitionStruct) getOrbParamLocation(name string, paramName string) ([]protocol.Location, error) {
 	splittedName := strings.Split(name, "/")
-	if len(splittedName) >= 2 {
-		if orb, ok := def.Doc.Orbs[splittedName[0]]; ok {
-
-			orbFile := def.Cache.OrbCache.GetOrb(orb.Url.GetOrbID())
-			return def.getOrbCommandOrJobParamLocation(*orbFile, splittedName[1], paramName)
-		}
+	if len(splittedName) < 2 {
+		return []protocol.Location{}, fmt.Errorf("orb not found")
 	}
 
-	return []protocol.Location{}, fmt.Errorf("orb not found")
+	orbName := splittedName[0]
+	orbFile, err := def.GetOrbInfo(orbName)
+
+	if err != nil {
+		return []protocol.Location{}, err
+	}
+
+	if orbFile == nil {
+		return []protocol.Location{}, fmt.Errorf("orb not found")
+	}
+
+	return def.getOrbCommandOrJobParamLocation(orbFile, splittedName[1], paramName)
 }
 
-func (def DefinitionStruct) getOrbCommandOrJobParamLocation(orbFile ast.CachedOrb, name string, paramName string) ([]protocol.Location, error) {
-	if orbCommand, ok := orbFile.Commands[name]; ok {
+func (def DefinitionStruct) getOrbCommandOrJobParamLocation(orbFile *ast.OrbInfo, name string, paramName string) ([]protocol.Location, error) {
+	var fileUri protocol.DocumentURI
+
+	if orbFile.IsLocal {
+		fileUri = def.Doc.URI
+	} else {
+		fileUri = uri.New(orbFile.RemoteInfo.FilePath)
+	}
+
+	orbCommand, ok := orbFile.Commands[name]
+	if ok {
 		if param, ok := orbCommand.Parameters[paramName]; ok {
 			return []protocol.Location{
 				{
-					URI:   uri.New(orbFile.FilePath),
+					URI:   fileUri,
 					Range: param.GetRange(),
 				},
 			}, nil
 		}
 	}
 
-	if orbJob, ok := orbFile.Jobs[name]; ok {
+	orbJob, ok := orbFile.Jobs[name]
+	if ok {
 		if param, ok := orbJob.Parameters[paramName]; ok {
 			return []protocol.Location{
 				{
-					URI:   uri.New(orbFile.FilePath),
+					URI:   fileUri,
 					Range: param.GetRange(),
 				},
 			}, nil

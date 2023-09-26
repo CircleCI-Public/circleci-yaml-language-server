@@ -1,0 +1,29 @@
+version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: cimg/node:17.2.0
+    parameters:
+      build-mode:
+        type: string
+        default: "prod"
+    steps:
+      - run: echo "building for << parameters.build-mode >>"
+      - test: { foo: "bar" }
+
+  test:
+    docker:
+      - image: cimg/node:17.2.0
+    parameters:
+      foo:
+        type: string
+    steps:
+      - run: echo testing
+
+workflows:
+  build-wf:
+    jobs:
+      - build: { build-mode: "prod" }
+
+# VS Code Extension Version: 1.5.1

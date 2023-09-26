@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/circleci/circleci-yaml-language-server/pkg/ast"
-	yamlparser "github.com/circleci/circleci-yaml-language-server/pkg/parser"
-	utils "github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
+	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
+	utils "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
 )
 
-func References(params protocol.ReferenceParams, cache utils.Cache) ([]protocol.Location, error) {
-	yamlDocument, err := yamlparser.GetParsedYAMLWithCache(params.TextDocument.URI, cache)
+func References(params protocol.ReferenceParams, cache *utils.Cache, context *utils.LsContext) ([]protocol.Location, error) {
+	yamlDocument, err := yamlparser.ParseFromUriWithCache(params.TextDocument.URI, cache, context)
 
 	if err != nil {
 		return nil, err
@@ -30,13 +30,33 @@ func References(params protocol.ReferenceParams, cache utils.Cache) ([]protocol.
 type ReferenceHandler struct {
 	Doc        yamlparser.YamlDocument
 	Params     protocol.ReferenceParams
-	Cache      utils.Cache
+	Cache      *utils.Cache
 	FoundSteps *[]StepRangeAndName
 }
 
 func (ref ReferenceHandler) GetReferences() ([]protocol.Location, error) {
 	cmdName := ""
 	isOrb := false
+
+	if utils.PosInRange(ref.Doc.OrbsRange, ref.Params.Position) {
+		var orb ast.Orb
+		for _, currentOrb := range ref.Doc.Orbs {
+			if utils.PosInRange(currentOrb.NameRange, ref.Params.Position) ||
+				utils.PosInRange(currentOrb.Range, ref.Params.Position) {
+				orb = currentOrb
+			}
+		}
+
+		orbInfo, err := ref.Doc.GetOrbInfoFromName(orb.Name, ref.Cache)
+		if err == nil && orb.Url.IsLocal {
+			return ReferenceHandler{
+				Cache:      ref.Cache,
+				Params:     ref.Params,
+				FoundSteps: ref.FoundSteps,
+				Doc:        ref.Doc.FromOrbParsedAttributesToYamlDocument(orbInfo.OrbParsedAttributes),
+			}.GetReferences()
+		}
+	}
 
 	if anchor, found := ref.Doc.GetYamlAnchorAtPosition(ref.Params.Position); found {
 		locations := []protocol.Location{}
@@ -81,9 +101,9 @@ func (ref ReferenceHandler) GetReferences() ([]protocol.Location, error) {
 		cmdName = executorName
 
 	// Pipeline parameters
-	case utils.PosInRange(ref.Doc.PipelinesParametersRange, ref.Params.Position):
-		paramName := utils.GetParamNameDefinedAtPos(ref.Doc.PipelinesParameters, ref.Params.Position)
-		return ref.getReferencesOfParamInRange(paramName, yamlparser.NodeToRange(ref.Doc.RootNode))
+	case utils.PosInRange(ref.Doc.PipelineParametersRange, ref.Params.Position):
+		paramName := utils.GetParamNameDefinedAtPos(ref.Doc.PipelineParameters, ref.Params.Position)
+		return ref.getReferencesOfParamInRange(paramName, ref.Doc.NodeToRange(ref.Doc.RootNode))
 	}
 
 	if paramRefs, err := ref.getParamReferences(cmdName); err == nil {

@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/circleci/circleci-yaml-language-server/pkg/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 )
 
 func Test_parseDockerImageValue(t *testing.T) {
@@ -107,11 +107,24 @@ func Test_parseDockerImageValue(t *testing.T) {
 				FullPath:  "cimg/go:",
 			},
 		},
+
+		{
+			name: "",
+			args: args{
+				value: "cimg/go:<<parameters.go_version>>",
+			},
+			want: ast.DockerImageInfo{
+				Namespace: "cimg",
+				Tag:       "<<parameters.go_version>>",
+				Name:      "go",
+				FullPath:  "cimg/go:<<parameters.go_version>>",
+			},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := parseDockerImageValue(tt.args.value)
+			got := ParseDockerImageValue(tt.args.value)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("parseDockerImageValue() = %v, want %v", got, tt.want)
 			}

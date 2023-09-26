@@ -5,12 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 )
@@ -24,10 +25,22 @@ type Client struct {
 	httpClient *http.Client
 }
 
+func GetClient() *http.Client {
+	return &http.Client{
+		Timeout: 30 * time.Second,
+		Transport: &http.Transport{
+			ExpectContinueTimeout: 1 * time.Second,
+			IdleConnTimeout:       90 * time.Second,
+			MaxIdleConns:          10,
+			TLSHandshakeTimeout:   10 * time.Second,
+		},
+	}
+}
+
 // NewClient returns a reference to a Client.
-func NewClient(httpClient *http.Client, host, endpoint, token string, debug bool) *Client {
+func NewClient(host, endpoint, token string, debug bool) *Client {
 	return &Client{
-		httpClient: http.DefaultClient,
+		httpClient: GetClient(),
 		Endpoint:   endpoint,
 		Host:       host,
 		Token:      token,
@@ -51,7 +64,6 @@ func NewRequest(query string) *Request {
 		Header:    make(map[string][]string),
 	}
 
-	request.Header.Set("User-Agent", UserAgent())
 	return request
 }
 
@@ -68,6 +80,11 @@ type Request struct {
 // SetToken sets the Authorization header for the request with the given token.
 func (request *Request) SetToken(token string) {
 	request.Header.Set("Authorization", token)
+}
+
+// SetUserId sets the Authorization header for the request with the given user id.
+func (request *Request) SetUserId(userId string) {
+	request.Header.Set("user_id", userId)
 }
 
 // Var sets a variable.
@@ -183,7 +200,7 @@ func prepareRequest(ctx context.Context, address string, request *Request) (*htt
 	if err != nil {
 		return nil, err
 	}
-	r.Header.Set("User-Agent", "CircleCI-Language-Server")
+	r.Header.Set("User-Agent", UserAgent)
 	r.Header.Set("Content-Type", "application/json; charset=utf-8")
 	r.Header.Set("Accept", "application/json; charset=utf-8")
 	for key, values := range request.Header {
@@ -249,7 +266,7 @@ func (cl *Client) Run(request *Request, resp interface{}) error {
 	if cl.Debug {
 		var bodyBytes []byte
 		if res.Body != nil {
-			bodyBytes, err = ioutil.ReadAll(res.Body)
+			bodyBytes, err = io.ReadAll(res.Body)
 			if err != nil {
 				return errors.Wrap(err, "reading response")
 			}
@@ -257,7 +274,7 @@ func (cl *Client) Run(request *Request, resp interface{}) error {
 			l.Printf("<< %s", string(bodyBytes))
 
 			// Restore the io.ReadCloser to its original state
-			res.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+			res.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 		}
 	}
 
@@ -296,11 +313,6 @@ func PackageManager() string {
 		return "snap"
 	}
 	return packageManager
-}
-
-// UserAgent returns the user agent that should be user for external requests
-func UserAgent() string {
-	return fmt.Sprintf("circleci-cli/%s+%s (%s)", Version, Commit, PackageManager())
 }
 
 func runningInsideSnap() bool {

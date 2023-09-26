@@ -1,7 +1,9 @@
 package expect
 
 import (
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	"fmt"
+
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
 )
 
@@ -45,4 +47,27 @@ func AreDiagnosticEquivalent(a protocol.Diagnostic, b protocol.Diagnostic) bool 
 	}
 
 	return utils.AreRangeEqual(a.Range, b.Range)
+}
+
+// Return a string displaying a list of diagnostic information.
+func diagnosticInfoList(list []protocol.Diagnostic, prefix string) string {
+	listStr := ""
+	for _, diag := range list {
+		listStr += prefix + diagnosticInfo(diag)
+	}
+
+	return listStr
+}
+
+// Return a string containing the diagnostic information.
+func diagnosticInfo(diagnostic protocol.Diagnostic) string {
+	return fmt.Sprintf(
+		"<L%d:%d,L%d:%d> %s: %s",
+		diagnostic.Range.Start.Line,
+		diagnostic.Range.Start.Character,
+		diagnostic.Range.End.Line,
+		diagnostic.Range.End.Character,
+		diagnostic.Severity,
+		diagnostic.Message,
+	)
 }

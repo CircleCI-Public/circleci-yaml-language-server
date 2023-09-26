@@ -5,3 +5,8 @@ licenses.csv
 licenses.errors
 .vscode/settings.json
 __pycache__
+node_modules
+coverage
+/reports
+__debug_bin
+report.xml

@@ -3,9 +3,9 @@ package complete
 import (
 	"fmt"
 
-	"github.com/circleci/circleci-yaml-language-server/pkg/ast"
-	yamlparser "github.com/circleci/circleci-yaml-language-server/pkg/parser"
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
+	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
 )
 
@@ -28,7 +28,7 @@ func (ch *CompletionHandler) completeJobs() {
 			nodeToComplete = nodeToComplete.PrevSibling()
 		}
 
-		ch.completeSteps(true, nodeToComplete)
+		ch.completeSteps(job.Name, true, true, nodeToComplete)
 		return
 	case utils.PosInRange(job.DockerRange, ch.Params.Position):
 		ch.completeDockerExecutor(job.Docker)
@@ -40,9 +40,10 @@ func (ch *CompletionHandler) completeJobs() {
 
 func (ch *CompletionHandler) orbsJobs() {
 	for _, orb := range ch.Doc.Orbs {
-		remoteOrb := ch.Cache.OrbCache.GetOrb(orb.Url.GetOrbID())
-		if remoteOrb != nil {
-			for jobName := range remoteOrb.Jobs {
+		// Local orbs jobs are added directly within ch.Doc.Jobs
+		orbInfo := ch.GetOrbInfo(orb)
+		if orbInfo != nil {
+			for jobName := range orbInfo.Jobs {
 				jobName = fmt.Sprintf("%s/%s", orb.Name, jobName)
 				ch.addCompletionItem(jobName)
 			}

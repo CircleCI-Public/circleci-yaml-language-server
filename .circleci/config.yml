@@ -1,4 +1,18 @@
 version: 2.1
+
+# Expected environment variables:
+#
+# GITHUB_TOKEN:
+#   Github token with "repo" rights on the project.
+#   Used for release
+#
+# RELEASE_DOCUMENTATION_URL:
+#   URL of the release documentation
+#
+# SLACK_RELEASE_CHANNEL:
+#   ID of the slack channel on which release notification should be published
+#
+
 parameters:
   GHA_Event:
     type: string
@@ -15,7 +29,8 @@ parameters:
 orbs:
     go: circleci/go@1.7.1
     node: circleci/node@5.0.2
-    snyk: snyk/snyk@1.2.3
+    snyk: snyk/snyk@1.4.0
+    slack: circleci/slack@4.12.1
 
 commands:
     install-zig:
@@ -29,23 +44,160 @@ commands:
         steps:
             - node/install-packages:
                   app-dir: ~/project/editors/vscode
+                  pkg-manager: yarn
+
+    install-e2e-tests-deps:
+        steps:
+            - node/install-packages:
+                  app-dir: ~/project
+                  pkg-manager: yarn
+
+    notify-success:
+      parameters:
+        title:
+          type: string
+        content:
+          type: string
+      steps:
+        - slack/notify:
+            channel: $SLACK_RELEASE_CHANNEL
+            event: pass
+            custom: |
+              {
+                "blocks": [
+                  {
+                    "type": "header",
+                    "text": {
+                      "type": "plain_text",
+                      "text": "<< parameters.title >>",
+                      "emoji": true
+                    }
+                  },
+                  {
+                    "type": "section",
+                    "text": {
+                      "type": "mrkdwn",
+                      "text": "<< parameters.content >>"
+                    }
+                  },
+                  {
+                    "type": "actions",
+                    "elements": [
+                      {
+                        "type": "button",
+                        "text": {
+                          "type": "plain_text",
+                          "text": "Open pipeline :external_link:",
+                          "emoji": true
+                        },
+                        "url": "https://app.circleci.com/pipelines/<< pipeline.project.type >>/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/<< pipeline.number >>"
+                      },
+                      {
+                        "type": "button",
+                        "text": {
+                          "type": "plain_text",
+                          "text": "Open release :external_link:",
+                          "emoji": true
+                        },
+                        "url": "https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/releases/tag/$CIRCLE_TAG"
+                      },
+                      {
+                        "type": "button",
+                        "text": {
+                          "type": "plain_text",
+                          "text": "Documentation :book:",
+                          "emoji": true
+                        },
+                        "url": "$RELEASE_DOCUMENTATION_URL"
+                      }
+                    ]
+                  }
+                ]
+              }
+
+    notify-failure:
+      parameters:
+        title:
+          type: string
+        content:
+          type: string
+      steps:
+        - slack/notify:
+            channel: $SLACK_RELEASE_CHANNEL
+            event: fail
+            custom: |
+              {
+                "blocks": [
+                  {
+                    "type": "header",
+                    "text": {
+                      "type": "plain_text",
+                      "text": "<< parameters.title >>",
+                      "emoji": true
+                    }
+                  },
+                  {
+                    "type": "section",
+                    "text": {
+                      "type": "mrkdwn",
+                      "text": "<< parameters.content >>"
+                    }
+                  },
+                  {
+                    "type": "actions",
+                    "elements": [
+                      {
+                        "type": "button",
+                        "text": {
+                          "type": "plain_text",
+                          "text": "Open pipeline :external_link:",
+                          "emoji": true
+                        },
+                        "url": "https://app.circleci.com/pipelines/<< pipeline.project.type >>/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/<< pipeline.number >>"
+                      },
+                      {
+                        "type": "button",
+                        "text": {
+                          "type": "plain_text",
+                          "text": "Open release :external_link:",
+                          "emoji": true
+                        },
+                        "url": "https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/releases/tag/$CIRCLE_TAG"
+                      },
+                      {
+                        "type": "button",
+                        "text": {
+                          "type": "plain_text",
+                          "text": "Documentation :book:",
+                          "emoji": true
+                        },
+                        "url": "$RELEASE_DOCUMENTATION_URL"
+                      }
+                    ]
+                  }
+                ]
+              }
 
 jobs:
-    build-and-test:
+    Unit Tests:
         environment:
             SCHEMA_LOCATION: /home/circleci/project/schema.json
         docker:
             - image: cimg/go:1.19.1
+        parallelism: 5
         steps:
             - checkout
             - go/mod-download-cached
-            - go/test
-            - run: go tool cover -html=cover-source.out -o coverage.html
-            - run: mv coverage.html /tmp/artifacts
-            - store_artifacts:
-                  path: /tmp/artifacts
+            - run:
+                name: Installing JUnit reporter
+                command: go install github.com/jstemmer/go-junit-report/v2@latest
+            - run:
+                name: Running tests
+                command: go test -v 2>&1 $(go list ./... | circleci tests split --split-by=timings) | go-junit-report -set-exit-code > report.xml
+            - store_test_results:
+                path: report.xml
 
-    build-linux:
+    Build Linux:
         docker:
             - image: cimg/go:1.19.1
         steps:
@@ -56,17 +208,28 @@ jobs:
                   command:
                       sh -c "go build `~/project/scripts/ldflags.sh` -o ~/project/bin/linux-amd64-lsp ./cmd/start_server/start_server.go"
 
+            - when:
+                condition:
+                    or:
+                        - equal: [ develop, << pipeline.git.branch >> ]
+                        - not:
+                            equal: [ << pipeline.git.tag >>, ""]
+                steps:
+                    - run:
+                        name: Build for Linux Arm 64
+                        command: |
+                            export LDFLAGS=$(~/project/scripts/ldflags.sh)
+                            export CGO_ENABLED=1
+                            export GOOS=linux
+                            export GOARCH=arm64
+                            export CC='zig cc -target aarch64-linux'
+                            export CXX='zig c++ -target aarch64-linux'
+                            export PATH="$(pwd)/zig-linux-x86_64-0.9.1:$PATH"
+                            sh -c "go build $LDFLAGS -o ~/project/bin/linux-arm64-lsp ./cmd/start_server/start_server.go"
+
             - run:
-                  name: Build for Linux Arm 64
-                  command: |
-                      export LDFLAGS=$(~/project/scripts/ldflags.sh)
-                      export CGO_ENABLED=1
-                      export GOOS=linux
-                      export GOARCH=arm64
-                      export CC='zig cc -target aarch64-linux'
-                      export CXX='zig c++ -target aarch64-linux'
-                      export PATH="$(pwd)/zig-linux-x86_64-0.9.1:$PATH"
-                      sh -c "go build $LDFLAGS -o ~/project/bin/linux-arm64-lsp ./cmd/start_server/start_server.go"
+                name: Copy schema.json into bin/ directory
+                command: cp ~/project/schema.json ~/project/bin
 
             - store_artifacts:
                   path: ~/project/bin
@@ -76,7 +239,7 @@ jobs:
                   paths:
                       - project/bin
 
-    build-macos:
+    Build MacOS:
         macos:
             xcode: 14.0.0
         environment:
@@ -109,7 +272,7 @@ jobs:
                   paths:
                       - project/bin
 
-    build-windows:
+    Build Windows:
         docker:
             - image: cimg/go:1.19.1
         steps:
@@ -136,9 +299,9 @@ jobs:
                   paths:
                       - project/bin
 
-    build-vsix:
+    Build VSIX:
         docker:
-            - image: cimg/node:14.19.0
+            - image: cimg/node:18.16
         steps:
             - checkout
             - attach_workspace:
@@ -171,26 +334,45 @@ jobs:
             - store_artifacts:
                   path: /tmp/circleci-lsp-vsix.zip
 
-    lint-check:
+    Lint:
         docker:
             - image: cimg/go:1.19.1
         steps:
             - checkout
             - node/install:
-                node-version: '14.19'
+                node-version: '18'
+            - node/install-yarn
             - install-vscode-extensions-deps
+            - install-e2e-tests-deps
             - run:
                 name: Linter check for Go
                 command: if [[ $(gofmt -l pkg | wc -c) -ne 0 ]]; then exit 1; fi
             - run:
                 name: Linter check for VSCE extension
                 command: cd editors/vscode && npm run lint-check
+            - run:
+                name: "Linter check for E2E test"
+                command: npm run lint:e2e
 
-    release:
-        parameters:
-            is_prerelease:
-                type: string
-                default: 'false'
+    Github Release:
+      docker:
+        - image: cimg/node:lts
+      parameters:
+        base-branch:
+          description: Base branch to use for release
+          type: string
+      steps:
+        - run:
+            name: "Releasing"
+            command: |
+              npx release-please github-release \
+                --token $GITHUB_TOKEN \
+                --repo-url $CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME \
+                --target-branch << parameters.base-branch >> \
+                --config-file .circleci/release/release-please-config.json \
+                --manifest-file .circleci/release/release-please-manifest.json
+
+    Pre-Release:
         docker:
             - image: cimg/go:1.19.3
         steps:
@@ -202,7 +384,9 @@ jobs:
                 command: go install github.com/tcnksm/ghr@latest
             - run:
                 name: Clone the public repo
-                command: git clone https://${GITHUB_TOKEN}@github.com/CircleCI-Public/circleci-yaml-language-server.git /tmp/to-deploy
+                command: |
+                    REPO_PATH=$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME
+                    git clone https://${GITHUB_TOKEN}@github.com/$REPO_PATH.git /tmp/to-deploy
             - run:
                 name: Set global user git config
                 command: |
@@ -213,143 +397,320 @@ jobs:
                 command: |
                     set -ex
                     cd /tmp/to-deploy
+                    cp ~/project/schema.json ~/project/bin
                     export TAG=$(cd ~/project && go run ~/project/scripts/get_next_release.go)
-                    if [[ << parameters.is_prerelease >> == "true" ]];
-                    then
-                        # This is a prerelease
-                        ghr -prerelease -delete -replace -c `git rev-parse HEAD` $TAG ~/project/bin/
-                    else
-                        # This is a standard release
-                        ghr -delete -replace -c `git rev-parse HEAD` $TAG ~/project/bin/
-                    fi
+                    ghr -name $TAG -prerelease -delete -replace -c `git rev-parse HEAD` $TAG ~/project/bin/
 
-    extract-licenses:
+    Release:
         docker:
-            - image: cimg/go:1.19.1
+            - image: node:16-buster
         steps:
-            - checkout
-            - run:
-                name: Install google license util
-                command: go install github.com/google/go-licenses@latest
-            - run:
-                # When go-licenses finds a license file in a project, it doesn't check its dependencies: the license file applies for the whole project
-                # When go-licenses finds unlicensed code, it checks all of its dependencies because it likely is source code
-                # We have a license for our project, but we still want to check the dependencies to make sure we are authorized to put that license
-                # Let's delete the license file so that go-licenses explores the whole project
-                # Alternative is to explicitly run go-licenses and sbom-generator in all subpackages of this repo
-                name: Delete license file
-                command: rm LICENSE.md
-            - run:
-                name: Extract go dependencies licenses
-                # possible improvement: run "task licenses" instead, requires task to be installed
-                command: go-licenses csv ./cmd/start_server >licenses.csv 2>licenses.errors
-            - persist_to_workspace:
-                  root: ~/
-                  paths:
-                      - project/licenses.csv
-                      - project/licenses.errors
-
-    check-licenses:
-        docker:
-            - image: cimg/node:14.19.0
-        steps:
-            - checkout
-
             - attach_workspace:
-                  at: ~/
+                at: ~/
 
             - run:
-                name: Install sbom-generator
-                command: sudo npm install -g ./assets/sbom-generator-0.0.2-trimmed.tgz
-
-            - install-vscode-extensions-deps
+                name: "Installing dependencies"
+                command: |
+                    apt-get update
+                    apt-get install jq -y
 
             - run:
-                name: Extract dependencies
-                command: sbom extract
+                name: Uploading to GitHub Release
+                command: |
+                    REPO_PATH=$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME
+
+                    echo "Tag: $CIRCLE_TAG"
+
+                    RELEASE_URL=https://api.github.com/repos/$REPO_PATH/releases/tags/$CIRCLE_TAG
+                    echo Release URL: $RELEASE_URL
+
+                    echo "Fetching release information"
+                    curl \
+                        -H "Accept: application/vnd.github+json" \
+                        -H "Authorization: Bearer $GITHUB_TOKEN"\
+                        -H "X-GitHub-Api-Version: 2022-11-28" \
+                        $RELEASE_URL > release.json
+
+                    RELEASE_ID=$(jq -r '.id' release.json)
+                    RELEASE_PAGE=$(jq -r '.html_url' release.json)
+
+                    echo "Release Id: $RELEASE_ID"
+                    echo "Release page: $RELEASE_PAGE"
+
+                    echo "Renaming release from \"$(jq -r '.name' release.json)\" to \"$CIRCLE_TAG\"..."
+                    rm release.json
+
+                    echo "pwd: $(pwd)"
+                    echo "ls -l"
+                    ls -l
+
+                    echo "ls -l ~/project/bin"
+
+                    cd bin/
+
+                    echo "Uploading assets to release"
+
+                    for FILE in *; do
+                        UPLOAD_URL=https://uploads.github.com/repos/$REPO_PATH/releases/$RELEASE_ID/assets?name=$FILE
+
+                        curl \
+                            -X POST \
+                            -H "Accept: application/vnd.github+json" \
+                            -H "Authorization: Bearer $GITHUB_TOKEN"\
+                            -H "X-GitHub-Api-Version: 2022-11-28" \
+                            -H "Content-Type: application/octet-stream" \
+                            $UPLOAD_URL \
+                            --data-binary "@$FILE";
+
+                        echo "Uploaded $FILE to release $RELEASE_PAGE"
+                    done
+
+            - notify-success:
+                title: ":rocket: CircleCI YAML Language Server v$CIRCLE_TAG released"
+                content: >-
+                    A new release has been published.\n\n> :github: *Project*:
+                    <https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME|CircleCI YAML Language Server>\n> :rocket: *Release*:
+                    <https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/releases/tag/$CIRCLE_TAG|v$CIRCLE_TAG>
+                    \n>:circleci: *Pipeline*: <https://app.circleci.com/pipelines/<<
+                    pipeline.project.type >>/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/<<
+                    pipeline.number >>|<< pipeline.number >>>\n>:pass-build: *Build*:
+                    <$CIRCLE_BUILD_URL|$CIRCLE_BUILD_NUM>\n\nYou can <$RELEASE_DOCUMENTATION_URL|read documentation>
+                    to find more about release and publish process.
+
+            - notify-failure:
+                title: ":rocket: CircleCI YAML Language Server v$CIRCLE_TAG released"
+                content: >-
+                    An error occurred during the release.\n\n> :github: *Project*:
+                    <https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME|CircleCI YAML Language Server>\n> :rocket: *Release*:
+                    <https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/releases/tag/$CIRCLE_TAG|v$CIRCLE_TAG>\n>:circleci:
+                    *Pipeline*: <https://app.circleci.com/pipelines/<< pipeline.project.type
+                    >>/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/<< pipeline.number >>|<<
+                    pipeline.number >>>\n>:fail-build: *Build*: <$CIRCLE_BUILD_URL|$CIRCLE_BUILD_NUM>\n\nError logs can be found on
+                    <$CIRCLE_BUILD_URL|the build>\n\nYou can <$RELEASE_DOCUMENTATION_URL|read documentation>
+                    to find more about release and publish process.
 
             - store_artifacts:
-                path: ./sbom.generated.json
+                name: Saving bin files
+                path: bin
+                destination: .
 
-            # To be uncommented when this ticket gets prioritized: https://circleci.atlassian.net/browse/DEVEX-334
-            # - run:
-            #     name: Verify licenses
-            #     command: sbom verify ./sbom.generated.json
+    Prepare release:
+      docker:
+        - image: cimg/node:lts
+      parameters:
+        base-branch:
+          description: Base branch to use for release
+          type: string
 
-    security-scan:
+      steps:
+        - run:
+            name: "Creating/updating Release PR"
+            command: |
+                echo $CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME
+                npx release-please release-pr \
+                    --token $GITHUB_TOKEN \
+                    --repo-url $CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME \
+                    --target-branch << parameters.base-branch >> \
+                    --config-file .circleci/release/release-please-config.json \
+                    --manifest-file .circleci/release/release-please-manifest.json
+
+
+
+    Security Scan:
         docker:
             - image: cimg/go:1.19.1
         steps:
             - checkout
-            - snyk/scan:
-                additional-arguments: --all-projects
+            - run:
+                name: Setup Scanning
+                command: |
+                    git config --global url."https://$GITHUB_USER:$GITHUB_TOKEN@github.com/circleci/".insteadOf "https://github.com/circleci/"
+            - when:
+                condition:
+                  or:
+                    - equal: [ main, << pipeline.git.branch >> ]
+                    - equal: [ develop, << pipeline.git.branch >> ]
+                steps:
+                    - run:
+                        name: Launching Snyk Orb Scanning
+                        command: echo "Running snyk/scan on main and develop; uploading the results"
+                    - snyk/scan:
+                        fail-on-issues: false
+                        severity-threshold: high
+                        monitor-on-build: true
+                        project: '${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}'
+            - unless:
+                condition:
+                    or:
+                      - equal: [ main, << pipeline.git.branch >> ]
+                      - equal: [ develop, << pipeline.git.branch >> ]
+                steps:
+                    - run:
+                        name: Launching Snyk Orb Scanning
+                        command: echo "Running snyk/scan on branch; not uploading the results"
+                    - snyk/scan:
+                        fail-on-issues: false
+                        severity-threshold: high
+                        monitor-on-build: false
+                        project: '${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}/${CIRCLE_BRANCH}'
+
+    E2E Tests:
+      docker:
+        - image: cimg/node:16.18.1
+      environment:
+        RPC_SERVER_BIN: ~/project/bin/linux-amd64-lsp
+        PORT: 10001
+      parallelism: 5
+      steps:
+        - checkout
+        - attach_workspace:
+                at: ~/
+        - node/install-yarn
+        - install-e2e-tests-deps
+        - run:
+            name: Running tests
+            command: yarn test:e2e:ci
+        - store_test_results:
+            path: reports
 
 workflows:
-    build:
+    Quality:
         jobs:
-            - build-and-test
-            - lint-check
-            # - extract-licenses
-            - security-scan:
+            - Unit Tests:
+                filters: &ignore-release-tag
+                    tags:
+                        ignore: /^\d+\.\d+\.\d+/
+            - Lint:
+                filters:
+                    <<: *ignore-release-tag
+            - Security Scan:
+                filters:
+                    <<: *ignore-release-tag
                 context:
-                    - org-global
-            # - check-licenses:
-            #     requires:
-            #         - extract-licenses
-            - build-linux:
+                    - org-global-employees
+            - Build Linux:
                 filters:
-                    branches:
-                        only: master
-            - build-macos:
+                    <<: *ignore-release-tag
+            - Build MacOS:
                 filters:
+                    <<: *ignore-release-tag
                     branches:
-                        only: master
-            - build-windows:
-                filters:
-                    branches:
-                        only: master
-            - build-vsix:
-                requires:
-                    - build-linux
-                    - build-macos
-                    - build-windows
-            - release:
-                name: prerelease
-                is_prerelease: 'true'
-                requires:
-                    - build-linux
-                    - build-macos
-                    - build-windows
-    deploy:
-        jobs:
-            - build-linux:
-                filters:
-                    tags:
-                        only: /^.*/
-                    branches:
-                        ignore: /.*/
-            - build-macos:
-                filters:
-                    tags:
-                        only: /^.*/
-                    branches:
-                        ignore: /.*/
-            - build-windows:
-                filters:
-                    tags:
-                        only: /^.*/
-                    branches:
-                        ignore: /.*/
-            - release:
-                is_prerelease: 'false'
-                requires:
-                    - build-linux
-                    - build-macos
-                    - build-windows
-                filters:
-                    tags:
-                        only: /^.*/
-                    branches:
-                        ignore: /.*/
+                        only:
+                          - main
+                          - develop
 
-# VS Code Extension Version: 1.1.1
+            - Build Windows:
+                filters:
+                    <<: *ignore-release-tag
+                    branches:
+                        only:
+                          - main
+                          - develop
+
+            - Build VSIX:
+                requires:
+                    - Build Linux
+                    - Build MacOS
+                    - Build Windows
+                filters:
+                    <<: *ignore-release-tag
+                    branches:
+                        only:
+                          - main
+                          - develop
+
+            - E2E Tests:
+                filters:
+                    <<: *ignore-release-tag
+                requires:
+                    - Build Linux
+
+            - Pre-Release:
+                name: Release (pre-release)
+                filters:
+                    tags:
+                        ignore: /.*/
+                    branches:
+                        only:
+                            - develop
+                requires:
+                    - Unit Tests
+                    - Build Linux
+                    - Build MacOS
+                    - Build Windows
+                    - E2E Tests
+                context:
+                    - devex-release
+
+    Publication:
+        jobs:
+            - Unit Tests:
+                filters: &release-tag-only
+                    tags:
+                        only: /^\d+\.\d+\.\d+/
+                    branches:
+                        ignore: /.*/
+            - Security Scan:
+                filters:
+                    <<: *release-tag-only
+                context:
+                    - org-global-employees
+            - Build Linux:
+                filters:
+                    <<: *release-tag-only
+            - Build MacOS:
+                filters:
+                    <<: *release-tag-only
+            - Build Windows:
+                filters:
+                    <<: *release-tag-only
+
+            - E2E Tests:
+                filters:
+                    <<: *release-tag-only
+                requires:
+                    - Build Linux
+
+            - Publish ?:
+                type: approval
+                filters:
+                    <<: *release-tag-only
+                requires:
+                    - Unit Tests
+                    - Build Linux
+                    - Build MacOS
+                    - Build Windows
+                    - E2E Tests
+                    - Security Scan
+
+            - Github Release:
+                name: Github Release
+                base-branch: main
+                filters:
+                    <<: *release-tag-only
+                context:
+                    - devex-release
+                requires:
+                    - Publish ?
+
+            - Release:
+                name: Publish
+                filters:
+                    <<: *release-tag-only
+                requires:
+                    - Github Release
+                context:
+                    - cpe-slack
+                    - devex-release
+
+    Release management:
+        jobs:
+            - Prepare release:
+                base-branch: main
+                filters: &main-branch-only
+                    branches:
+                        only: main
+                    tags:
+                        ignore: /.*/
+                context:
+                    - devex-release

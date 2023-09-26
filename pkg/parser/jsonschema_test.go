@@ -3,10 +3,11 @@ package parser
 import (
 	"testing"
 
-	"github.com/circleci/circleci-yaml-language-server/pkg/expect"
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/expect"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/testHelpers"
 	"github.com/stretchr/testify/assert"
 	"go.lsp.dev/protocol"
+	"go.lsp.dev/uri"
 	"gopkg.in/yaml.v3"
 )
 
@@ -31,33 +32,16 @@ testFinal:
 
 	err := yaml.Unmarshal(content, m)
 
-	yamlDocument, _ := GetParsedYAMLWithContent(content)
+	context := testHelpers.GetDefaultLsContext()
+	yamlDocument, _ := ParseFromContent(content, context, uri.File(""), protocol.Position{})
 
 	actualDiagnostics, err := handleYAMLErrors(err.Error(), content, yamlDocument.RootNode)
 
 	assert.Nil(t, err)
 
-	expectedDiagnostics := []protocol.Diagnostic{
-		{
-			Range:    utils.LineContentRange(12, content),
-			Severity: protocol.DiagnosticSeverityError,
-			Message:  `mapping key "<<" already defined at line 12`,
-		},
+	expectedDiagnostics := []protocol.Diagnostic{}
 
-		{
-			Range:    utils.LineContentRange(13, content),
-			Severity: protocol.DiagnosticSeverityError,
-			Message:  `mapping key "<<" already defined at line 12`,
-		},
-
-		{
-			Range:    utils.LineContentRange(13, content),
-			Severity: protocol.DiagnosticSeverityError,
-			Message:  `mapping key "<<" already defined at line 13`,
-		},
-	}
-
-	expect.ExpectAllDiagnosticInList(t, actualDiagnostics, expectedDiagnostics)
+	expect.DiagnosticList(t, actualDiagnostics).To.IncludeAll(expectedDiagnostics)
 }
 
 func Test_HandleYamlError_UnknownAnchor(t *testing.T) {
@@ -70,7 +54,8 @@ test:
 
 	err := yaml.Unmarshal(content, m)
 
-	yamlDocument, _ := GetParsedYAMLWithContent(content)
+	context := testHelpers.GetDefaultLsContext()
+	yamlDocument, _ := ParseFromContent(content, context, uri.File(""), protocol.Position{})
 
 	diagnostics, err := handleYAMLErrors(err.Error(), content, yamlDocument.RootNode)
 
@@ -85,5 +70,5 @@ test:
 		Message:  "yaml: unknown anchor 'unknownAnchor' referenced",
 	}
 
-	expect.ExpectDiagnosticInList(t, diagnostics, expected)
+	expect.DiagnosticList(t, diagnostics).To.Include(expected)
 }

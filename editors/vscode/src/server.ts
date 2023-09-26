@@ -12,6 +12,7 @@ import {
     isAppleSilicon,
     isInDevMode,
 } from './utils';
+import { readFileSync } from 'fs';
 
 export class LSP {
     private _server: cp.ChildProcess | undefined;
@@ -168,6 +169,9 @@ export class LSP {
                 onTabs: true,
             },
             diagnosticCollectionName: 'cci-diag',
+            initializationOptions: {
+                isCciExtension: true,
+            },
 
             outputChannel: outputChannel(),
         };
@@ -179,6 +183,27 @@ export class LSP {
             clientOptions,
         );
 
+        client.onTelemetry((event) => console.log('Telemetry event', event));
+
+        /*
+         * Example of request to activate rollbar
+         *
+         * client.sendRequest('workspace/executeCommand', {
+         *     command: 'setRollbarInformation',
+         *     arguments: [
+         *         {
+         *             enabled: true,
+         *             environment: 'development',
+         *             sessionId: vscode.env.sessionId,
+         *             machineId: vscode.env.machineId,
+         *             machine: `${os.platform}/${os.arch}`,
+         *             personId: 'id',
+         *             requestIp: '1.2.4.8',
+         *         },
+         *     ],
+         * });
+         */
+
         return client;
     }
 
@@ -186,6 +211,51 @@ export class LSP {
         const client = this.spawnLSPClient();
 
         await client.start();
+
+        const token = process.env.TOKEN;
+        const setTokenCommand = {
+            command: 'setToken',
+            arguments: [token],
+        };
+        await client.sendRequest('workspace/executeCommand', setTokenCommand);
+
+        const selfHostedUrl = process.env.SELF_HOSTED_URL;
+        const setHostUrlCommand = {
+            command: 'setSelfHostedUrl',
+            arguments: [selfHostedUrl],
+        };
+        await client.sendRequest('workspace/executeCommand', setHostUrlCommand);
+
+        const projectSlug = 'gh/CircleCI-Public/circleci-yaml-language-server';
+        const setProjectSlugCommand = {
+            command: 'setProjectSlug',
+            arguments: [projectSlug],
+        };
+        await client.sendRequest(
+            'workspace/executeCommand',
+            setProjectSlugCommand,
+        );
+
+        const filePath = path.join(
+            __dirname,
+            '..',
+            '..',
+            '..',
+            '.circleci',
+            'config.yml',
+        );
+        const content = readFileSync(filePath, {
+            encoding: 'utf-8',
+        });
+        const getWorkflowsCommand = {
+            command: 'getWorkflows',
+            arguments: [content, filePath],
+        };
+        const res = await client.sendRequest(
+            'workspace/executeCommand',
+            getWorkflowsCommand,
+        );
+        console.log(res);
 
         return client;
     }

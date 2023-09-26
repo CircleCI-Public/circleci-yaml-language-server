@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/circleci/circleci-yaml-language-server/pkg/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	"go.lsp.dev/protocol"
 )
 
@@ -100,14 +100,19 @@ func GetReferencesOfParamInRange(content []byte, paramName string, rng protocol.
 //	param: << pipeline.parameters.paramName >> -> true
 //	param: `/home/<< parameters.paramName >>/Downloads` -> false
 func CheckIfOnlyParamUsed(content string) bool {
-	regex, _ := regexp.Compile(`<<\s*(parameters|pipeline.parameters)\.([A-z0-9-_]*)\s*>>$`)
+	regex, _ := regexp.Compile(`^<<\s*(parameters|pipeline.parameters)\.([A-z0-9-_]*)\s*>>$`)
 	return regex.MatchString(content)
 }
 
 func CheckIfParamIsPartiallyReferenced(content string) (bool, bool) {
-	regex, _ := regexp.Compile(`<<\s*(parameters|pipeline.parameters)\.\s*>?>?`)
+	regex, _ := regexp.Compile(`<<\s*(parameters|pipeline.parameters|pipeline.git)\.\s*>?>?`)
 	isPipelineParam := strings.Contains(content, "pipeline.")
 	return regex.Find([]byte(content)) != nil, isPipelineParam
+}
+
+func CheckIfMatrixParamIsPartiallyReferenced(content string) bool {
+	regex, _ := regexp.Compile(`<<\s*matrix\.\s*>?>?`)
+	return regex.Find([]byte(content)) != nil
 }
 
 func GetParamsInString(content string) ([]struct {
@@ -130,7 +135,7 @@ func GetParamsInString(content string) ([]struct {
 	}{}
 
 	for _, param := range params {
-		length := uint32(param[1] - param[0])
+		length := param[1] - param[0]
 
 		if length < 0 {
 			continue
@@ -141,7 +146,7 @@ func GetParamsInString(content string) ([]struct {
 		startPos := IndexToPos(param[0], byteContent)
 		endPos := protocol.Position{
 			Line:      startPos.Line,
-			Character: startPos.Character + length,
+			Character: startPos.Character + uint32(length),
 		}
 
 		totalRange := protocol.Range{

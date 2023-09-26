@@ -3,8 +3,8 @@ package validate
 import (
 	"fmt"
 
-	"github.com/circleci/circleci-yaml-language-server/pkg/ast"
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
 )
 
@@ -16,6 +16,10 @@ func (val Validate) ValidateWorkflows() {
 
 func (val Validate) validateSingleWorkflow(workflow ast.Workflow) error {
 	for _, jobRef := range workflow.JobRefs {
+		if val.Doc.IsFromUnfetchableOrb(jobRef.JobName) {
+			continue
+		}
+
 		isApprovalJob := jobRef.Type == "approval"
 		if isApprovalJob {
 			continue
@@ -27,14 +31,33 @@ func (val Validate) validateSingleWorkflow(workflow ast.Workflow) error {
 			continue
 		}
 
-		if !val.Doc.DoesJobExist(jobRef.JobName) && !val.Doc.IsOrb(jobRef.JobName) {
+		if !val.Doc.DoesJobExist(jobRef.JobName) &&
+			!(val.Doc.IsOrbReference(jobRef.JobName) && (val.Doc.IsOrbCommand(jobRef.JobName, val.Cache) || val.Doc.IsOrbJob(jobRef.JobName, val.Cache))) {
 			val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
 				jobRef.JobRefRange,
 				fmt.Sprintf("Cannot find declaration for job %s", jobRef.JobName)))
 		}
 
-		if !val.Doc.IsOrb(jobRef.JobName) && !val.Doc.IsBuiltIn(jobRef.JobName) {
+		if !val.Doc.IsOrbReference(jobRef.JobName) && !val.Doc.IsBuiltIn(jobRef.JobName) {
 			val.validateWorkflowParameters(jobRef, jobRef.JobName, jobRef.JobRefRange)
+		}
+		for _, require := range jobRef.Requires {
+			if !val.doesJobRefExist(workflow, require.Text) && !utils.CheckIfMatrixParamIsPartiallyReferenced(require.Text) {
+				val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
+					require.Range,
+					fmt.Sprintf("Cannot find declaration for job reference %s", require.Text)))
+			}
+		}
+
+		if cachedFile := val.Cache.FileCache.GetFile(val.Doc.URI); val.Context.Api.Token != "" &&
+			cachedFile != nil && cachedFile.Project.OrganizationName != "" {
+			for _, context := range jobRef.Context {
+				if context.Text != "org-global" && val.Cache.ContextCache.GetOrganizationContext(cachedFile.Project.OrganizationName, context.Text) == nil {
+					val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
+						context.Range,
+						fmt.Sprintf("Context %s does not exist", context.Text)))
+				}
+			}
 		}
 	}
 
@@ -43,8 +66,17 @@ func (val Validate) validateSingleWorkflow(workflow ast.Workflow) error {
 	return nil
 }
 
+func (val Validate) doesJobRefExist(workflow ast.Workflow, requireName string) bool {
+	for _, jobRef := range workflow.JobRefs {
+		if jobRef.JobName == requireName || jobRef.StepName == requireName {
+			return true
+		}
+	}
+	return false
+}
+
 func (val Validate) validateWorkflowParameters(jobRef ast.JobRef, stepName string, stepRange protocol.Range) {
-	definedParams := val.Doc.GetDefinedParams(stepName)
+	definedParams := val.Doc.GetDefinedParams(stepName, val.Cache)
 
 	for _, definedParam := range definedParams {
 		_, okMatrix := jobRef.MatrixParams[definedParam.GetName()]
@@ -75,6 +107,15 @@ func (val Validate) validateWorkflowParameters(jobRef ast.JobRef, stepName strin
 			}
 		} else if okParams {
 			val.checkParamSimpleType(jobRef.Parameters[definedParam.GetName()], stepName, definedParam)
+		}
+	}
+
+	for _, param := range jobRef.Parameters {
+		if definedParams[param.Name] == nil {
+			val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
+				param.Range,
+				fmt.Sprintf("Parameter %s is not defined in %s", param.Name, stepName)),
+			)
 		}
 	}
 }

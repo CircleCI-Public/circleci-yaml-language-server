@@ -1,8 +1,10 @@
 package parser
 
 import (
-	"github.com/circleci/circleci-yaml-language-server/pkg/ast"
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	"strings"
+
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	sitter "github.com/smacker/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
@@ -14,16 +16,15 @@ func (doc *YamlDocument) parseExecutors(executorsNode *sitter.Node) {
 		return
 	}
 
-	iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
+	doc.iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
 		doc.parseSingleExecutor(child)
 	})
 }
 
 func (doc *YamlDocument) parseSingleExecutor(executorNode *sitter.Node) {
 	// jobNode is a block_mapping_pair
-	executorNameNode := executorNode.ChildByFieldName("key")
-	executorName := doc.GetNodeText(executorNameNode)
-	blockMappingNode := executorNode.ChildByFieldName("value")
+	executorNameNode, blockMappingNode := doc.GetKeyValueNodes(executorNode)
+	executorName := doc.getAttributeName(doc.GetNodeText(executorNameNode))
 	blockMappingNode = GetChildMapping(blockMappingNode)
 	if blockMappingNode == nil {
 		return
@@ -32,7 +33,7 @@ func (doc *YamlDocument) parseSingleExecutor(executorNode *sitter.Node) {
 	if definedExecutor, ok := doc.Executors[executorName]; ok {
 		doc.addDiagnostic(protocol.Diagnostic{
 			Severity: protocol.DiagnosticSeverityWarning,
-			Range:    NodeToRange(executorNameNode),
+			Range:    doc.NodeToRange(executorNameNode),
 			Message:  "Executor already defined",
 			Source:   "cci-language-server",
 		})
@@ -46,8 +47,9 @@ func (doc *YamlDocument) parseSingleExecutor(executorNode *sitter.Node) {
 		return
 	}
 
-	iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
-		keyName := doc.GetNodeText(child.ChildByFieldName("key"))
+	doc.iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
+		keyNode, _ := doc.GetKeyValueNodes(child)
+		keyName := doc.GetNodeText(keyNode)
 
 		switch keyName {
 		case "docker":
@@ -75,9 +77,9 @@ func (doc *YamlDocument) parseSingleExecutor(executorNode *sitter.Node) {
 }
 
 func (doc *YamlDocument) parseBaseExecutor(base *ast.BaseExecutor, nameNode *sitter.Node, blockMappingNode *sitter.Node, fn func(node *sitter.Node), nameStep string) {
-	iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
-		keyName := doc.GetNodeText(child.ChildByFieldName("key"))
-		valueNode := child.ChildByFieldName("value")
+	doc.iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
+		keyNode, valueNode := doc.GetKeyValueNodes(child)
+		keyName := doc.GetNodeText(keyNode)
 		switch keyName {
 
 		case nameStep:
@@ -85,7 +87,7 @@ func (doc *YamlDocument) parseBaseExecutor(base *ast.BaseExecutor, nameNode *sit
 
 		case "resource_class":
 			base.ResourceClass = doc.GetNodeText(valueNode)
-			base.ResourceClassRange = NodeToRange(child)
+			base.ResourceClassRange = doc.NodeToRange(child)
 			if base.ResourceClass == "" {
 				base.ResourceClassRange.End.Character = 999
 			}
@@ -94,15 +96,15 @@ func (doc *YamlDocument) parseBaseExecutor(base *ast.BaseExecutor, nameNode *sit
 		case "working_directory":
 			base.BuiltInParameters.WorkingDirectory = doc.GetNodeText(valueNode)
 		case "environment":
-			base.BuiltInParameters.Environment = doc.parseDictionary(GetChildOfType(valueNode, "block_mapping"))
+			base.Environment = doc.parseEnvs(valueNode)
 		case "parameters":
-			base.UserParametersRange = NodeToRange(child)
+			base.UserParametersRange = doc.NodeToRange(child)
 			base.UserParameters = doc.parseParameters(valueNode)
 		}
 	})
 
-	base.Name = doc.GetNodeText(nameNode)
-	base.NameRange = NodeToRange(nameNode)
+	base.Name = doc.getAttributeName(doc.GetNodeText(nameNode))
+	base.NameRange = doc.NodeToRange(nameNode)
 	// We get the range of the parent of the parent to get the
 	// whole definition of the executor (name and definition) and not only
 	// the definition
@@ -110,7 +112,7 @@ func (doc *YamlDocument) parseBaseExecutor(base *ast.BaseExecutor, nameNode *sit
 		base.Uncomplete = true
 		return
 	}
-	base.Range = NodeToRange(blockMappingNode.Parent().Parent())
+	base.Range = doc.NodeToRange(blockMappingNode.Parent().Parent())
 	base.Uncomplete = false
 }
 
@@ -120,11 +122,23 @@ func (doc *YamlDocument) parseSingleExecutorMachine(nameNode *sitter.Node, value
 		IsDeprecated: false,
 	}
 
+	var machineNode *sitter.Node
+
 	parseMachine := func(blockNode *sitter.Node) {
-		// This only happens when the executor is `machine: true`
-		if doc.addedMachineTrueDeprecatedDiag(blockNode.Parent()) {
-			res.IsDeprecated = true
+		if blockNode == nil {
 			return
+		}
+		machineNode = blockNode
+
+		if blockNode.Type() == "flow_node" {
+			machineBoolValueNode := GetChildOfType(
+				GetChildOfType(blockNode, "plain_scalar"),
+				"boolean_scalar",
+			)
+
+			if machineBoolValueNode != nil {
+				res.Machine = utils.GetYAMLBooleanValue(doc.GetNodeText(machineBoolValueNode))
+			}
 		}
 
 		// blockNode is a block_node
@@ -134,23 +148,31 @@ func (doc *YamlDocument) parseSingleExecutorMachine(nameNode *sitter.Node, value
 			return
 		}
 
-		iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
-			keyName := doc.GetNodeText(child.ChildByFieldName("key"))
-			valueNode := child.ChildByFieldName("value")
+		doc.iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
+			keyNode, valueNode := doc.GetKeyValueNodes(child)
+			keyName := doc.GetNodeText(keyNode)
+
 			switch keyName {
 			case "image":
-				res.ImageRange = NodeToRange(child)
+				res.ImageRange = doc.NodeToRange(child)
 				res.Image = doc.GetNodeText(valueNode)
+
 			case "docker_layer_caching":
 				res.DockerLayerCaching = doc.GetNodeText(valueNode) == "true"
+
 			case "resource_class":
-				res.ResourceClassRange = NodeToRange(child)
+				res.ResourceClassRange = doc.NodeToRange(child)
 				res.ResourceClass = doc.GetNodeText(valueNode)
 			}
 		})
 	}
 
 	doc.parseBaseExecutor(&res.BaseExecutor, nameNode, valueNode, parseMachine, "machine")
+
+	// This only happens when the executor is `machine: true`
+	if machineNode != nil && doc.addedMachineTrueDeprecatedDiag(machineNode.Parent(), res.ResourceClass) {
+		res.IsDeprecated = true
+	}
 
 	return res
 }
@@ -163,12 +185,12 @@ func (doc *YamlDocument) parseSingleExecutorMacOS(nameNode *sitter.Node, valueNo
 		// blockNode is a block_node
 		blockMappingNode := GetChildMapping(blockNode)
 
-		iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
-			keyName := doc.GetNodeText(child.ChildByFieldName("key"))
-			valueNode := child.ChildByFieldName("value")
+		doc.iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
+			keyNode, valueNode := doc.GetKeyValueNodes(child)
+			keyName := doc.GetNodeText(keyNode)
 			switch keyName {
 			case "xcode":
-				res.XcodeRange = NodeToRange(child)
+				res.XcodeRange = doc.NodeToRange(child)
 				res.Xcode = doc.GetNodeText(valueNode)
 			}
 		})
@@ -190,9 +212,9 @@ func (doc *YamlDocument) parseSingleExecutorWindows(nameNode *sitter.Node, value
 			return
 		}
 
-		iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
-			keyName := doc.GetNodeText(child.ChildByFieldName("key"))
-			valueNode := child.ChildByFieldName("value")
+		doc.iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
+			keyNode, valueNode := doc.GetKeyValueNodes(child)
+			keyName := doc.GetNodeText(keyNode)
 			switch keyName {
 			case "image":
 				res.Image = doc.GetNodeText(valueNode)
@@ -212,7 +234,7 @@ func (doc *YamlDocument) parseSingleExecutorDocker(nameNode *sitter.Node, valueN
 
 	parseDocker := func(blockNode *sitter.Node) {
 		// blockNode is a block_node
-		blockSequence := GetChildOfType(blockNode, "block_sequence")
+		blockSequence := GetChildSequence(blockNode)
 
 		if blockSequence == nil { //TODO: deal with errors
 			return
@@ -246,13 +268,13 @@ func (doc *YamlDocument) parseDockerImage(imageNode *sitter.Node) ast.DockerImag
 		return dockerImg
 	}
 
-	iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
-		keyName := doc.GetNodeText(child.ChildByFieldName("key"))
-		valueNode := child.ChildByFieldName("value")
+	doc.iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
+		keyNode, valueNode := doc.GetKeyValueNodes(child)
+		keyName := doc.GetNodeText(keyNode)
 		switch keyName {
 		case "image":
-			dockerImg.Image = parseDockerImageValue(doc.GetNodeText(valueNode))
-			dockerImg.ImageRange = NodeToRange(child)
+			dockerImg.Image = ParseDockerImageValue(doc.GetNodeText(valueNode))
+			dockerImg.ImageRange = doc.NodeToRange(child)
 		case "name":
 			dockerImg.Name = doc.GetNodeText(valueNode)
 		case "entrypoint":
@@ -284,7 +306,7 @@ func (doc *YamlDocument) parseDockerImage(imageNode *sitter.Node) ast.DockerImag
 func (doc *YamlDocument) parseExecutorRef(valueNode *sitter.Node, child *sitter.Node) (string, protocol.Range, map[string]ast.ParameterValue) {
 	executorParameters := map[string]ast.ParameterValue{}
 	if valueNode == nil {
-		childRange := NodeToRange(child)
+		childRange := doc.NodeToRange(child)
 		return "", protocol.Range{
 			Start: protocol.Position{
 				Line:      childRange.Start.Line,
@@ -299,8 +321,12 @@ func (doc *YamlDocument) parseExecutorRef(valueNode *sitter.Node, child *sitter.
 	}
 
 	// valueNode is either a flow_node or a block_node containing a block_mapping_pair
-	if valueNode.Type() == "flow_node" {
-		return doc.GetNodeText(valueNode), NodeToRange(child), executorParameters
+	if flowNodeChild := GetFirstChild(valueNode); valueNode.Type() == "flow_node" && flowNodeChild != nil && flowNodeChild.Type() != "flow_mapping" {
+		if flowNodeChild != nil && flowNodeChild.Type() == "anchor" {
+			flowNodeChild = flowNodeChild.NextSibling()
+		}
+
+		return doc.GetNodeText(flowNodeChild), doc.NodeToRange(child), executorParameters
 	}
 
 	name := ""
@@ -309,12 +335,19 @@ func (doc *YamlDocument) parseExecutorRef(valueNode *sitter.Node, child *sitter.
 		return "", protocol.Range{}, executorParameters
 	}
 
-	iterateOnBlockMapping(blockMapping, func(child *sitter.Node) {
-		keyName := doc.GetNodeText(child.ChildByFieldName("key"))
-		valueNode := child.ChildByFieldName("value")
+	doc.iterateOnBlockMapping(blockMapping, func(child *sitter.Node) {
+		keyNode, valueNode := doc.GetKeyValueNodes(child)
+		keyName := doc.GetNodeText(keyNode)
 		switch keyName {
 		case "name":
-			name = doc.GetNodeText(valueNode)
+			flowNodeChild := GetFirstChild(valueNode)
+
+			if flowNodeChild != nil && flowNodeChild.Type() == "anchor" {
+				flowNodeChild = flowNodeChild.NextSibling()
+			}
+
+			name = doc.GetNodeText(flowNodeChild)
+
 		default:
 			value, err := doc.parseParameterValue(child)
 			if err == nil {
@@ -323,26 +356,55 @@ func (doc *YamlDocument) parseExecutorRef(valueNode *sitter.Node, child *sitter.
 		}
 	})
 
-	return name, NodeToRange(child), executorParameters
+	return name, doc.NodeToRange(child), executorParameters
 }
 
-func (doc *YamlDocument) addedMachineTrueDeprecatedDiag(child *sitter.Node) bool {
-	_, valueNode := getKeyValueNodes(child)
+func (doc *YamlDocument) addedMachineTrueDeprecatedDiag(child *sitter.Node, resourceClass string) bool {
+	_, valueNode := doc.GetKeyValueNodes(child)
 
 	value := doc.GetNodeText(valueNode)
-	if utils.IsValidYAMLBooleanValue(value) && utils.GetYAMLBooleanValue(value) {
-		doc.addDiagnostic(
-			protocol.Diagnostic{
-				Severity: protocol.DiagnosticSeverityWarning,
-				Range:    NodeToRange(child),
-				Message:  "Using `machine: true` is deprecated, please instead specify an image to use.",
-				Tags: []protocol.DiagnosticTag{
-					protocol.DiagnosticTagDeprecated,
-				},
-			},
-		)
-		return true
+
+	if !utils.IsValidYAMLBooleanValue(value) || !utils.GetYAMLBooleanValue(value) {
+		return false
 	}
 
-	return false
+	if !doc.Context.Api.UseDefaultInstance() || doc.IsSelfHostedRunner(resourceClass) {
+		return false
+	}
+
+	if doc.IsSelfHostedRunner(resourceClass) {
+		return false
+	}
+	machineRange := doc.NodeToRange(child)
+
+	doc.machineTrueFix(machineRange)
+	return true
+}
+
+func (doc *YamlDocument) machineTrueFix(machineRange protocol.Range) {
+	img := utils.GetLatestUbuntu2204Image()
+	diagnostic := utils.CreateDiagnosticFromRange(
+		machineRange,
+		protocol.DiagnosticSeverityWarning,
+		utils.GetMachineTrueMessage(img),
+		[]protocol.CodeAction{
+			utils.CreateCodeActionTextEdit("Replace with most updated ubuntu image", doc.URI,
+				[]protocol.TextEdit{
+					{
+						Range: machineRange,
+						NewText: `machine:
+` + strings.Repeat(" ", int(machineRange.Start.Character)) + `  image: ` + utils.GetLatestUbuntu2204Image(),
+					},
+				}, false),
+		},
+	)
+	diagnostic.Tags = []protocol.DiagnosticTag{
+		protocol.DiagnosticTagDeprecated,
+	}
+	doc.addDiagnostic(diagnostic)
+
+}
+
+func (doc *YamlDocument) IsSelfHostedRunner(resourceClass string) bool {
+	return len(strings.Split(resourceClass, "/")) > 1
 }

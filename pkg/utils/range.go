@@ -6,11 +6,13 @@ import (
 	"go.lsp.dev/protocol"
 )
 
-func OffsetRange(rng *protocol.Range, offset protocol.Position) {
+func AddOffsetToRange(rng protocol.Range, offset protocol.Position) protocol.Range {
 	rng.Start.Line += offset.Line
 	rng.Start.Character += offset.Character
 	rng.End.Line += offset.Line
 	rng.End.Character += offset.Character
+
+	return rng
 }
 
 // Return the exact range of the text on a line
@@ -88,6 +90,13 @@ func AreRangeEqual(a protocol.Range, b protocol.Range) bool {
 	}
 
 	return ArePositionEqual(b.End, b.End)
+}
+
+func IsDefaultRange(rng protocol.Range) bool {
+	// A default range is a set of default position
+	// which is a set of numbers which defaults to 0 in Go
+
+	return (rng.Start.Character + rng.Start.Line + rng.End.Character + rng.End.Line) == 0
 }
 
 // Compare two positions.

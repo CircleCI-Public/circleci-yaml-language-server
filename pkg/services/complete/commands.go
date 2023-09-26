@@ -3,9 +3,9 @@ package complete
 import (
 	"fmt"
 
-	"github.com/circleci/circleci-yaml-language-server/pkg/ast"
-	yamlparser "github.com/circleci/circleci-yaml-language-server/pkg/parser"
-	"github.com/circleci/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
+	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	sitter "github.com/smacker/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
@@ -25,7 +25,7 @@ func (ch *CompletionHandler) completeCommands() {
 		if nodeToComplete.Type() == ":" {
 			nodeToComplete = nodeToComplete.PrevSibling()
 		}
-		ch.completeSteps(false, nodeToComplete)
+		ch.completeSteps(command.Name, false, true, nodeToComplete)
 		return
 	}
 
@@ -54,9 +54,9 @@ func (ch *CompletionHandler) userDefinedCommands() {
 
 func (ch *CompletionHandler) orbCommands(nodeToComplete *sitter.Node) []protocol.CompletionItem {
 	for _, orb := range ch.Doc.Orbs {
-		remoteOrb := ch.Cache.OrbCache.GetOrb(orb.Url.GetOrbID())
-		if remoteOrb != nil {
-			for cmdName := range remoteOrb.Commands {
+		orbInfo := ch.GetOrbInfo(orb)
+		if orbInfo != nil {
+			for cmdName := range orbInfo.Commands {
 				cmdName = fmt.Sprintf("%s/%s", orb.Name, cmdName)
 
 				if nodeToComplete == nil {
