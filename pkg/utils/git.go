@@ -86,6 +86,7 @@ func GetProjectId(projectSlug string, lsContext *LsContext) (Project, error) {
 	req, _ := http.NewRequest("GET", url, nil)
 
 	req.Header.Add("Circle-Token", lsContext.Api.Token)
+	req.Header.Set("User-Agent", UserAgent)
 
 	res, err := http.DefaultClient.Do(req)
 

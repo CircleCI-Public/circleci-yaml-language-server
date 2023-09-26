@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
 type TagResponse struct {
@@ -51,6 +53,8 @@ func fetchTagsByURL(queryURL string) (TagResponse, error) {
 		return tagResponse, fmt.Errorf("Failed to load next")
 	}
 
+	req.Header.Set("User-Agent", utils.UserAgent)
+
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return tagResponse, fmt.Errorf("Failed to load next")
@@ -78,6 +82,8 @@ func (me *dockerHubAPI) GetImageTags(namespace, image string) ([]string, error) 
 	if err != nil {
 		return nil, err
 	}
+
+	req.Header.Set("User-Agent", utils.UserAgent)
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -114,6 +120,7 @@ func (me *dockerHubAPI) ImageHasTag(namespace, image, tag string) bool {
 	if err != nil {
 		return false
 	}
+	req.Header.Set("User-Agent", utils.UserAgent)
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {

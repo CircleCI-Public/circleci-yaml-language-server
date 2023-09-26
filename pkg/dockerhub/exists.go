@@ -3,6 +3,8 @@ package dockerhub
 import (
 	"fmt"
 	"net/http"
+
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
 func (me *dockerHubAPI) DoesImageExist(namespace, image string) bool {
@@ -22,6 +24,7 @@ func (me *dockerHubAPI) DoesImageExist(namespace, image string) bool {
 	)
 
 	req, err := http.NewRequest("GET", url.String(), nil)
+	req.Header.Set("User-Agent", utils.UserAgent)
 
 	if err != nil {
 		return false

@@ -13,6 +13,7 @@ import (
 
 	methods "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/server/methods"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
+	"github.com/rollbar/rollbar-go"
 )
 
 type JSONRPCServer struct {
@@ -26,6 +27,15 @@ type JSONRPCServer struct {
 
 func (server JSONRPCServer) commandHandler(_ context.Context, reply jsonrpc2.Replier, req jsonrpc2.Request) error {
 	fmt.Println("Called method: " + req.Method())
+
+	defer func() {
+		err := recover()
+
+		if err != nil {
+			rollbar.LogPanic(err, true)
+			panic(err)
+		}
+	}()
 
 	switch req.Method() {
 
@@ -78,7 +88,9 @@ func (server JSONRPCServer) commandHandler(_ context.Context, reply jsonrpc2.Rep
 }
 
 func (server JSONRPCServer) ServeStream(_ context.Context, conn jsonrpc2.Conn) error {
+	defer rollbar.Close()
 	fmt.Println("New client connection")
+
 	server.conn = conn
 	server.cache = utils.CreateCache()
 	server.methods = methods.Methods{
@@ -90,6 +102,7 @@ func (server JSONRPCServer) ServeStream(_ context.Context, conn jsonrpc2.Conn) e
 	}
 	conn.Go(server.ctx, server.commandHandler)
 	<-conn.Done()
+
 	return conn.Err()
 }
 
@@ -120,7 +133,7 @@ func StartServer(port int, host string, schemaLocation string) {
 	// So we just print the log one second after the server started
 	go func() {
 		time.Sleep(1 * time.Second)
-		fmt.Printf("Server started on port %d, version %s\n", port, methods.ServerVersion)
+		fmt.Printf("Server started on port %d, version %s\n", port, utils.ServerVersion)
 		fmt.Printf("   JSON Schema: %s", schemaLocation)
 	}()
 
@@ -162,8 +175,4 @@ func getJsonRpcServer(ctx context.Context, schemaLocation string) JSONRPCServer 
 		},
 		SchemaLocation: schemaLocation,
 	}
-}
-
-func GetServerVersion() string {
-	return methods.ServerVersion
 }

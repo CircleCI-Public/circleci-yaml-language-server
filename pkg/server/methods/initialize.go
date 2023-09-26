@@ -3,14 +3,11 @@ package methods
 import (
 	"fmt"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"github.com/segmentio/encoding/json"
 	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/protocol"
 )
-
-// Defined at build time by ldflags.sh
-var ServerVersion string = "<dev build>"
-var BuildTime string
 
 type SemanticTokensOptions struct {
 	WorkDoneProgress bool                          `json:"workDoneProgress,omitempty"`
@@ -42,6 +39,13 @@ func (methods *Methods) Initialize(reply jsonrpc2.Replier, req jsonrpc2.Request)
 		isCciExtension, ok := params.InitializationOptions.(map[string]interface{})["isCciExtension"]
 		if ok && isCciExtension == true {
 			methods.LsContext.IsCciExtension = true
+		}
+		userAgent, ok := params.InitializationOptions.(map[string]interface{})["userAgent"]
+		if ok {
+			userAgentString, ok := userAgent.(string)
+			if ok {
+				utils.UserAgent += " " + userAgentString
+			}
 		}
 	}
 
@@ -94,7 +98,7 @@ func (methods *Methods) Initialize(reply jsonrpc2.Replier, req jsonrpc2.Request)
 		},
 		ServerInfo: &protocol.ServerInfo{
 			Name:    "circleci-language-server",
-			Version: ServerVersion,
+			Version: utils.ServerVersion,
 		},
 	}
 	return reply(methods.Ctx, v, nil)

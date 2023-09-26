@@ -12,11 +12,11 @@ exports[`Definition Definition on parameter 2`] = `
     "range": {
       "end": {
         "character": 28,
-        "line": 465,
+        "line": 481,
       },
       "start": {
         "character": 12,
-        "line": 462,
+        "line": 478,
       },
     },
     "uri": "file:///home/circleci/.cache/cci/orbs/.circleci/circleci/macos@2.yml",
