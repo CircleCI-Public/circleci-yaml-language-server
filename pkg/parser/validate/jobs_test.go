@@ -11,49 +11,84 @@ import (
 )
 
 func TestExecutorParam(t *testing.T) {
-	yamlData := `jobs:
+	testCases := []struct {
+		label        string
+		yamlData     string
+		expectedDiag protocol.Diagnostic
+	}{
+		{
+			label: "without default",
+			yamlData: `jobs:
   test:
     parameters:
       os:
         type: executor
     executor: << parameters.os >>
     steps:
-      - checkout`
-	ctx := &utils.LsContext{
-		Api: utils.ApiContext{
-			Token:   "XXXXXXXXXXXX",
-			HostUrl: "https://circleci.com",
+      - checkout`,
+			expectedDiag: protocol.Diagnostic{
+				Range: protocol.Range{
+					Start: protocol.Position{Line: 5, Character: 4},
+					End:   protocol.Position{Line: 5, Character: 33},
+				},
+				Severity: protocol.DiagnosticSeverityWarning,
+			},
+		},
+		{
+			label: "with unknown default",
+			yamlData: `jobs:
+  test:
+    parameters:
+      os:
+        type: executor
+        default: unknown
+    executor: << parameters.os >>
+    steps:
+      - checkout`,
+			expectedDiag: protocol.Diagnostic{
+				Range: protocol.Range{
+					Start: protocol.Position{Line: 6, Character: 4},
+					End:   protocol.Position{Line: 6, Character: 33},
+				},
+				Severity: protocol.DiagnosticSeverityError,
+			},
 		},
 	}
-	doc, err := parser.ParseFromContent(
-		[]byte(yamlData),
-		ctx,
-		uri.URI(""),
-		protocol.Position{},
-	)
-	assert.NoError(t, err, "invalid YAML data")
-	assert.Contains(t, doc.Jobs, "test")
 
-	val := Validate{
-		Context:     ctx,
-		Doc:         doc,
-		Diagnostics: &[]protocol.Diagnostic{},
-	}
-	val.validateSingleJob(doc.Jobs["test"])
+	for _, testCase := range testCases {
+		t.Run("executor parameter: "+testCase.label, func(t *testing.T) {
 
-	expectedDiag := protocol.Diagnostic{
-		Range: protocol.Range{
-			Start: protocol.Position{Line: 5, Character: 4},
-			End:   protocol.Position{Line: 5, Character: 33},
-		},
-		Severity: protocol.DiagnosticSeverityError,
+			ctx := &utils.LsContext{
+				Api: utils.ApiContext{
+					Token:   "XXXXXXXXXXXX",
+					HostUrl: "https://circleci.com",
+				},
+			}
+			doc, err := parser.ParseFromContent(
+				[]byte(testCase.yamlData),
+				ctx,
+				uri.URI(""),
+				protocol.Position{},
+			)
+			assert.NoError(t, err, "invalid YAML data")
+			assert.Contains(t, doc.Jobs, "test")
+
+			val := Validate{
+				Context:     ctx,
+				Doc:         doc,
+				Diagnostics: &[]protocol.Diagnostic{},
+			}
+			val.validateSingleJob(doc.Jobs["test"])
+
+			for _, diag := range *val.Diagnostics {
+				if diag.Range == testCase.expectedDiag.Range &&
+					diag.Severity == testCase.expectedDiag.Severity {
+					return
+				}
+			}
+			t.Fatalf(`missing "parameter as executor" diagnostic`)
+		})
 	}
-	for _, diag := range *val.Diagnostics {
-		if diag.Range == expectedDiag.Range && diag.Severity == expectedDiag.Severity {
-			return
-		}
-	}
-	t.Fatalf(`missing "parameter as executor" diagnostic`)
 }
 
 func TestResourceClass(t *testing.T) {

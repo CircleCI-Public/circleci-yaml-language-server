@@ -39,7 +39,18 @@ func (val Validate) validateSingleJob(job ast.Job) {
 
 			checkParam := func(executorDefault string, rng protocol.Range) {
 				isOrbExecutor, err := val.doesOrbExecutorExist(executorDefault, rng)
-				if val.Context.Api.UseDefaultInstance() && !val.Doc.DoesExecutorExist(executorDefault) &&
+				if !param.IsOptional() {
+					val.addDiagnostic(
+						protocol.Diagnostic{
+							Range: rng,
+							Message: fmt.Sprintf(
+								"No default value specified for parameter `%s`.",
+								paramName,
+							),
+							Severity: protocol.DiagnosticSeverityWarning,
+						},
+					)
+				} else if val.Context.Api.UseDefaultInstance() && !val.Doc.DoesExecutorExist(executorDefault) &&
 					(!isOrbExecutor && err == nil) {
 					// Error on the default value
 					val.addDiagnostic(
