@@ -53,9 +53,7 @@ var ValidXCodeVersions = []string{
 }
 
 var ValidMacOSResourceClasses = []string{
-	"medium",
 	"macos.x86.medium.gen2",
-	"large",
 	"macos.m1.medium.gen1",
 	"macos.m1.large.gen1",
 	"macos.x86.metal.gen1",
