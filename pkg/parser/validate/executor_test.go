@@ -3,6 +3,7 @@ package validate
 import (
 	"testing"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
 )
 
@@ -32,6 +33,22 @@ workflows:
       - job
 `,
 			Diagnostics: []protocol.Diagnostic{},
+		},
+		{
+			Name: "flag resource class error",
+			YamlContent: `version: 2.1
+
+executors:
+  macos-ios-executor:
+    macos:
+      xcode: "13.2.1"
+    resource_class: large`,
+			Diagnostics: []protocol.Diagnostic{
+				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+					Start: protocol.Position{Line: 6, Character: 4},
+					End:   protocol.Position{Line: 6, Character: 0x19},
+				}, "Invalid resource class: \"large\""),
+			},
 		},
 	}
 
