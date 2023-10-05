@@ -700,7 +700,6 @@ workflows:
                 requires:
                     - Github Release
                 context:
-                    - cpe-slack
                     - devex-release
 
     Release management:
