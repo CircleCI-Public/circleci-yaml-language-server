@@ -360,9 +360,12 @@ jobs:
       docker:
         - image: cimg/node:18.16
       steps:
-        - checkout
         - github-cli/install
-        - github-cli/setup
+        - node/install-yarn
+        - checkout
+        - run:
+            name: Install dependencies
+            command: yarn
         - run:
             name: Lint PR title
             command: gh pr view --json title --jq .title | npx commitlint
