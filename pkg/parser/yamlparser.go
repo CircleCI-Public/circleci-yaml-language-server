@@ -141,11 +141,13 @@ func ParseFromURI(URI protocol.URI, context *utils.LsContext) (YamlDocument, err
 	return doc, err
 }
 
+const cacheMissingError = `file hasn't been opened`
+
 func ParseFromUriWithCache(URI protocol.URI, cache *utils.Cache, context *utils.LsContext) (YamlDocument, error) {
 	cachedFile := cache.FileCache.GetFile(URI)
 
 	if cachedFile == nil {
-		return YamlDocument{}, fmt.Errorf("file hasn't been opened: %s", URI.Filename())
+		return YamlDocument{}, fmt.Errorf("%s: %s", cacheMissingError, URI.Filename())
 	}
 
 	content := []byte(cachedFile.TextDocument.Text)
@@ -153,6 +155,13 @@ func ParseFromUriWithCache(URI protocol.URI, cache *utils.Cache, context *utils.
 	doc, err := ParseFromContent(content, context, URI, protocol.Position{})
 
 	return doc, err
+}
+
+func IsCacheMissingError(err error) bool {
+	if err == nil {
+		return false
+	}
+	return strings.HasPrefix(err.Error(), cacheMissingError)
 }
 
 func ParseFromContent(content []byte, context *utils.LsContext, URI protocol.URI, offset protocol.Position) (YamlDocument, error) {
