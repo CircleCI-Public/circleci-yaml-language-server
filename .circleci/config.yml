@@ -356,6 +356,16 @@ jobs:
                 name: "Linter check for E2E test"
                 command: npm run lint:e2e
 
+    Lint PR title:
+      docker:
+        - image: cimg/node:18.16
+      steps:
+        - checkout
+        - github-cli/install
+        - run:
+            name: Lint PR title
+            command: gh pr view --json title --jq .title | npx commitlint
+
     Prepare release:
       docker:
         - image: cimg/node:lts
@@ -596,7 +606,6 @@ workflows:
                     tags:
                         only: *release-tag
             
-
     Release PR:
         jobs:
             - Prepare release:
@@ -606,3 +615,7 @@ workflows:
                         only: *release-branches
                 context:
                     - devex-release
+
+    Feature PR:
+        jobs:
+            - Lint PR title
