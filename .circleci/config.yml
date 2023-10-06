@@ -596,21 +596,19 @@ workflows:
     Finalize release:
         jobs:
             - Build Linux:
-                filters:
+                filters: &release-tag-filters
+                    branches:
+                        ignore: /.*/
                     tags:
-                        only: &release-tag /\d+\.\d+\.\d+/
+                        only: /\d+\.\d+\.\d+/
             - Build MacOS:
-                filters:
-                    tags:
-                        only: *release-tag
+                filters: *release-tag-filters
             - Build Windows:
-                filters:
-                    tags:
-                        only: *release-tag
+                filters: *release-tag-filters
             - Upload artifacts:
-                filters:
-                    tags:
-                        only: *release-tag
+                filters: *release-tag-filters
+                context:
+                  - devex-release
             
     Release PR:
         jobs:
