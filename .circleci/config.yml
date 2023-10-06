@@ -526,14 +526,16 @@ jobs:
       docker:
         - image: cimg/node:18.16
       steps:
+        - run:
+            name: Halt job if running pipeline from a fork
+            command: |
+              [ -z $CIRCLE_PR_NUMBER ] || circleci-agent step halt
         - github-cli/install
         - checkout
         - run:
             name: Assign PR to author
             command: |
-              if [ -z $CIRCLE_PR_NUMBER ]; then 
-                gh pr edit --add-assignee $(gh pr view --json author --jq .author.login)
-              fi
+              gh pr edit --add-assignee $(gh pr view --json author --jq .author.login)
 
 
 workflows:
