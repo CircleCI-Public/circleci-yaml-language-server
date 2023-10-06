@@ -505,7 +505,7 @@ jobs:
 
     E2E Tests:
       docker:
-        - image: cimg/node:16.18.1
+        - image: cimg/node:18.16
       environment:
         RPC_SERVER_BIN: ~/project/bin/linux-amd64-lsp
         PORT: 10001
@@ -521,6 +521,18 @@ jobs:
             command: yarn test:e2e:ci
         - store_test_results:
             path: reports
+    
+    Auto-assign PR:
+      docker:
+        - image: cimg/node:18.16
+      steps:
+        - github-cli/install
+        - run:
+            name: Assign PR to author
+            command: |
+              echo $CIRCLE_PR_NUMBER
+              gh pr view --json author --jq .author.login | xargs gh pr edit --add-assignee
+
 
 workflows:
     Build and release:
@@ -623,5 +635,8 @@ workflows:
     Feature PR:
         jobs:
             - Lint PR title:
+                context:
+                  - devex-release
+            - Auto-assign PR:
                 context:
                   - devex-release
