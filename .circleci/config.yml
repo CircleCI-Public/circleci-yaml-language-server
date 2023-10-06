@@ -31,6 +31,7 @@ orbs:
     node: circleci/node@5.0.2
     snyk: snyk/snyk@1.4.0
     slack: circleci/slack@4.12.1
+    github-cli: circleci/github-cli@2.2.0
 
 commands:
     install-zig:
@@ -211,9 +212,10 @@ jobs:
             - when:
                 condition:
                     or:
-                        - equal: [ develop, << pipeline.git.branch >> ]
-                        - not:
-                            equal: [ << pipeline.git.tag >>, ""]
+                        - equal: [ main, << pipeline.git.branch >> ]
+                        - matches: 
+                            pattern: "^hotfix.*"
+                            value: << pipeline.git.branch >>
                 steps:
                     - run:
                         name: Build for Linux Arm 64
@@ -354,21 +356,32 @@ jobs:
                 name: "Linter check for E2E test"
                 command: npm run lint:e2e
 
+    Prepare release:
+      docker:
+        - image: cimg/node:lts
+      steps:
+        - run:
+            name: "Creating/updating Release PR"
+            command: |
+                npx release-please release-pr \
+                    --token $GITHUB_TOKEN \
+                    --repo-url $CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME \
+                    --target-branch $CIRCLE_BRANCH \
+                    --config-file .circleci/release/release-please-config.json \
+                    --manifest-file .circleci/release/release-please-manifest.json
+
     Github Release:
       docker:
         - image: cimg/node:lts
-      parameters:
-        base-branch:
-          description: Base branch to use for release
-          type: string
       steps:
         - run:
             name: "Releasing"
             command: |
               npx release-please github-release \
+                --draft \
                 --token $GITHUB_TOKEN \
                 --repo-url $CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME \
-                --target-branch << parameters.base-branch >> \
+                --target-branch $CIRCLE_BRANCH \
                 --config-file .circleci/release/release-please-config.json \
                 --manifest-file .circleci/release/release-please-manifest.json
 
@@ -399,71 +412,23 @@ jobs:
                     cd /tmp/to-deploy
                     cp ~/project/schema.json ~/project/bin
                     export TAG=$(cd ~/project && go run ~/project/scripts/get_next_release.go)
-                    ghr -name $TAG -prerelease -delete -replace -c `git rev-parse HEAD` $TAG ~/project/bin/
+                    ghr -name v$TAG -prerelease -delete -replace -c `git rev-parse HEAD` $TAG ~/project/bin/
 
-    Release:
+    Upload artifacts:
         docker:
-            - image: node:16-buster
+            - image: cimg/base:stable
         steps:
+            - github-cli/install
             - attach_workspace:
                 at: ~/
-
-            - run:
-                name: "Installing dependencies"
-                command: |
-                    apt-get update
-                    apt-get install jq -y
-
             - run:
                 name: Uploading to GitHub Release
                 command: |
-                    REPO_PATH=$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME
-
-                    echo "Tag: $CIRCLE_TAG"
-
-                    RELEASE_URL=https://api.github.com/repos/$REPO_PATH/releases/tags/$CIRCLE_TAG
-                    echo Release URL: $RELEASE_URL
-
-                    echo "Fetching release information"
-                    curl \
-                        -H "Accept: application/vnd.github+json" \
-                        -H "Authorization: Bearer $GITHUB_TOKEN"\
-                        -H "X-GitHub-Api-Version: 2022-11-28" \
-                        $RELEASE_URL > release.json
-
-                    RELEASE_ID=$(jq -r '.id' release.json)
-                    RELEASE_PAGE=$(jq -r '.html_url' release.json)
-
-                    echo "Release Id: $RELEASE_ID"
-                    echo "Release page: $RELEASE_PAGE"
-
-                    echo "Renaming release from \"$(jq -r '.name' release.json)\" to \"$CIRCLE_TAG\"..."
-                    rm release.json
-
-                    echo "pwd: $(pwd)"
-                    echo "ls -l"
-                    ls -l
-
-                    echo "ls -l ~/project/bin"
-
-                    cd bin/
-
-                    echo "Uploading assets to release"
-
+                    GITHUB_REPO_URL=$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME
                     for FILE in *; do
-                        UPLOAD_URL=https://uploads.github.com/repos/$REPO_PATH/releases/$RELEASE_ID/assets?name=$FILE
-
-                        curl \
-                            -X POST \
-                            -H "Accept: application/vnd.github+json" \
-                            -H "Authorization: Bearer $GITHUB_TOKEN"\
-                            -H "X-GitHub-Api-Version: 2022-11-28" \
-                            -H "Content-Type: application/octet-stream" \
-                            $UPLOAD_URL \
-                            --data-binary "@$FILE";
-
-                        echo "Uploaded $FILE to release $RELEASE_PAGE"
+                        gh release upload --repo $GITHUB_REPO_URL $CIRCLE_TAG "$FILE"
                     done
+                    gh release edit --repo $GITHUB_REPO_URL $CIRCLE_TAG --draft=false
 
             - notify-success:
                 title: ":rocket: CircleCI YAML Language Server v$CIRCLE_TAG released"
@@ -494,29 +459,7 @@ jobs:
                 path: bin
                 destination: .
 
-    Prepare release:
-      docker:
-        - image: cimg/node:lts
-      parameters:
-        base-branch:
-          description: Base branch to use for release
-          type: string
-
-      steps:
-        - run:
-            name: "Creating/updating Release PR"
-            command: |
-                echo $CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME
-                npx release-please release-pr \
-                    --token $GITHUB_TOKEN \
-                    --repo-url $CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME \
-                    --target-branch << parameters.base-branch >> \
-                    --config-file .circleci/release/release-please-config.json \
-                    --manifest-file .circleci/release/release-please-manifest.json
-
-
-
-    Security Scan:
+    Security Scan release:
         docker:
             - image: cimg/go:1.19.1
         steps:
@@ -525,34 +468,26 @@ jobs:
                 name: Setup Scanning
                 command: |
                     git config --global url."https://$GITHUB_USER:$GITHUB_TOKEN@github.com/circleci/".insteadOf "https://github.com/circleci/"
-            - when:
-                condition:
-                  or:
-                    - equal: [ main, << pipeline.git.branch >> ]
-                    - equal: [ develop, << pipeline.git.branch >> ]
-                steps:
-                    - run:
-                        name: Launching Snyk Orb Scanning
-                        command: echo "Running snyk/scan on main and develop; uploading the results"
-                    - snyk/scan:
+            - snyk/scan:
                         fail-on-issues: false
                         severity-threshold: high
                         monitor-on-build: true
                         project: '${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}'
-            - unless:
-                condition:
-                    or:
-                      - equal: [ main, << pipeline.git.branch >> ]
-                      - equal: [ develop, << pipeline.git.branch >> ]
-                steps:
-                    - run:
-                        name: Launching Snyk Orb Scanning
-                        command: echo "Running snyk/scan on branch; not uploading the results"
-                    - snyk/scan:
-                        fail-on-issues: false
-                        severity-threshold: high
-                        monitor-on-build: false
-                        project: '${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}/${CIRCLE_BRANCH}'
+
+    Security Scan feature:
+        docker:
+            - image: cimg/go:1.19.1
+        steps:
+            - checkout
+            - run:
+                name: Setup Scanning
+                command: |
+                    git config --global url."https://$GITHUB_USER:$GITHUB_TOKEN@github.com/circleci/".insteadOf "https://github.com/circleci/"
+            - snyk/scan:
+                fail-on-issues: false
+                severity-threshold: high
+                monitor-on-build: false
+                project: '${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}/${CIRCLE_BRANCH}'
 
     E2E Tests:
       docker:
@@ -574,65 +509,53 @@ jobs:
             path: reports
 
 workflows:
-    Quality:
+    Build and release:
         jobs:
-            - Unit Tests:
-                filters: &ignore-release-tag
-                    tags:
-                        ignore: /^\d+\.\d+\.\d+/
+            - Unit Tests
             - Lint:
                 filters:
-                    <<: *ignore-release-tag
-            - Security Scan:
+                  branches:
+                    ignore: &release-branches
+                        - main
+                        - /^hotfix.*/
+            - Security Scan release:
+                name: Security Scan (main/hotfix)
                 filters:
-                    <<: *ignore-release-tag
+                  branches:
+                    only: *release-branches
                 context:
                     - org-global-employees
-            - Build Linux:
+            - Security Scan feature:
+                name: Security Scan (feature)
                 filters:
-                    <<: *ignore-release-tag
+                  branches:
+                    ignore: *release-branches
+                context:
+                    - org-global-employees
+            - Build Linux
             - Build MacOS:
                 filters:
-                    <<: *ignore-release-tag
-                    branches:
-                        only:
-                          - main
-                          - develop
-
+                  branches:
+                    only: *release-branches
             - Build Windows:
                 filters:
-                    <<: *ignore-release-tag
-                    branches:
-                        only:
-                          - main
-                          - develop
-
+                  branches:
+                    only: *release-branches
             - Build VSIX:
                 requires:
                     - Build Linux
                     - Build MacOS
                     - Build Windows
                 filters:
-                    <<: *ignore-release-tag
                     branches:
-                        only:
-                          - main
-                          - develop
-
+                        only: *release-branches
             - E2E Tests:
-                filters:
-                    <<: *ignore-release-tag
                 requires:
                     - Build Linux
-
             - Pre-Release:
-                name: Release (pre-release)
                 filters:
-                    tags:
-                        ignore: /.*/
                     branches:
-                        only:
-                            - develop
+                        only: *release-branches
                 requires:
                     - Unit Tests
                     - Build Linux
@@ -641,75 +564,45 @@ workflows:
                     - E2E Tests
                 context:
                     - devex-release
-
-    Publication:
-        jobs:
-            - Unit Tests:
-                filters: &release-tag-only
-                    tags:
-                        only: /^\d+\.\d+\.\d+/
-                    branches:
-                        ignore: /.*/
-            - Security Scan:
+            - Github Release:
                 filters:
-                    <<: *release-tag-only
+                  branches:
+                    only: *release-branches
                 context:
-                    - org-global-employees
+                    - devex-release
+                requires:
+                    - Unit Tests
+                    - Build Linux
+                    - Build MacOS
+                    - Build Windows
+                    - E2E Tests
+    
+    Finalize release:
+        jobs:
             - Build Linux:
                 filters:
-                    <<: *release-tag-only
+                    tags:
+                        only: &release-tag /\d+\.\d+\.\d+/
             - Build MacOS:
                 filters:
-                    <<: *release-tag-only
+                    tags:
+                        only: *release-tag
             - Build Windows:
                 filters:
-                    <<: *release-tag-only
-
-            - E2E Tests:
+                    tags:
+                        only: *release-tag
+            - Upload artifacts:
                 filters:
-                    <<: *release-tag-only
-                requires:
-                    - Build Linux
+                    tags:
+                        only: *release-tag
+            
 
-            - Publish ?:
-                type: approval
-                filters:
-                    <<: *release-tag-only
-                requires:
-                    - Unit Tests
-                    - Build Linux
-                    - Build MacOS
-                    - Build Windows
-                    - E2E Tests
-                    - Security Scan
-
-            - Github Release:
-                name: Github Release
-                base-branch: main
-                filters:
-                    <<: *release-tag-only
-                context:
-                    - devex-release
-                requires:
-                    - Publish ?
-
-            - Release:
-                name: Publish
-                filters:
-                    <<: *release-tag-only
-                requires:
-                    - Github Release
-                context:
-                    - devex-release
-
-    Release management:
+    Release PR:
         jobs:
             - Prepare release:
-                base-branch: main
-                filters: &main-branch-only
+                name: Create/update release PR
+                filters:
                     branches:
-                        only: main
-                    tags:
-                        ignore: /.*/
+                        only: *release-branches
                 context:
                     - devex-release
