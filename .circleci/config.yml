@@ -527,11 +527,13 @@ jobs:
         - image: cimg/node:18.16
       steps:
         - github-cli/install
+        - checkout
         - run:
             name: Assign PR to author
             command: |
-              echo $CIRCLE_PR_NUMBER
-              gh pr view --json author --jq .author.login | xargs gh pr edit --add-assignee
+              if [ -z $CIRCLE_PR_NUMBER ]; then 
+                gh pr edit --add-assignee $(gh pr view --json author --jq .author.login)
+              fi
 
 
 workflows:
