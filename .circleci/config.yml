@@ -362,6 +362,7 @@ jobs:
       steps:
         - checkout
         - github-cli/install
+        - github-cli/setup
         - run:
             name: Lint PR title
             command: gh pr view --json title --jq .title | npx commitlint
