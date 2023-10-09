@@ -639,8 +639,14 @@ workflows:
     Feature PR:
         jobs:
             - Lint PR title:
+                filters:
+                    branches:
+                        ignore: *release-branches
                 context:
                   - devex-release
             - Auto-assign PR:
+                filters:
+                    branches:
+                        ignore: *release-branches
                 context:
                   - devex-release
