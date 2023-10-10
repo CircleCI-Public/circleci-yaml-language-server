@@ -35,14 +35,9 @@ func (val Validate) checkIfParamAssigned(params map[string]ast.ParameterValue, d
 }
 
 func (val Validate) checkParamSimpleType(param ast.ParameterValue, stepName string, definedParam ast.Parameter) {
-	paramName, _ := utils.GetParamNameUsedAtPos(val.Doc.Content, param.Range.End)
 	switch definedParam.GetType() {
-	case "string":
-		checkParamType(paramName, "string", val, param, stepName, definedParam)
-	case "boolean":
-		checkParamType(paramName, "boolean", val, param, stepName, definedParam)
-	case "integer":
-		checkParamType(paramName, "integer", val, param, stepName, definedParam)
+	case "string", "boolean", "integer":
+		checkParamType(definedParam.GetType(), val, param, stepName, definedParam)
 	case "enum":
 		if param.Type != "string" {
 			val.createParameterError(param, stepName, "string")
@@ -93,7 +88,8 @@ func (val Validate) checkParamSimpleType(param ast.ParameterValue, stepName stri
 	}
 }
 
-func checkParamType(paramName string, paramType string, val Validate, param ast.ParameterValue, stepName string, definedParam ast.Parameter) {
+func checkParamType(paramType string, val Validate, param ast.ParameterValue, stepName string, definedParam ast.Parameter) {
+	paramName, _ := utils.GetParamNameUsedAtPos(val.Doc.Content, param.Range.End)
 	if paramName != "" {
 		pipelineParam, ok := val.Doc.PipelineParameters[paramName]
 		if ok && pipelineParam.GetType() != paramType {
