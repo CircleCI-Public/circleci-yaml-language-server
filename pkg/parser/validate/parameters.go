@@ -36,21 +36,8 @@ func (val Validate) checkIfParamAssigned(params map[string]ast.ParameterValue, d
 
 func (val Validate) checkParamSimpleType(param ast.ParameterValue, stepName string, definedParam ast.Parameter) {
 	switch definedParam.GetType() {
-	case "string":
-		if param.Type != "string" {
-			val.createParameterError(param, stepName, definedParam.GetType())
-		}
-
-	case "boolean":
-		if param.Type != "boolean" {
-			val.createParameterError(param, stepName, definedParam.GetType())
-		}
-
-	case "integer":
-		if param.Type != "integer" {
-			val.createParameterError(param, stepName, definedParam.GetType())
-		}
-
+	case "string", "boolean", "integer":
+		checkParamType(definedParam.GetType(), val, param, stepName, definedParam)
 	case "enum":
 		if param.Type != "string" {
 			val.createParameterError(param, stepName, "string")
@@ -98,6 +85,18 @@ func (val Validate) checkParamSimpleType(param ast.ParameterValue, stepName stri
 			return
 		}
 		// TODO: check if POSIX_REGEX is valid
+	}
+}
+
+func checkParamType(paramType string, val Validate, param ast.ParameterValue, stepName string, definedParam ast.Parameter) {
+	paramName, _ := utils.GetParamNameUsedAtPos(val.Doc.Content, param.Range.End)
+	if paramName != "" {
+		pipelineParam, ok := val.Doc.PipelineParameters[paramName]
+		if ok && pipelineParam.GetType() != paramType {
+			val.createParameterError(param, stepName, definedParam.GetType())
+		}
+	} else if param.Type != paramType {
+		val.createParameterError(param, stepName, definedParam.GetType())
 	}
 }
 
