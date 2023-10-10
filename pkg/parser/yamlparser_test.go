@@ -13,6 +13,15 @@ import (
 	"go.lsp.dev/uri"
 )
 
+func TestCacheMissingError(t *testing.T) {
+	cache := utils.CreateCache()
+	_, err := parser.ParseFromUriWithCache(uri.New("file:///toto.yaml"), cache, nil)
+
+	if assert.Error(t, err) {
+		assert.ErrorIs(t, err, parser.CacheMissingError)
+	}
+}
+
 func TestJobExecutorMachineTrueOnApp(t *testing.T) {
 	yaml := `version: 2.1
 jobs:

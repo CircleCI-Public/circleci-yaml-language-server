@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -141,11 +142,13 @@ func ParseFromURI(URI protocol.URI, context *utils.LsContext) (YamlDocument, err
 	return doc, err
 }
 
+var CacheMissingError = errors.New("file not found in cache")
+
 func ParseFromUriWithCache(URI protocol.URI, cache *utils.Cache, context *utils.LsContext) (YamlDocument, error) {
 	cachedFile := cache.FileCache.GetFile(URI)
 
 	if cachedFile == nil {
-		return YamlDocument{}, fmt.Errorf("file hasn't been opened: %s", URI.Filename())
+		return YamlDocument{}, fmt.Errorf("%w: %s", CacheMissingError, URI.Filename())
 	}
 
 	content := []byte(cachedFile.TextDocument.Text)
