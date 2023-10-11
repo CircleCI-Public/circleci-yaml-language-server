@@ -54,6 +54,12 @@ func (doc *YamlDocument) ParseYAML(context *utils.LsContext, offset protocol.Pos
 
 			doc.VersionRange = doc.NodeToRange(child)
 
+		case "setup":
+			if doc.GetNodeText(valueNode) == "true" {
+				doc.Setup = true
+			}
+			doc.SetupRange = doc.NodeToRange(child)
+
 		case "orbs":
 			if valueNode != nil {
 				doc.OrbsRange = doc.NodeToRange(valueNode)
@@ -184,6 +190,7 @@ type YamlDocument struct {
 	Context        *utils.LsContext
 	SchemaLocation string
 
+	Setup              bool
 	Orbs               map[string]ast.Orb
 	LocalOrbs          []LocalOrb
 	Executors          map[string]ast.Executor
@@ -193,6 +200,7 @@ type YamlDocument struct {
 	PipelineParameters map[string]ast.Parameter
 	YamlAnchors        map[string]YamlAnchor
 
+	SetupRange              protocol.Range
 	OrbsRange               protocol.Range
 	ExecutorsRange          protocol.Range
 	CommandsRange           protocol.Range

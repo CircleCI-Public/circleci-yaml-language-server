@@ -261,3 +261,85 @@ orbs:
 	assert.True(t, yamlDocument.IsFromUnfetchableOrb("ccc/entity"))
 	assert.False(t, yamlDocument.IsFromUnfetchableOrb("slack/entity"))
 }
+
+func TestSetupKey(t *testing.T) {
+	type TestCase struct {
+		Content     string
+		ExpectValue bool
+		ExpectRange protocol.Range
+		Name        string
+	}
+	testCases := []TestCase{
+		{
+			Name: "Is true when set to true",
+			Content: `version: 2.1
+
+setup: true
+
+jobs:
+  toto:
+    docker:
+      - image: cimg/go:1.19.1
+    steps:
+      - run: echo "Hello world"`,
+			ExpectValue: true,
+			ExpectRange: protocol.Range{
+				Start: protocol.Position{
+					Line:      2,
+					Character: 0,
+				},
+				End: protocol.Position{
+					Line:      2,
+					Character: 11,
+				},
+			},
+		},
+		{
+			Name: "Is false when not set",
+			Content: `version: 2.1
+
+jobs:
+  toto:
+    docker:
+      - image: cimg/go:1.19.1
+    steps:
+      - run: echo "Hello world"`,
+			ExpectValue: false,
+		},
+		{
+			Name: "Is false with any other value",
+			Content: `version: 2.1
+
+setup:
+  complex:
+    values: 42
+
+jobs:
+  toto:
+    docker:
+      - image: cimg/go:1.19.1
+    steps:
+      - run: echo "Hello world"`,
+			ExpectValue: false,
+			ExpectRange: protocol.Range{
+				Start: protocol.Position{
+					Line:      2,
+					Character: 0,
+				},
+				End: protocol.Position{
+					Line:      4,
+					Character: 14,
+				},
+			},
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.Name, func(t *testing.T) {
+			yamlDocument, err := parser.ParseFromContent([]byte(tt.Content), testHelpers.GetDefaultLsContext(), uri.File(""), protocol.Position{})
+			assert.Nil(t, err)
+			assert.Equal(t, tt.ExpectValue, yamlDocument.Setup)
+			assert.Equal(t, tt.ExpectRange, yamlDocument.SetupRange)
+		})
+	}
+}
