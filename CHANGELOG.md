@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## [0.7.1](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.6.1...0.7.1) (2023-10-12)
+## [0.7.1](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.7.0...0.7.1) (2023-10-12)
 
 
 ### Features
