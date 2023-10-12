@@ -457,6 +457,7 @@ jobs:
                 name: Uploading to GitHub Release
                 command: |
                     GITHUB_REPO_URL=$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME
+                    cd ~/project/bin
                     for FILE in *; do
                         gh release upload --repo $GITHUB_REPO_URL $CIRCLE_TAG "$FILE"
                     done
