@@ -269,6 +269,9 @@ func TestSetupKey(t *testing.T) {
 		ExpectRange protocol.Range
 		Name        string
 	}
+	// These tests represent the behaviour of the CCI product.
+	// You can see the different thing that have been tried on here:
+	// https://app.circleci.com/pipelines/github/circleci/devex-demo?branch=continuation-workflows
 	testCases := []TestCase{
 		{
 			Name: "Is true when set to true",
@@ -307,7 +310,7 @@ jobs:
 			ExpectValue: false,
 		},
 		{
-			Name: "Is false with any other value",
+			Name: "Is true with complex values",
 			Content: `version: 2.1
 
 setup:
@@ -320,7 +323,35 @@ jobs:
       - image: cimg/go:1.19.1
     steps:
       - run: echo "Hello world"`,
+			ExpectValue: true,
+			ExpectRange: protocol.Range{
+				Start: protocol.Position{
+					Line:      2,
+					Character: 0,
+				},
+				End: protocol.Position{
+					Line:      4,
+					Character: 14,
+				},
+			},
+		},
+		{
+			Name: "Is false when empty",
+			Content: `version: 2.1
+
+setup:
+
+jobs:
+  toto:
+    docker:
+      - image: cimg/go:1.19.1
+    steps:
+      - run: echo "Hello world"`,
 			ExpectValue: false,
+			ExpectRange: protocol.Range{
+				Start: protocol.Position{Line: 0x2, Character: 0x0},
+				End:   protocol.Position{Line: 0x2, Character: 0x6},
+			},
 		},
 	}
 

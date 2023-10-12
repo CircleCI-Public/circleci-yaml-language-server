@@ -28,9 +28,9 @@ exports[`DocumentSymbol File with continuation workflow 1`] = `
     },
   },
   {
-    "detail": "Continuation workflow enabled",
-    "kind": 14,
-    "name": "setup: true",
+    "detail": "true",
+    "kind": 17,
+    "name": "Setup",
     "range": {
       "end": {
         "character": 11,
