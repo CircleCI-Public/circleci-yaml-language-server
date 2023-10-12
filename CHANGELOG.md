@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## [0.7.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.6.1...0.7.0) (2023-10-12)
+## [0.7.1](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.6.1...0.7.1) (2023-10-12)
 
 
 ### Features
@@ -12,6 +12,18 @@
 ### Bug Fixes
 
 * parameter flagged due type mismatch even it shouldnt ([1487fd9](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/1487fd9bf5114fdf1fdc6fdf881d1fe35a1b309b))
+* remove deperecated macos resource class from auto complete and flag them as errors ([1354662](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/135466207c5d99c4506b294307d6bbde6377c1b1))
+
+## [0.7.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.6.1...0.7.0) (2023-10-03)
+
+
+### Features
+
+* [DEVEX-1088] add warn when executor param has no default value ([#203](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/203)) ([55d99f1](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/55d99f10828a473d58c51e6b0486c318e7f91b78))
+
+
+### Bug Fixes
+
 * remove deperecated macos resource class from auto complete and flag them as errors ([1354662](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/135466207c5d99c4506b294307d6bbde6377c1b1))
 
 ## [0.6.1](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.6.0...0.6.1) (2023-09-26)
