@@ -233,7 +233,6 @@ jobs:
                     sh -c "go build $LDFLAGS -o ~/project/bin/linux-arm64-lsp ./cmd/start_server/start_server.go"
             - store_artifacts:
                   path: ~/project/bin
-
             - persist_to_workspace:
                   root: ~/
                   paths:
@@ -317,7 +316,9 @@ jobs:
             - checkout
             - run:
                 name: Copy schema.json into bin/ directory
-                command: cp ~/project/schema.json ~/project/bin
+                command: |
+                  mkdir -p ~/project/bin
+                  cp ~/project/schema.json ~/project/bin/schema.json
             - store_artifacts:
                   path: ~/project/bin
             - persist_to_workspace:
