@@ -258,17 +258,6 @@ jobs:
                   name: Build for mac os intel
                   command:
                       sh -c "go build `~/project/scripts/ldflags.sh` -o ~/project/bin/darwin-amd64-lsp ./cmd/start_server/start_server.go"
-            - run:
-                  name: Build for macos arm64
-                  command: |
-                      export LDFLAGS=$(SUFFIX='-s -w' ~/project/scripts/ldflags.sh)
-                      export CGO_ENABLED=1
-                      export GOOS=darwin
-                      export GOARCH=arm64
-                      export FRAMEWORKS="$(xcrun --show-sdk-path)/System/Library/Frameworks"
-                      export CC="zig cc -target aarch64-macos -F$FRAMEWORKS"
-                      export CXX="zig c++ -target aarch64-macos -F$FRAMEWORKS"
-                      sh -c "go build $LDFLAGS -o ~/project/bin/darwin-arm64-lsp ./cmd/start_server/start_server.go"
             - store_artifacts:
                   path: ~/project/bin
             - persist_to_workspace:
