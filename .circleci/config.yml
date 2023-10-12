@@ -594,7 +594,7 @@ workflows:
                     - devex-release
                     - org-global-employees
             - Build Linux x86_64
-            - Build Linux arm64
+            - Build Linux arm64:
                 filters:
                   branches:
                     only: *release-branches
