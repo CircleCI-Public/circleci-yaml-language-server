@@ -321,16 +321,6 @@ jobs:
     steps:
       - run: echo "Hello world"`,
 			ExpectValue: false,
-			ExpectRange: protocol.Range{
-				Start: protocol.Position{
-					Line:      2,
-					Character: 0,
-				},
-				End: protocol.Position{
-					Line:      4,
-					Character: 14,
-				},
-			},
 		},
 	}
 

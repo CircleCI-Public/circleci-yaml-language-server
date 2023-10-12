@@ -57,8 +57,8 @@ func (doc *YamlDocument) ParseYAML(context *utils.LsContext, offset protocol.Pos
 		case "setup":
 			if doc.GetNodeText(valueNode) == "true" {
 				doc.Setup = true
+				doc.SetupRange = doc.NodeToRange(child)
 			}
-			doc.SetupRange = doc.NodeToRange(child)
 
 		case "orbs":
 			if valueNode != nil {
