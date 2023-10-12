@@ -198,41 +198,45 @@ jobs:
             - store_test_results:
                 path: report.xml
 
-    Build Linux:
+    Build Linux x86_64:
+        docker:
+            - image: cimg/go:1.19.1
+        steps:
+            - checkout
+            - run:
+                  name: Build for Linux Amd 64
+                  command:
+                      sh -c "go build `~/project/scripts/ldflags.sh` -o ~/project/bin/linux-amd64-lsp ./cmd/start_server/start_server.go"
+            - run:
+                name: Copy schema.json into bin/ directory
+                command: cp ~/project/schema.json ~/project/bin
+            - store_artifacts:
+                  path: ~/project/bin
+            - persist_to_workspace:
+                  root: ~/
+                  paths:
+                      - project/bin
+
+    Build Linux arm64:
         docker:
             - image: cimg/go:1.19.1
         steps:
             - checkout
             - install-zig
             - run:
-                  name: Build for Linux Amd 64
-                  command:
-                      sh -c "go build `~/project/scripts/ldflags.sh` -o ~/project/bin/linux-amd64-lsp ./cmd/start_server/start_server.go"
-
-            - when:
-                condition:
-                    or:
-                        - equal: [ main, << pipeline.git.branch >> ]
-                        - matches: 
-                            pattern: "^hotfix.*"
-                            value: << pipeline.git.branch >>
-                steps:
-                    - run:
-                        name: Build for Linux Arm 64
-                        command: |
-                            export LDFLAGS=$(~/project/scripts/ldflags.sh)
-                            export CGO_ENABLED=1
-                            export GOOS=linux
-                            export GOARCH=arm64
-                            export CC='zig cc -target aarch64-linux'
-                            export CXX='zig c++ -target aarch64-linux'
-                            export PATH="$(pwd)/zig-linux-x86_64-0.9.1:$PATH"
-                            sh -c "go build $LDFLAGS -o ~/project/bin/linux-arm64-lsp ./cmd/start_server/start_server.go"
-
+                name: Build for Linux Arm 64
+                command: |
+                    export LDFLAGS=$(~/project/scripts/ldflags.sh)
+                    export CGO_ENABLED=1
+                    export GOOS=linux
+                    export GOARCH=arm64
+                    export CC='zig cc -target aarch64-linux'
+                    export CXX='zig c++ -target aarch64-linux'
+                    export PATH="$(pwd)/zig-linux-x86_64-0.9.1:$PATH"
+                    sh -c "go build $LDFLAGS -o ~/project/bin/linux-arm64-lsp ./cmd/start_server/start_server.go"
             - run:
                 name: Copy schema.json into bin/ directory
                 command: cp ~/project/schema.json ~/project/bin
-
             - store_artifacts:
                   path: ~/project/bin
 
@@ -241,7 +245,7 @@ jobs:
                   paths:
                       - project/bin
 
-    Build MacOS:
+    Build MacOS x86_64:
         macos:
             xcode: 14.0.1
         environment:
@@ -265,10 +269,35 @@ jobs:
                       export CC="zig cc -target aarch64-macos -F$FRAMEWORKS"
                       export CXX="zig c++ -target aarch64-macos -F$FRAMEWORKS"
                       sh -c "go build $LDFLAGS -o ~/project/bin/darwin-arm64-lsp ./cmd/start_server/start_server.go"
-
             - store_artifacts:
                   path: ~/project/bin
+            - persist_to_workspace:
+                  root: ~/
+                  paths:
+                      - project/bin
 
+    Build MacOS arm64:
+        macos:
+            xcode: 14.0.1
+        environment:
+            HOMEBREW_NO_AUTO_UPDATE: 1
+        steps:
+            - checkout
+            - run: brew install golang
+            - run: brew install zig
+            - run:
+                  name: Build for macos arm64
+                  command: |
+                      export LDFLAGS=$(SUFFIX='-s -w' ~/project/scripts/ldflags.sh)
+                      export CGO_ENABLED=1
+                      export GOOS=darwin
+                      export GOARCH=arm64
+                      export FRAMEWORKS="$(xcrun --show-sdk-path)/System/Library/Frameworks"
+                      export CC="zig cc -target aarch64-macos -F$FRAMEWORKS"
+                      export CXX="zig c++ -target aarch64-macos -F$FRAMEWORKS"
+                      sh -c "go build $LDFLAGS -o ~/project/bin/darwin-arm64-lsp ./cmd/start_server/start_server.go"
+            - store_artifacts:
+                  path: ~/project/bin
             - persist_to_workspace:
                   root: ~/
                   paths:
@@ -564,8 +593,16 @@ workflows:
                 context:
                     - devex-release
                     - org-global-employees
-            - Build Linux
-            - Build MacOS:
+            - Build Linux x86_64
+            - Build Linux arm64
+                filters:
+                  branches:
+                    only: *release-branches
+            - Build MacOS x86_64:
+                filters:
+                  branches:
+                    only: *release-branches
+            - Build MacOS arm64:
                 filters:
                   branches:
                     only: *release-branches
@@ -575,23 +612,27 @@ workflows:
                     only: *release-branches
             - Build VSIX:
                 requires:
-                    - Build Linux
-                    - Build MacOS
+                    - Build Linux x86_64
+                    - Build Linux arm64
+                    - Build MacOS x86_64
+                    - Build MacOS arm64
                     - Build Windows
                 filters:
                     branches:
                         only: *release-branches
             - E2E Tests:
                 requires:
-                    - Build Linux
+                    - Build Linux x86_64
             - Pre-Release:
                 filters:
                     branches:
                         only: *release-branches
                 requires:
                     - Unit Tests
-                    - Build Linux
-                    - Build MacOS
+                    - Build Linux x86_64
+                    - Build Linux arm64
+                    - Build MacOS x86_64
+                    - Build MacOS arm64
                     - Build Windows
                     - E2E Tests
                 context:
@@ -604,24 +645,36 @@ workflows:
                     - devex-release
                 requires:
                     - Unit Tests
-                    - Build Linux
-                    - Build MacOS
+                    - Build Linux x86_64
+                    - Build Linux arm64
+                    - Build MacOS x86_64
+                    - Build MacOS arm64
                     - Build Windows
                     - E2E Tests
     
     Finalize release:
         jobs:
-            - Build Linux:
+            - Build Linux x86_64:
                 filters: &release-tag-filters
                     branches:
                         ignore: /.*/
                     tags:
                         only: /\d+\.\d+\.\d+/
-            - Build MacOS:
+            - Build Linux arm64:
+                filters: *release-tag-filters
+            - Build MacOS x86_64:
+                filters: *release-tag-filters
+            - Build MacOS arm64:
                 filters: *release-tag-filters
             - Build Windows:
                 filters: *release-tag-filters
             - Upload artifacts:
+                requires:
+                  - Build Linux x86_64
+                  - Build Linux arm64
+                  - Build MacOS x86_64
+                  - Build MacOS arm64
+                  - Build Windows
                 filters: *release-tag-filters
                 context:
                   - devex-release
