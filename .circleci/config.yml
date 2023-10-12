@@ -207,9 +207,6 @@ jobs:
                   name: Build for Linux Amd 64
                   command:
                       sh -c "go build `~/project/scripts/ldflags.sh` -o ~/project/bin/linux-amd64-lsp ./cmd/start_server/start_server.go"
-            - run:
-                name: Copy schema.json into bin/ directory
-                command: cp ~/project/schema.json ~/project/bin
             - store_artifacts:
                   path: ~/project/bin
             - persist_to_workspace:
@@ -234,9 +231,6 @@ jobs:
                     export CXX='zig c++ -target aarch64-linux'
                     export PATH="$(pwd)/zig-linux-x86_64-0.9.1:$PATH"
                     sh -c "go build $LDFLAGS -o ~/project/bin/linux-arm64-lsp ./cmd/start_server/start_server.go"
-            - run:
-                name: Copy schema.json into bin/ directory
-                command: cp ~/project/schema.json ~/project/bin
             - store_artifacts:
                   path: ~/project/bin
 
@@ -298,7 +292,6 @@ jobs:
         steps:
             - checkout
             - install-zig
-
             - run:
                   name: Build for Windows x86_64 (64 bits)
                   command: |
@@ -310,10 +303,23 @@ jobs:
                       export CXX='zig c++ -target x86_64-windows'
                       export PATH="$(pwd)/zig-linux-x86_64-0.9.1:$PATH"
                       sh -c "go build $LDFLAGS -o ~/project/bin/windows-amd64-lsp.exe ./cmd/start_server/start_server.go"
-
             - store_artifacts:
                   path: ~/project/bin
+            - persist_to_workspace:
+                  root: ~/
+                  paths:
+                      - project/bin
 
+    Copy JSON schema:
+        docker:
+            - image: cimg/base:stable
+        steps:
+            - checkout
+            - run:
+                name: Copy schema.json into bin/ directory
+                command: cp ~/project/schema.json ~/project/bin
+            - store_artifacts:
+                  path: ~/project/bin
             - persist_to_workspace:
                   root: ~/
                   paths:
@@ -326,31 +332,24 @@ jobs:
             - checkout
             - attach_workspace:
                   at: ~/
-
             - install-vscode-extensions-deps
-
             - run: cp schema.json editors/vscode
             - run: cp publicschema.json editors/vscode
-
             - run: cp -R bin editors/vscode/bin
             - run:
                   name: Build VSIX
                   command: |
                       # (yes ||:) forces command "yes" to exit with exit code 0 (if you don't do this it will exit with code 141)
                       cd editors/vscode && (yes ||:) | npm run vsix-ci
-
             - run: mkdir /tmp/vsix/
-
             - run:
                   name: Move VSIX to tmp
                   command:
                       mv editors/vscode/circleci-language-server-*.vsix
                       /tmp/vsix/
-
             - run:
                   name: ZIP VSIX
                   command: cd /tmp && zip -r circleci-lsp-vsix.zip vsix
-
             - store_artifacts:
                   path: /tmp/circleci-lsp-vsix.zip
 
@@ -599,6 +598,10 @@ workflows:
                 filters:
                   branches:
                     only: *release-branches
+            - Copy JSON schema:
+                filters:
+                  branches:
+                    only: *release-branches
             - Build VSIX:
                 requires:
                     - Build Linux x86_64
@@ -606,6 +609,7 @@ workflows:
                     - Build MacOS x86_64
                     - Build MacOS arm64
                     - Build Windows
+                    - Copy JSON schema
                 filters:
                     branches:
                         only: *release-branches
@@ -623,6 +627,7 @@ workflows:
                     - Build MacOS x86_64
                     - Build MacOS arm64
                     - Build Windows
+                    - Copy JSON schema
                     - E2E Tests
                 context:
                     - devex-release
@@ -639,6 +644,7 @@ workflows:
                     - Build MacOS x86_64
                     - Build MacOS arm64
                     - Build Windows
+                    - Copy JSON schema
                     - E2E Tests
     
     Finalize release:
@@ -657,6 +663,8 @@ workflows:
                 filters: *release-tag-filters
             - Build Windows:
                 filters: *release-tag-filters
+            - Copy JSON schema:
+                filters: *release-tag-filters
             - Upload artifacts:
                 requires:
                   - Build Linux x86_64
@@ -664,6 +672,7 @@ workflows:
                   - Build MacOS x86_64
                   - Build MacOS arm64
                   - Build Windows
+                  - Copy JSON schema
                 filters: *release-tag-filters
                 context:
                   - devex-release
