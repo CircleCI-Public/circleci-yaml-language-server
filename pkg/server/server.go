@@ -37,53 +37,60 @@ func (server JSONRPCServer) commandHandler(_ context.Context, reply jsonrpc2.Rep
 		}
 	}()
 
+	logErrorAndReply := func(ctx context.Context, result interface{}, err error) error {
+		if err != nil {
+			rollbar.Log(rollbar.ERR, err)
+		}
+		return reply(ctx, result, err)
+	}
+
 	switch req.Method() {
 
 	case protocol.MethodInitialize:
-		return server.methods.Initialize(reply, req)
+		return server.methods.Initialize(logErrorAndReply, req)
 
 	case protocol.MethodWorkspaceExecuteCommand:
-		return server.methods.ExecuteCommand(reply, req)
+		return server.methods.ExecuteCommand(logErrorAndReply, req)
 
 	case protocol.MethodTextDocumentDidOpen:
-		return server.methods.DidOpen(reply, req)
+		return server.methods.DidOpen(logErrorAndReply, req)
 
 	case protocol.MethodTextDocumentDidClose:
-		return server.methods.DidClose(reply, req)
+		return server.methods.DidClose(logErrorAndReply, req)
 
 	case protocol.MethodTextDocumentDidChange:
-		return server.methods.DidChange(reply, req)
+		return server.methods.DidChange(logErrorAndReply, req)
 
 	case protocol.MethodTextDocumentHover:
-		return server.methods.Hover(reply, req)
+		return server.methods.Hover(logErrorAndReply, req)
 
 	case protocol.MethodSemanticTokensFull:
-		return server.methods.SemanticTokens(reply, req)
+		return server.methods.SemanticTokens(logErrorAndReply, req)
 
 	case protocol.MethodTextDocumentDefinition:
-		return server.methods.Definition(reply, req)
+		return server.methods.Definition(logErrorAndReply, req)
 
 	case protocol.MethodTextDocumentReferences:
-		return server.methods.References(reply, req)
+		return server.methods.References(logErrorAndReply, req)
 
 	case protocol.MethodTextDocumentCompletion:
-		return server.methods.Complete(reply, req)
+		return server.methods.Complete(logErrorAndReply, req)
 
 	case protocol.MethodTextDocumentCodeAction:
-		return server.methods.CodeAction(reply, req)
+		return server.methods.CodeAction(logErrorAndReply, req)
 
 	case protocol.MethodShutdown:
 		return reply(server.ctx, nil, nil)
 
 	case protocol.MethodTextDocumentDocumentSymbol:
-		return server.methods.DocumentSymbols(reply, req)
+		return server.methods.DocumentSymbols(logErrorAndReply, req)
 
 	case protocol.MethodExit:
 		os.Exit(0)
 		return nil
 
 	default:
-		return jsonrpc2.MethodNotFoundHandler(server.ctx, reply, req)
+		return jsonrpc2.MethodNotFoundHandler(server.ctx, logErrorAndReply, req)
 	}
 }
 
