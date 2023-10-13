@@ -39,6 +39,7 @@ func (server JSONRPCServer) commandHandler(_ context.Context, reply jsonrpc2.Rep
 
 	logErrorAndReply := func(ctx context.Context, result interface{}, err error) error {
 		if err != nil {
+			fmt.Printf("error calling %s: %s\n", req.Method(), err.Error())
 			rollbar.Log(rollbar.ERR, err)
 		}
 		return reply(ctx, result, err)
