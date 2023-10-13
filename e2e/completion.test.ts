@@ -1,7 +1,4 @@
-import {
-  commands,
-  position,
-} from './utils';
+import { commands, position } from './utils';
 
 describe('Completion command', () => {
   jest.setTimeout(10000);

@@ -10,6 +10,7 @@ enum Commands {
   Shutdown = 'shutdown',
   Exit = 'exit',
   PublishDiagnostics = 'textDocument/publishDiagnostics',
+  DocumentSymbol = 'textDocument/documentSymbol',
 }
 
 enum DiagnosticSeverity {
@@ -30,99 +31,103 @@ type LanguageIdentifier = string;
 type TriggerKind = number;
 
 type CodeDescription = {
-  href: string,
+  href: string;
 };
 
 type CompletionList = {
-  isIncomplete: boolean,
-  items: CompletionItem[],
+  isIncomplete: boolean;
+  items: CompletionItem[];
 };
 
 type HoverCommandResponse = {
   contents: {
-    kind: string,
-    value: string,
-  },
+    kind: string;
+    value: string;
+  };
 
-  range?: Range,
+  range?: Range;
 };
 
+type DocumentSymbol = unknown;
+
+type DocumentSymbolResponse = DocumentSymbol[];
+
 type CompletionItem = {
-  label: string,
+  label: string;
 };
 
 type CompletionContext = {
-  triggerCharacter?: string,
-  triggerKind?: TriggerKind,
+  triggerCharacter?: string;
+  triggerKind?: TriggerKind;
 };
 
 type DiagnosticRelatedInformation = {
-  location: Location,
-  message: string,
+  location: Location;
+  message: string;
 };
 
 type Diagnostic = {
-  range: Range,
-  severity?: DiagnosticSeverity
-  code?: string | number,
-  codeDescription?: CodeDescription,
-  source?: string,
-  message: string,
-  tags?: DiagnosticTag[],
-  relatedInformation?: DiagnosticRelatedInformation[],
-  data?: unknown,
+  range: Range;
+  severity?: DiagnosticSeverity;
+  code?: string | number;
+  codeDescription?: CodeDescription;
+  source?: string;
+  message: string;
+  tags?: DiagnosticTag[];
+  relatedInformation?: DiagnosticRelatedInformation[];
+  data?: unknown;
 };
 
 type Location = {
-  uri: DocumentURI,
-  range: Range,
+  uri: DocumentURI;
+  range: Range;
 };
 
 type PartialResultParams = {
-  partialResultToken?: ProgressToken,
+  partialResultToken?: ProgressToken;
 };
 
 type Position = {
-  line: number,
-  character: number,
+  line: number;
+  character: number;
 };
 
 type ProgressToken = {
-  name: string,
-  number: number,
+  name: string;
+  number: number;
 };
 
 type Range = {
-  start: Position,
-  end: Position,
+  start: Position;
+  end: Position;
 };
 
 type TextDocumentContentChangeEvent = {
   // Range is the range of the document that changed.
-  range: Range,
+  range: Range;
 
   // RangeLength is the length of the range that got replaced.
-  rangeLength?: number,
+  rangeLength?: number;
 
   // Text is the new text of the document.
-  text: string,
+  text: string;
 };
 
 type TextDocumentItem = {
   textDocument: {
-    languageId: LanguageIdentifier
+    languageId: LanguageIdentifier;
 
-    text: string,
-  } & VersionedTextDocumentIdentifier
+    text: string;
+  } & VersionedTextDocumentIdentifier;
 };
 
 type VersionedTextDocumentIdentifier = {
-  uri: DocumentURI,
-  version: DocumentVersion,
+  uri: DocumentURI;
+  version: DocumentVersion;
 };
 
 type WorkDoneProgressParams = {
-  workDoneToken?: ProgressToken,
+  workDoneToken?: ProgressToken;
 };
 
 type DocumentDidOpenCommand = TextDocumentItem;
@@ -133,76 +138,75 @@ type DocumentDidChange = {
   // TextDocument is the document that did change. The version number points
   // to the version after all provided content changes have
   // been applied.
-  textDocument: VersionedTextDocumentIdentifier,
+  textDocument: VersionedTextDocumentIdentifier;
 
   // ContentChanges is the actual content changes. The content changes describe single state changes
   // to the document. So if there are two content changes c1 and c2 for a document
   // in state S then c1 move the document to S' and c2 to S''.
-  contentChanges: TextDocumentContentChangeEvent[],
+  contentChanges: TextDocumentContentChangeEvent[];
 };
 
 type ReferenceContext = {
-  includeDeclaration: boolean,
+  includeDeclaration: boolean;
 };
 
 type TextDocumentPositionParams = {
-  textDocument: TextDocumentIdentifier,
-  position: Position,
+  textDocument: TextDocumentIdentifier;
+  position: Position;
 };
 
 type TextDocumentIdentifier = {
-  uri: DocumentURI,
+  uri: DocumentURI;
 };
 
 // ============================================================
 // RPC Parameters
-type DocumentHover =
-  & TextDocumentPositionParams
-  & WorkDoneProgressParams;
+type DocumentHover = TextDocumentPositionParams & WorkDoneProgressParams;
 
 type SemanticTokensParams = {
-  textDocument: TextDocumentIdentifier,
-}
-& PartialResultParams
-& WorkDoneProgressParams;
+  textDocument: TextDocumentIdentifier;
+} & PartialResultParams &
+WorkDoneProgressParams;
 
-type DefinitionParams =
-  & TextDocumentPositionParams
-  & WorkDoneProgressParams
-  & PartialResultParams;
+type DefinitionParams = TextDocumentPositionParams &
+WorkDoneProgressParams &
+PartialResultParams;
 
 type ReferenceParams = {
-  context: ReferenceContext,
-}
-& TextDocumentPositionParams
-& WorkDoneProgressParams
-& PartialResultParams;
+  context: ReferenceContext;
+} & TextDocumentPositionParams &
+WorkDoneProgressParams &
+PartialResultParams;
 
 type CompletionParams = {
-  context?: CompletionContext,
-}
-& TextDocumentPositionParams
-& WorkDoneProgressParams
-& PartialResultParams;
+  context?: CompletionContext;
+} & TextDocumentPositionParams &
+WorkDoneProgressParams &
+PartialResultParams;
 
 type PublishDiagnosticsParams = {
-  diagnostics: Diagnostic[],
-  uri: DocumentURI,
-  version?: DocumentVersion,
+  diagnostics: Diagnostic[];
+  uri: DocumentURI;
+  version?: DocumentVersion;
+};
+
+type DocumentSymbolParams = {
+  textDocument: TextDocumentIdentifier;
 };
 
 type CommandParameters = {
-  [Commands.Completion]: CompletionParams,
-  [Commands.DocumentDidOpen]: DocumentDidOpenCommand,
-  [Commands.DocumentDidClose]: DocumentDidCloseCommand,
-  [Commands.DocumentDidChange]: DocumentDidChange,
-  [Commands.DocumentHover]: DocumentHover,
-  [Commands.Exit]: undefined,
-  [Commands.Definition] : DefinitionParams,
-  [Commands.PublishDiagnostics]: PublishDiagnosticsParams,
-  [Commands.Reference]: ReferenceParams,
-  [Commands.SemanticToken]: SemanticTokensParams,
-  [Commands.Shutdown]: undefined,
+  [Commands.Completion]: CompletionParams;
+  [Commands.DocumentDidOpen]: DocumentDidOpenCommand;
+  [Commands.DocumentDidClose]: DocumentDidCloseCommand;
+  [Commands.DocumentDidChange]: DocumentDidChange;
+  [Commands.DocumentHover]: DocumentHover;
+  [Commands.Exit]: undefined;
+  [Commands.Definition]: DefinitionParams;
+  [Commands.PublishDiagnostics]: PublishDiagnosticsParams;
+  [Commands.Reference]: ReferenceParams;
+  [Commands.SemanticToken]: SemanticTokensParams;
+  [Commands.Shutdown]: undefined;
+  [Commands.DocumentSymbol]: DocumentSymbolParams;
 };
 
 type CommandDefinitions = {
@@ -211,64 +215,64 @@ type CommandDefinitions = {
 
 type CommandResult = Record<string, unknown> | undefined;
 
-type ProtocolParams = DocumentDidOpenCommand
-| DocumentDidCloseCommand
-| DocumentDidChange
-| DocumentHover
-| SemanticTokensParams
-| DefinitionParams
-| ReferenceParams
-| CompletionParams
-| PublishDiagnosticsParams;
+type ProtocolParams =
+    | DocumentDidOpenCommand
+    | DocumentDidCloseCommand
+    | DocumentDidChange
+    | DocumentHover
+    | SemanticTokensParams
+    | DefinitionParams
+    | ReferenceParams
+    | CompletionParams
+    | PublishDiagnosticsParams;
 
-type ProtocolReturns = CompletionList | HoverCommandResponse;
+type ProtocolReturns =
+    | CompletionList
+    | HoverCommandResponse
+    | DocumentSymbolResponse;
 
 type EnvOptions = {
   lspServer?: {
     // Port of the LSP server
     // Env variable: PORT
     // Default: <none>
-    port?: number,
+    port?: number;
 
     // Host of the LSP Server
     // Env variable: LSP_SERVER_HOST
     // Default: localhost
-    host?: string,
+    host?: string;
 
     // Should the server be spawn ?
     // Accepted values are: 1, 0, on, off, true, false, yes, no
     // Env variable: SPAWN_LSP_SERVER
     // Default: false
-    spawn?: boolean,
+    spawn?: boolean;
 
     // Path to the server binary
     // If relative, it will be relative to the current folder
     // Env variable: RPC_SERVER_BIN
     // Default: <none>
-    binPath?: string,
+    binPath?: string;
 
     // Path to the schema.
     // If relative, it will be relative to the current folder
     // Env variable: SCHEMA_LOCATION
     // Default: <none>
-    jsonSchemaLocation?: string,
-  },
+    jsonSchemaLocation?: string;
+  };
 };
 
-export {
-  Commands,
-};
+export { Commands };
 
 export type {
   CommandDefinitions,
   CommandParameters,
   CommandResult,
   EnvOptions,
-
   Diagnostic,
   Position,
   Range,
-
   CompletionList,
   CompletionParams,
   DocumentDidOpenCommand,
@@ -277,6 +281,7 @@ export type {
   DocumentHover,
   DefinitionParams,
   HoverCommandResponse,
+  DocumentSymbolResponse,
   ReferenceParams,
   ProtocolParams,
   ProtocolReturns,
