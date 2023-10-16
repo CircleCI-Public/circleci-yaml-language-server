@@ -166,6 +166,38 @@ func (val Validate) checkIfStepsContainOrb(steps []ast.Step, orbName string) boo
 	return false
 }
 
+func (val Validate) checkIfJobParamContainOrb(params map[string]ast.ParameterValue, orbName string) bool {
+	for _, p := range params {
+		array, ok := p.Value.([]ast.ParameterValue)
+		if !ok {
+			continue
+		}
+
+		for _, value := range array {
+			if value.Type != "steps" {
+				break
+			}
+
+			steps, ok := value.Value.([]ast.Step)
+			if !ok {
+				continue
+			}
+
+			for _, step := range steps {
+				name := step.GetName()
+				split := strings.Split(name, "/")
+				if len(split) != 2 {
+					continue
+				}
+				if split[0] == orbName {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
 func (val Validate) checkIfJobUseOrb(job ast.Job, orbName string) bool {
 	if val.checkIfStepsContainOrb(job.Steps, orbName) {
 		return true

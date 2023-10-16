@@ -1,0 +1,27 @@
+version: 2.1
+
+orbs:
+  slack: circleci/slack@4.10.1
+
+jobs:
+  run-steps:
+    parameters:
+      custom-steps:
+        type: steps
+        default: []
+    docker:
+      - image: cimg/node:18.18.1
+    steps:
+      - steps: << parameters.custom-steps >>
+
+workflows:
+  workflow:
+    jobs:
+      - run-steps:
+          custom-steps:
+            - slack/notify:
+                custom: ""
+                event: always
+            - slack/notify:
+                custom: "toto"
+                event: always

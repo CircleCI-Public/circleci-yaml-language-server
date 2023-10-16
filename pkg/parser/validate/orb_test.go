@@ -1,9 +1,11 @@
 package validate
 
 import (
+	"os"
 	"testing"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
+	"github.com/stretchr/testify/assert"
 	"go.lsp.dev/protocol"
 )
 
@@ -256,4 +258,16 @@ workflows:
 	}
 
 	CheckYamlErrors(t, testCases)
+}
+
+func TestOrbStepsUsedInParameters(t *testing.T) {
+	content, err := os.ReadFile("testdata/orb_steps_used_in_params.yml")
+	assert.NoError(t, err)
+	val := CreateValidateFromYAML(string(content))
+	val.Validate(false)
+	for _, diag := range *val.Diagnostics {
+		if diag.Message == "Orb is unused" {
+			t.Errorf("Got orb is unused diagnostic")
+		}
+	}
 }
