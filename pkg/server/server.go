@@ -91,7 +91,7 @@ func (server JSONRPCServer) commandHandler(_ context.Context, reply jsonrpc2.Rep
 		return nil
 
 	default:
-		return jsonrpc2.MethodNotFoundHandler(server.ctx, logErrorAndReply, req)
+		return jsonrpc2.MethodNotFoundHandler(server.ctx, reply, req)
 	}
 }
 
