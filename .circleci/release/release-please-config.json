@@ -1,39 +1,16 @@
 {
-  "bump-minor-pre-major": false,
-  "bump-patch-for-minor-pre-major": false,
-  "draft": false,
-  "prerelease": false,
-  "include-v-in-tag": false,
-  "initial-version": "0.1.15",
-  "bootstrap-sha": "6bd5479468c1352fde43e3d22d917f36e46e9782",
-  "changelog-path": "CHANGELOG.md",
-  "include-component-in-tag": false,
-  "release-type": "node",
-  "extra-files": [
-    {
-      "path": "packages/vscode-extension/package.json",
-      "jsonpath": "$.version",
-      "type": "json"
-    }
-  ],
-  "changelog-sections": [
-    { "type": "feat", "section": "Features" },
-    { "type": "feature", "section": "Features" },
-    { "type": "fix", "section": "Bug Fixes" },
-    { "type": "perf", "section": "Performance Improvements" },
-    { "type": "revert", "section": "Reverts" },
-    { "type": "docs", "section": "Documentation", "hidden": true },
-    { "type": "style", "section": "Styles", "hidden": true },
-    { "type": "chore", "section": "Miscellaneous Chores", "hidden": true },
-    { "type": "refactor", "section": "Code Refactoring", "hidden": true },
-    { "type": "test", "section": "Tests", "hidden": true },
-    { "type": "build", "section": "Build System", "hidden": true },
-    { "type": "ci", "section": "Continuous Integration", "hidden": true }
-  ],
-  "packages": {
-    ".": {
-      "release-type": "node"
-    }
-  },
-  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json"
+    "bump-minor-pre-major": false,
+    "bump-patch-for-minor-pre-major": false,
+    "include-v-in-tag": false,
+    "initial-version": "0.1.15",
+    "bootstrap-sha": "6bd5479468c1352fde43e3d22d917f36e46e9782",
+    "changelog-path": "CHANGELOG.md",
+    "include-component-in-tag": false,
+    "release-type": "node",
+    "packages": {
+        ".": {
+            "release-type": "node"
+        }
+    },
+    "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json"
 }

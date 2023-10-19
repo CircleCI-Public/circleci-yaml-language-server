@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -52,6 +53,13 @@ func (doc *YamlDocument) ParseYAML(context *utils.LsContext, offset protocol.Pos
 			}
 
 			doc.VersionRange = doc.NodeToRange(child)
+
+		case "setup":
+			text := strings.TrimSpace(doc.GetNodeText(valueNode))
+			if len(text) != 0 && text != "false" {
+				doc.Setup = true
+			}
+			doc.SetupRange = doc.NodeToRange(child)
 
 		case "orbs":
 			if valueNode != nil {
@@ -141,11 +149,13 @@ func ParseFromURI(URI protocol.URI, context *utils.LsContext) (YamlDocument, err
 	return doc, err
 }
 
+var CacheMissingError = errors.New("file not found in cache")
+
 func ParseFromUriWithCache(URI protocol.URI, cache *utils.Cache, context *utils.LsContext) (YamlDocument, error) {
 	cachedFile := cache.FileCache.GetFile(URI)
 
 	if cachedFile == nil {
-		return YamlDocument{}, fmt.Errorf("file hasn't been opened: %s", URI.Filename())
+		return YamlDocument{}, fmt.Errorf("%w: %s", CacheMissingError, URI.Filename())
 	}
 
 	content := []byte(cachedFile.TextDocument.Text)
@@ -181,6 +191,7 @@ type YamlDocument struct {
 	Context        *utils.LsContext
 	SchemaLocation string
 
+	Setup              bool
 	Orbs               map[string]ast.Orb
 	LocalOrbs          []LocalOrb
 	Executors          map[string]ast.Executor
@@ -190,6 +201,7 @@ type YamlDocument struct {
 	PipelineParameters map[string]ast.Parameter
 	YamlAnchors        map[string]YamlAnchor
 
+	SetupRange              protocol.Range
 	OrbsRange               protocol.Range
 	ExecutorsRange          protocol.Range
 	CommandsRange           protocol.Range

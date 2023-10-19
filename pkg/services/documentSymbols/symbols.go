@@ -38,6 +38,11 @@ func SymbolsForDocument(document *parser.YamlDocument) []protocol.DocumentSymbol
 
 	symbols = append(
 		symbols,
+		resolveSetupSymbol(document)...,
+	)
+
+	symbols = append(
+		symbols,
 		resolveOrbSymbols(document)...,
 	)
 

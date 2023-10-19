@@ -2,7 +2,7 @@
 
 # CircleCI YAML Language Server
 
-[![CircleCI](https://circleci.com/gh/CircleCI-Public/circleci-yaml-language-server/tree/main.svg?style=svg)](https://app.circleci.com/pipelines/github/CircleCI-Public/circleci-yaml-language-server)](https://dl.circleci.com/status-badge/redirect/gh/CircleCI-Public/circleci-yaml-language-server/tree/main)
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/CircleCI-Public/circleci-yaml-language-server/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/CircleCI-Public/circleci-yaml-language-server/tree/main)
 [![GitHub release](https://img.shields.io/github/v/release/circleci-public/circleci-yaml-language-server)](https://github.com/circleci-public/circleci-yaml-language-server/releases)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE.md)
 

@@ -1,17 +1,8 @@
 import * as utils from './helpers';
-import {
-  Commands,
-} from './types';
-import type {
-  CompletionList,
-  HoverCommandResponse,
-  Position,
-} from './types';
+import { Commands, DocumentSymbolResponse } from './types';
+import type { CompletionList, HoverCommandResponse, Position } from './types';
 import DiagnosticList from './DiagnosticList';
-import {
-  configFileContent,
-  configFileUri,
-} from '../.env';
+import { configFileContent, configFileUri } from '../.env';
 
 async function didOpen(
   filePath: string,
@@ -19,18 +10,15 @@ async function didOpen(
 
   // Number of milliseconds to wait for orbs to be fetched
   waitOrbLoading = 3000,
-) : Promise<DiagnosticList> {
-  const response = await utils.command(
-    Commands.DocumentDidOpen,
-    {
-      textDocument: {
-        text: await configFileContent(filePath, 'utf-8'),
-        uri: configFileUri(filePath),
-        version,
-        languageId: 'yaml',
-      },
+): Promise<DiagnosticList> {
+  const response = await utils.command(Commands.DocumentDidOpen, {
+    textDocument: {
+      text: await configFileContent(filePath, 'utf-8'),
+      uri: configFileUri(filePath),
+      version,
+      languageId: 'yaml',
     },
-  );
+  });
 
   const diagnostics = utils.immediateDiagnostics();
 
@@ -47,15 +35,12 @@ async function complete(
   filename: string,
   position: Position,
 ): Promise<CompletionList> {
-  const response = await utils.command(
-    Commands.Completion,
-    {
-      position,
-      textDocument: {
-        uri: configFileUri(filename),
-      },
+  const response = (await utils.command(Commands.Completion, {
+    position,
+    textDocument: {
+      uri: configFileUri(filename),
     },
-  ) as CompletionList;
+  })) as CompletionList;
 
   response.items.sort((a, b) => a.label.localeCompare(b.label));
 
@@ -66,21 +51,27 @@ async function hover(
   filename: string,
   position: Position,
 ): Promise<HoverCommandResponse> {
-  const response = await utils.command(
-    Commands.DocumentHover,
-    {
-      position,
-      textDocument: {
-        uri: configFileUri(filename),
-      },
+  const response = (await utils.command(Commands.DocumentHover, {
+    position,
+    textDocument: {
+      uri: configFileUri(filename),
     },
-  ) as HoverCommandResponse;
+  })) as HoverCommandResponse;
 
   return response;
 }
 
+async function documentSymbol(
+  filename: string,
+): Promise<DocumentSymbolResponse> {
+  const response = (await utils.command(Commands.DocumentSymbol, {
+    textDocument: {
+      uri: configFileUri(filename),
+    },
+  })) as DocumentSymbolResponse;
+  return response;
+}
+
 export {
-  complete,
-  didOpen,
-  hover,
+  complete, didOpen, hover, documentSymbol,
 };
