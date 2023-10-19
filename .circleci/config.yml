@@ -378,7 +378,8 @@ jobs:
       docker:
         - image: cimg/node:18.16
       steps:
-        - github-cli/install
+        - github-cli/install:
+            version: '2.37.0'
         - node/install-yarn
         - checkout
         - run:
@@ -450,7 +451,8 @@ jobs:
         docker:
             - image: cimg/base:stable
         steps:
-            - github-cli/install
+            - github-cli/install:
+                version: '2.37.0'
             - attach_workspace:
                 at: ~/
             - run:
@@ -549,7 +551,8 @@ jobs:
             name: Halt job if running pipeline from a fork
             command: |
               [ -z $CIRCLE_PR_NUMBER ] || circleci-agent step halt
-        - github-cli/install
+        - github-cli/install:
+            version: '2.37.0'
         - checkout
         - run:
             name: Assign PR to author
