@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## [0.8.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.7.1...0.8.0) (2023-10-19)
+
+
+### Features
+
+* add setup true in the returned outline of the ls ([#219](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/219)) ([f2afe22](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/f2afe22b6117737123dc73cb74334366212c420b))
+* documentSymbols returns an error if file does not exist ([#229](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/229)) ([5541d4a](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/5541d4a4c2ae38c04af75beec8ddc72ccc7397d7))
+
+
+### Bug Fixes
+
+* do not remove files that do not exist on disk from `FileCache` ([#232](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/232)) ([f2c6a82](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/f2c6a82c15a4b7b44c5bbdf8bd1c84b31b0d1fc1))
+
 ## [0.7.1](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.7.0...0.7.1) (2023-10-12)
 
 
