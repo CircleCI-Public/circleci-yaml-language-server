@@ -456,21 +456,31 @@ jobs:
             - attach_workspace:
                 at: ~/
             - run:
+                name: Extract version from manifest
+                command: |
+                    version=$(jq -r '.["."]' ~/project/.circleci/release/release-please-manifest.json)
+                    echo "export VERSION=$version" >> "$BASH_ENV"
+            - run:
+                name: Stop job if release is not a draft
+                command: |
+                    is_draft=$(gh release view --json isDraft --jq '.isDraft' $VERSION)
+                    [ x$is_draft = "xtrue" ] || circleci-agent step halt
+            - run:
                 name: Uploading to GitHub Release
                 command: |
                     GITHUB_REPO_URL=$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME
                     cd ~/project/bin
                     for FILE in *; do
-                        gh release upload --repo $GITHUB_REPO_URL $CIRCLE_TAG "$FILE"
+                        gh release upload --repo $GITHUB_REPO_URL $VERSION "$FILE"
                     done
-                    gh release edit --repo $GITHUB_REPO_URL $CIRCLE_TAG --draft=false
+                    gh release edit --repo $GITHUB_REPO_URL $VERSION --draft=false
 
             - notify-success:
-                title: ":rocket: CircleCI YAML Language Server v$CIRCLE_TAG released"
+                title: ":rocket: CircleCI YAML Language Server v$VERSION released"
                 content: >-
                     A new release has been published.\n\n> :github: *Project*:
                     <https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME|CircleCI YAML Language Server>\n> :rocket: *Release*:
-                    <https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/releases/tag/$CIRCLE_TAG|v$CIRCLE_TAG>
+                    <https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/releases/tag/$VERSION|v$VERSION>
                     \n>:circleci: *Pipeline*: <https://app.circleci.com/pipelines/<<
                     pipeline.project.type >>/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/<<
                     pipeline.number >>|<< pipeline.number >>>\n>:pass-build: *Build*:
@@ -478,11 +488,11 @@ jobs:
                     to find more about release and publish process.
 
             - notify-failure:
-                title: ":rocket: CircleCI YAML Language Server v$CIRCLE_TAG released"
+                title: ":rocket: CircleCI YAML Language Server v$VERSION released"
                 content: >-
                     An error occurred during the release.\n\n> :github: *Project*:
                     <https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME|CircleCI YAML Language Server>\n> :rocket: *Release*:
-                    <https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/releases/tag/$CIRCLE_TAG|v$CIRCLE_TAG>\n>:circleci:
+                    <https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/releases/tag/$VERSION|v$VERSION>\n>:circleci:
                     *Pipeline*: <https://app.circleci.com/pipelines/<< pipeline.project.type
                     >>/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/<< pipeline.number >>|<<
                     pipeline.number >>>\n>:fail-build: *Build*: <$CIRCLE_BUILD_URL|$CIRCLE_BUILD_NUM>\n\nError logs can be found on
@@ -542,7 +552,7 @@ jobs:
             command: yarn test:e2e:ci
         - store_test_results:
             path: reports
-    
+
     Auto-assign PR:
       docker:
         - image: cimg/node:18.16
@@ -651,37 +661,15 @@ workflows:
                     - Build Windows
                     - Copy JSON schema
                     - E2E Tests
-    
-    Finalize release:
-        jobs:
-            - Build Linux x86_64:
-                filters: &release-tag-filters
-                    branches:
-                        ignore: /.*/
-                    tags:
-                        only: /\d+\.\d+\.\d+/
-            - Build Linux arm64:
-                filters: *release-tag-filters
-            - Build MacOS x86_64:
-                filters: *release-tag-filters
-            - Build MacOS arm64:
-                filters: *release-tag-filters
-            - Build Windows:
-                filters: *release-tag-filters
-            - Copy JSON schema:
-                filters: *release-tag-filters
             - Upload artifacts:
+                filters:
+                  branches:
+                    only: *release-branches
                 requires:
-                  - Build Linux x86_64
-                  - Build Linux arm64
-                  - Build MacOS x86_64
-                  - Build MacOS arm64
-                  - Build Windows
-                  - Copy JSON schema
-                filters: *release-tag-filters
+                  - Github Release
                 context:
                   - devex-release
-            
+
     Release PR:
         jobs:
             - Prepare release:
