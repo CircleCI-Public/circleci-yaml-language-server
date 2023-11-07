@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## [0.8.1](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.8.0...0.8.1) (2023-11-07)
+
+
+### Bug Fixes
+
+* add support for xcode version 15.0.0 ([#240](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/240)) ([ed5fce9](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/ed5fce9dae25ed19e75b4eb18484cba0fe06041a))
+* detect orb used in job parameters ([#231](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/231)) ([24efc32](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/24efc32be225f00793086281c7a4ea4156c46004))
+
 ## [0.8.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.7.1...0.8.0) (2023-10-19)
 
 
