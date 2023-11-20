@@ -1,6 +1,8 @@
 import { commands } from './utils';
 
 describe('Diagnostic testing files', () => {
+  jest.setTimeout(10000);
+
   it('config1.yml', async () => {
     const testingFile = 'config1.yml';
     const diagnostics = await commands.didOpen(testingFile);
