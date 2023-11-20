@@ -74,11 +74,6 @@ tasks:
   lint:
     cmds:
       - task: lint:go
-      - task: lint:e2e
-
-  lint:e2e:
-    cmds:
-      - yarn lint:e2e
 
   lint:go:
     cmds:
@@ -90,10 +85,6 @@ tasks:
       - yarn install --immutable
       - yarn run build
 
-  prepare:test:e2e:
-    cmds:
-      - yarn install --immutable
-
   test:
     cmds:
       - task: test:go
@@ -101,27 +92,6 @@ tasks:
   test:all:
     cmds:
       - task: test:go
-      - task: test:e2e
-
-  test:e2e:
-    env:
-      SPAWN_LSP_SERVER: '{{.SPAWN_LSP_SERVER | default true}}'
-      PORT: 10001
-    cmds:
-      - task: build
-      - yarn test:e2e {{.JEST_ARGS}}
-
-  test:e2e:update:
-    cmds:
-      - task: test:e2e
-        vars:
-          JEST_ARGS: --updateSnapshot
-
-  test:e2e:standalone:
-    cmds:
-      - task: test:e2e
-        vars:
-          SPAWN_LSP_SERVER: false
 
   test:go:
     cmds:
@@ -130,10 +100,8 @@ tasks:
   validate:
     desc: Run all necessary task to build, lint and test the project
     deps:
-      - prepare:test:e2e
       - prepare:vscode
     cmds:
       - task: lint
       - task: build:all
       - task: test
-      - task: test:e2e
