@@ -625,14 +625,6 @@ workflows:
                     - Build MacOS arm64
                     - Build Windows
                     - Copy JSON schema
-            - Upload artifacts:
-                filters:
-                  branches:
-                    only: *release-branches
-                requires:
-                  - Github Release
-                context:
-                  - devex-release
 
     Release PR:
         jobs:
@@ -656,5 +648,28 @@ workflows:
                 filters:
                     branches:
                         ignore: *release-branches
+                context:
+                  - devex-release
+
+    Undraft release:
+        when:
+            matches:
+                pattern: ^\d+\.\d+\.\d+$
+                value: << pipeline.git.tag >>
+        jobs:
+            - Build Linux x86_64
+            - Build Linux arm64
+            - Build MacOS x86_64
+            - Build MacOS arm64
+            - Build Windows
+            - Copy JSON schema
+            - Upload artifacts:
+                requires:
+                    - Build Linux x86_64
+                    - Build Linux arm64
+                    - Build MacOS x86_64
+                    - Build MacOS arm64
+                    - Build Windows
+                    - Copy JSON schema
                 context:
                   - devex-release
