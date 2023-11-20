@@ -360,9 +360,6 @@ jobs:
             - run:
                 name: Linter check for Go
                 command: if [[ $(gofmt -l pkg | wc -c) -ne 0 ]]; then exit 1; fi
-            - run:
-                name: Linter check for VSCE extension
-                command: cd editors/vscode && npm run lint-check
 
     Lint PR title:
       docker:
