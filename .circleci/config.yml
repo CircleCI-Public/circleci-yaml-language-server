@@ -453,6 +453,7 @@ jobs:
         steps:
             - github-cli/install:
                 version: '2.37.0'
+            - checkout
             - attach_workspace:
                 at: ~/
             - run:
