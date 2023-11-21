@@ -652,18 +652,25 @@ workflows:
                   - devex-release
 
     Undraft release:
-        when:
-            matches:
-                pattern: ^\d+\.\d+\.\d+$
-                value: << pipeline.git.tag >>
         jobs:
-            - Build Linux x86_64
-            - Build Linux arm64
-            - Build MacOS x86_64
-            - Build MacOS arm64
-            - Build Windows
-            - Copy JSON schema
+            - Build Linux x86_64:
+                filters: &release-tag-filters
+                    branches:
+                        ignore: /.*/
+                    tags:
+                        only: /\d+\.\d+\.\d+/
+            - Build Linux arm64:
+                filters: *release-tag-filters
+            - Build MacOS x86_64:
+                filters: *release-tag-filters
+            - Build MacOS arm64:
+                filters: *release-tag-filters
+            - Build Windows:
+                filters: *release-tag-filters
+            - Copy JSON schema:
+                filters: *release-tag-filters
             - Upload artifacts:
+                filters: *release-tag-filters
                 requires:
                     - Build Linux x86_64
                     - Build Linux arm64
