@@ -205,7 +205,7 @@ jobs:
             - persist_to_workspace:
                 root: ~/
                 paths:
-                    - ~/version
+                    - version
 
     Unit Tests:
         environment:
