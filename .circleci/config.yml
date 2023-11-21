@@ -652,18 +652,35 @@ workflows:
                   - devex-release
 
     Undraft release:
-        when:
-            matches:
-                pattern: ^\d+\.\d+\.\d+$
-                value: << pipeline.git.tag >>
         jobs:
-            - Build Linux x86_64
-            - Build Linux arm64
-            - Build MacOS x86_64
-            - Build MacOS arm64
-            - Build Windows
-            - Copy JSON schema
+            - Build Linux x86_64:
+                filters:
+                    tags:
+                        only: /\d+\.\d+\.\d+/
+            - Build Linux arm64:
+                filters:
+                    tags:
+                        only: /\d+\.\d+\.\d+/
+            - Build MacOS x86_64:
+                filters:
+                    tags:
+                        only: /\d+\.\d+\.\d+/
+            - Build MacOS arm64:
+                filters:
+                    tags:
+                        only: /\d+\.\d+\.\d+/
+            - Build Windows:
+                filters:
+                    tags:
+                        only: /\d+\.\d+\.\d+/
+            - Copy JSON schema:
+                filters:
+                    tags:
+                        only: /\d+\.\d+\.\d+/
             - Upload artifacts:
+                filters:
+                    tags:
+                        only: /\d+\.\d+\.\d+/
                 requires:
                     - Build Linux x86_64
                     - Build Linux arm64
