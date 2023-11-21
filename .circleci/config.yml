@@ -186,6 +186,7 @@ jobs:
                     When set to true will set a prerelease in the version file.
                     Else will set the version from the release-please manifest
         steps:
+            - checkout
             - when:
                 condition: << parameters.is-prerelease >>
                 steps:
