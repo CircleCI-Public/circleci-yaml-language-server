@@ -654,33 +654,23 @@ workflows:
     Undraft release:
         jobs:
             - Build Linux x86_64:
-                filters:
+                filters: &release-tag-filters
+                    branches:
+                        ignore: /.*/
                     tags:
                         only: /\d+\.\d+\.\d+/
             - Build Linux arm64:
-                filters:
-                    tags:
-                        only: /\d+\.\d+\.\d+/
+                filters: *release-tag-filters
             - Build MacOS x86_64:
-                filters:
-                    tags:
-                        only: /\d+\.\d+\.\d+/
+                filters: *release-tag-filters
             - Build MacOS arm64:
-                filters:
-                    tags:
-                        only: /\d+\.\d+\.\d+/
+                filters: *release-tag-filters
             - Build Windows:
-                filters:
-                    tags:
-                        only: /\d+\.\d+\.\d+/
+                filters: *release-tag-filters
             - Copy JSON schema:
-                filters:
-                    tags:
-                        only: /\d+\.\d+\.\d+/
+                filters: *release-tag-filters
             - Upload artifacts:
-                filters:
-                    tags:
-                        only: /\d+\.\d+\.\d+/
+                filters: *release-tag-filters
                 requires:
                     - Build Linux x86_64
                     - Build Linux arm64
