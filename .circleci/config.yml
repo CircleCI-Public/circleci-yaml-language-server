@@ -176,7 +176,7 @@ commands:
 jobs:
     Create version file:
         docker:
-            - image: cimg/base:2023.11
+            - image: cimg/go:1.21.4
         description: |
             Create a version to be used by the /scripts/ldflags.sh when building the binaries
         parameters:
