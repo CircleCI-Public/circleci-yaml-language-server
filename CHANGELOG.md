@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [0.8.4](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.8.3...0.8.4) (2023-11-21)
+
+
+### Bug Fixes
+
+* forcing release undraft on tag ([#249](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/249)) ([8b27318](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/8b273187d852f9a4b27d87ed409fe2175b5d63fb))
+
 ## [0.8.3](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.8.2...0.8.3) (2023-11-20)
 
 
