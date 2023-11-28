@@ -41,7 +41,7 @@ workflows:
 executors:
   macos-ios-executor:
     macos:
-      xcode: "13.2.1"
+      xcode: "15.1.0"
     resource_class: large`,
 			Diagnostics: []protocol.Diagnostic{
 				utils.CreateErrorDiagnosticFromRange(protocol.Range{
