@@ -33,7 +33,6 @@ tasks:
       - task: build:do
         vars:
           BIN_PATH: bin/start_server
-          BUILD_FLAGS: $(./scripts/ldflags.sh)
           GO_FILE: cmd/start_server/start_server.go
 
   build:server:debug:
@@ -42,7 +41,7 @@ tasks:
       - task: build:do
         vars:
           BIN_PATH: bin/start_server
-          BUILD_FLAGS: $(./scripts/ldflags.sh) -gcflags='all=-N -l'
+          BUILD_FLAGS: -gcflags='all=-N -l'
           GO_FILE: cmd/start_server/start_server.go
 
   build:test-tree-sitter:
