@@ -10,3 +10,4 @@ coverage
 /reports
 __debug_bin
 report.xml
+.idea
