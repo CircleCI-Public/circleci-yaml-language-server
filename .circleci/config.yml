@@ -598,7 +598,10 @@ workflows:
         when: *release-conditions
         jobs:
             - Unit Tests
-            - Security Scan release
+            - Security Scan release:
+                context:
+                    - devex-release
+                    - org-global-employees
             - Copy JSON schema
             - Create version file:
                 is-prerelease: true
@@ -642,7 +645,10 @@ workflows:
         when: *release-conditions
         jobs:
             - Unit Tests
-            - Security Scan release
+            - Security Scan release:
+                context:
+                    - devex-release
+                    - org-global-employees
             - Copy JSON schema
             - Create version file:
                 is-prerelease: false
