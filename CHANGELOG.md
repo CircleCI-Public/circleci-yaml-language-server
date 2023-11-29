@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [0.9.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.8.4...0.9.0) (2023-11-28)
+
+
+### Bug Fixes
+
+* update xcode versions ([#254](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/254)) ([8c75190](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/8c75190add027ce3b598fbdf1ab6de07382f321e))
+
 ## [0.8.4](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.8.3...0.8.4) (2023-11-21)
 
 
