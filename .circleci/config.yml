@@ -202,7 +202,7 @@ jobs:
                         name: Write the next release version in the version file
                         command: |
                             version=$(jq -r '.["."]' ~/project/.circleci/release/release-please-manifest.json)
-                            echo "export VERSION=$version" > ~/version
+                            echo "$version" > ~/version
             - persist_to_workspace:
                 root: ~/
                 paths:
