@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [0.9.1](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.9.0...0.9.1) (2023-11-29)
+
+
+### Bug Fixes
+
+* fix release process ([#255](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/255)) ([664dc03](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/664dc030ac160faeb4e31796e4066e108a1b8299))
+
 ## [0.9.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.8.4...0.9.0) (2023-11-28)
 
 
