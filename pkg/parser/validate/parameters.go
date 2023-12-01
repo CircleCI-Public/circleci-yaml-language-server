@@ -115,8 +115,7 @@ func (val Validate) checkParamUsedWithParam(param ast.ParameterValue, stepName s
 		// check already done before in `CheckIfParamsExist`
 		return
 	}
-
-	if paramUsedAsValue.GetType() != definedParam.GetType() {
+	if (!(definedParam.GetType() == "string" && paramUsedAsValue.GetType() == "enum")) && (paramUsedAsValue.GetType() != definedParam.GetType()) {
 		val.createParameterError(param, stepName, definedParam.GetType())
 	}
 }
