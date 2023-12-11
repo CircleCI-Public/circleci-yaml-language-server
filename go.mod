@@ -1,11 +1,12 @@
 module github.com/CircleCI-Public/circleci-yaml-language-server
 
-go 1.19
+go 1.21
 
 require (
 	github.com/Masterminds/semver v1.5.0
 	github.com/go-git/go-git/v5 v5.5.2
 	github.com/pkg/errors v0.9.1
+	github.com/rollbar/rollbar-go v1.4.5
 	github.com/segmentio/encoding v0.3.6
 	github.com/smacker/go-tree-sitter v0.0.0-20221031025734-03a9c97d8039
 	github.com/whilp/git-urls v1.0.0
@@ -31,7 +32,6 @@ require (
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/pjbgf/sha1cd v0.2.3 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/rollbar/rollbar-go v1.4.5 // indirect
 	github.com/sergi/go-diff v1.1.0 // indirect
 	github.com/skeema/knownhosts v1.1.0 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
