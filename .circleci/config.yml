@@ -225,16 +225,22 @@ jobs:
       - store_test_results:
           path: report.xml
 
-  Build Linux x86_64:
+  Build Linux:
+    parameters:
+      resource_class:
+        type: string
+      arch:
+        type: string
     docker:
       - image: cimg/go:1.21.5
+    resource_class: << parameters.resource_class >>
     steps:
       - attach_workspace:
           at: ~/
       - checkout
       - run:
-          name: Build for Linux Amd 64
-          command: sh -c "go build `~/project/scripts/ldflags.sh` -o ~/project/bin/linux-amd64-lsp ./cmd/start_server/start_server.go"
+          name: Build for Linux
+          command: sh -c "go build `~/project/scripts/ldflags.sh` -o ~/project/bin/linux-<< parameters.arch >>-lsp ./cmd/start_server/start_server.go"
       - store_artifacts:
           path: ~/project/bin
       - persist_to_workspace:
@@ -242,83 +248,31 @@ jobs:
           paths:
             - project/bin
 
-  Build Linux arm64:
-    docker:
-      - image: cimg/go:1.21.5
+  Build macOS:
+    parameters:
+      arch:
+        type: string
+    macos:
+      xcode: 15.1.0
+    resource_class: macos.m1.medium.gen1
     steps:
       - attach_workspace:
           at: ~/
       - checkout
-      - install-zig
       - run:
-          name: Build for Linux Arm 64
+          name: Install Go
           command: |
-            export LDFLAGS=$(~/project/scripts/ldflags.sh)
-            export CGO_ENABLED=1
-            export GOOS=linux
-            export GOARCH=arm64
-            export CC='zig cc -target aarch64-linux'
-            export CXX='zig c++ -target aarch64-linux'
-            export PATH="$(pwd)/zig-linux-x86_64-0.9.1:$PATH"
-            sh -c "go build $LDFLAGS -o ~/project/bin/linux-arm64-lsp ./cmd/start_server/start_server.go"
-      - store_artifacts:
-          path: ~/project/bin
-      - persist_to_workspace:
-          root: ~/
-          paths:
-            - project/bin
-
-  Build MacOS x86_64:
-    macos:
-      xcode: 14.0.1
-    resource_class: macos.m1.medium.gen1
-    environment:
-      HOMEBREW_NO_AUTO_UPDATE: 1
-    steps:
-      - attach_workspace:
-          at: ~/
-      - checkout
-      - run: |
-          curl -OL https://go.dev/dl/go1.21.5.darwin-arm64.pkg
-          sudo installer -pkg ./go1.21.5.darwin-arm64.pkg -target /
-          echo 'export PATH="/usr/local/go/bin:$PATH"' >> ~/.bash_profile
-      - run: brew install zig
+            curl -OL https://go.dev/dl/go1.21.5.darwin-arm64.pkg
+            sudo installer -pkg ./go1.21.5.darwin-arm64.pkg -target /
+            echo 'export PATH="/usr/local/go/bin:$PATH"' >> ~/.bash_profile
       - run:
-          name: Build for mac os intel-
-          command: sh -c "go build `~/project/scripts/ldflags.sh` -o ~/project/bin/darwin-amd64-lsp ./cmd/start_server/start_server.go"
-      - store_artifacts:
-          path: ~/project/bin
-      - persist_to_workspace:
-          root: ~/
-          paths:
-            - project/bin
-
-  Build MacOS arm64:
-    macos:
-      xcode: 14.0.1
-    resource_class: macos.m1.medium.gen1
-    environment:
-      HOMEBREW_NO_AUTO_UPDATE: 1
-    steps:
-      - attach_workspace:
-          at: ~/
-      - checkout
-      - run: |
-          curl -OL https://go.dev/dl/go1.21.5.darwin-arm64.pkg
-          sudo installer -pkg ./go1.21.5.darwin-arm64.pkg -target /
-          echo 'export PATH="/usr/local/go/bin:$PATH"' >> ~/.bash_profile
-      - run: brew install zig
-      - run:
-          name: Build for macos arm64
+          name: Build LS
           command: |
             export LDFLAGS=$(SUFFIX='-s -w' ~/project/scripts/ldflags.sh)
             export CGO_ENABLED=1
             export GOOS=darwin
-            export GOARCH=arm64
-            export FRAMEWORKS="$(xcrun --show-sdk-path)/System/Library/Frameworks"
-            export CC="zig cc -target aarch64-macos -F$FRAMEWORKS"
-            export CXX="zig c++ -target aarch64-macos -F$FRAMEWORKS"
-            sh -c "go build $LDFLAGS -o ~/project/bin/darwin-arm64-lsp ./cmd/start_server/start_server.go"
+            export GOARCH=<< parameters.arch >>
+            sh -c "go build $LDFLAGS -o ~/project/bin/darwin-<< parameters.arch >>-lsp ./cmd/start_server/start_server.go"
       - store_artifacts:
           path: ~/project/bin
       - persist_to_workspace:
@@ -599,7 +553,6 @@ workflows:
             - devex-release
 
   Build and prerelease:
-    when: *release-conditions
     jobs:
       - Unit Tests
       - Security Scan release:
@@ -609,16 +562,26 @@ workflows:
       - Copy JSON schema
       - Create version file:
           is-prerelease: true
-      - Build Linux x86_64:
+      - Build Linux:
+          name: Build Linux x86_64
+          resource_class: medium
+          arch: amd64
           requires:
             - Create version file
-      - Build Linux arm64:
+      - Build Linux:
+          name: Build Linux arm64
+          resource_class: arm.medium
+          arch: arm64
           requires:
             - Create version file
-      - Build MacOS x86_64:
+      - Build macOS:
+          name: Build macOS x86_64
+          arch: amd64
           requires:
             - Create version file
-      - Build MacOS arm64:
+      - Build macOS:
+          name: Build macOS arm64
+          arch: arm64
           requires:
             - Create version file
       - Build Windows:
@@ -628,8 +591,8 @@ workflows:
           requires:
             - Build Linux x86_64
             - Build Linux arm64
-            - Build MacOS x86_64
-            - Build MacOS arm64
+            - Build macOS x86_64
+            - Build macOS arm64
             - Build Windows
             - Copy JSON schema
       - Pre-Release:
@@ -638,8 +601,8 @@ workflows:
             - Unit Tests
             - Build Linux x86_64
             - Build Linux arm64
-            - Build MacOS x86_64
-            - Build MacOS arm64
+            - Build macOS x86_64
+            - Build macOS arm64
             - Build Windows
             - Copy JSON schema
           context:
@@ -656,16 +619,26 @@ workflows:
       - Copy JSON schema
       - Create version file:
           is-prerelease: false
-      - Build Linux x86_64:
+      - Build Linux:
+          name: Build Linux x86_64
+          resource_class: medium
+          arch: amd64
           requires:
             - Create version file
-      - Build Linux arm64:
+      - Build Linux:
+          name: Build Linux arm64
+          resource_class: arm.medium
+          arch: arm64
           requires:
             - Create version file
-      - Build MacOS x86_64:
+      - Build macOS:
+          name: Build macOS x86_64
+          arch: amd64
           requires:
             - Create version file
-      - Build MacOS arm64:
+      - Build macOS:
+          name: Build macOS arm64
+          arch: arm64
           requires:
             - Create version file
       - Build Windows:
@@ -675,8 +648,8 @@ workflows:
           requires:
             - Build Linux x86_64
             - Build Linux arm64
-            - Build MacOS x86_64
-            - Build MacOS arm64
+            - Build macOS x86_64
+            - Build macOS arm64
             - Build Windows
             - Copy JSON schema
       - Github Release:
@@ -685,8 +658,8 @@ workflows:
             - Unit Tests
             - Build Linux x86_64
             - Build Linux arm64
-            - Build MacOS x86_64
-            - Build MacOS arm64
+            - Build macOS x86_64
+            - Build macOS arm64
             - Build Windows
             - Copy JSON schema
           context:
@@ -720,6 +693,8 @@ workflows:
       - Lint
       - Create version file:
           is-prerelease: true
-      - Build Linux x86_64:
+      - Build macOS:
+          name: Build macOS x86_64
+          arch: amd64
           requires:
             - Create version file
