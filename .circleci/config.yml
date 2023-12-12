@@ -553,6 +553,7 @@ workflows:
             - devex-release
 
   Build and prerelease:
+    when: *release-conditions
     jobs:
       - Unit Tests
       - Security Scan release:
