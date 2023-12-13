@@ -239,7 +239,7 @@ jobs:
           at: ~/
       - checkout
       - run:
-          name: Build for Linux
+          name: Build
           command: sh -c "go build `~/project/scripts/ldflags.sh` -o ~/project/bin/linux-<< parameters.arch >>-lsp ./cmd/start_server/start_server.go"
       - store_artifacts:
           path: ~/project/bin
@@ -266,7 +266,7 @@ jobs:
             sudo installer -pkg ./go1.21.5.darwin-arm64.pkg -target /
             echo 'export PATH="/usr/local/go/bin:$PATH"' >> ~/.bash_profile
       - run:
-          name: Build LS
+          name: Build
           command: |
             export LDFLAGS=$(SUFFIX='-s -w' ~/project/scripts/ldflags.sh)
             export CGO_ENABLED=1
@@ -289,7 +289,7 @@ jobs:
       - checkout
       - install-zig
       - run:
-          name: Build for Windows x86_64 (64 bits)
+          name: Build for Windows
           command: |
             export LDFLAGS=$(~/project/scripts/ldflags.sh)
             export CGO_ENABLED=1
