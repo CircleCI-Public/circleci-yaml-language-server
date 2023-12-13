@@ -694,8 +694,9 @@ workflows:
       - Lint
       - Create version file:
           is-prerelease: true
-      - Build macOS:
-          name: Build macOS x86_64
+      - Build Linux:
+          name: Build Linux x86_64
+          resource_class: medium
           arch: amd64
           requires:
             - Create version file
