@@ -7,6 +7,10 @@
 
 * error when passing an enum to a string param ([#259](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/259)) ([23019c3](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/23019c36275b68d3fe2318f963625997c42258fd))
 
+### Security fixes
+
+* update Go version to 1.21.5 following [CVE-2023-45285](https://pkg.go.dev/vuln/GO-2023-2383) & [CVE-2023-39326](https://pkg.go.dev/vuln/GO-2023-2382) ([#260](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/260)) ([63e912b](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/63e912bb8f2c21a4e8aca7ba7d9dd57ffd07abf2))
+
 ## [0.9.1](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.9.0...0.9.1) (2023-11-29)
 
 
