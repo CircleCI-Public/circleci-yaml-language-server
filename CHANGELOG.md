@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [0.9.2](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.9.1...0.9.2) (2023-12-13)
+
+
+### Bug Fixes
+
+* error when passing an enum to a string param ([#259](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/259)) ([23019c3](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/23019c36275b68d3fe2318f963625997c42258fd))
+
 ## [0.9.1](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.9.0...0.9.1) (2023-11-29)
 
 
