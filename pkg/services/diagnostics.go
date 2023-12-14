@@ -48,7 +48,7 @@ func DiagnosticString(content string, cache *utils.Cache, context *utils.LsConte
 }
 
 func DiagnosticYAML(yamlDocument yamlparser.YamlDocument, cache *utils.Cache, context *utils.LsContext) ([]protocol.Diagnostic, error) {
-	if yamlDocument.Version < 2.1 {
+	if yamlDocument.Version != 0 && yamlDocument.Version < 2.1 {
 		// TODO: Handle error
 		return []protocol.Diagnostic{}, nil
 	}
