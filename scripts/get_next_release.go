@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"regexp"
 	"strconv"
 
@@ -13,17 +12,8 @@ import (
 )
 
 func main() {
-	tag := getTag()
+	tag := getNextPrereleaseTag()
 	fmt.Println(tag)
-}
-
-func getTag() string {
-	// CIRCLE_TAG is a built-in environment variable documented here: https://circleci.com/docs/variables/
-	tag, hasTag := os.LookupEnv("CIRCLE_TAG")
-	if hasTag {
-		return tag
-	}
-	return getNextPrereleaseTag()
 }
 
 func getNextPrereleaseTag() string {

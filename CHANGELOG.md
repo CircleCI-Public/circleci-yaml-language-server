@@ -1,5 +1,59 @@
 # CHANGELOG
 
+## [0.9.2](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.9.1...0.9.2) (2023-12-13)
+
+
+### Bug Fixes
+
+* error when passing an enum to a string param ([#259](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/259)) ([23019c3](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/23019c36275b68d3fe2318f963625997c42258fd))
+
+### Security fixes
+
+* update Go version to 1.21.5 following [CVE-2023-45285](https://pkg.go.dev/vuln/GO-2023-2383) & [CVE-2023-39326](https://pkg.go.dev/vuln/GO-2023-2382) ([#260](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/260)) ([63e912b](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/63e912bb8f2c21a4e8aca7ba7d9dd57ffd07abf2))
+
+## [0.9.1](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.9.0...0.9.1) (2023-11-29)
+
+
+### Bug Fixes
+
+* fix release process ([#255](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/255)) ([664dc03](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/664dc030ac160faeb4e31796e4066e108a1b8299))
+
+## [0.9.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.8.4...0.9.0) (2023-11-28)
+
+
+### Bug Fixes
+
+* update xcode versions ([#254](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/254)) ([8c75190](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/8c75190add027ce3b598fbdf1ab6de07382f321e))
+
+## [0.8.4](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.8.3...0.8.4) (2023-11-21)
+
+
+### Bug Fixes
+
+* forcing release undraft on tag ([#249](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/249)) ([8b27318](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/8b273187d852f9a4b27d87ed409fe2175b5d63fb))
+
+## [0.8.3](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.8.2...0.8.3) (2023-11-20)
+
+
+### Bug Fixes
+
+* release is now in 2 steps ([#247](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/247)) ([ddfb064](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/ddfb0645068e55f83f5a4df3cdcca18069ee422f))
+
+## [0.8.2](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.8.1...0.8.2) (2023-11-20)
+
+
+### Bug Fixes
+
+* fix release issues ([#246](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/246)) ([19cff91](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/19cff919ba2b40ca269f551e71c2587862b28bc5))
+
+## [0.8.1](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.8.0...0.8.1) (2023-11-07)
+
+
+### Bug Fixes
+
+* add support for xcode version 15.0.0 ([#240](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/240)) ([ed5fce9](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/ed5fce9dae25ed19e75b4eb18484cba0fe06041a))
+* detect orb used in job parameters ([#231](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/231)) ([24efc32](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/24efc32be225f00793086281c7a4ea4156c46004))
+
 ## [0.8.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.7.1...0.8.0) (2023-10-19)
 
 

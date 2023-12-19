@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
 # Inspired by https://belief-driven-design.com/build-time-variables-in-go-51439b26ef9/
 
+if [ ! -f ~/version ];
+then
+	>&2 echo "No version file defined. Returning invalid build argument"
+	echo "invalid-argument"
+	exit 1
+fi
 
 PACKAGE="github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 
-SCRIPT_PATH=$(cd $(dirname $0) && pwd)
-VERSION=$(cd $SCRIPT_PATH && go run ./get_next_release.go)
-
-BUILD_TIMESTAMP=$(date '+%Y-%m-%dT%H:%M:%S')
+VERSION=$(cat ~/version)
 
 LDFLAGS=(
   "-X '${PACKAGE}.ServerVersion=${VERSION}'"

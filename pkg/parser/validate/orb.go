@@ -169,6 +169,10 @@ func (val Validate) checkIfOrbIsUsed(orb ast.Orb) bool {
 			if val.checkIfStepsContainOrb(steps, orb.Name) {
 				return true
 			}
+
+			if val.checkIfJobParamContainOrb(jobRef.Parameters, orb.Name) {
+				return true
+			}
 		}
 	}
 
