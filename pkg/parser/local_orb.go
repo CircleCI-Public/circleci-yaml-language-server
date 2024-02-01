@@ -69,6 +69,7 @@ func (doc *YamlDocument) parseLocalOrb(name string, orbNode *sitter.Node, adding
 		Source:      orbContent,
 		Description: orbDoc.Description,
 		OrbParsedAttributes: ast.OrbParsedAttributes{
+			URI:  doc.URI,
 			Name: name,
 
 			Commands:           orbDoc.Commands,
