@@ -74,6 +74,11 @@ func (val Validate) validateMachineExecutor(executor ast.MachineExecutor) {
 		val.validateARMMachineExecutor(executor)
 	} else if strings.HasPrefix(executor.ResourceClass, "gpu.nvidia") || strings.HasPrefix(executor.ResourceClass, "windows.gpu.nvidia") {
 		val.validateNvidiaGPUMachineExecutor(executor)
+	} else if strings.HasPrefix(executor.ResourceClass, "windows.") { // this is not catching all windows resource classes
+		val.validateWindowsExecutor(ast.WindowsExecutor{
+			BaseExecutor: executor.BaseExecutor,
+			Image:        executor.Image,
+		})
 	} else {
 		val.validateLinuxMachineExecutor(executor)
 	}
@@ -102,13 +107,17 @@ func (val Validate) validateNvidiaGPUMachineExecutor(executor ast.MachineExecuto
 	val.checkIfValidResourceClass(executor.ResourceClass, ValidNvidiaGPUResourceClasses, executor.ResourceClassRange)
 }
 
-var ValidLinuxResourceClasses = []string{
+var ValidCommonResourceClasses = []string{
 	"medium",
 	"large",
 	"xlarge",
 	"2xlarge",
 	"2xlarge+",
 }
+
+var ValidLinuxResourceClasses = ValidCommonResourceClasses
+
+var ValidWindowsResourceClasses = append(ValidCommonResourceClasses, "windows.medium", "windows.large")
 
 func (val Validate) validateLinuxMachineExecutor(executor ast.MachineExecutor) {
 	val.checkIfValidResourceClass(executor.ResourceClass, ValidLinuxResourceClasses, executor.ResourceClassRange)
@@ -218,15 +227,6 @@ func (val Validate) validateDockerExecutor(executor ast.DockerExecutor) {
 			)
 		}
 	}
-}
-
-// WindowsExecutor
-
-var ValidWindowsResourceClasses = []string{
-	"medium",
-	"large",
-	"xlarge",
-	"2xlarge",
 }
 
 func (val Validate) validateWindowsExecutor(executor ast.WindowsExecutor) {
