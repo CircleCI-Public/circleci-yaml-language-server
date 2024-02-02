@@ -700,3 +700,6 @@ workflows:
           arch: arm64
           requires:
             - Create version file
+      - Build Windows:
+          requires:
+            - Create version file
