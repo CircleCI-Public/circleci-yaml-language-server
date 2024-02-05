@@ -250,7 +250,7 @@ func (val Validate) ValidateLocalOrbs() {
 				Cache:       val.Cache,
 				Context:     val.Context,
 			}
-			validateStruct.Validate(true)
+			validateStruct.Validate()
 		}
 	}
 }

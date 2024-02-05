@@ -22,7 +22,8 @@ func (val Validate) ValidateCommands() {
 func (val Validate) validateSingleCommand(command ast.Command) {
 	val.validateSteps(command.Steps, command.Name, command.Parameters)
 
-	if used := val.checkIfCommandIsUsed(command); !used {
+	// Local orbs do not need unused checks because those checks collides with the overall YAML unused checks
+	if val.IsLocalOrb && !val.checkIfCommandIsUsed(command) {
 		val.commandIsUnused(command)
 	}
 }

@@ -18,19 +18,20 @@ type Validate struct {
 	Doc         parser.YamlDocument
 	Cache       *utils.Cache
 	Context     *utils.LsContext
+	IsLocalOrb  bool
 }
 
-func (val *Validate) Validate(inLocalOrb bool) {
-	val.ValidateAnchors()
-	if !inLocalOrb {
+func (val *Validate) Validate() {
+	if !val.IsLocalOrb {
 		val.CheckIfParamsExist()
+		val.ValidateAnchors()
+		val.ValidateWorkflows()
+		val.ValidateOrbs()
+		val.CheckNames()
+		val.ValidatePipelineParameters()
+		val.ValidateLocalOrbs()
 	}
-	val.ValidateWorkflows()
 	val.ValidateJobs()
 	val.ValidateCommands()
-	val.ValidateOrbs()
 	val.ValidateExecutors()
-	val.CheckNames()
-	val.ValidatePipelineParameters()
-	val.ValidateLocalOrbs()
 }

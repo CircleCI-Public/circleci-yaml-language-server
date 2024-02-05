@@ -1,9 +1,12 @@
 package validate
 
 import (
+	"os"
 	"testing"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/dockerhub"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/testHelpers"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"github.com/stretchr/testify/assert"
 	"go.lsp.dev/protocol"
@@ -184,4 +187,26 @@ func TestResourceClass(t *testing.T) {
 			t.Fatalf(`missing resource_class diagnostic`)
 		})
 	}
+}
+
+func TestLocalOrbJobUnused(t *testing.T) {
+	fileURI := uri.File("some-uri")
+	context := testHelpers.GetDefaultLsContext()
+	content, err := os.ReadFile("./testdata/jobs/local-orb-unused-job.yml")
+	assert.Nil(t, err)
+
+	doc, err := parser.ParseFromContent(content, context, fileURI, protocol.Position{})
+	assert.Nil(t, err)
+
+	val := Validate{
+		APIs: ValidateAPIs{
+			DockerHub: dockerhub.NewAPI(),
+		},
+		Diagnostics: &[]protocol.Diagnostic{},
+		Cache:       utils.CreateCache(),
+		Doc:         doc,
+		Context:     context,
+	}
+	val.Validate()
+	assert.Len(t, *val.Diagnostics, 0)
 }

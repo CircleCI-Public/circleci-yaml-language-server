@@ -49,7 +49,7 @@ func CheckYamlErrors(t *testing.T, testCases []ValidateTestCase) {
 	for _, tt := range testCases {
 		t.Run(tt.Name, func(t *testing.T) {
 			val := CreateValidateFromYAML(tt.YamlContent)
-			val.Validate(false)
+			val.Validate()
 
 			diags := *val.Diagnostics
 			if tt.OnlyErrors == true {
