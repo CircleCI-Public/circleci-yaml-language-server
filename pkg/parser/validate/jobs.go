@@ -19,7 +19,7 @@ func (val Validate) validateSingleJob(job ast.Job) {
 	val.validateSteps(job.Steps, job.Name, job.Parameters)
 
 	// Local orbs do not need unused checks because those checks collides with the overall YAML unused checks
-	if val.IsLocalOrb && !val.checkIfJobIsUsed(job) {
+	if !val.IsLocalOrb && !val.checkIfJobIsUsed(job) {
 		val.jobIsUnused(job)
 	}
 

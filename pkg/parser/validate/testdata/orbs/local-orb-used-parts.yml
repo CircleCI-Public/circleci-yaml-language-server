@@ -2,6 +2,10 @@ version: 2.1
 
 orbs:
   local:
+    commands:
+      command:
+        steps:
+          - run: echo "Hello world"
     jobs:
       job:
         docker:
@@ -9,7 +13,15 @@ orbs:
         steps:
           - run: echo "Hello World"
 
+jobs:
+  job:
+    docker:
+      - image: cimg/base:2024.01
+    steps:
+      - local/command
+
 workflows:
   act:
     jobs:
       - local/job
+      - job

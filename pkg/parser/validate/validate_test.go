@@ -87,3 +87,11 @@ func sortDiagnostic(diags *[]protocol.Diagnostic) {
 		return (*diags)[i].Range.Start.Line < (*diags)[j].Range.Start.Line
 	})
 }
+
+func getDiagnosticMessages(diags *[]protocol.Diagnostic) []string {
+	messages := make([]string, len(*diags))
+	for i, diag := range *diags {
+		messages[i] = diag.Message
+	}
+	return messages
+}
