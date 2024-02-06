@@ -32,6 +32,7 @@ package parser
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	sitter "github.com/smacker/go-tree-sitter"
@@ -43,7 +44,7 @@ type LocalOrb struct {
 }
 
 func (doc *YamlDocument) parseLocalOrb(name string, orbNode *sitter.Node, addingLines uint32) (*LocalOrb, error) {
-	offset := doc.NodeToRange(orbNode).Start
+	orbRange := doc.NodeToRange(orbNode)
 	orb := LocalOrb{
 		Name: name,
 	}
@@ -52,9 +53,9 @@ func (doc *YamlDocument) parseLocalOrb(name string, orbNode *sitter.Node, adding
 		return nil, fmt.Errorf("Invalid orb body")
 	}
 
-	orbContent := doc.GetNodeText(orbNode)
+	orbContent := strings.Repeat(" ", int(orbRange.Start.Character)) + doc.GetNodeText(orbNode)
 	orbDoc, err := ParseFromContent([]byte(orbContent), doc.Context, doc.URI, protocol.Position{
-		Line:      offset.Line,
+		Line:      orbRange.Start.Line,
 		Character: 0,
 	})
 
