@@ -1,8 +1,11 @@
-package parser
+package parser_test
 
 import (
 	"testing"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/dockerhub"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser/validate"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/testHelpers"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"github.com/stretchr/testify/assert"
@@ -190,11 +193,68 @@ orbs:
 // 	assert.Contains(t, doc.Jobs, jobKey)
 // }
 
-func GetDocForTests(t *testing.T, content string, orbKey string) YamlDocument {
+func GetDocForTests(t *testing.T, content string, orbKey string) parser.YamlDocument {
 	context := testHelpers.GetDefaultLsContext()
-	doc, err := ParseFromContent([]byte(content), context, uri.File(""), protocol.Position{})
+	doc, err := parser.ParseFromContent([]byte(content), context, uri.File(""), protocol.Position{})
 	assert.Nil(t, err)
 	orbInfo, err := doc.GetOrbInfoFromName(orbKey, utils.CreateCache())
 	assert.Nil(t, err)
 	return doc.FromOrbParsedAttributesToYamlDocument(orbInfo.OrbParsedAttributes)
+}
+
+func TestOrbInLocalOrb(t *testing.T) {
+	content := `version: 2.1
+
+orbs:
+  local:
+    commands:
+      cmd:
+        parameters:
+          target:
+            type: string
+        steps:
+          - run: echo << parameters.target >>
+    jobs:
+      job:
+        docker:
+          - image: cimg/node:21.6.1
+        steps:
+          - cmd:
+              target: world
+
+
+jobs:
+  do:
+    docker:
+      - image: cimg/node:21.6.1
+    steps:
+      - local/cmd:
+          target: world
+
+workflows:
+  act:
+    jobs:
+      - do
+      - local/job`
+	context := testHelpers.GetDefaultLsContext()
+	doc, err := parser.ParseFromContent([]byte(content), context, uri.File(""), protocol.Position{})
+	assert.Nil(t, err)
+	assert.Len(t, *doc.Diagnostics, 0)
+	val := validate.Validate{
+		APIs: validate.ValidateAPIs{
+			DockerHub: dockerhub.NewAPI(),
+		},
+		Diagnostics: &[]protocol.Diagnostic{},
+		Cache:       utils.CreateCache(),
+		Doc:         doc,
+		Context:     context,
+	}
+	val.Validate(false)
+	errorDiagnostics := []protocol.Diagnostic{}
+	for _, d := range *val.Diagnostics {
+		if d.Severity == protocol.DiagnosticSeverityError {
+			errorDiagnostics = append(errorDiagnostics, d)
+		}
+	}
+	assert.Len(t, errorDiagnostics, 0)
 }
