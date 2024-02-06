@@ -9,8 +9,10 @@ import (
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/services/definition"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/testHelpers"
 	utils "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
+	"github.com/stretchr/testify/assert"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 )
@@ -429,4 +431,95 @@ func TestDefinition(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestDefinitionForLocalOrbsCommand(t *testing.T) {
+	fileURI := uri.File("some-uri")
+	yaml := `version: 2.1
+
+orbs:
+  local:
+    commands:
+      cmd:
+        steps:
+          - run: echo << parameters.target >>
+    jobs:
+      job:
+        docker:
+          - image: cimg/node:21.6.1
+        steps:
+          - cmd`
+	context := testHelpers.GetDefaultLsContext()
+
+	doc, err := parser.ParseFromContent([]byte(yaml), context, fileURI, protocol.Position{})
+	assert.Nil(t, err)
+
+	def := definition.DefinitionStruct{Cache: utils.CreateCache(), Params: protocol.DefinitionParams{
+		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
+			TextDocument: protocol.TextDocumentIdentifier{
+				URI: fileURI,
+			},
+			// Position is the job step `cmd`
+			Position: protocol.Position{
+				Line:      13,
+				Character: 14,
+			},
+		},
+	}, Doc: doc}
+	locations, err := def.Definition()
+	assert.Nil(t, err)
+	assert.Equal(t, locations, []protocol.Location{
+		{
+			URI: fileURI,
+			Range: protocol.Range{
+				Start: protocol.Position{Line: 5, Character: 6},
+				End:   protocol.Position{Line: 7, Character: 45},
+			},
+		},
+	})
+}
+
+func TestDefinitionForLocalOrbsExecutor(t *testing.T) {
+	fileURI := uri.File("some-uri")
+	yaml := `version: 2.1
+
+orbs:
+  local:
+    executors:
+      executor:
+        docker:
+          - image: cimg/base:2024.01
+    jobs:
+      job:
+        executor: executor
+        steps:
+          - run: echo "Hello World"`
+	context := testHelpers.GetDefaultLsContext()
+
+	doc, err := parser.ParseFromContent([]byte(yaml), context, fileURI, protocol.Position{})
+	assert.Nil(t, err)
+
+	def := definition.DefinitionStruct{Cache: utils.CreateCache(), Params: protocol.DefinitionParams{
+		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
+			TextDocument: protocol.TextDocumentIdentifier{
+				URI: fileURI,
+			},
+			// Position is the job step `cmd`
+			Position: protocol.Position{
+				Line:      10,
+				Character: 24,
+			},
+		},
+	}, Doc: doc}
+	locations, err := def.Definition()
+	assert.Nil(t, err)
+	assert.Equal(t, locations, []protocol.Location{
+		{
+			URI: fileURI,
+			Range: protocol.Range{
+				Start: protocol.Position{Line: 5, Character: 6},
+				End:   protocol.Position{Line: 7, Character: 36},
+			},
+		},
+	})
 }

@@ -47,6 +47,7 @@ type OrbInfo struct {
 }
 
 type OrbParsedAttributes struct {
+	URI  protocol.URI
 	Name string
 
 	Commands           map[string]Command
