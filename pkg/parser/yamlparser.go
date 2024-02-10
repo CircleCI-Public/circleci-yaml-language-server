@@ -629,6 +629,7 @@ func (doc *YamlDocument) ToOrbParsedAttributes() ast.OrbParsedAttributes {
 
 func (doc *YamlDocument) FromOrbParsedAttributesToYamlDocument(orb ast.OrbParsedAttributes) YamlDocument {
 	return YamlDocument{
+		URI:          orb.URI,
 		LocalOrbName: orb.Name,
 
 		RootNode: doc.RootNode,

@@ -13,6 +13,7 @@ PACKAGE="github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 VERSION=$(cat ~/version)
 
 LDFLAGS=(
+  "-extldflags -static"
   "-X '${PACKAGE}.ServerVersion=${VERSION}'"
 )
 
