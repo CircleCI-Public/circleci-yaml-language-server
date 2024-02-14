@@ -39,6 +39,8 @@ func (val Validate) validateSingleExecutor(executor ast.Executor) {
 // MacOSExecutor
 
 var ValidXCodeVersions = []string{
+	"15.3.0",
+	"15.2.0",
 	"15.1.0",
 	"15.0.0",
 	"14.3.1",
