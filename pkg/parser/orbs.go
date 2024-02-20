@@ -111,7 +111,7 @@ func (doc *YamlDocument) parseSingleOrb(orbNode *sitter.Node) (*ast.Orb, *LocalO
 		return &orb, nil
 
 	case "block_node":
-		localOrb, err := doc.parseLocalOrb(orbName, orbContent, doc.NodeToRange(orbNameNode).Start.Line)
+		localOrb, err := doc.parseLocalOrb(orbName, orbContent)
 
 		if err != nil {
 			return nil, nil

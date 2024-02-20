@@ -209,7 +209,7 @@ workflows:
 				DockerHub: tt.MockAPI,
 			}
 
-			val.Validate(false)
+			val.Validate()
 
 			diags := *val.Diagnostics
 			compareDiagnostics(t, tt.Diagnostics, diags)

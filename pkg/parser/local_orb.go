@@ -43,7 +43,7 @@ type LocalOrb struct {
 	Name string
 }
 
-func (doc *YamlDocument) parseLocalOrb(name string, orbNode *sitter.Node, addingLines uint32) (*LocalOrb, error) {
+func (doc *YamlDocument) parseLocalOrb(name string, orbNode *sitter.Node) (*LocalOrb, error) {
 	orbRange := doc.NodeToRange(orbNode)
 	orb := LocalOrb{
 		Name: name,

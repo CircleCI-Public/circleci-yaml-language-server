@@ -49,7 +49,7 @@ func CheckYamlErrors(t *testing.T, testCases []ValidateTestCase) {
 	for _, tt := range testCases {
 		t.Run(tt.Name, func(t *testing.T) {
 			val := CreateValidateFromYAML(tt.YamlContent)
-			val.Validate(false)
+			val.Validate()
 
 			diags := *val.Diagnostics
 			if tt.OnlyErrors == true {
@@ -86,4 +86,12 @@ func sortDiagnostic(diags *[]protocol.Diagnostic) {
 
 		return (*diags)[i].Range.Start.Line < (*diags)[j].Range.Start.Line
 	})
+}
+
+func getDiagnosticMessages(diags *[]protocol.Diagnostic) []string {
+	messages := make([]string, len(*diags))
+	for i, diag := range *diags {
+		messages[i] = diag.Message
+	}
+	return messages
 }
