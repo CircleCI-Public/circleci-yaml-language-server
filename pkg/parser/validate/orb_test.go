@@ -4,9 +4,13 @@ import (
 	"os"
 	"testing"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/dockerhub"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/testHelpers"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"github.com/stretchr/testify/assert"
 	"go.lsp.dev/protocol"
+	"go.lsp.dev/uri"
 )
 
 type ErrorTestCase struct {
@@ -264,10 +268,55 @@ func TestOrbStepsUsedInParameters(t *testing.T) {
 	content, err := os.ReadFile("testdata/orb_steps_used_in_params.yml")
 	assert.NoError(t, err)
 	val := CreateValidateFromYAML(string(content))
-	val.Validate(false)
+	val.Validate()
 	for _, diag := range *val.Diagnostics {
 		if diag.Message == "Orb is unused" {
 			t.Errorf("Got orb is unused diagnostic")
 		}
 	}
+}
+
+func TestLocalOrbUsedPartsFalsePositive(t *testing.T) {
+	fileURI := uri.File("some-uri")
+	context := testHelpers.GetDefaultLsContext()
+	content, err := os.ReadFile("./testdata/orbs/local-orb-used-parts.yml")
+	assert.Nil(t, err)
+
+	doc, err := parser.ParseFromContent(content, context, fileURI, protocol.Position{})
+	assert.Nil(t, err)
+
+	val := Validate{
+		APIs: ValidateAPIs{
+			DockerHub: dockerhub.NewAPI(),
+		},
+		Diagnostics: &[]protocol.Diagnostic{},
+		Cache:       utils.CreateCache(),
+		Doc:         doc,
+		Context:     context,
+	}
+	val.Validate()
+	assert.Len(t, *val.Diagnostics, 0)
+}
+
+func TestLocalOrbUnusedPartsFalseNegative(t *testing.T) {
+	fileURI := uri.File("some-uri")
+	context := testHelpers.GetDefaultLsContext()
+	content, err := os.ReadFile("./testdata/orbs/local-orb-unused-parts.yml")
+	assert.Nil(t, err)
+
+	doc, err := parser.ParseFromContent(content, context, fileURI, protocol.Position{})
+	assert.Nil(t, err)
+
+	val := Validate{
+		APIs: ValidateAPIs{
+			DockerHub: dockerhub.NewAPI(),
+		},
+		Diagnostics: &[]protocol.Diagnostic{},
+		Cache:       utils.CreateCache(),
+		Doc:         doc,
+		Context:     context,
+	}
+	val.Validate()
+	messages := getDiagnosticMessages(val.Diagnostics)
+	assert.ElementsMatch(t, []string{"Orb is unused", "Job is unused", "Command is unused"}, messages)
 }

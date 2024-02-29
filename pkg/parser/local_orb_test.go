@@ -249,7 +249,7 @@ workflows:
 		Doc:         doc,
 		Context:     context,
 	}
-	val.Validate(false)
+	val.Validate()
 	errorDiagnostics := []protocol.Diagnostic{}
 	for _, d := range *val.Diagnostics {
 		if d.Severity == protocol.DiagnosticSeverityError {

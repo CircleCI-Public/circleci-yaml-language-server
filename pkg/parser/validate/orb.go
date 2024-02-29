@@ -249,8 +249,23 @@ func (val Validate) ValidateLocalOrbs() {
 				Diagnostics: val.Diagnostics,
 				Cache:       val.Cache,
 				Context:     val.Context,
+				IsLocalOrb:  true,
 			}
-			validateStruct.Validate(true)
+			validateStruct.Validate()
+
+			for _, job := range orbInfo.Jobs {
+				job.Name = fmt.Sprintf("%s/%s", orb.Name, job.Name)
+				if !val.checkIfJobIsUsed(job) {
+					val.jobIsUnused(job)
+				}
+			}
+
+			for _, command := range orbInfo.Commands {
+				command.Name = fmt.Sprintf("%s/%s", orb.Name, command.Name)
+				if !val.checkIfCommandIsUsed(command) {
+					val.commandIsUnused(command)
+				}
+			}
 		}
 	}
 }
