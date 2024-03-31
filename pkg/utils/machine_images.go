@@ -10,6 +10,8 @@ var ValidARMOrMachineImagesUbuntu2004 = []string{
 	// Ubuntu 2004
 	"ubuntu-2004:current",
 	"ubuntu-2004:edge",
+	"ubuntu-2004:2024.01.2",
+	"ubuntu-2004:2024.01.1",
 	"ubuntu-2004:2023.10.1",
 	"ubuntu-2004:2023.07.1",
 	"ubuntu-2004:2023.04.2",
