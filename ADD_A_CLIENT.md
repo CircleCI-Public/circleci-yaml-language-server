@@ -8,9 +8,9 @@ aware of.
 
 ### `schema.json`
 
-The Language Server needs the [`schema.json`](/schema.json) to validate the
-YAMLs. To run the LS, you must have the file available locally and provide its
-path to the `-schema` parameter of the LS.
+The Language Server (LS) needs the [`schema.json`](/schema.json) file to
+validate the YAMLs. To run the LS, you must have the file available locally and
+provide its path as `-schema` argument to the LS executable.
 
 As the `schema.json` is versioned like the rest of the code, it is provided with
 every release, this means that when updating the LS binary should always come
@@ -18,28 +18,30 @@ with an update of the `schema.json`.
 
 ### Hover
 
-The `hover` functionality is not actually implemented by the LS. Nevertheless,
-you will see reference to the functionality as it is implemented directly in the
-Typescript code of the VSCode extension. The functionality is provided thanks to
-the
+The
+[`textDocument/hover`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_hover)
+functionality is not actually implemented by the LS. Nevertheless, you will see
+reference to the functionality as it is implemented directly in the Typescript
+code of the VSCode extension. The functionality is provided thanks to the
 [SchemaStore JSON schema for CircleCI configs](https://github.com/SchemaStore/schemastore/blob/master/src/schemas/json/circleciconfig.json)
 that CircleCI help maintain and the
 [vscode-json-languageservice](https://github.com/microsoft/vscode-json-languageservice).
 
 If you plan on implementing the feature you should look for a way to take
 advantage of this JSON and find an equivalent of `vscode-json-languageservice`
-that work for your editor.
+that works for your editor.
 
 ### Configuration
 
-To be able to better handle the usage of private orbs, self-hosted runners or
-even contexts you can authenticate to the Language Server with custom LS
-commands.
+To better handle the usage of private orbs, self-hosted runners or even contexts
+you can authenticate to the Language Server with custom LS commands.
 
 ##### `setToken`
 
-The `setToken` command takes an API token as only argument. Users can get API
-token from [here](https://app.circleci.com/settings/user/tokens).
+The `setToken` command takes a CircleCI API token as only argument. Users can
+get API token from
+[User settings](https://app.circleci.com/settings/user/tokens) in the CircleCI
+app.
 
 Example Typescript usage:
 
@@ -52,8 +54,8 @@ await lsClient.sendRequest(`workspace/executeCommand`, {
 
 ##### `setSelfHostedUrl`
 
-For users using the [Server](https://circleci.com/pricing/server/) version of
-CircleCI, you can set the URL of the self-hosted Server with this command.
+For users using [CircleCI Server](https://circleci.com/pricing/server/), you can
+set the URL of the self-hosted Server with this command.
 
 Example Typescript usage:
 
