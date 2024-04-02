@@ -45,6 +45,7 @@ server that handles different calls (specified by the LSP spec).
 - [Code of Conduct](./CODE_OF_CONDUCT.md)
 - [Contribution Guidelines](./CONTRIBUTING.md)
 - [Contributors](./README.md#contributor)
+- [Language clients](./README.md#language-server-clients)
 - [Quick Links](./README.md#quicklinks)
 - [Credits](./README.md#credits)
 - [Hacking](./HACKING.md)
@@ -125,6 +126,15 @@ YAML Language Server can be found in [HACKING.md](HACKING.md).
 
 ![alt text](./assets/diagram.jpg)
 
+## Language Server clients
+
+- VSCode:
+  [CircleCI VSCode extension](https://marketplace.visualstudio.com/items?itemName=circleci.circleci)
+- Neovim: [tomoakley Neovim plugin](https://github.com/tomoakley/circleci.nvim)
+
+If you which to implement a client for your editor, please take a look at
+[ADD_A_CLIENT.md](./ADD_A_CLIENT.md)
+
 ## <a name="quicklinks"></a>Quick links
 
 - [Install the VS Code extension using our language server](https://marketplace.visualstudio.com/items?itemName=circleci.circleci)
@@ -139,10 +149,10 @@ YAML Language Server can be found in [HACKING.md](HACKING.md).
 
 <a href="https://twitter.com/intent/tweet?text=Take%20a%20look%20at%20the%20open%20sourced%20CircleCI%20Language%20Server%20on%20GitHub%20https%3A//github.com/CircleCI-Public/circleci-yaml-language-server%23readme%20via%20%40CircleCI" style="align:center; margin-right:15px">
     <img src="./assets/social/tw.png" alt="twitter-link" width="60px"/>
-</a> 
+</a>
 <a href="https://www.facebook.com/sharer/sharer.php?u=https%3A//github.com/CircleCI-Public/circleci-yaml-language-server%23readme" style="align:center; margin-right:15px">
     <img src="./assets/social/fb.png" alt="facebook-link" width="60px"/>
-</a> 
+</a>
 <a href="https://www.linkedin.com/shareArticle?mini=true&url=https%3A//github.com/CircleCI-Public/circleci-yaml-language-server%23readme" style="align:center">
     <img src="./assets/social/ln.png" alt="linkedin-link" width="60px"/>
 </a>
