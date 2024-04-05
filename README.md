@@ -38,17 +38,18 @@ server that handles different calls (specified by the LSP spec).
 
 ## Summary
 
--   [Features](./README.md#features)
--   [Platforms, Deployment and Package Managers](./README.md#platforms)
--   [Contributing](./README.md#contributing)
--   [Architecture Diagram](./README.md#architecture)
--   [Code of Conduct](./CODE_OF_CONDUCT.md)
--   [Contribution Guidelines](./CONTRIBUTING.md)
--   [Contributors](./README.md#contributor)
--   [Quick Links](./README.md#quicklinks)
--   [Credits](./README.md#credits)
--   [Hacking](./HACKING.md)
--   [License](./README.md#licence)
+- [Features](./README.md#features)
+- [Platforms, Deployment and Package Managers](./README.md#platforms)
+- [Contributing](./README.md#contributing)
+- [Architecture Diagram](./README.md#architecture)
+- [Code of Conduct](./CODE_OF_CONDUCT.md)
+- [Contribution Guidelines](./CONTRIBUTING.md)
+- [Contributors](./README.md#contributor)
+- [Language clients](./README.md#language-server-clients)
+- [Quick Links](./README.md#quicklinks)
+- [Credits](./README.md#credits)
+- [Hacking](./HACKING.md)
+- [License](./README.md#licence)
 
 ## <a name="features"></a>Features
 
@@ -57,46 +58,46 @@ server that handles different calls (specified by the LSP spec).
 This project provides in-file assistance to writing, editing and navigating
 CircleCI Configuration files. It offers:
 
--   **Rich code navigation through “go-to-definition” and “go-to-reference”
-    commands**. This is especially convenient when working on large
-    configuration files, to verify the definition of custom jobs, executors
-    parameters, or in turn view where any of them are referenced in the file.
-    Assisted code navigation also works for Orbs, allowing to explore their
-    definition directly in the IDE when using the go-to-definition feature on an
-    orb-defined command or parameter.
+- **Rich code navigation through “go-to-definition” and “go-to-reference”
+  commands**. This is especially convenient when working on large configuration
+  files, to verify the definition of custom jobs, executors parameters, or in
+  turn view where any of them are referenced in the file. Assisted code
+  navigation also works for Orbs, allowing to explore their definition directly
+  in the IDE when using the go-to-definition feature on an orb-defined command
+  or parameter.
 
 <p align="center">
     <img src="https://images.ctfassets.net/il1yandlcjgk/3JVSu8rTDQRJcIMGF866oJ/444091930e6c64dc9d52f17755e16af9/config_helper_go-to-definition-optimised.gif" alt="circleci-vscode-go-to-definition" width="50%"/>
 </p>
 
--   **Contextual documentation and usage hints when hovering on specific keys**,
-    so to avoid you having to continuously switch to your browser to check the
-    docs whenever you are editing your configuration. That said, links to the
-    official CircleCI documentation are also provided on hover - for easier
-    navigation.
+- **Contextual documentation and usage hints when hovering on specific keys**,
+  so to avoid you having to continuously switch to your browser to check the
+  docs whenever you are editing your configuration. That said, links to the
+  official CircleCI documentation are also provided on hover - for easier
+  navigation.
 
 <p align="center">
     <img src="https://images.ctfassets.net/il1yandlcjgk/6bloAnI35jXou9Q91aGFgU/356b1554d42c77fb2708fac980a8d592/config_helper_on-hover-documentation.png" alt="circleci-vscode-documentation-on-hover" width="50%"/>
 </p>
 
--   **Syntax validation** - which makes it much easier to identify typos,
-    incorrect use of parameters, incomplete definitions, wrong types, invalid or
-    deprecated machine versions, etc.
+- **Syntax validation** - which makes it much easier to identify typos,
+  incorrect use of parameters, incomplete definitions, wrong types, invalid or
+  deprecated machine versions, etc.
 
 <p align="center">
     <img src="https://images.ctfassets.net/il1yandlcjgk/1dF1ic2cUczaMYdxnSUZuF/fbc1eb5d5894a803caf297c57e808738/config_helper_syntax-validation.gif" alt="circleci-vscode-syntax-validation" width="50%"/>
 </p>
 
--   **Usage warnings** - which can help identify deprecated parameters, unused
-    jobs or executors, or missing keys that prevent you from taking advantage of
-    CircleCI’s full capabilities
+- **Usage warnings** - which can help identify deprecated parameters, unused
+  jobs or executors, or missing keys that prevent you from taking advantage of
+  CircleCI’s full capabilities
 
 <p align="center">
     <img src="https://images.ctfassets.net/il1yandlcjgk/404bGppmtCgvE0WOmPk0E/0a92e373929d6d19c8f5a742f1097511/config_helper_usage-warning.png" alt="circleci-vscode-usage-warnings" width="50%"/>
 </p>
 
--   **Auto completion**, available both on built-in keys and parameters and on
-    user-defined variables
+- **Auto completion**, available both on built-in keys and parameters and on
+  user-defined variables
 
 <p align="center">
     <img src="https://images.ctfassets.net/il1yandlcjgk/3jXaQvhOQgayhV9O4nfAhZ/b6d55e689ddfcf7673ab7e9b76ba0a53/config_helper_autocomplete.png" alt="circleci-vscode-autocomplete" width="50%"/>
@@ -125,24 +126,33 @@ YAML Language Server can be found in [HACKING.md](HACKING.md).
 
 ![alt text](./assets/diagram.jpg)
 
+## Language Server clients
+
+- VSCode:
+  [CircleCI VSCode extension](https://marketplace.visualstudio.com/items?itemName=circleci.circleci)
+- Neovim: [tomoakley Neovim plugin](https://github.com/tomoakley/circleci.nvim)
+
+If you which to implement a client for your editor, please take a look at
+[ADD_A_CLIENT.md](./ADD_A_CLIENT.md)
+
 ## <a name="quicklinks"></a>Quick links
 
--   [Install the VS Code extension using our language server](https://marketplace.visualstudio.com/items?itemName=circleci.circleci)
+- [Install the VS Code extension using our language server](https://marketplace.visualstudio.com/items?itemName=circleci.circleci)
 
--   [Discover how the language server was leveraged for the VS Code extension](https://youtu.be/Sdi7ctAXe2A)
+- [Discover how the language server was leveraged for the VS Code extension](https://youtu.be/Sdi7ctAXe2A)
 
--   [Learn more about CircleCI](https://circleci.com/)
+- [Learn more about CircleCI](https://circleci.com/)
 
--   [Do you have questions? Ask the circleCI community Discuss](https://discuss.circleci.com/)
+- [Do you have questions? Ask the circleCI community Discuss](https://discuss.circleci.com/)
 
 ## Social media links
 
 <a href="https://twitter.com/intent/tweet?text=Take%20a%20look%20at%20the%20open%20sourced%20CircleCI%20Language%20Server%20on%20GitHub%20https%3A//github.com/CircleCI-Public/circleci-yaml-language-server%23readme%20via%20%40CircleCI" style="align:center; margin-right:15px">
     <img src="./assets/social/tw.png" alt="twitter-link" width="60px"/>
-</a> 
+</a>
 <a href="https://www.facebook.com/sharer/sharer.php?u=https%3A//github.com/CircleCI-Public/circleci-yaml-language-server%23readme" style="align:center; margin-right:15px">
     <img src="./assets/social/fb.png" alt="facebook-link" width="60px"/>
-</a> 
+</a>
 <a href="https://www.linkedin.com/shareArticle?mini=true&url=https%3A//github.com/CircleCI-Public/circleci-yaml-language-server%23readme" style="align:center">
     <img src="./assets/social/ln.png" alt="linkedin-link" width="60px"/>
 </a>
