@@ -89,7 +89,7 @@ func (methods *Methods) ExecuteCommand(reply jsonrpc2.Replier, req jsonrpc2.Requ
 		rollbar.SetCustom(parameters)
 	}
 
-	return reply(methods.Ctx, &struct{}{}, nil)
+	return reply(methods.Ctx, nil, nil)
 }
 
 func (methods *Methods) setToken(token string) {
