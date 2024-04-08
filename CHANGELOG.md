@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## [0.10.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.9.3...0.10.0) (2024-04-08)
+
+
+### Features
+
+* add latest ubuntu versions ([#288](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/288)) ([f8b8254](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/f8b8254905c57a0f00572c247698180baf345e45))
+
+
+### Bug Fixes
+
+* add new xcode versions ([#278](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/278)) ([481c839](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/481c839a84d5866b5ded37470f9656810d30dd0b))
+* return right values from custom commands ([#286](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/286)) ([cf24e71](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/cf24e7139a007aec88c814a9dcf1ff934a2f99bc))
+
 ## [0.9.3](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.9.2...0.9.3) (2024-02-20)
 
 
