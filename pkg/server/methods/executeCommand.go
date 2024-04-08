@@ -1,8 +1,6 @@
 package methods
 
 import (
-	"fmt"
-
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"github.com/rollbar/rollbar-go"
@@ -15,7 +13,7 @@ import (
 func (methods *Methods) ExecuteCommand(reply jsonrpc2.Replier, req jsonrpc2.Request) error {
 	params := protocol.ExecuteCommandParams{}
 	if err := json.Unmarshal(req.Params(), &params); err != nil {
-		return reply(methods.Ctx, nil, fmt.Errorf("%s: %w", jsonrpc2.ErrParse, err))
+		return reply(methods.Ctx, nil, jsonrpc2.NewError(jsonrpc2.ParseError, err.Error()))
 	}
 
 	arguments := params.Arguments
@@ -24,7 +22,7 @@ func (methods *Methods) ExecuteCommand(reply jsonrpc2.Replier, req jsonrpc2.Requ
 	case "setToken":
 		param, ok := arguments[0].(string)
 		if !ok {
-			return reply(methods.Ctx, nil, nil)
+			return reply(methods.Ctx, nil, jsonrpc2.NewError(jsonrpc2.InvalidParams, "invalid method parameter: token"))
 		}
 		methods.setToken(param)
 		methods.updateAllCachedFiles()
@@ -32,7 +30,7 @@ func (methods *Methods) ExecuteCommand(reply jsonrpc2.Replier, req jsonrpc2.Requ
 	case "setSelfHostedUrl":
 		param, ok := arguments[0].(string)
 		if !ok {
-			return reply(methods.Ctx, nil, nil)
+			return reply(methods.Ctx, nil, jsonrpc2.NewError(jsonrpc2.InvalidParams, "invalid method parameter: selfHostedURL"))
 		}
 		methods.setHostUrl(param)
 		methods.updateAllCachedFiles()
@@ -40,20 +38,23 @@ func (methods *Methods) ExecuteCommand(reply jsonrpc2.Replier, req jsonrpc2.Requ
 	case "setUserId":
 		param, ok := arguments[0].(string)
 		if !ok {
-			return reply(methods.Ctx, nil, nil)
+			return reply(methods.Ctx, nil, jsonrpc2.NewError(jsonrpc2.InvalidParams, "invalid method parameter: userId"))
 		}
 		methods.setUserId(param)
 
 	case "getWorkflows":
 		content, okContent := arguments[0].(string)
+		if !okContent {
+			return reply(methods.Ctx, nil, jsonrpc2.NewError(jsonrpc2.InvalidParams, "invalid method parameter: fileContent"))
+		}
 		fileUri, okUri := arguments[1].(string)
-		if !okContent || !okUri {
-			return reply(methods.Ctx, nil, nil)
+		if !okUri {
+			return reply(methods.Ctx, nil, jsonrpc2.NewError(jsonrpc2.InvalidParams, "invalid method parameter: fileURI"))
 		}
 
 		parsedFile, err := parser.ParseFromContent([]byte(content), methods.LsContext, uri.File(fileUri), protocol.Position{})
 		if err != nil {
-			return reply(methods.Ctx, nil, nil)
+			return reply(methods.Ctx, nil, jsonrpc2.NewError(jsonrpc2.InternalError, "unable to parse file"))
 		}
 
 		workflows := parsedFile.GetWorkflows()
@@ -63,7 +64,7 @@ func (methods *Methods) ExecuteCommand(reply jsonrpc2.Replier, req jsonrpc2.Requ
 	case "setRollbarInformation":
 		parameters, ok := arguments[0].(map[string]interface{})
 		if !ok {
-			return reply(methods.Ctx, nil, nil)
+			return reply(methods.Ctx, nil, jsonrpc2.NewError(jsonrpc2.InvalidParams, "invalid method parameter: parameters"))
 		}
 
 		for key, value := range parameters {
