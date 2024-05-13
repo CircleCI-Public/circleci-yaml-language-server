@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [0.10.1](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.10.0...0.10.1) (2024-05-13)
+
+
+### Bug Fixes
+
+* update ubuntu version ([#290](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/290)) ([ff4140b](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/ff4140b11e69612cfce0adb39c6bcb43bd8e9ac0))
+
 ## [0.10.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.9.3...0.10.0) (2024-04-08)
 
 
