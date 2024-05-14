@@ -2,6 +2,7 @@ package validate
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
@@ -79,7 +80,7 @@ func (val Validate) validateRunCommand(step ast.Run, jobOrCommandParameters map[
 		value = step.When
 	}
 
-	if utils.FindInArray(WHEN_KEYWORDS, value) < 0 {
+	if !slices.Contains(WHEN_KEYWORDS, value) {
 		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
 			step.WhenRange,
 			fmt.Sprintf("Invalid when condition: expected `%s`; got `%s`", strings.Join(WHEN_KEYWORDS, "`, `"), value)))

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -234,7 +235,7 @@ func (doc *YamlDocument) IsBuiltIn(commandName string) bool {
 		"unless", // Has nothing to do here, tech debt to resolve
 	}
 
-	return utils.FindInArray(builtInCommands, commandName) != -1
+	return slices.Contains(builtInCommands, commandName)
 }
 
 func (doc *YamlDocument) IsOrbReference(orbReference string) bool {

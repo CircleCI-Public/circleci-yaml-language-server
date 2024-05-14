@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"slices"
 	"strconv"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
@@ -210,7 +211,7 @@ func (doc *YamlDocument) parseEnumParameter(paramName string, paramNode *sitter.
 		}
 	})
 
-	if enumParam.HasDefault && utils.FindInArray(enumParam.Enum, enumParam.Default) == -1 {
+	if enumParam.HasDefault && !slices.Contains(enumParam.Enum, enumParam.Default) {
 		doc.addDiagnostic(utils.CreateErrorDiagnosticFromRange(enumParam.DefaultRange, "Default value is not in enum"))
 	}
 
@@ -370,7 +371,6 @@ func (doc *YamlDocument) parseParameterValue(child *sitter.Node) (ast.ParameterV
 
 			key := doc.GetNodeText(keyNode)
 			paramValue, err := doc.parseParameterValue(child)
-
 			if err != nil {
 				return
 			}
@@ -500,7 +500,6 @@ func (doc *YamlDocument) parseSimpleParameterValue(paramName string, simpleParam
 	case "integer_scalar":
 		rawValue := doc.GetNodeText(simpleParamNode)
 		intValue, err := strconv.Atoi(rawValue)
-
 		if err != nil {
 			return ast.ParameterValue{}, fmt.Errorf("invalid integer value: %s", rawValue)
 		}
