@@ -2,6 +2,7 @@ package validate
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
@@ -59,7 +60,7 @@ var ValidMacOSResourceClasses = []string{
 }
 
 func (val Validate) validateMacOSExecutor(executor ast.MacOSExecutor) {
-	if utils.FindInArray(ValidXCodeVersions, executor.Xcode) == -1 {
+	if !slices.Contains(ValidXCodeVersions, executor.Xcode) {
 		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
 			executor.XcodeRange,
 			fmt.Sprintf("Invalid Xcode version %s", executor.Xcode),
@@ -135,7 +136,7 @@ func (val Validate) validateLinuxMachineExecutor(executor ast.MachineExecutor) {
 }
 
 func (val Validate) validateImage(img string, imgRange protocol.Range) {
-	if utils.FindInArray(utils.ValidARMOrMachineImages, img) == -1 {
+	if !slices.Contains(utils.ValidARMOrMachineImages, img) {
 		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
 			imgRange,
 			"Invalid or deprecated image",
@@ -238,7 +239,7 @@ func (val Validate) validateWindowsExecutor(executor ast.WindowsExecutor) {
 
 func (val Validate) checkIfValidResourceClass(resourceClass string, validResourceClasses []string, resourceClassRange protocol.Range) {
 	if !utils.CheckIfOnlyParamUsed(resourceClass) && resourceClass != "" &&
-		utils.FindInArray(validResourceClasses, resourceClass) == -1 &&
+		!slices.Contains(validResourceClasses, resourceClass) &&
 		!val.Doc.IsSelfHostedRunner(resourceClass) {
 
 		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
@@ -275,7 +276,6 @@ func (val Validate) validateExecutorNamespace(resourceClass string, resourceClas
 
 	var response RegistryNamespace
 	err := client.Run(request, &response)
-
 	if err != nil {
 		return
 	}

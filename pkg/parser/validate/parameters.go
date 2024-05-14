@@ -2,6 +2,7 @@ package validate
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
@@ -45,7 +46,7 @@ func (val Validate) checkParamSimpleType(param ast.ParameterValue, stepName stri
 		}
 
 		value := param.Value.(string)
-		if utils.FindInArray(definedParam.(ast.EnumParameter).Enum, value) == -1 {
+		if !slices.Contains(definedParam.(ast.EnumParameter).Enum, value) {
 			val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
 				param.Range,
 				fmt.Sprintf("Parameter %s is not a valid value for %s", value, definedParam.GetName()),
@@ -128,7 +129,6 @@ func (val Validate) CheckIfParamsExist() {
 			node := capture.Node
 			content := val.Doc.GetRawNodeText(node)
 			params, err := utils.GetParamsInString(content)
-
 			if err != nil {
 				return
 			}

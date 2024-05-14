@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"slices"
 	"sync"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
@@ -121,7 +122,7 @@ func (c *FileCache) AddEnvVariableToProjectLinkedToFile(uri protocol.URI, envVar
 	defer c.cacheMutex.Unlock()
 	project := c.fileCache[uri]
 
-	if FindInArray(project.EnvVariables, envVariable) < 0 {
+	if !slices.Contains(project.EnvVariables, envVariable) {
 		project.EnvVariables = append(project.EnvVariables, envVariable)
 	}
 	c.fileCache[uri] = project
@@ -263,7 +264,6 @@ func CreateCache() *Cache {
 func GetOrbCacheFSPath(orbYaml string) string {
 	file := path.Join("cci", "orbs", ".circleci", orbYaml+".yml")
 	filePath, err := xdg.CacheFile(file)
-
 	if err != nil {
 		filePath = path.Join(xdg.Home, ".cache", file)
 	}
@@ -306,7 +306,7 @@ func (c *ContextCache) AddEnvVariableToOrganizationContext(organizationId string
 	defer c.cacheMutex.Unlock()
 	ctx := c.contextCache[organizationId][name]
 
-	if FindInArray(ctx.envVariables, envVariable) < 0 {
+	if !slices.Contains(ctx.envVariables, envVariable) {
 		ctx.envVariables = append(ctx.envVariables, envVariable)
 	}
 	c.contextCache[organizationId][name] = ctx

@@ -1,8 +1,9 @@
 package parser
 
 import (
+	"slices"
+
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
 func (doc *YamlDocument) assignContexts() {
@@ -29,13 +30,13 @@ func (doc *YamlDocument) assignContexts() {
 }
 
 func (doc *YamlDocument) addContextToJob(job ast.Job, context string) {
-	if utils.FindInArray(*job.Contexts, context) < 0 {
+	if !slices.Contains(*job.Contexts, context) {
 		*job.Contexts = append(*job.Contexts, context)
 	}
 }
 
 func (doc *YamlDocument) addContextToCommand(command ast.Command, context string) {
-	if utils.FindInArray(*command.Contexts, context) < 0 {
+	if !slices.Contains(*command.Contexts, context) {
 		*command.Contexts = append(*command.Contexts, context)
 	}
 }

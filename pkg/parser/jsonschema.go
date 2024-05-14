@@ -153,7 +153,6 @@ func (validator *JSONSchemaValidator) ValidateWithJSONSchema(rootNode *sitter.No
 	yamlLoader := gojsonschema.NewGoLoader(file)
 
 	result, err := validator.schema.Validate(yamlLoader)
-
 	if err != nil {
 		// Should never happen
 		return []protocol.Diagnostic{utils.CreateErrorDiagnosticFromNode(rootNode, err.Error())}
@@ -198,10 +197,6 @@ func (validator *JSONSchemaValidator) ValidateWithJSONSchema(rootNode *sitter.No
 //
 //	But in the JSON Schema, the `when` key is defined as an object, so the validation
 //	will fail if we don't ignore it.
-var PARAMS_KEYS = []string{
-	"when",
-}
-
 func (validator *JSONSchemaValidator) doesNodeUseParameter(node *sitter.Node) bool {
 	if node.Type() == "block_mapping_pair" {
 		keyNode, valueNode := validator.Doc.GetKeyValueNodes(node)
@@ -211,7 +206,7 @@ func (validator *JSONSchemaValidator) doesNodeUseParameter(node *sitter.Node) bo
 		key := validator.Doc.GetNodeText(keyNode)
 		value := validator.Doc.GetNodeText(valueNode)
 
-		if isInArray := utils.FindInArray(PARAMS_KEYS, key); utils.CheckIfOnlyParamUsed(value) && isInArray > 0 {
+		if key == "when" && utils.CheckIfOnlyParamUsed(value) {
 			return true
 		}
 	}

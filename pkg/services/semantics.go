@@ -2,6 +2,7 @@ package languageservice
 
 import (
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 
@@ -30,7 +31,6 @@ var PARAM_REGEX, _ = regexp.Compile(`<<\s*(parameters|pipeline.parameters)\.([A-
 
 func SemanticTokens(params protocol.SemanticTokensParams, cache *utils.Cache, context *utils.LsContext) protocol.SemanticTokens {
 	doc, err := parser.ParseFromUriWithCache(params.TextDocument.URI, cache, context)
-
 	if err != nil {
 		return protocol.SemanticTokens{}
 	}
@@ -96,7 +96,7 @@ var ROOT_KEYWORDS = []string{
 }
 
 func (sem SemanticTokenStruct) highlightBuiltInKeywords(keyNode *sitter.Node) {
-	if keyName := sem.doc.GetNodeText(keyNode); keyNode.Type() == "flow_node" && utils.FindInArray(KEYWORDS, keyName) != -1 {
+	if keyName := sem.doc.GetNodeText(keyNode); keyNode.Type() == "flow_node" && slices.Contains(KEYWORDS, keyName) {
 		length := keyNode.EndPoint().Column - keyNode.StartPoint().Column
 		sem.addToken(protocol.Position{Line: keyNode.StartPoint().Row, Character: keyNode.StartPoint().Column}, length, 0, 0)
 	}
@@ -119,7 +119,7 @@ func (sem SemanticTokenStruct) highlightBuiltInKeywords(keyNode *sitter.Node) {
 		return
 	}
 
-	if keyName := sem.doc.GetNodeText(keyNode); document.Type() == "document" && keyNode.Type() == "flow_node" && utils.FindInArray(ROOT_KEYWORDS, keyName) != -1 {
+	if keyName := sem.doc.GetNodeText(keyNode); document.Type() == "document" && keyNode.Type() == "flow_node" && slices.Contains(ROOT_KEYWORDS, keyName) {
 		length := keyNode.EndPoint().Column - keyNode.StartPoint().Column
 		sem.addToken(protocol.Position{Line: keyNode.StartPoint().Row, Character: keyNode.StartPoint().Column}, length, 0, 0)
 	}
@@ -131,7 +131,6 @@ func (sem SemanticTokenStruct) highlightParameters(valueNode *sitter.Node) {
 
 func (sem SemanticTokenStruct) highlightCacheKeys(valueNode *sitter.Node) {
 	reg, err := regexp.Compile(`{{ ?(.Branch|.BuildNum|.Revision|.CheckoutKey|.Environment.variableName|checksum .*|epoch|arch) ?}}`)
-
 	if err != nil {
 		return
 	}
