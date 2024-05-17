@@ -14,689 +14,689 @@ version: 2.1
 #
 
 parameters:
-  GHA_Event:
-    type: string
-    default: ""
-  GHA_Actor:
-    type: string
-    default: ""
-  GHA_Action:
-    type: string
-    default: ""
-  GHA_Meta:
-    type: string
-    default: ""
+    GHA_Event:
+        type: string
+        default: ""
+    GHA_Actor:
+        type: string
+        default: ""
+    GHA_Action:
+        type: string
+        default: ""
+    GHA_Meta:
+        type: string
+        default: ""
 orbs:
-  go: circleci/go@1.9.0
-  node: circleci/node@5.0.2
-  snyk: snyk/snyk@1.4.0
-  slack: circleci/slack@4.12.1
-  github-cli: circleci/github-cli@2.2.0
+    go: circleci/go@1.11.0
+    node: circleci/node@5.0.2
+    snyk: snyk/snyk@1.4.0
+    slack: circleci/slack@4.12.1
+    github-cli: circleci/github-cli@2.2.0
 
 commands:
-  install-zig:
-    steps:
-      - run: uname -a
-      - run: wget https://ziglang.org/download/0.9.1/zig-linux-x86_64-0.9.1.tar.xz
-      - run: tar -xf zig-linux-x86_64-0.9.1.tar.xz
+    install-zig:
+        steps:
+            - run: uname -a
+            - run: wget https://ziglang.org/download/0.9.1/zig-linux-x86_64-0.9.1.tar.xz
+            - run: tar -xf zig-linux-x86_64-0.9.1.tar.xz
 
-  install-vscode-extensions-deps:
-    steps:
-      - node/install-packages:
-          app-dir: ~/project/editors/vscode
-          pkg-manager: yarn
+    install-vscode-extensions-deps:
+        steps:
+            - node/install-packages:
+                  app-dir: ~/project/editors/vscode
+                  pkg-manager: yarn
 
-  notify-success:
-    parameters:
-      title:
-        type: string
-      content:
-        type: string
-    steps:
-      - slack/notify:
-          channel: $SLACK_RELEASE_CHANNEL
-          event: pass
-          custom: |
-            {
-              "blocks": [
-                {
-                  "type": "header",
-                  "text": {
-                    "type": "plain_text",
-                    "text": "<< parameters.title >>",
-                    "emoji": true
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "<< parameters.content >>"
-                  }
-                },
-                {
-                  "type": "actions",
-                  "elements": [
-                    {
-                      "type": "button",
-                      "text": {
-                        "type": "plain_text",
-                        "text": "Open pipeline :external_link:",
-                        "emoji": true
-                      },
-                      "url": "https://app.circleci.com/pipelines/<< pipeline.project.type >>/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/<< pipeline.number >>"
-                    },
-                    {
-                      "type": "button",
-                      "text": {
-                        "type": "plain_text",
-                        "text": "Open release :external_link:",
-                        "emoji": true
-                      },
-                      "url": "https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/releases/tag/$CIRCLE_TAG"
-                    },
-                    {
-                      "type": "button",
-                      "text": {
-                        "type": "plain_text",
-                        "text": "Documentation :book:",
-                        "emoji": true
-                      },
-                      "url": "$RELEASE_DOCUMENTATION_URL"
-                    }
-                  ]
-                }
-              ]
-            }
+    notify-success:
+        parameters:
+            title:
+                type: string
+            content:
+                type: string
+        steps:
+            - slack/notify:
+                  channel: $SLACK_RELEASE_CHANNEL
+                  event: pass
+                  custom: |
+                      {
+                        "blocks": [
+                          {
+                            "type": "header",
+                            "text": {
+                              "type": "plain_text",
+                              "text": "<< parameters.title >>",
+                              "emoji": true
+                            }
+                          },
+                          {
+                            "type": "section",
+                            "text": {
+                              "type": "mrkdwn",
+                              "text": "<< parameters.content >>"
+                            }
+                          },
+                          {
+                            "type": "actions",
+                            "elements": [
+                              {
+                                "type": "button",
+                                "text": {
+                                  "type": "plain_text",
+                                  "text": "Open pipeline :external_link:",
+                                  "emoji": true
+                                },
+                                "url": "https://app.circleci.com/pipelines/<< pipeline.project.type >>/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/<< pipeline.number >>"
+                              },
+                              {
+                                "type": "button",
+                                "text": {
+                                  "type": "plain_text",
+                                  "text": "Open release :external_link:",
+                                  "emoji": true
+                                },
+                                "url": "https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/releases/tag/$CIRCLE_TAG"
+                              },
+                              {
+                                "type": "button",
+                                "text": {
+                                  "type": "plain_text",
+                                  "text": "Documentation :book:",
+                                  "emoji": true
+                                },
+                                "url": "$RELEASE_DOCUMENTATION_URL"
+                              }
+                            ]
+                          }
+                        ]
+                      }
 
-  notify-failure:
-    parameters:
-      title:
-        type: string
-      content:
-        type: string
-    steps:
-      - slack/notify:
-          channel: $SLACK_RELEASE_CHANNEL
-          event: fail
-          custom: |
-            {
-              "blocks": [
-                {
-                  "type": "header",
-                  "text": {
-                    "type": "plain_text",
-                    "text": "<< parameters.title >>",
-                    "emoji": true
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "<< parameters.content >>"
-                  }
-                },
-                {
-                  "type": "actions",
-                  "elements": [
-                    {
-                      "type": "button",
-                      "text": {
-                        "type": "plain_text",
-                        "text": "Open pipeline :external_link:",
-                        "emoji": true
-                      },
-                      "url": "https://app.circleci.com/pipelines/<< pipeline.project.type >>/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/<< pipeline.number >>"
-                    },
-                    {
-                      "type": "button",
-                      "text": {
-                        "type": "plain_text",
-                        "text": "Open release :external_link:",
-                        "emoji": true
-                      },
-                      "url": "https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/releases/tag/$CIRCLE_TAG"
-                    },
-                    {
-                      "type": "button",
-                      "text": {
-                        "type": "plain_text",
-                        "text": "Documentation :book:",
-                        "emoji": true
-                      },
-                      "url": "$RELEASE_DOCUMENTATION_URL"
-                    }
-                  ]
-                }
-              ]
-            }
+    notify-failure:
+        parameters:
+            title:
+                type: string
+            content:
+                type: string
+        steps:
+            - slack/notify:
+                  channel: $SLACK_RELEASE_CHANNEL
+                  event: fail
+                  custom: |
+                      {
+                        "blocks": [
+                          {
+                            "type": "header",
+                            "text": {
+                              "type": "plain_text",
+                              "text": "<< parameters.title >>",
+                              "emoji": true
+                            }
+                          },
+                          {
+                            "type": "section",
+                            "text": {
+                              "type": "mrkdwn",
+                              "text": "<< parameters.content >>"
+                            }
+                          },
+                          {
+                            "type": "actions",
+                            "elements": [
+                              {
+                                "type": "button",
+                                "text": {
+                                  "type": "plain_text",
+                                  "text": "Open pipeline :external_link:",
+                                  "emoji": true
+                                },
+                                "url": "https://app.circleci.com/pipelines/<< pipeline.project.type >>/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/<< pipeline.number >>"
+                              },
+                              {
+                                "type": "button",
+                                "text": {
+                                  "type": "plain_text",
+                                  "text": "Open release :external_link:",
+                                  "emoji": true
+                                },
+                                "url": "https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/releases/tag/$CIRCLE_TAG"
+                              },
+                              {
+                                "type": "button",
+                                "text": {
+                                  "type": "plain_text",
+                                  "text": "Documentation :book:",
+                                  "emoji": true
+                                },
+                                "url": "$RELEASE_DOCUMENTATION_URL"
+                              }
+                            ]
+                          }
+                        ]
+                      }
 
 jobs:
-  Create version file:
-    docker:
-      - image: cimg/go:1.21.5
-    description: |
-      Create a version to be used by the /scripts/ldflags.sh when building the binaries
-    parameters:
-      is-prerelease:
-        type: boolean
+    Create version file:
+        docker:
+            - image: cimg/go:1.22.3
         description: |
-          When set to true will set a prerelease in the version file.
-          Else will set the version from the release-please manifest
-    steps:
-      - checkout
-      - when:
-          condition: << parameters.is-prerelease >>
-          steps:
+            Create a version to be used by the /scripts/ldflags.sh when building the binaries
+        parameters:
+            is-prerelease:
+                type: boolean
+                description: |
+                    When set to true will set a prerelease in the version file.
+                    Else will set the version from the release-please manifest
+        steps:
+            - checkout
+            - when:
+                  condition: << parameters.is-prerelease >>
+                  steps:
+                      - run:
+                            name: Write the pre-release version in the version file
+                            command: |
+                                go run ~/project/scripts/get_next_release.go > ~/version
+            - when:
+                  condition:
+                      not: << parameters.is-prerelease >>
+                  steps:
+                      - run:
+                            name: Write the next release version in the version file
+                            command: |
+                                version=$(jq -r '.["."]' ~/project/.circleci/release/release-please-manifest.json)
+                                echo "$version" > ~/version
+            - persist_to_workspace:
+                  root: ~/
+                  paths:
+                      - version
+
+    Unit Tests:
+        environment:
+            SCHEMA_LOCATION: /home/circleci/project/schema.json
+        docker:
+            - image: cimg/go:1.22.3
+        parallelism: 5
+        steps:
+            - checkout
+            - go/mod-download-cached
             - run:
-                name: Write the pre-release version in the version file
-                command: |
-                  go run ~/project/scripts/get_next_release.go > ~/version
-      - when:
-          condition:
-            not: << parameters.is-prerelease >>
-          steps:
+                  name: Installing JUnit reporter
+                  command: go install github.com/jstemmer/go-junit-report/v2@latest
             - run:
-                name: Write the next release version in the version file
-                command: |
-                  version=$(jq -r '.["."]' ~/project/.circleci/release/release-please-manifest.json)
-                  echo "$version" > ~/version
-      - persist_to_workspace:
-          root: ~/
-          paths:
-            - version
+                  name: Running tests
+                  command: go test -v 2>&1 $(go list ./... | circleci tests split --split-by=timings) | go-junit-report -set-exit-code > report.xml
+            - store_test_results:
+                  path: report.xml
 
-  Unit Tests:
-    environment:
-      SCHEMA_LOCATION: /home/circleci/project/schema.json
-    docker:
-      - image: cimg/go:1.21.5
-    parallelism: 5
-    steps:
-      - checkout
-      - go/mod-download-cached
-      - run:
-          name: Installing JUnit reporter
-          command: go install github.com/jstemmer/go-junit-report/v2@latest
-      - run:
-          name: Running tests
-          command: go test -v 2>&1 $(go list ./... | circleci tests split --split-by=timings) | go-junit-report -set-exit-code > report.xml
-      - store_test_results:
-          path: report.xml
+    Build Linux:
+        parameters:
+            resource_class:
+                type: string
+            arch:
+                type: string
+        docker:
+            - image: cimg/go:1.22.3
+        resource_class: << parameters.resource_class >>
+        steps:
+            - attach_workspace:
+                  at: ~/
+            - checkout
+            - run:
+                  name: Build
+                  command: sh -c "go build `~/project/scripts/ldflags.sh` -o ~/project/bin/linux-<< parameters.arch >>-lsp ./cmd/start_server/start_server.go"
+            - store_artifacts:
+                  path: ~/project/bin
+            - persist_to_workspace:
+                  root: ~/
+                  paths:
+                      - project/bin
 
-  Build Linux:
-    parameters:
-      resource_class:
-        type: string
-      arch:
-        type: string
-    docker:
-      - image: cimg/go:1.21.5
-    resource_class: << parameters.resource_class >>
-    steps:
-      - attach_workspace:
-          at: ~/
-      - checkout
-      - run:
-          name: Build
-          command: sh -c "go build `~/project/scripts/ldflags.sh` -o ~/project/bin/linux-<< parameters.arch >>-lsp ./cmd/start_server/start_server.go"
-      - store_artifacts:
-          path: ~/project/bin
-      - persist_to_workspace:
-          root: ~/
-          paths:
-            - project/bin
+    Build macOS:
+        parameters:
+            arch:
+                type: string
+        macos:
+            xcode: 15.1.0
+        resource_class: macos.m1.medium.gen1
+        steps:
+            - attach_workspace:
+                  at: ~/
+            - checkout
+            - run:
+                  name: Install Go
+                  command: |
+                      curl -OL https://go.dev/dl/go1.21.5.darwin-arm64.pkg
+                      sudo installer -pkg ./go1.21.5.darwin-arm64.pkg -target /
+                      echo 'export PATH="/usr/local/go/bin:$PATH"' >> ~/.bash_profile
+            - run:
+                  name: Build
+                  command: |
+                      export LDFLAGS=$(SUFFIX='-s -w' ~/project/scripts/ldflags.sh)
+                      export CGO_ENABLED=1
+                      export GOOS=darwin
+                      export GOARCH=<< parameters.arch >>
+                      sh -c "go build $LDFLAGS -o ~/project/bin/darwin-<< parameters.arch >>-lsp ./cmd/start_server/start_server.go"
+            - store_artifacts:
+                  path: ~/project/bin
+            - persist_to_workspace:
+                  root: ~/
+                  paths:
+                      - project/bin
 
-  Build macOS:
-    parameters:
-      arch:
-        type: string
-    macos:
-      xcode: 15.1.0
-    resource_class: macos.m1.medium.gen1
-    steps:
-      - attach_workspace:
-          at: ~/
-      - checkout
-      - run:
-          name: Install Go
-          command: |
-            curl -OL https://go.dev/dl/go1.21.5.darwin-arm64.pkg
-            sudo installer -pkg ./go1.21.5.darwin-arm64.pkg -target /
-            echo 'export PATH="/usr/local/go/bin:$PATH"' >> ~/.bash_profile
-      - run:
-          name: Build
-          command: |
-            export LDFLAGS=$(SUFFIX='-s -w' ~/project/scripts/ldflags.sh)
-            export CGO_ENABLED=1
-            export GOOS=darwin
-            export GOARCH=<< parameters.arch >>
-            sh -c "go build $LDFLAGS -o ~/project/bin/darwin-<< parameters.arch >>-lsp ./cmd/start_server/start_server.go"
-      - store_artifacts:
-          path: ~/project/bin
-      - persist_to_workspace:
-          root: ~/
-          paths:
-            - project/bin
+    Build Windows:
+        docker:
+            - image: cimg/go:1.22.3
+        steps:
+            - attach_workspace:
+                  at: ~/
+            - checkout
+            - install-zig
+            - run:
+                  name: Build for Windows
+                  command: |
+                      export LDFLAGS=$(~/project/scripts/ldflags.sh)
+                      export CGO_ENABLED=1
+                      export GOOS=windows
+                      export GOARCH=amd64
+                      export CC='zig cc -target x86_64-windows'
+                      export CXX='zig c++ -target x86_64-windows'
+                      export PATH="$(pwd)/zig-linux-x86_64-0.9.1:$PATH"
+                      sh -c "go build $LDFLAGS -o ~/project/bin/windows-amd64-lsp.exe ./cmd/start_server/start_server.go"
+            - store_artifacts:
+                  path: ~/project/bin
+            - persist_to_workspace:
+                  root: ~/
+                  paths:
+                      - project/bin
 
-  Build Windows:
-    docker:
-      - image: cimg/go:1.21.5
-    steps:
-      - attach_workspace:
-          at: ~/
-      - checkout
-      - install-zig
-      - run:
-          name: Build for Windows
-          command: |
-            export LDFLAGS=$(~/project/scripts/ldflags.sh)
-            export CGO_ENABLED=1
-            export GOOS=windows
-            export GOARCH=amd64
-            export CC='zig cc -target x86_64-windows'
-            export CXX='zig c++ -target x86_64-windows'
-            export PATH="$(pwd)/zig-linux-x86_64-0.9.1:$PATH"
-            sh -c "go build $LDFLAGS -o ~/project/bin/windows-amd64-lsp.exe ./cmd/start_server/start_server.go"
-      - store_artifacts:
-          path: ~/project/bin
-      - persist_to_workspace:
-          root: ~/
-          paths:
-            - project/bin
+    Copy JSON schema:
+        docker:
+            - image: cimg/base:stable
+        steps:
+            - checkout
+            - run:
+                  name: Copy schema.json into bin/ directory
+                  command: |
+                      mkdir -p ~/project/bin
+                      cp ~/project/schema.json ~/project/bin/schema.json
+            - store_artifacts:
+                  path: ~/project/bin
+            - persist_to_workspace:
+                  root: ~/
+                  paths:
+                      - project/bin
 
-  Copy JSON schema:
-    docker:
-      - image: cimg/base:stable
-    steps:
-      - checkout
-      - run:
-          name: Copy schema.json into bin/ directory
-          command: |
-            mkdir -p ~/project/bin
-            cp ~/project/schema.json ~/project/bin/schema.json
-      - store_artifacts:
-          path: ~/project/bin
-      - persist_to_workspace:
-          root: ~/
-          paths:
-            - project/bin
+    Build VSIX:
+        docker:
+            - image: cimg/node:18.16
+        steps:
+            - checkout
+            - attach_workspace:
+                  at: ~/
+            - install-vscode-extensions-deps
+            - run: cp schema.json editors/vscode
+            - run: cp publicschema.json editors/vscode
+            - run: cp -R bin editors/vscode/bin
+            - run:
+                  name: Build VSIX
+                  command: |
+                      # (yes ||:) forces command "yes" to exit with exit code 0 (if you don't do this it will exit with code 141)
+                      cd editors/vscode && (yes ||:) | npm run vsix-ci
+            - run: mkdir /tmp/vsix/
+            - run:
+                  name: Move VSIX to tmp
+                  command: mv editors/vscode/circleci-language-server-*.vsix
+                      /tmp/vsix/
+            - run:
+                  name: ZIP VSIX
+                  command: cd /tmp && zip -r circleci-lsp-vsix.zip vsix
+            - store_artifacts:
+                  path: /tmp/circleci-lsp-vsix.zip
 
-  Build VSIX:
-    docker:
-      - image: cimg/node:18.16
-    steps:
-      - checkout
-      - attach_workspace:
-          at: ~/
-      - install-vscode-extensions-deps
-      - run: cp schema.json editors/vscode
-      - run: cp publicschema.json editors/vscode
-      - run: cp -R bin editors/vscode/bin
-      - run:
-          name: Build VSIX
-          command: |
-            # (yes ||:) forces command "yes" to exit with exit code 0 (if you don't do this it will exit with code 141)
-            cd editors/vscode && (yes ||:) | npm run vsix-ci
-      - run: mkdir /tmp/vsix/
-      - run:
-          name: Move VSIX to tmp
-          command: mv editors/vscode/circleci-language-server-*.vsix
-            /tmp/vsix/
-      - run:
-          name: ZIP VSIX
-          command: cd /tmp && zip -r circleci-lsp-vsix.zip vsix
-      - store_artifacts:
-          path: /tmp/circleci-lsp-vsix.zip
+    Lint:
+        docker:
+            - image: cimg/go:1.22.3
+        steps:
+            - checkout
+            - run:
+                  name: Linter check for Go
+                  command: if [[ $(gofmt -l pkg | wc -c) -ne 0 ]]; then exit 1; fi
 
-  Lint:
-    docker:
-      - image: cimg/go:1.21.5
-    steps:
-      - checkout
-      - run:
-          name: Linter check for Go
-          command: if [[ $(gofmt -l pkg | wc -c) -ne 0 ]]; then exit 1; fi
+    Lint PR title:
+        docker:
+            - image: cimg/node:18.16
+        steps:
+            - github-cli/install:
+                  version: "2.37.0"
+            - node/install-yarn
+            - checkout
+            - run:
+                  name: Install dependencies
+                  command: yarn
+            - run:
+                  name: Lint PR title
+                  command: gh pr view --json title --jq .title | npx commitlint
 
-  Lint PR title:
-    docker:
-      - image: cimg/node:18.16
-    steps:
-      - github-cli/install:
-          version: "2.37.0"
-      - node/install-yarn
-      - checkout
-      - run:
-          name: Install dependencies
-          command: yarn
-      - run:
-          name: Lint PR title
-          command: gh pr view --json title --jq .title | npx commitlint
+    Prepare release:
+        docker:
+            - image: cimg/node:lts
+        steps:
+            - run:
+                  name: "Creating/updating Release PR"
+                  command: |
+                      npx release-please release-pr \
+                          --token $GITHUB_TOKEN \
+                          --repo-url $CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME \
+                          --target-branch $CIRCLE_BRANCH \
+                          --config-file .circleci/release/release-please-config.json \
+                          --manifest-file .circleci/release/release-please-manifest.json
 
-  Prepare release:
-    docker:
-      - image: cimg/node:lts
-    steps:
-      - run:
-          name: "Creating/updating Release PR"
-          command: |
-            npx release-please release-pr \
-                --token $GITHUB_TOKEN \
-                --repo-url $CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME \
-                --target-branch $CIRCLE_BRANCH \
-                --config-file .circleci/release/release-please-config.json \
-                --manifest-file .circleci/release/release-please-manifest.json
+    Github Release:
+        docker:
+            - image: cimg/node:lts
+        steps:
+            - run:
+                  name: "Releasing"
+                  command: |
+                      npx release-please github-release \
+                        --draft \
+                        --token $GITHUB_TOKEN \
+                        --repo-url $CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME \
+                        --target-branch $CIRCLE_BRANCH \
+                        --config-file .circleci/release/release-please-config.json \
+                        --manifest-file .circleci/release/release-please-manifest.json
 
-  Github Release:
-    docker:
-      - image: cimg/node:lts
-    steps:
-      - run:
-          name: "Releasing"
-          command: |
-            npx release-please github-release \
-              --draft \
-              --token $GITHUB_TOKEN \
-              --repo-url $CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME \
-              --target-branch $CIRCLE_BRANCH \
-              --config-file .circleci/release/release-please-config.json \
-              --manifest-file .circleci/release/release-please-manifest.json
+    Pre-Release:
+        docker:
+            - image: cimg/go:1.22.3
+        steps:
+            - checkout
+            - attach_workspace:
+                  at: ~/
+            - run:
+                  name: Install ghr
+                  command: go install github.com/tcnksm/ghr@latest
+            - run:
+                  name: Clone the public repo
+                  command: |
+                      REPO_PATH=$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME
+                      git clone https://${GITHUB_TOKEN}@github.com/$REPO_PATH.git /tmp/to-deploy
+            - run:
+                  name: Set global user git config
+                  command: |
+                      git config --global user.name "CircleCI"
+                      git config --global user.email "developer_experience@circleci.com"
+            - run:
+                  name: Publish the binaries
+                  command: |
+                      set -ex
+                      cd /tmp/to-deploy
+                      cp ~/project/schema.json ~/project/bin
+                      export TAG=$(cd ~/project && go run ~/project/scripts/get_next_release.go)
+                      ghr -name v$TAG -prerelease -delete -replace -c `git rev-parse HEAD` $TAG ~/project/bin/
 
-  Pre-Release:
-    docker:
-      - image: cimg/go:1.21.5
-    steps:
-      - checkout
-      - attach_workspace:
-          at: ~/
-      - run:
-          name: Install ghr
-          command: go install github.com/tcnksm/ghr@latest
-      - run:
-          name: Clone the public repo
-          command: |
-            REPO_PATH=$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME
-            git clone https://${GITHUB_TOKEN}@github.com/$REPO_PATH.git /tmp/to-deploy
-      - run:
-          name: Set global user git config
-          command: |
-            git config --global user.name "CircleCI"
-            git config --global user.email "developer_experience@circleci.com"
-      - run:
-          name: Publish the binaries
-          command: |
-            set -ex
-            cd /tmp/to-deploy
-            cp ~/project/schema.json ~/project/bin
-            export TAG=$(cd ~/project && go run ~/project/scripts/get_next_release.go)
-            ghr -name v$TAG -prerelease -delete -replace -c `git rev-parse HEAD` $TAG ~/project/bin/
+    Upload artifacts:
+        docker:
+            - image: cimg/base:stable
+        steps:
+            - github-cli/install:
+                  version: "2.37.0"
+            - checkout
+            - attach_workspace:
+                  at: ~/
+            - run:
+                  name: Extract version from manifest
+                  command: |
+                      version=$(jq -r '.["."]' ~/project/.circleci/release/release-please-manifest.json)
+                      echo "export VERSION=$version" >> "$BASH_ENV"
+            - run:
+                  name: Stop job if release is not a draft
+                  command: |
+                      is_draft=$(gh release view --json isDraft --jq '.isDraft' $VERSION)
+                      [ x$is_draft = "xtrue" ] || circleci-agent step halt
+            - run:
+                  name: Uploading to GitHub Release
+                  command: |
+                      GITHUB_REPO_URL=$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME
+                      cd ~/project/bin
+                      for FILE in *; do
+                          gh release upload --repo $GITHUB_REPO_URL $VERSION "$FILE"
+                      done
+                      gh release edit --repo $GITHUB_REPO_URL $VERSION --draft=false
 
-  Upload artifacts:
-    docker:
-      - image: cimg/base:stable
-    steps:
-      - github-cli/install:
-          version: "2.37.0"
-      - checkout
-      - attach_workspace:
-          at: ~/
-      - run:
-          name: Extract version from manifest
-          command: |
-            version=$(jq -r '.["."]' ~/project/.circleci/release/release-please-manifest.json)
-            echo "export VERSION=$version" >> "$BASH_ENV"
-      - run:
-          name: Stop job if release is not a draft
-          command: |
-            is_draft=$(gh release view --json isDraft --jq '.isDraft' $VERSION)
-            [ x$is_draft = "xtrue" ] || circleci-agent step halt
-      - run:
-          name: Uploading to GitHub Release
-          command: |
-            GITHUB_REPO_URL=$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME
-            cd ~/project/bin
-            for FILE in *; do
-                gh release upload --repo $GITHUB_REPO_URL $VERSION "$FILE"
-            done
-            gh release edit --repo $GITHUB_REPO_URL $VERSION --draft=false
+            - notify-success:
+                  title: ":rocket: CircleCI YAML Language Server v$VERSION released"
+                  content: >-
+                      A new release has been published.\n\n> :github: *Project*:
+                      <https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME|CircleCI YAML Language Server>\n> :rocket: *Release*:
+                      <https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/releases/tag/$VERSION|v$VERSION>
+                      \n>:circleci: *Pipeline*: <https://app.circleci.com/pipelines/<<
+                      pipeline.project.type >>/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/<<
+                      pipeline.number >>|<< pipeline.number >>>\n>:pass-build: *Build*:
+                      <$CIRCLE_BUILD_URL|$CIRCLE_BUILD_NUM>\n\nYou can <$RELEASE_DOCUMENTATION_URL|read documentation>
+                      to find more about release and publish process.
 
-      - notify-success:
-          title: ":rocket: CircleCI YAML Language Server v$VERSION released"
-          content: >-
-            A new release has been published.\n\n> :github: *Project*:
-            <https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME|CircleCI YAML Language Server>\n> :rocket: *Release*:
-            <https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/releases/tag/$VERSION|v$VERSION>
-            \n>:circleci: *Pipeline*: <https://app.circleci.com/pipelines/<<
-            pipeline.project.type >>/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/<<
-            pipeline.number >>|<< pipeline.number >>>\n>:pass-build: *Build*:
-            <$CIRCLE_BUILD_URL|$CIRCLE_BUILD_NUM>\n\nYou can <$RELEASE_DOCUMENTATION_URL|read documentation>
-            to find more about release and publish process.
+            - notify-failure:
+                  title: ":rocket: CircleCI YAML Language Server v$VERSION released"
+                  content: >-
+                      An error occurred during the release.\n\n> :github: *Project*:
+                      <https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME|CircleCI YAML Language Server>\n> :rocket: *Release*:
+                      <https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/releases/tag/$VERSION|v$VERSION>\n>:circleci:
+                      *Pipeline*: <https://app.circleci.com/pipelines/<< pipeline.project.type
+                      >>/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/<< pipeline.number >>|<<
+                      pipeline.number >>>\n>:fail-build: *Build*: <$CIRCLE_BUILD_URL|$CIRCLE_BUILD_NUM>\n\nError logs can be found on
+                      <$CIRCLE_BUILD_URL|the build>\n\nYou can <$RELEASE_DOCUMENTATION_URL|read documentation>
+                      to find more about release and publish process.
 
-      - notify-failure:
-          title: ":rocket: CircleCI YAML Language Server v$VERSION released"
-          content: >-
-            An error occurred during the release.\n\n> :github: *Project*:
-            <https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME|CircleCI YAML Language Server>\n> :rocket: *Release*:
-            <https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/releases/tag/$VERSION|v$VERSION>\n>:circleci:
-            *Pipeline*: <https://app.circleci.com/pipelines/<< pipeline.project.type
-            >>/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/<< pipeline.number >>|<<
-            pipeline.number >>>\n>:fail-build: *Build*: <$CIRCLE_BUILD_URL|$CIRCLE_BUILD_NUM>\n\nError logs can be found on
-            <$CIRCLE_BUILD_URL|the build>\n\nYou can <$RELEASE_DOCUMENTATION_URL|read documentation>
-            to find more about release and publish process.
+            - store_artifacts:
+                  name: Saving bin files
+                  path: bin
+                  destination: .
 
-      - store_artifacts:
-          name: Saving bin files
-          path: bin
-          destination: .
+    Security Scan release:
+        docker:
+            - image: cimg/go:1.22.3
+        steps:
+            - checkout
+            - run:
+                  name: Setup Scanning
+                  command: |
+                      git config --global url."https://$GITHUB_USER:$GITHUB_TOKEN@github.com/circleci/".insteadOf "https://github.com/circleci/"
+            - snyk/scan:
+                  fail-on-issues: false
+                  severity-threshold: high
+                  monitor-on-build: true
+                  project: "${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}"
 
-  Security Scan release:
-    docker:
-      - image: cimg/go:1.21.5
-    steps:
-      - checkout
-      - run:
-          name: Setup Scanning
-          command: |
-            git config --global url."https://$GITHUB_USER:$GITHUB_TOKEN@github.com/circleci/".insteadOf "https://github.com/circleci/"
-      - snyk/scan:
-          fail-on-issues: false
-          severity-threshold: high
-          monitor-on-build: true
-          project: "${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}"
+    Security Scan feature:
+        docker:
+            - image: cimg/go:1.22.3
+        steps:
+            - checkout
+            - run:
+                  name: Setup Scanning
+                  command: |
+                      git config --global url."https://$GITHUB_USER:$GITHUB_TOKEN@github.com/circleci/".insteadOf "https://github.com/circleci/"
+            - snyk/scan:
+                  fail-on-issues: false
+                  severity-threshold: high
+                  monitor-on-build: false
+                  project: "${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}/${CIRCLE_BRANCH}"
 
-  Security Scan feature:
-    docker:
-      - image: cimg/go:1.21.5
-    steps:
-      - checkout
-      - run:
-          name: Setup Scanning
-          command: |
-            git config --global url."https://$GITHUB_USER:$GITHUB_TOKEN@github.com/circleci/".insteadOf "https://github.com/circleci/"
-      - snyk/scan:
-          fail-on-issues: false
-          severity-threshold: high
-          monitor-on-build: false
-          project: "${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}/${CIRCLE_BRANCH}"
-
-  Auto-assign PR:
-    docker:
-      - image: cimg/node:18.16
-    steps:
-      - run:
-          name: Halt job if running pipeline from a fork
-          command: |
-            [ -z $CIRCLE_PR_NUMBER ] || circleci-agent step halt
-      - github-cli/install:
-          version: "2.37.0"
-      - checkout
-      - run:
-          name: Assign PR to author
-          command: |
-            gh pr edit --add-assignee $(gh pr view --json author --jq .author.login)
+    Auto-assign PR:
+        docker:
+            - image: cimg/node:18.16
+        steps:
+            - run:
+                  name: Halt job if running pipeline from a fork
+                  command: |
+                      [ -z $CIRCLE_PR_NUMBER ] || circleci-agent step halt
+            - github-cli/install:
+                  version: "2.37.0"
+            - checkout
+            - run:
+                  name: Assign PR to author
+                  command: |
+                      gh pr edit --add-assignee $(gh pr view --json author --jq .author.login)
 
 workflows:
-  Release PR:
-    when: &release-conditions
-      or:
-        - equal:
-            - << pipeline.git.branch >>
-            - main
-        - matches:
-            value: << pipeline.git.branch >>
-            pattern: ^hotfix.*$
-    jobs:
-      - Prepare release:
-          name: Create/update release PR
-          context:
-            - devex-release
+    Release PR:
+        when: &release-conditions
+            or:
+                - equal:
+                      - << pipeline.git.branch >>
+                      - main
+                - matches:
+                      value: << pipeline.git.branch >>
+                      pattern: ^hotfix.*$
+        jobs:
+            - Prepare release:
+                  name: Create/update release PR
+                  context:
+                      - devex-release
 
-  Build and prerelease:
-    when: *release-conditions
-    jobs:
-      - Unit Tests
-      - Security Scan release:
-          context:
-            - devex-release
-            - org-global-employees
-      - Copy JSON schema
-      - Create version file:
-          is-prerelease: true
-      - Build Linux:
-          name: Build Linux x86_64
-          resource_class: medium
-          arch: amd64
-          requires:
-            - Create version file
-      - Build Linux:
-          name: Build Linux arm64
-          resource_class: arm.medium
-          arch: arm64
-          requires:
-            - Create version file
-      - Build macOS:
-          name: Build macOS x86_64
-          arch: amd64
-          requires:
-            - Create version file
-      - Build macOS:
-          name: Build macOS arm64
-          arch: arm64
-          requires:
-            - Create version file
-      - Build Windows:
-          requires:
-            - Create version file
-      - Build VSIX:
-          requires:
-            - Build Linux x86_64
-            - Build Linux arm64
-            - Build macOS x86_64
-            - Build macOS arm64
-            - Build Windows
-            - Copy JSON schema
-      - Pre-Release:
-          requires:
-            - Security Scan release
+    Build and prerelease:
+        when: *release-conditions
+        jobs:
             - Unit Tests
-            - Build Linux x86_64
-            - Build Linux arm64
-            - Build macOS x86_64
-            - Build macOS arm64
-            - Build Windows
+            - Security Scan release:
+                  context:
+                      - devex-release
+                      - org-global-employees
             - Copy JSON schema
-          context:
-            - devex-release
+            - Create version file:
+                  is-prerelease: true
+            - Build Linux:
+                  name: Build Linux x86_64
+                  resource_class: medium
+                  arch: amd64
+                  requires:
+                      - Create version file
+            - Build Linux:
+                  name: Build Linux arm64
+                  resource_class: arm.medium
+                  arch: arm64
+                  requires:
+                      - Create version file
+            - Build macOS:
+                  name: Build macOS x86_64
+                  arch: amd64
+                  requires:
+                      - Create version file
+            - Build macOS:
+                  name: Build macOS arm64
+                  arch: arm64
+                  requires:
+                      - Create version file
+            - Build Windows:
+                  requires:
+                      - Create version file
+            - Build VSIX:
+                  requires:
+                      - Build Linux x86_64
+                      - Build Linux arm64
+                      - Build macOS x86_64
+                      - Build macOS arm64
+                      - Build Windows
+                      - Copy JSON schema
+            - Pre-Release:
+                  requires:
+                      - Security Scan release
+                      - Unit Tests
+                      - Build Linux x86_64
+                      - Build Linux arm64
+                      - Build macOS x86_64
+                      - Build macOS arm64
+                      - Build Windows
+                      - Copy JSON schema
+                  context:
+                      - devex-release
 
-  Build and release:
-    when: *release-conditions
-    jobs:
-      - Unit Tests
-      - Security Scan release:
-          context:
-            - devex-release
-            - org-global-employees
-      - Copy JSON schema
-      - Create version file:
-          is-prerelease: false
-      - Build Linux:
-          name: Build Linux x86_64
-          resource_class: medium
-          arch: amd64
-          requires:
-            - Create version file
-      - Build Linux:
-          name: Build Linux arm64
-          resource_class: arm.medium
-          arch: arm64
-          requires:
-            - Create version file
-      - Build macOS:
-          name: Build macOS x86_64
-          arch: amd64
-          requires:
-            - Create version file
-      - Build macOS:
-          name: Build macOS arm64
-          arch: arm64
-          requires:
-            - Create version file
-      - Build Windows:
-          requires:
-            - Create version file
-      - Build VSIX:
-          requires:
-            - Build Linux x86_64
-            - Build Linux arm64
-            - Build macOS x86_64
-            - Build macOS arm64
-            - Build Windows
-            - Copy JSON schema
-      - Github Release:
-          requires:
-            - Security Scan release
+    Build and release:
+        when: *release-conditions
+        jobs:
             - Unit Tests
-            - Build Linux x86_64
-            - Build Linux arm64
-            - Build macOS x86_64
-            - Build macOS arm64
-            - Build Windows
+            - Security Scan release:
+                  context:
+                      - devex-release
+                      - org-global-employees
             - Copy JSON schema
-          context:
-            - devex-release
-      - Upload artifacts:
-          requires:
-            - Github Release
-          context:
-            - devex-release
+            - Create version file:
+                  is-prerelease: false
+            - Build Linux:
+                  name: Build Linux x86_64
+                  resource_class: medium
+                  arch: amd64
+                  requires:
+                      - Create version file
+            - Build Linux:
+                  name: Build Linux arm64
+                  resource_class: arm.medium
+                  arch: arm64
+                  requires:
+                      - Create version file
+            - Build macOS:
+                  name: Build macOS x86_64
+                  arch: amd64
+                  requires:
+                      - Create version file
+            - Build macOS:
+                  name: Build macOS arm64
+                  arch: arm64
+                  requires:
+                      - Create version file
+            - Build Windows:
+                  requires:
+                      - Create version file
+            - Build VSIX:
+                  requires:
+                      - Build Linux x86_64
+                      - Build Linux arm64
+                      - Build macOS x86_64
+                      - Build macOS arm64
+                      - Build Windows
+                      - Copy JSON schema
+            - Github Release:
+                  requires:
+                      - Security Scan release
+                      - Unit Tests
+                      - Build Linux x86_64
+                      - Build Linux arm64
+                      - Build macOS x86_64
+                      - Build macOS arm64
+                      - Build Windows
+                      - Copy JSON schema
+                  context:
+                      - devex-release
+            - Upload artifacts:
+                  requires:
+                      - Github Release
+                  context:
+                      - devex-release
 
-  Feature PR:
-    when:
-      not: *release-conditions
-    jobs:
-      - Lint PR title:
-          context:
-            - devex-release
-      - Auto-assign PR:
-          context:
-            - devex-release
+    Feature PR:
+        when:
+            not: *release-conditions
+        jobs:
+            - Lint PR title:
+                  context:
+                      - devex-release
+            - Auto-assign PR:
+                  context:
+                      - devex-release
 
-  Build and test:
-    when:
-      not: *release-conditions
-    jobs:
-      - Unit Tests
-      - Security Scan feature:
-          context:
-            - devex-release
-            - org-global-employees
-      - Lint
-      - Create version file:
-          is-prerelease: true
-      - Build Linux:
-          name: Build Linux arm64
-          resource_class: arm.medium
-          arch: arm64
-          requires:
-            - Create version file
+    Build and test:
+        when:
+            not: *release-conditions
+        jobs:
+            - Unit Tests
+            - Security Scan feature:
+                  context:
+                      - devex-release
+                      - org-global-employees
+            - Lint
+            - Create version file:
+                  is-prerelease: true
+            - Build Linux:
+                  name: Build Linux arm64
+                  resource_class: arm.medium
+                  arch: arm64
+                  requires:
+                      - Create version file
