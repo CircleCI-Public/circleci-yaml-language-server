@@ -219,41 +219,4 @@ func (e MacOSExecutor) GetEnvs() Environment {
 	return e.Environment
 }
 
-type WindowsExecutor struct {
-	BaseExecutor
-	Image string
-}
-
-func (e WindowsExecutor) GetRange() protocol.Range {
-	return e.Range
-}
-
-func (e WindowsExecutor) GetName() string {
-	return e.Name
-}
-
-func (e WindowsExecutor) GetNameRange() protocol.Range {
-	return e.NameRange
-}
-
-func (e WindowsExecutor) IsUncomplete() bool {
-	return e.Uncomplete
-}
-
-func (e WindowsExecutor) GetResourceClass() string {
-	return e.ResourceClass
-}
-
-func (e WindowsExecutor) GetParameters() map[string]Parameter {
-	return e.UserParameters
-}
-
-func (e WindowsExecutor) GetParametersRange() protocol.Range {
-	return e.UserParametersRange
-}
-
-func (e WindowsExecutor) GetEnvs() Environment {
-	return e.Environment
-}
-
 type EnvironmentParameter map[string]string

@@ -18,9 +18,7 @@
         "--extensionDevelopmentPath=${workspaceFolder}/editors/vscode",
         "--disable-extensions"
       ],
-      "outFiles": [
-        "${workspaceFolder}/editors/vscode/dist/**/*.js"
-      ],
+      "outFiles": ["${workspaceFolder}/editors/vscode/dist/**/*.js"],
       "preLaunchTask": "task: task build",
       "env": {
         "CCI_DEV": "true",
@@ -37,12 +35,8 @@
       },
       "type": "extensionHost",
       "request": "launch",
-      "args": [
-        "--extensionDevelopmentPath=${workspaceFolder}/editors/vscode"
-      ],
-      "outFiles": [
-        "${workspaceFolder}/editors/vscode/dist/**/*.js"
-      ],
+      "args": ["--extensionDevelopmentPath=${workspaceFolder}/editors/vscode"],
+      "outFiles": ["${workspaceFolder}/editors/vscode/dist/**/*.js"],
       "preLaunchTask": "task: task build",
       "env": {
         "CCI_DEV": "true"
@@ -75,9 +69,7 @@
       },
       "program": "${workspaceFolder}/node_modules/jest/bin/jest.js",
       "request": "launch",
-      "skipFiles": [
-        "<node_internals>/**"
-      ],
+      "skipFiles": ["<node_internals>/**"],
       "type": "node"
     },
     {
@@ -92,9 +84,7 @@
       },
       "program": "${workspaceFolder}/node_modules/jest/bin/jest.js",
       "request": "launch",
-      "skipFiles": [
-        "<node_internals>/**"
-      ],
+      "skipFiles": ["<node_internals>/**"],
       "type": "node"
     },
     {

@@ -9,9 +9,14 @@ import (
 	"go.lsp.dev/protocol"
 )
 
+var paramRegex = regexp.MustCompile(`<<\s*(parameters|pipeline.parameters)\.([A-Za-z0-9-_]*)\s*>>`)
+
+func ContainsParam(content string) bool {
+	return paramRegex.MatchString(content)
+}
+
 // Return the name of the parameter used at the given position
 func GetParamNameUsedAtPos(content []byte, position protocol.Position) (string, bool) {
-	paramRegex, _ := regexp.Compile(`<<\s*(parameters|pipeline.parameters)\.([A-z0-9-_]*)\s*>>`)
 	isPipelineParam := false
 
 	// Get the content of the YAML at the beginning of the line
@@ -78,7 +83,6 @@ func GetReferencesOfParamInRange(content []byte, paramName string, rng protocol.
 	endIndex := PosToIndex(rng.End, content)
 
 	paramRegex, err := regexp.Compile(fmt.Sprintf("<<\\s*(parameters|pipeline.parameters).%s\\s*>>", paramName))
-
 	if err != nil {
 		return [][]int{}, fmt.Errorf("error while compiling regex: %s", err)
 	}
@@ -93,6 +97,8 @@ func GetReferencesOfParamInRange(content []byte, paramName string, rng protocol.
 	return allRef, nil
 }
 
+var onlyParamRegex = regexp.MustCompile(`^<<\s*(parameters|pipeline.parameters)\.([A-Za-z0-9-_]*)\s*>>$`)
+
 // Returns true if the string is *only* a parameter
 // Example:
 //
@@ -100,14 +106,14 @@ func GetReferencesOfParamInRange(content []byte, paramName string, rng protocol.
 //	param: << pipeline.parameters.paramName >> -> true
 //	param: `/home/<< parameters.paramName >>/Downloads` -> false
 func CheckIfOnlyParamUsed(content string) bool {
-	regex, _ := regexp.Compile(`^<<\s*(parameters|pipeline.parameters)\.([A-z0-9-_]*)\s*>>$`)
-	return regex.MatchString(content)
+	return onlyParamRegex.MatchString(content)
 }
 
+var partialParamRegex = regexp.MustCompile(`<<\s*(parameters|pipeline.parameters|pipeline.git)\.\s*>?>?`)
+
 func CheckIfParamIsPartiallyReferenced(content string) (bool, bool) {
-	regex, _ := regexp.Compile(`<<\s*(parameters|pipeline.parameters|pipeline.git)\.\s*>?>?`)
 	isPipelineParam := strings.Contains(content, "pipeline.")
-	return regex.Find([]byte(content)) != nil, isPipelineParam
+	return partialParamRegex.Find([]byte(content)) != nil, isPipelineParam
 }
 
 func CheckIfMatrixParamIsPartiallyReferenced(content string) bool {
@@ -119,8 +125,9 @@ func GetParamsInString(content string) ([]struct {
 	Name       string
 	FullName   string
 	ParamRange protocol.Range
-}, error) {
-	paramRegex, err := regexp.Compile(`<<\s*(parameters|pipeline.parameters)\.([A-z0-9-_]*)\s*>>`)
+}, error,
+) {
+	paramRegex, err := regexp.Compile(`<<\s*(parameters|pipeline.parameters)\.([A-Za-z0-9-_]*)\s*>>`)
 	if err != nil {
 		return nil, fmt.Errorf("")
 	}
