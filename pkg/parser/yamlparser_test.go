@@ -40,7 +40,7 @@ jobs:
 
 	assert.Equal(t, err, nil)
 	assert.True(t, yamlDocument.Context.Api.UseDefaultInstance())
-	img := utils.GetLatestUbuntu2204Image()
+	img := utils.CurrentLinuxImage
 	machineRange := protocol.Range{
 		Start: protocol.Position{Line: 3, Character: 4},
 		End:   protocol.Position{Line: 3, Character: 17},
@@ -55,7 +55,7 @@ jobs:
 					{
 						Range: machineRange,
 						NewText: `machine:
-		` + strings.Repeat(" ", int(machineRange.Start.Character)) + `  image: ` + utils.GetLatestUbuntu2204Image(),
+		` + strings.Repeat(" ", int(machineRange.Start.Character)) + `  image: ` + utils.CurrentLinuxImage,
 					},
 				}, false),
 		},
@@ -127,7 +127,7 @@ jobs:
 
 	assert.Equal(t, err, nil)
 	assert.True(t, yamlDocument.Context.Api.UseDefaultInstance())
-	img := utils.GetLatestUbuntu2204Image()
+	img := utils.CurrentLinuxImage
 	machineRange := protocol.Range{
 		Start: protocol.Position{Line: 7, Character: 4},
 		End:   protocol.Position{Line: 7, Character: 17},
@@ -143,7 +143,7 @@ jobs:
 						{
 							Range: machineRange,
 							NewText: `machine:
-		` + strings.Repeat(" ", int(machineRange.Start.Character)) + `  image: ` + utils.GetLatestUbuntu2204Image(),
+		` + strings.Repeat(" ", int(machineRange.Start.Character)) + `  image: ` + utils.CurrentLinuxImage,
 						},
 					}, false),
 			},
@@ -222,7 +222,7 @@ jobs:
 
 	assert.Equal(t, err, nil)
 	assert.True(t, yamlDocument.Context.Api.UseDefaultInstance())
-	img := utils.GetLatestUbuntu2204Image()
+	img := utils.CurrentLinuxImage
 	machineRange := protocol.Range{
 		Start: protocol.Position{Line: 3, Character: 4},
 		End:   protocol.Position{Line: 3, Character: 17},
@@ -241,7 +241,7 @@ jobs:
 						{
 							Range: machineRange,
 							NewText: `machine:
-		` + strings.Repeat(" ", int(machineRange.Start.Character)) + `  image: ` + utils.GetLatestUbuntu2204Image(),
+		` + strings.Repeat(" ", int(machineRange.Start.Character)) + `  image: ` + utils.CurrentLinuxImage,
 						},
 					}, false),
 			},

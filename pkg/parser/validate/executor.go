@@ -51,7 +51,7 @@ func (val Validate) validateMacOSExecutor(executor ast.MacOSExecutor) {
 	} else {
 		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
 			executor.XcodeRange,
-			fmt.Sprintf("Invalid Xcode version \"%s\"", executor.Xcode),
+			fmt.Sprintf("Unknown Xcode version \"%s\"", executor.Xcode),
 		))
 	}
 }
