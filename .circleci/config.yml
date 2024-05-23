@@ -259,12 +259,8 @@ jobs:
       - attach_workspace:
           at: ~/
       - checkout
-      - run:
-          name: Install Go
-          command: |
-            curl -OL https://go.dev/dl/go1.21.5.darwin-arm64.pkg
-            sudo installer -pkg ./go1.21.5.darwin-arm64.pkg -target /
-            echo 'export PATH="/usr/local/go/bin:$PATH"' >> ~/.bash_profile
+      - go/install:
+          version: 1.22.3
       - run:
           name: Build
           command: |
@@ -686,17 +682,15 @@ workflows:
     when:
       not: *release-conditions
     jobs:
-      - Unit Tests
-      - Security Scan feature:
-          context:
-            - devex-release
-            - org-global-employees
-      - Lint
       - Create version file:
           is-prerelease: true
-      - Build Linux:
-          name: Build Linux arm64
-          resource_class: arm.medium
+      - Build macOS:
+          name: Build macOS x86_64
+          arch: amd64
+          requires:
+            - Create version file
+      - Build macOS:
+          name: Build macOS arm64
           arch: arm64
           requires:
             - Create version file
