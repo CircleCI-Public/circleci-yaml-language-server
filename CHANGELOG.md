@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [0.11.1](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.11.0...0.11.1) (2024-05-23)
+
+
+### Bug Fixes
+
+* update go version for macOS build ([#295](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/295)) ([e9b455d](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/e9b455d27fd867ffe6f036648d2d24869f554afc))
+
 ## [0.11.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.10.1...0.11.0) (2024-05-23)
 
 
