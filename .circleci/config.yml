@@ -682,15 +682,17 @@ workflows:
     when:
       not: *release-conditions
     jobs:
+      - Unit Tests
+      - Security Scan feature:
+          context:
+            - devex-release
+            - org-global-employees
+      - Lint
       - Create version file:
           is-prerelease: true
-      - Build macOS:
-          name: Build macOS x86_64
-          arch: amd64
-          requires:
-            - Create version file
-      - Build macOS:
-          name: Build macOS arm64
+      - Build Linux:
+          name: Build Linux arm64
+          resource_class: arm.medium
           arch: arm64
           requires:
             - Create version file
