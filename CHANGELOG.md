@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [0.11.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.10.1...0.11.0) (2024-05-23)
+
+
+### Features
+
+* add resource classes and images for Windows & GPU executors ([#293](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/293)) ([c095783](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/c0957839b4608b12690c0e05197fccccce7e34ef))
+
 ## [0.10.1](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.10.0...0.10.1) (2024-05-13)
 
 
