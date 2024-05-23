@@ -259,12 +259,8 @@ jobs:
       - attach_workspace:
           at: ~/
       - checkout
-      - run:
-          name: Install Go
-          command: |
-            curl -OL https://go.dev/dl/go1.21.5.darwin-arm64.pkg
-            sudo installer -pkg ./go1.21.5.darwin-arm64.pkg -target /
-            echo 'export PATH="/usr/local/go/bin:$PATH"' >> ~/.bash_profile
+      - go/install:
+          version: 1.22.3
       - run:
           name: Build
           command: |
