@@ -72,7 +72,7 @@ executors:
 			Diagnostics: []ComparableDiagnostic{
 				{
 					Severity: protocol.DiagnosticSeverityError,
-					Message:  "Docker image not found namespace/image:tag",
+					Message:  "Docker image not found \"namespace/image:tag\"",
 				},
 			},
 
@@ -93,7 +93,7 @@ executors:
 			Diagnostics: []ComparableDiagnostic{
 				{
 					Severity: protocol.DiagnosticSeverityError,
-					Message:  "Docker image namespace/image:tag has no tag tag",
+					Message:  "Docker image \"namespace/image:tag\" has no tag \"tag\"",
 				},
 			},
 
@@ -115,7 +115,7 @@ executors:
 			Diagnostics: []ComparableDiagnostic{
 				{
 					Severity: protocol.DiagnosticSeverityError,
-					Message:  "Docker image namespace/image has no tag latest",
+					Message:  "Docker image \"namespace/image\" has no tag \"latest\"",
 				},
 			},
 
@@ -134,7 +134,7 @@ executors:
 			Diagnostics: []ComparableDiagnostic{
 				{
 					Severity: protocol.DiagnosticSeverityError,
-					Message:  "Docker image namespace/image has no tag latest",
+					Message:  "Docker image \"namespace/image\" has no tag \"latest\"",
 					Actions: []ComparableAction{
 						{
 							Title:  "Use last tag",
@@ -266,6 +266,7 @@ func TestChooseTagToRecommend(t *testing.T) {
 		})
 	}
 }
+
 func TestCreateTagTextEdit(t *testing.T) {
 	tag := "16.20.1-browsers"
 	img := ast.DockerImage{

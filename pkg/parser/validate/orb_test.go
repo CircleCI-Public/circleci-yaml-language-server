@@ -50,7 +50,7 @@ orbs:
 					Start: protocol.Position{Line: 7, Character: 10},
 					End:   protocol.Position{Line: 7, Character: 21},
 				},
-					"Invalid Xcode version 12.5"),
+					"Unknown Xcode version \"12.5\""),
 			},
 		},
 		{

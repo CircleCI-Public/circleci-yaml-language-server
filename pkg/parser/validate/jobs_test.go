@@ -57,7 +57,6 @@ func TestExecutorParam(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run("executor parameter: "+testCase.label, func(t *testing.T) {
-
 			ctx := &utils.LsContext{
 				Api: utils.ApiContext{
 					Token:   "XXXXXXXXXXXX",
@@ -136,7 +135,7 @@ func TestResourceClass(t *testing.T) {
 			yamlData: `jobs:
   test:
     macos:
-      xcode: 13.2.1
+      xcode: ` + utils.ValidXcodeAppleSiliconVersions[0] + `
     resource_class: toto
     steps:
       - checkout`,
@@ -147,7 +146,8 @@ func TestResourceClass(t *testing.T) {
 				},
 				Severity: protocol.DiagnosticSeverityError,
 			},
-		}}
+		},
+	}
 
 	for _, testCase := range testCases {
 		t.Run("validate job resource_class: "+testCase.label, func(t *testing.T) {

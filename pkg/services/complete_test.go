@@ -29,7 +29,6 @@ func TestComplete(t *testing.T) {
 		uri.File(path.Join("./testdata/orb.yaml")),
 		context,
 	)
-
 	if err != nil {
 		panic(err)
 	}
@@ -208,10 +207,6 @@ func TestComplete(t *testing.T) {
 					InsertText: "macos: ",
 				},
 				{
-					Label:      "windows",
-					InsertText: "windows: ",
-				},
-				{
 					Label:      "machine",
 					InsertText: "machine: ",
 				},
@@ -226,7 +221,7 @@ func TestComplete(t *testing.T) {
 					Character: 19,
 				},
 			},
-			want: createCompletionItemForUbuntuImages(),
+			want: createCompletionItemForLabels(utils.ValidMachineImages),
 		},
 		{
 			name: "Completion for resource class",
@@ -237,12 +232,7 @@ func TestComplete(t *testing.T) {
 					Character: 24,
 				},
 			},
-			want: []protocol.CompletionItem{
-				{Label: "macos.x86.medium.gen2"},
-				{Label: "macos.m1.medium.gen1"},
-				{Label: "macos.m1.large.gen1"},
-				{Label: "macos.x86.metal.gen1"},
-			},
+			want: createCompletionItemForLabels(utils.ValidMacOSResourceClasses),
 		},
 		{
 			name: "Completion for executors reference in jobs",
@@ -344,17 +334,10 @@ func sortCompleteItem(items []protocol.CompletionItem) {
 	})
 }
 
-func createCompletionItemForUbuntuImages() []protocol.CompletionItem {
-	completeItems := make([]protocol.CompletionItem, 0)
-	for _, image := range utils.ValidARMOrMachineImagesUbuntu2004 {
-		completeItems = append(completeItems, protocol.CompletionItem{
-			Label: image,
-		})
-	}
-	for _, image := range utils.ValidARMOrMachineImagesUbuntu2204 {
-		completeItems = append(completeItems, protocol.CompletionItem{
-			Label: image,
-		})
+func createCompletionItemForLabels(labels []string) []protocol.CompletionItem {
+	completeItems := make([]protocol.CompletionItem, len(labels))
+	for i, label := range labels {
+		completeItems[i].Label = label
 	}
 	return completeItems
 }

@@ -27,7 +27,7 @@ parameters:
     type: string
     default: ""
 orbs:
-  go: circleci/go@1.9.0
+  go: circleci/go@1.11.0
   node: circleci/node@5.0.2
   snyk: snyk/snyk@1.4.0
   slack: circleci/slack@4.12.1
@@ -175,7 +175,7 @@ commands:
 jobs:
   Create version file:
     docker:
-      - image: cimg/go:1.21.5
+      - image: cimg/go:1.22.3
     description: |
       Create a version to be used by the /scripts/ldflags.sh when building the binaries
     parameters:
@@ -211,7 +211,7 @@ jobs:
     environment:
       SCHEMA_LOCATION: /home/circleci/project/schema.json
     docker:
-      - image: cimg/go:1.21.5
+      - image: cimg/go:1.22.3
     parallelism: 5
     steps:
       - checkout
@@ -232,7 +232,7 @@ jobs:
       arch:
         type: string
     docker:
-      - image: cimg/go:1.21.5
+      - image: cimg/go:1.22.3
     resource_class: << parameters.resource_class >>
     steps:
       - attach_workspace:
@@ -282,7 +282,7 @@ jobs:
 
   Build Windows:
     docker:
-      - image: cimg/go:1.21.5
+      - image: cimg/go:1.22.3
     steps:
       - attach_workspace:
           at: ~/
@@ -352,7 +352,7 @@ jobs:
 
   Lint:
     docker:
-      - image: cimg/go:1.21.5
+      - image: cimg/go:1.22.3
     steps:
       - checkout
       - run:
@@ -405,7 +405,7 @@ jobs:
 
   Pre-Release:
     docker:
-      - image: cimg/go:1.21.5
+      - image: cimg/go:1.22.3
     steps:
       - checkout
       - attach_workspace:
@@ -492,7 +492,7 @@ jobs:
 
   Security Scan release:
     docker:
-      - image: cimg/go:1.21.5
+      - image: cimg/go:1.22.3
     steps:
       - checkout
       - run:
@@ -507,7 +507,7 @@ jobs:
 
   Security Scan feature:
     docker:
-      - image: cimg/go:1.21.5
+      - image: cimg/go:1.22.3
     steps:
       - checkout
       - run:

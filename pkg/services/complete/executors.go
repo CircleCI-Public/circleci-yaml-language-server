@@ -2,12 +2,10 @@ package complete
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/dockerhub"
 	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser/validate"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	sitter "github.com/smacker/go-tree-sitter"
 	"go.lsp.dev/protocol"
@@ -22,7 +20,6 @@ func (ch *CompletionHandler) completeExecutors() {
 	if executor.IsUncomplete() {
 		ch.addCompletionItemField("docker")
 		ch.addCompletionItemField("macos")
-		ch.addCompletionItemField("windows")
 		ch.addCompletionItemField("machine")
 		return
 	}
@@ -34,8 +31,6 @@ func (ch *CompletionHandler) completeExecutors() {
 		ch.completeMachineExecutor(executor)
 	case ast.MacOSExecutor:
 		ch.completeMacOSExecutor(executor)
-	case ast.WindowsExecutor:
-		ch.completeWindowsExecutor(executor)
 	}
 }
 
@@ -51,7 +46,7 @@ func findExecutor(pos protocol.Position, doc yamlparser.YamlDocument) (ast.Execu
 
 func (ch *CompletionHandler) completeDockerExecutor(executor ast.DockerExecutor) {
 	if utils.PosInRange(executor.ResourceClassRange, ch.Params.Position) {
-		ch.addResourceClassCompletion(validate.ValidDockerResourceClasses)
+		ch.addResourceClassCompletion(utils.ValidDockerResourceClasses)
 		return
 	}
 
@@ -101,7 +96,6 @@ func (ch *CompletionHandler) completeDockerExecutor(executor ast.DockerExecutor)
 			} else {
 				// Search for tags instead
 				results, err := dockerhub.SearchTags(img.Image.Namespace, img.Image.Name, theImg.Tag)
-
 				if err != nil {
 					return
 				}
@@ -130,33 +124,31 @@ func (ch *CompletionHandler) completeDockerExecutor(executor ast.DockerExecutor)
 
 func (ch *CompletionHandler) completeMachineExecutor(executor ast.MachineExecutor) {
 	if utils.PosInRange(executor.ResourceClassRange, ch.Params.Position) {
-		if strings.HasPrefix(executor.ResourceClass, "arm.") {
-			ch.addResourceClassCompletion(validate.ValidARMResourceClasses)
-		} else if strings.HasPrefix(executor.ResourceClass, "gpu.nvidia") || strings.HasPrefix(executor.ResourceClass, "windows.gpu.nvidia") {
-			ch.addResourceClassCompletion(validate.ValidNvidiaGPUResourceClasses)
-		} else {
-			ch.addResourceClassCompletion(validate.ValidLinuxResourceClasses)
-			if ch.Context.Api.IsLoggedIn() {
-				customResourceClasses := ch.Cache.ResourceClassCache.GetResourceClassOfFile(ch.Doc.URI)
-				for _, resourceClass := range customResourceClasses {
-					ch.addCompletionItem(resourceClass)
-				}
+		for _, resourceClass := range utils.ValidMachineResourceClasses {
+			ch.addCompletionItem(resourceClass)
+		}
+		if ch.Context.Api.IsLoggedIn() {
+			customResourceClasses := ch.Cache.ResourceClassCache.GetResourceClassOfFile(ch.Doc.URI)
+			for _, resourceClass := range customResourceClasses {
+				ch.addCompletionItem(resourceClass)
 			}
 		}
 		return
 	}
 
 	if utils.PosInRange(executor.ImageRange, ch.Params.Position) {
-		for _, img := range utils.ValidARMOrMachineImages {
+		for _, img := range utils.ValidMachineImages {
 			ch.addCompletionItem(img)
 		}
 		return
-	} else if executor.Image == "" {
+	}
+
+	if executor.Image == "" {
 		extendedRange := executor.ImageRange
 		extendedRange.End.Character += 999
 
 		if utils.PosInRange(extendedRange, ch.Params.Position) {
-			for _, img := range utils.ValidARMOrMachineImages {
+			for _, img := range utils.ValidMachineImages {
 				ch.addCompletionItem(img)
 			}
 
@@ -169,16 +161,7 @@ func (ch *CompletionHandler) completeMachineExecutor(executor ast.MachineExecuto
 
 func (ch *CompletionHandler) completeMacOSExecutor(executor ast.MacOSExecutor) {
 	if utils.PosInRange(executor.ResourceClassRange, ch.Params.Position) {
-		ch.addResourceClassCompletion(validate.ValidMacOSResourceClasses)
-		return
-	} else {
-		ch.checkAndAddResourceClassFieldCompletion(executor)
-	}
-}
-
-func (ch *CompletionHandler) completeWindowsExecutor(executor ast.WindowsExecutor) {
-	if utils.PosInRange(executor.ResourceClassRange, ch.Params.Position) {
-		ch.addResourceClassCompletion(validate.ValidLinuxResourceClasses)
+		ch.addResourceClassCompletion(utils.ValidMacOSResourceClasses)
 		return
 	} else {
 		ch.checkAndAddResourceClassFieldCompletion(executor)

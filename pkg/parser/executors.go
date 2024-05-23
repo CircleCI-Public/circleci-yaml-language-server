@@ -58,8 +58,6 @@ func (doc *YamlDocument) parseSingleExecutor(executorNode *sitter.Node) {
 			doc.Executors[executorName] = doc.parseSingleExecutorMachine(executorNameNode, blockMappingNode)
 		case "macos":
 			doc.Executors[executorName] = doc.parseSingleExecutorMacOS(executorNameNode, blockMappingNode)
-		case "windows":
-			doc.Executors[executorName] = doc.parseSingleExecutorWindows(executorNameNode, blockMappingNode)
 		}
 	})
 
@@ -200,32 +198,6 @@ func (doc *YamlDocument) parseSingleExecutorMacOS(nameNode *sitter.Node, valueNo
 	return res
 }
 
-func (doc *YamlDocument) parseSingleExecutorWindows(nameNode *sitter.Node, valueNode *sitter.Node) ast.WindowsExecutor {
-	// valueNode is a block_mapping
-	res := ast.WindowsExecutor{}
-
-	parseWindows := func(blockNode *sitter.Node) {
-		// blockNode is a block_node
-		blockMappingNode := GetChildMapping(blockNode)
-
-		if blockMappingNode == nil { //TODO: deal with errors
-			return
-		}
-
-		doc.iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
-			keyNode, valueNode := doc.GetKeyValueNodes(child)
-			keyName := doc.GetNodeText(keyNode)
-			switch keyName {
-			case "image":
-				res.Image = doc.GetNodeText(valueNode)
-			}
-		})
-	}
-
-	doc.parseBaseExecutor(&res.BaseExecutor, nameNode, valueNode, parseWindows, "windows")
-	return res
-}
-
 func (doc *YamlDocument) parseSingleExecutorDocker(nameNode *sitter.Node, valueNode *sitter.Node) ast.DockerExecutor {
 	// valueNode is a block_mapping
 	res := ast.DockerExecutor{
@@ -236,7 +208,7 @@ func (doc *YamlDocument) parseSingleExecutorDocker(nameNode *sitter.Node, valueN
 		// blockNode is a block_node
 		blockSequence := GetChildSequence(blockNode)
 
-		if blockSequence == nil { //TODO: deal with errors
+		if blockSequence == nil { // TODO: deal with errors
 			return
 		}
 
@@ -257,14 +229,14 @@ func (doc *YamlDocument) parseDockerImage(imageNode *sitter.Node) ast.DockerImag
 	dockerImg := ast.DockerImage{}
 	blockNode := GetChildOfType(imageNode, "block_node")
 
-	if blockNode == nil { //TODO: deal with errors
+	if blockNode == nil { // TODO: deal with errors
 		// Can happen if the docker is an alias/anchor
 		return dockerImg
 	}
 
 	blockMappingNode := GetChildMapping(blockNode)
 
-	if blockMappingNode == nil { //TODO: deal with errors
+	if blockMappingNode == nil { // TODO: deal with errors
 		return dockerImg
 	}
 
@@ -331,7 +303,7 @@ func (doc *YamlDocument) parseExecutorRef(valueNode *sitter.Node, child *sitter.
 
 	name := ""
 	blockMapping := GetChildMapping(valueNode)
-	if blockMapping == nil { //TODO: deal with errors
+	if blockMapping == nil { // TODO: deal with errors
 		return "", protocol.Range{}, executorParameters
 	}
 
@@ -368,11 +340,11 @@ func (doc *YamlDocument) addedMachineTrueDeprecatedDiag(child *sitter.Node, reso
 		return false
 	}
 
-	if !doc.Context.Api.UseDefaultInstance() || doc.IsSelfHostedRunner(resourceClass) {
+	if !doc.Context.Api.UseDefaultInstance() || utils.IsSelfHostedRunner(resourceClass) {
 		return false
 	}
 
-	if doc.IsSelfHostedRunner(resourceClass) {
+	if utils.IsSelfHostedRunner(resourceClass) {
 		return false
 	}
 	machineRange := doc.NodeToRange(child)
@@ -382,18 +354,19 @@ func (doc *YamlDocument) addedMachineTrueDeprecatedDiag(child *sitter.Node, reso
 }
 
 func (doc *YamlDocument) machineTrueFix(machineRange protocol.Range) {
-	img := utils.GetLatestUbuntu2204Image()
 	diagnostic := utils.CreateDiagnosticFromRange(
 		machineRange,
 		protocol.DiagnosticSeverityWarning,
-		utils.GetMachineTrueMessage(img),
+		utils.GetMachineTrueMessage(utils.CurrentLinuxImage),
 		[]protocol.CodeAction{
-			utils.CreateCodeActionTextEdit("Replace with most updated ubuntu image", doc.URI,
+			utils.CreateCodeActionTextEdit("Replace with current Ubuntu image", doc.URI,
 				[]protocol.TextEdit{
 					{
 						Range: machineRange,
-						NewText: `machine:
-` + strings.Repeat(" ", int(machineRange.Start.Character)) + `  image: ` + utils.GetLatestUbuntu2204Image(),
+						NewText: "machine:\n" +
+							strings.Repeat(" ", int(machineRange.Start.Character)) +
+							"  image: " +
+							utils.CurrentLinuxImage,
 					},
 				}, false),
 		},
@@ -402,9 +375,4 @@ func (doc *YamlDocument) machineTrueFix(machineRange protocol.Range) {
 		protocol.DiagnosticTagDeprecated,
 	}
 	doc.addDiagnostic(diagnostic)
-
-}
-
-func (doc *YamlDocument) IsSelfHostedRunner(resourceClass string) bool {
-	return len(strings.Split(resourceClass, "/")) > 1
 }
