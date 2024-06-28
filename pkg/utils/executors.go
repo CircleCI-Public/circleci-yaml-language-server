@@ -197,10 +197,6 @@ var ValidXcodeIntelVersions = []string{
 	"12.5.1",
 }
 
-var ValidMacOSIntelResourceClasses = []string{
-	"macos.x86.medium.gen2",
-}
-
 var ValidXcodeAppleSiliconVersions = []string{
 	"15.4.0",
 	"15.3.0",
@@ -219,10 +215,7 @@ var ValidMacOSAppleSiliconResourceClasses = []string{
 	"macos.m1.large.gen1",
 }
 
-var ValidMacOSResourceClasses = slices.Concat(
-	ValidMacOSAppleSiliconResourceClasses,
-	ValidMacOSIntelResourceClasses,
-)
+var ValidMacOSResourceClasses = ValidMacOSAppleSiliconResourceClasses
 
 var ValidDockerResourceClasses = ValidLinuxResourceClasses
 
