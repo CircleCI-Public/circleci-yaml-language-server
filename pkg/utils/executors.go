@@ -184,19 +184,6 @@ var ValidMachinePairs = []struct {
 	{Images: ValidWindowsGPUImages, ResourceClasses: ValidWindowsGPUResourceClasses},
 }
 
-var ValidXcodeIntelVersions = []string{
-	"15.3.0",
-	"15.2.0",
-	"15.1.0",
-	"15.0.0",
-	"14.3.1",
-	"14.2.0",
-	"14.1.0",
-	"14.0.1",
-	"13.4.1",
-	"12.5.1",
-}
-
 var ValidXcodeAppleSiliconVersions = []string{
 	"15.4.0",
 	"15.3.0",
