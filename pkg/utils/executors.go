@@ -184,7 +184,7 @@ var ValidMachinePairs = []struct {
 	{Images: ValidWindowsGPUImages, ResourceClasses: ValidWindowsGPUResourceClasses},
 }
 
-var ValidXcodeAppleSiliconVersions = []string{
+var ValidXcodeVersions = []string{
 	"15.4.0",
 	"15.3.0",
 	"15.2.0",
@@ -197,12 +197,10 @@ var ValidXcodeAppleSiliconVersions = []string{
 	"13.4.1",
 }
 
-var ValidMacOSAppleSiliconResourceClasses = []string{
+var ValidMacOSResourceClasses = []string{
 	"macos.m1.medium.gen1",
 	"macos.m1.large.gen1",
 }
-
-var ValidMacOSResourceClasses = ValidMacOSAppleSiliconResourceClasses
 
 var ValidDockerResourceClasses = ValidLinuxResourceClasses
 
