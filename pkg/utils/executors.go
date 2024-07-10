@@ -185,6 +185,7 @@ var ValidMachinePairs = []struct {
 }
 
 var ValidXcodeVersions = []string{
+	"16.0.0",
 	"15.4.0",
 	"15.3.0",
 	"15.2.0",
