@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [0.11.2](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.11.1...0.11.2) (2024-07-12)
+
+
+### Bug Fixes
+
+* remove deprecated class ([#302](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/302)) ([8247a72](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/8247a725244cd2bace684ea847e65a90da9df2f2))
+
 ## [0.11.1](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.11.0...0.11.1) (2024-05-23)
 
 
