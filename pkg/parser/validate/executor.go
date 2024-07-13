@@ -34,17 +34,10 @@ func (val Validate) ValidateExecutors() {
 // MacOSExecutor
 
 func (val Validate) validateMacOSExecutor(executor ast.MacOSExecutor) {
-	if slices.Contains(utils.ValidXcodeAppleSiliconVersions, executor.Xcode) {
+	if slices.Contains(utils.ValidXcodeVersions, executor.Xcode) {
 		val.checkIfValidResourceClass(
 			executor.ResourceClass,
-			utils.ValidMacOSAppleSiliconResourceClasses,
-			executor.ResourceClassRange,
-			fmt.Sprintf("Xcode version \"%s\"", executor.Xcode),
-		)
-	} else if slices.Contains(utils.ValidXcodeIntelVersions, executor.Xcode) {
-		val.checkIfValidResourceClass(
-			executor.ResourceClass,
-			utils.ValidMacOSIntelResourceClasses,
+			utils.ValidMacOSResourceClasses,
 			executor.ResourceClassRange,
 			fmt.Sprintf("Xcode version \"%s\"", executor.Xcode),
 		)

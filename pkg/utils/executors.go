@@ -184,24 +184,8 @@ var ValidMachinePairs = []struct {
 	{Images: ValidWindowsGPUImages, ResourceClasses: ValidWindowsGPUResourceClasses},
 }
 
-var ValidXcodeIntelVersions = []string{
-	"15.3.0",
-	"15.2.0",
-	"15.1.0",
-	"15.0.0",
-	"14.3.1",
-	"14.2.0",
-	"14.1.0",
-	"14.0.1",
-	"13.4.1",
-	"12.5.1",
-}
-
-var ValidMacOSIntelResourceClasses = []string{
-	"macos.x86.medium.gen2",
-}
-
-var ValidXcodeAppleSiliconVersions = []string{
+var ValidXcodeVersions = []string{
+	"16.0.0",
 	"15.4.0",
 	"15.3.0",
 	"15.2.0",
@@ -214,15 +198,10 @@ var ValidXcodeAppleSiliconVersions = []string{
 	"13.4.1",
 }
 
-var ValidMacOSAppleSiliconResourceClasses = []string{
+var ValidMacOSResourceClasses = []string{
 	"macos.m1.medium.gen1",
 	"macos.m1.large.gen1",
 }
-
-var ValidMacOSResourceClasses = slices.Concat(
-	ValidMacOSAppleSiliconResourceClasses,
-	ValidMacOSIntelResourceClasses,
-)
 
 var ValidDockerResourceClasses = ValidLinuxResourceClasses
 

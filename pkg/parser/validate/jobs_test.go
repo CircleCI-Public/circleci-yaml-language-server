@@ -135,7 +135,7 @@ func TestResourceClass(t *testing.T) {
 			yamlData: `jobs:
   test:
     macos:
-      xcode: ` + utils.ValidXcodeAppleSiliconVersions[0] + `
+      xcode: ` + utils.ValidXcodeVersions[0] + `
     resource_class: toto
     steps:
       - checkout`,
