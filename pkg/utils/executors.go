@@ -9,6 +9,7 @@ var CurrentLinuxImage = "ubuntu-2204:current"
 
 var ValidLinuxImages = []string{
 	// Ubuntu 20.04
+	"ubuntu-2004:2024.05.1",
 	"ubuntu-2004:2024.04.4",
 	"ubuntu-2004:2024.01.2",
 	"ubuntu-2004:2024.01.1",
@@ -33,6 +34,7 @@ var ValidLinuxImages = []string{
 	"ubuntu-2004:edge",
 
 	// Ubuntu 22.04
+	"ubuntu-2204:2024.05.1",
 	"ubuntu-2204:2024.04.4",
 	"ubuntu-2204:2024.01.2",
 	"ubuntu-2204:2024.01.1",
