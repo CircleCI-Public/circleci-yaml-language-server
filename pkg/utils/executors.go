@@ -5,10 +5,11 @@ import (
 	"strings"
 )
 
-var CurrentLinuxImage = "ubuntu-2204:current"
+var CurrentLinuxImage = "ubuntu-2404:current"
 
 var ValidLinuxImages = []string{
 	// Ubuntu 20.04
+	"ubuntu-2004:2024.08.1",
 	"ubuntu-2004:2024.05.1",
 	"ubuntu-2004:2024.04.4",
 	"ubuntu-2004:2024.01.2",
@@ -34,6 +35,7 @@ var ValidLinuxImages = []string{
 	"ubuntu-2004:edge",
 
 	// Ubuntu 22.04
+	"ubuntu-2204:2024.08.1",
 	"ubuntu-2204:2024.05.1",
 	"ubuntu-2204:2024.04.4",
 	"ubuntu-2204:2024.01.2",
@@ -51,6 +53,12 @@ var ValidLinuxImages = []string{
 	"ubuntu-2204:2022.04.1",
 	"ubuntu-2204:current",
 	"ubuntu-2204:edge",
+
+	// Ubuntu 24.04
+	"ubuntu-2404:2024.08.1",
+	"ubuntu-2404:2024.05.1",
+	"ubuntu-2404:current",
+	"ubuntu-2404:edge",
 
 	// Android
 	"android:2024.04.1",
