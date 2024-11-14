@@ -8,6 +8,8 @@
 
 ## This is CircleCI's YAML Language Server.
 
+This is nonsense, and a test
+
 The official CircleCI extension for Visual Studio Code is available
 [on the VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=circleci.circleci).
 This extension was developed by the Developer Experience team of CircleCI and it
