@@ -36,6 +36,11 @@ func TestFindErrors(t *testing.T) {
 			args: args{filePath: "./testdata/anchorNoErrors.yml"},
 			want: make([]protocol.Diagnostic, 0),
 		},
+		{
+			name: "No errors",
+			args: args{filePath: "./testdata/requiresNoErrors.yml"},
+			want: make([]protocol.Diagnostic, 0),
+		},
 	}
 
 	for _, tt := range tests {

@@ -1525,7 +1525,33 @@
 											"requires": {
 												"type": "array",
 												"items": {
-													"type": "string"
+													"oneOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "object",
+                              "minProperties": 1,
+                              "maxProperties": 1,
+                              "patternProperties": {
+                                "^[A-Za-z][A-Za-z\\s\\d_-]*$": {
+                                  "oneOf": [
+                                    {
+                                      "type": "string",
+                                      "enum": ["success", "failed", "canceled"]
+                                    },
+                                    {
+                                      "type": "array",
+                                      "minLength": 1,
+                                      "items": {
+                                        "type": "string",
+                                        "enum": ["success", "failed", "canceled"]
+                                      }
+                                    }
+                                  ]
+                                }}
+                            }
+                          ]
 												}
 											},
 											"filters": {

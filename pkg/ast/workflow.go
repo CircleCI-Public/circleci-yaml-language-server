@@ -27,7 +27,7 @@ type JobRef struct {
 	// not the job that will be executed
 	StepName      string
 	StepNameRange protocol.Range
-	Requires      []TextAndRange
+	Requires      []Require
 	Context       []TextAndRange
 	Type          string
 	TypeRange     protocol.Range
@@ -44,8 +44,9 @@ type JobRef struct {
 }
 
 type Require struct {
-	Name  string
-	Range protocol.Range
+	Name   string
+	Status []string
+	Range  protocol.Range
 }
 
 type WorkflowTrigger struct {
