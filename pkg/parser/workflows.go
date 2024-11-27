@@ -102,7 +102,7 @@ func (doc *YamlDocument) buildJobsDAG(jobRefs []ast.JobRef) map[string][]string 
 	res := make(map[string][]string)
 	for _, jobRef := range jobRefs {
 		for _, requirement := range jobRef.Requires {
-			res[requirement.Text] = append(res[requirement.Text], jobRef.StepName)
+			res[requirement.Name] = append(res[requirement.Name], jobRef.StepName)
 		}
 	}
 	return res
@@ -246,12 +246,70 @@ func (doc *YamlDocument) parseContext(node *sitter.Node) []ast.TextAndRange {
 	return doc.getNodeTextArrayWithRange(node)
 }
 
-func (doc *YamlDocument) parseSingleJobRequires(node *sitter.Node) []ast.TextAndRange {
-	array := doc.getNodeTextArrayWithRange(node)
-	res := []ast.TextAndRange{}
-	for _, require := range array {
-		res = append(res, ast.TextAndRange{Text: require.Text, Range: require.Range})
+func (doc *YamlDocument) parseSingleJobRequires(requiresNode *sitter.Node) []ast.Require {
+	blockSequenceNode := GetChildSequence(requiresNode)
+	res := make([]ast.Require, 0, requiresNode.ChildCount())
+
+	if blockSequenceNode == nil {
+		return res
 	}
+
+	iterateOnBlockSequence(blockSequenceNode, func(requiresItemNode *sitter.Node) {
+		getRequire := func(node *sitter.Node) ast.Require {
+			defaultStatus := []string{"success"}
+			if alias := GetChildOfType(node, "alias"); alias != nil {
+				anchor, ok := doc.YamlAnchors[strings.TrimLeft(doc.GetNodeText(alias), "*")]
+				if !ok {
+					return ast.Require{Name: ""}
+				}
+				anchorValueNode := GetFirstChild(anchor.ValueNode)
+				text := doc.GetNodeText(anchorValueNode)
+				return ast.Require{Name: text, Status: defaultStatus, Range: doc.NodeToRange(anchorValueNode)}
+			} else {
+				return ast.Require{Name: doc.GetNodeText(node), Status: defaultStatus, Range: doc.NodeToRange(node)}
+			}
+		}
+
+		// If blockSequenceNode is a flow_sequence, then requiresItemNode is directly a flow_node
+		if requiresItemNode.Type() == "flow_node" {
+			res = append(res, getRequire(requiresItemNode))
+		} else {
+			// But if blockSequenceNode is a block_sequence, then requiresItemNode is a block_sequence_item
+			// The first child of requiresItemNode is the hyphen node, the second child is what we need
+			element := requiresItemNode.Child(1)
+			// If the second child is a flow_node, then it is a simple require
+			if element != nil && element.Type() == "flow_node" {
+				res = append(res, getRequire(element))
+			} else {
+				// Otherwise the second child is a block_mapping, then it is a require with status
+				blockMappingNode := GetChildOfType(element, "block_mapping")
+				blockMappingPair := GetChildOfType(blockMappingNode, "block_mapping_pair")
+				key, value := doc.GetKeyValueNodes(blockMappingPair)
+
+				if key == nil || value == nil {
+					return
+				}
+				if GetFirstChild(value).Type() == "plain_scalar" {
+					status := make([]string, 1)
+					status[0] = doc.GetNodeText(value)
+					res = append(res, ast.Require{Name: doc.GetNodeText(key), Status: status, Range: doc.NodeToRange(key)})
+				} else {
+					statusesNode := GetFirstChild(value)
+					status := make([]string, 0, statusesNode.ChildCount())
+					iterateOnBlockSequence(statusesNode, func(statusItemNode *sitter.Node) {
+						if statusItemNode.Type() == "flow_node" {
+							status = append(status, doc.GetNodeText(statusItemNode))
+						}
+						if statusItemNode.Type() == "block_sequence_item" {
+							status = append(status, doc.GetNodeText(statusItemNode.Child(1)))
+						}
+					})
+					res = append(res, ast.Require{Name: doc.GetNodeText(key), Status: status, Range: doc.NodeToRange(key)})
+				}
+			}
+		}
+	})
+
 	return res
 }
 

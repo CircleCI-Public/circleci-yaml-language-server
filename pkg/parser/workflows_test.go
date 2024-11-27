@@ -35,6 +35,14 @@ func TestYamlDocument_parseSingleJobReference(t *testing.T) {
 	const jobRef4 = `
 - test:
     name: say-my-name`
+	const jobRef5 = `
+- test:
+    requires:
+        - setup: failed`
+	const jobRef6 = `
+- test:
+    requires:
+        - setup: [success, canceled]`
 
 	type fields struct {
 		Content   []byte
@@ -128,9 +136,10 @@ func TestYamlDocument_parseSingleJobReference(t *testing.T) {
 						Character: 6,
 					},
 				},
-				Requires: []ast.TextAndRange{
+				Requires: []ast.Require{
 					{
-						Text: "setup",
+						Name:   "setup",
+						Status: []string{"success"},
 						Range: protocol.Range{
 							Start: protocol.Position{Line: 3, Character: 10},
 							End:   protocol.Position{Line: 3, Character: 15},
@@ -302,6 +311,108 @@ func TestYamlDocument_parseSingleJobReference(t *testing.T) {
 				Parameters:   make(map[string]ast.ParameterValue),
 				HasMatrix:    false,
 				MatrixParams: make(map[string][]ast.ParameterValue),
+			},
+		},
+		{
+			name:   "Job reference with requires and single status",
+			fields: fields{Content: []byte(jobRef5)},
+			args:   args{jobRefNode: getFirstChildOfType(GetRootNode([]byte(jobRef5)), "block_sequence_item")},
+			want: ast.JobRef{
+				JobName: "test",
+				JobRefRange: protocol.Range{
+					Start: protocol.Position{
+						Line:      1,
+						Character: 0,
+					},
+					End: protocol.Position{
+						Line:      3,
+						Character: 23,
+					},
+				},
+				JobNameRange: protocol.Range{
+					Start: protocol.Position{
+						Line:      1,
+						Character: 2,
+					},
+					End: protocol.Position{
+						Line:      1,
+						Character: 6,
+					},
+				},
+				StepName: "test",
+				StepNameRange: protocol.Range{
+					Start: protocol.Position{
+						Line:      1,
+						Character: 2,
+					},
+					End: protocol.Position{
+						Line:      1,
+						Character: 6,
+					},
+				},
+				Requires: []ast.Require{
+					{
+						Name:   "setup",
+						Status: []string{"failed"},
+						Range: protocol.Range{
+							Start: protocol.Position{Line: 3, Character: 10},
+							End:   protocol.Position{Line: 3, Character: 15},
+						},
+					},
+				},
+				MatrixParams: make(map[string][]ast.ParameterValue),
+				Parameters:   make(map[string]ast.ParameterValue),
+			},
+		},
+		{
+			name:   "Job reference with requires and multiple statuses",
+			fields: fields{Content: []byte(jobRef6)},
+			args:   args{jobRefNode: getFirstChildOfType(GetRootNode([]byte(jobRef6)), "block_sequence_item")},
+			want: ast.JobRef{
+				JobName: "test",
+				JobRefRange: protocol.Range{
+					Start: protocol.Position{
+						Line:      1,
+						Character: 0,
+					},
+					End: protocol.Position{
+						Line:      3,
+						Character: 36,
+					},
+				},
+				JobNameRange: protocol.Range{
+					Start: protocol.Position{
+						Line:      1,
+						Character: 2,
+					},
+					End: protocol.Position{
+						Line:      1,
+						Character: 6,
+					},
+				},
+				StepName: "test",
+				StepNameRange: protocol.Range{
+					Start: protocol.Position{
+						Line:      1,
+						Character: 2,
+					},
+					End: protocol.Position{
+						Line:      1,
+						Character: 6,
+					},
+				},
+				Requires: []ast.Require{
+					{
+						Name:   "setup",
+						Status: []string{"success", "canceled"},
+						Range: protocol.Range{
+							Start: protocol.Position{Line: 3, Character: 10},
+							End:   protocol.Position{Line: 3, Character: 15},
+						},
+					},
+				},
+				MatrixParams: make(map[string][]ast.ParameterValue),
+				Parameters:   make(map[string]ast.ParameterValue),
 			},
 		},
 	}
