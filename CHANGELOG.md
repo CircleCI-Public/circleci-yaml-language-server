@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## [0.12.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.11.1...0.12.0) (2024-11-27)
+
+
+### Features
+
+* [LIFE-450] Update Ubuntu images ([#311](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/311)) ([d8bf965](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/d8bf965831f6309dd1f5a289453a8f2d6820750c))
+* extend the schema of the requires stanza ([#315](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/315)) ([d64302f](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/d64302f23458895239823630a5737fe3b22f7069))
+
+
+### Bug Fixes
+
+* remove deprecated class ([#302](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/302)) ([8247a72](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/8247a725244cd2bace684ea847e65a90da9df2f2))
+* update to current ubuntu version ([#307](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/307)) ([ad47e11](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/ad47e113714f9175b01384cfb5800360ed6e45ac))
+
 ## [0.11.1](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.11.0...0.11.1) (2024-05-23)
 
 
