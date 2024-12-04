@@ -111,6 +111,7 @@ var ValidLinuxResourceClasses = []string{
 
 var ValidWindowsImages = []string{
 	// Windows Server 2019
+	"windows-server-2019-vs2019:2024.12.1",
 	"windows-server-2019-vs2019:2024.05.1",
 	"windows-server-2019-vs2019:2024.01.1",
 	"windows-server-2019-vs2019:2023.10.1",
