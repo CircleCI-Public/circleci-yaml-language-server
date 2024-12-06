@@ -121,6 +121,7 @@ var ValidWindowsImages = []string{
 	"windows-server-2019-vs2019:edge",
 
 	// Windows Server 2022
+	"windows-server-2022:2024.12.1",
 	"windows-server-2022-gui:2024.04.1",
 	"windows-server-2022-gui:2024.01.1",
 	"windows-server-2022-gui:2023.11.1",
