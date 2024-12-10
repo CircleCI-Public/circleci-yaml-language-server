@@ -498,7 +498,7 @@ jobs:
       - snyk/scan:
           fail-on-issues: false
           severity-threshold: high
-          monitor-on-build: true
+          monitor-on-build: false
           project: "${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}"
 
   Security Scan feature:
