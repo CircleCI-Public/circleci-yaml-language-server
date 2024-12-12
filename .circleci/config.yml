@@ -29,7 +29,7 @@ parameters:
 orbs:
   go: circleci/go@1.11.0
   node: circleci/node@5.0.2
-  snyk: snyk/snyk@1.4.0
+  snyk: snyk/snyk@2.2.0
   slack: circleci/slack@4.12.1
   github-cli: circleci/github-cli@2.2.0
 
@@ -498,7 +498,7 @@ jobs:
       - snyk/scan:
           fail-on-issues: false
           severity-threshold: high
-          monitor-on-build: true
+          monitor-on-build: false
           project: "${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}"
 
   Security Scan feature:
