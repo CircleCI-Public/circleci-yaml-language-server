@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [0.12.1](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.12.0...0.12.1) (2024-12-12)
+
+
+### Bug Fixes
+
+* updated Snyk scanning ([#320](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/320)) ([6af84e8](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/6af84e8361db888f4c46215e32fa8d9c5001ee82))
+
 ## [0.12.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.11.1...0.12.0) (2024-11-27)
 
 
