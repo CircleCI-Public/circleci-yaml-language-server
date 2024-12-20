@@ -667,17 +667,6 @@ workflows:
           context:
             - devex-release
 
-  Feature PR:
-    when:
-      not: *release-conditions
-    jobs:
-      - Lint PR title:
-          context:
-            - devex-release
-      - Auto-assign PR:
-          context:
-            - devex-release
-
   Build and test:
     when:
       not: *release-conditions
