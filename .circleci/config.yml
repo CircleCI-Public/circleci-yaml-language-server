@@ -501,37 +501,6 @@ jobs:
           monitor-on-build: false
           project: "${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}"
 
-  Security Scan feature:
-    docker:
-      - image: cimg/go:1.22.3
-    steps:
-      - checkout
-      - run:
-          name: Setup Scanning
-          command: |
-            git config --global url."https://$GITHUB_USER:$GITHUB_TOKEN@github.com/circleci/".insteadOf "https://github.com/circleci/"
-      - snyk/scan:
-          fail-on-issues: false
-          severity-threshold: high
-          monitor-on-build: false
-          project: "${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}/${CIRCLE_BRANCH}"
-
-  Auto-assign PR:
-    docker:
-      - image: cimg/node:18.16
-    steps:
-      - run:
-          name: Halt job if running pipeline from a fork
-          command: |
-            [ -z $CIRCLE_PR_NUMBER ] || circleci-agent step halt
-      - github-cli/install:
-          version: "2.37.0"
-      - checkout
-      - run:
-          name: Assign PR to author
-          command: |
-            gh pr edit --add-assignee $(gh pr view --json author --jq .author.login)
-
 workflows:
   Release PR:
     when: &release-conditions
@@ -667,26 +636,11 @@ workflows:
           context:
             - devex-release
 
-  Feature PR:
-    when:
-      not: *release-conditions
-    jobs:
-      - Lint PR title:
-          context:
-            - devex-release
-      - Auto-assign PR:
-          context:
-            - devex-release
-
   Build and test:
     when:
       not: *release-conditions
     jobs:
       - Unit Tests
-      - Security Scan feature:
-          context:
-            - devex-release
-            - org-global-employees
       - Lint
       - Create version file:
           is-prerelease: true
