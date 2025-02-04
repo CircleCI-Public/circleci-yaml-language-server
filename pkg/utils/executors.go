@@ -170,6 +170,8 @@ var ValidLinuxGPUResourceClasses = []string{
 var ValidWindowsGPUImages = []string{
 	"windows-server-2019-cuda:current",
 	"windows-server-2019-cuda:edge",
+	"windows-server-2022-cuda:current",
+	"windows-server-2022-cuda:edge",
 }
 
 var ValidWindowsGPUResourceClasses = []string{
