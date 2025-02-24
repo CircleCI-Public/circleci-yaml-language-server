@@ -88,6 +88,9 @@ jobs:
     steps:
       - run: echo "Hello"
 
+  deploy:
+    <<: *buildJob
+
 workflows:
   test-build:
     jobs:
@@ -125,3 +128,6 @@ workflows:
       - jobWithAWS_OIDC
       - ccc/random-job
       - jobWithUnaccessibleOrb
+
+      - deploy:
+          serial-group: << pipeline.project.slug >>/deploy-group

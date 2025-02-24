@@ -1676,6 +1676,10 @@
 														"type": "string"
 													}
 												}
+											},
+											"serial-group": {
+												"type": "string",
+												"minLength": 1
 											}
 										}
 									}

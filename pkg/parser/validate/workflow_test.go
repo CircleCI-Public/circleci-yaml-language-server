@@ -64,6 +64,19 @@ workflows:
 `,
 			Diagnostics: []protocol.Diagnostic{},
 		},
+		{
+			Name: "Serial groups",
+			YamlContent: `version: 2.1
+jobs:
+	- deploy:
+			type: no-op
+
+workflows:
+ someworkflow:
+	 jobs:
+		 - deploy:
+					serial-group: deploy-group`,
+		},
 	}
 
 	CheckYamlErrors(t, testCases)

@@ -212,6 +212,9 @@ func (doc *YamlDocument) parseSingleJobReference(jobRefNode *sitter.Node) ast.Jo
 					if alias != "" {
 						res.StepName = alias
 					}
+				case "serial-group":
+					res.SerialGroup = doc.GetNodeText(valueNode)
+					res.SerialGroupRange = doc.NodeToRange(valueNode)
 
 				case "pre-steps":
 					res.PreStepsRange = doc.NodeToRange(child)
