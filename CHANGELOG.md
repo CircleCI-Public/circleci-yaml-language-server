@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [0.13.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.12.1...0.13.0) (2025-02-27)
+
+
+### Features
+
+* PIPE-5084 Update job references to support serial groups ([#325](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/325)) ([cc5e970](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/cc5e97019c9424f021dcfb6a9c0df57e939b5f5e))
+
 ## [0.12.1](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.12.0...0.12.1) (2024-12-12)
 
 
