@@ -43,6 +43,9 @@ func TestYamlDocument_parseSingleJobReference(t *testing.T) {
 - test:
     requires:
         - setup: [success, canceled]`
+	const jobRef7 = `
+- deploy:
+    serial-group: deploy-group`
 
 	type fields struct {
 		Content   []byte
@@ -413,6 +416,59 @@ func TestYamlDocument_parseSingleJobReference(t *testing.T) {
 				},
 				MatrixParams: make(map[string][]ast.ParameterValue),
 				Parameters:   make(map[string]ast.ParameterValue),
+			},
+		},
+		{
+			name:   "Job reference with serial group",
+			fields: fields{Content: []byte(jobRef7)},
+			args:   args{jobRefNode: getFirstChildOfType(GetRootNode([]byte(jobRef7)), "block_sequence_item")},
+			want: ast.JobRef{
+				JobName: "deploy",
+				JobRefRange: protocol.Range{
+					Start: protocol.Position{
+						Line:      1,
+						Character: 0,
+					},
+					End: protocol.Position{
+						Line:      2,
+						Character: 30,
+					},
+				},
+				JobNameRange: protocol.Range{
+					Start: protocol.Position{
+						Line:      1,
+						Character: 2,
+					},
+					End: protocol.Position{
+						Line:      1,
+						Character: 8,
+					},
+				},
+				StepName: "deploy",
+				StepNameRange: protocol.Range{
+					Start: protocol.Position{
+						Line:      1,
+						Character: 2,
+					},
+					End: protocol.Position{
+						Line:      1,
+						Character: 8,
+					},
+				},
+				Parameters:   make(map[string]ast.ParameterValue),
+				HasMatrix:    false,
+				MatrixParams: make(map[string][]ast.ParameterValue),
+				SerialGroup:  "deploy-group",
+				SerialGroupRange: protocol.Range{
+					Start: protocol.Position{
+						Line:      2,
+						Character: 18,
+					},
+					End: protocol.Position{
+						Line:      2,
+						Character: 30,
+					},
+				},
 			},
 		},
 	}

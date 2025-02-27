@@ -25,13 +25,15 @@ type JobRef struct {
 
 	// StepName is the name of the job in the workflow,
 	// not the job that will be executed
-	StepName      string
-	StepNameRange protocol.Range
-	Requires      []Require
-	Context       []TextAndRange
-	Type          string
-	TypeRange     protocol.Range
-	Parameters    map[string]ParameterValue
+	StepName         string
+	StepNameRange    protocol.Range
+	Requires         []Require
+	Context          []TextAndRange
+	Type             string
+	TypeRange        protocol.Range
+	Parameters       map[string]ParameterValue
+	SerialGroup      string
+	SerialGroupRange protocol.Range
 
 	PreSteps      []Step
 	PreStepsRange protocol.Range
