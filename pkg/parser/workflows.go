@@ -215,6 +215,9 @@ func (doc *YamlDocument) parseSingleJobReference(jobRefNode *sitter.Node) ast.Jo
 				case "serial-group":
 					res.SerialGroup = doc.GetNodeText(valueNode)
 					res.SerialGroupRange = doc.NodeToRange(valueNode)
+				case "override-with":
+					res.OverrideWith = doc.GetNodeText(valueNode)
+					res.OverrideWithRange = doc.NodeToRange(valueNode)
 
 				case "pre-steps":
 					res.PreStepsRange = doc.NodeToRange(child)

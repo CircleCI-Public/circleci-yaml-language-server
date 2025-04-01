@@ -91,6 +91,12 @@ jobs:
   deploy:
     <<: *buildJob
 
+  check:
+    docker:
+      - image: node:latest
+    steps:
+      - run: echo "shellcheck"
+
 workflows:
   test-build:
     jobs:
@@ -131,3 +137,6 @@ workflows:
 
       - deploy:
           serial-group: << pipeline.project.slug >>/deploy-group
+
+      - check:
+          override-with: shellcheck/check

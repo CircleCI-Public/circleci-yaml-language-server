@@ -46,6 +46,9 @@ func TestYamlDocument_parseSingleJobReference(t *testing.T) {
 	const jobRef7 = `
 - deploy:
     serial-group: deploy-group`
+	const jobRef8 = `
+- deploy:
+    override-with: foo/deploy`
 
 	type fields struct {
 		Content   []byte
@@ -467,6 +470,59 @@ func TestYamlDocument_parseSingleJobReference(t *testing.T) {
 					End: protocol.Position{
 						Line:      2,
 						Character: 30,
+					},
+				},
+			},
+		},
+		{
+			name:   "Job reference with override",
+			fields: fields{Content: []byte(jobRef8)},
+			args:   args{jobRefNode: getFirstChildOfType(GetRootNode([]byte(jobRef8)), "block_sequence_item")},
+			want: ast.JobRef{
+				JobName: "deploy",
+				JobRefRange: protocol.Range{
+					Start: protocol.Position{
+						Line:      1,
+						Character: 0,
+					},
+					End: protocol.Position{
+						Line:      2,
+						Character: 29,
+					},
+				},
+				JobNameRange: protocol.Range{
+					Start: protocol.Position{
+						Line:      1,
+						Character: 2,
+					},
+					End: protocol.Position{
+						Line:      1,
+						Character: 8,
+					},
+				},
+				StepName: "deploy",
+				StepNameRange: protocol.Range{
+					Start: protocol.Position{
+						Line:      1,
+						Character: 2,
+					},
+					End: protocol.Position{
+						Line:      1,
+						Character: 8,
+					},
+				},
+				Parameters:   make(map[string]ast.ParameterValue),
+				HasMatrix:    false,
+				MatrixParams: make(map[string][]ast.ParameterValue),
+				OverrideWith: "foo/deploy",
+				OverrideWithRange: protocol.Range{
+					Start: protocol.Position{
+						Line:      2,
+						Character: 19,
+					},
+					End: protocol.Position{
+						Line:      2,
+						Character: 29,
 					},
 				},
 			},
