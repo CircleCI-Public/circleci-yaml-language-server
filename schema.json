@@ -1680,7 +1680,10 @@
 											"serial-group": {
 												"type": "string",
 												"minLength": 1
-											}
+											},
+                      "override-with": {
+                        "type": "string"
+                      }
 										}
 									}
 								}

@@ -77,6 +77,19 @@ workflows:
 		 - deploy:
 					serial-group: deploy-group`,
 		},
+		{
+			Name: "Job override",
+			YamlContent: `version: 2.1
+jobs:
+	- deploy:
+			type: no-op
+
+workflows:
+ someworkflow:
+	 jobs:
+		 - deploy:
+					override-with: local/deploy`,
+		},
 	}
 
 	CheckYamlErrors(t, testCases)
