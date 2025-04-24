@@ -1109,6 +1109,10 @@
                     ],
                     "default": "build"
                 },
+                "plan_name": {
+                    "description": "Used with release job type.\nhttps://circleci.com/docs/deploy/deploys-overview/",
+                    "type": "string"
+                },
                 "filters": {
                     "description": "A map defining rules for execution on specific branches",
                     "type": "object",
