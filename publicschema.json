@@ -1100,10 +1100,14 @@
                     "default": "org-global"
                 },
                 "type": {
-                    "description": "A job may have a `type` of `approval` indicating it must be manually approved before downstream jobs may proceed.",
+                    "description": "Job type, can be build, release, no-op, or approval. If not specified, defaults to build.\nhttps://circleci.com/docs/configuration-reference/#job-type",
                     "enum": [
-                        "approval"
-                    ]
+                        "approval",
+                        "build",
+                        "no-op",
+                        "release"
+                    ],
+                    "default": "build"
                 },
                 "filters": {
                     "description": "A map defining rules for execution on specific branches",
