@@ -50,7 +50,7 @@ func jobReference(name string) string {
 		"- `requires`: Jobs are run in parallel by default, so you must explicitly require any dependencies by their job name.\n" +
 		"- `name`: can be used to invoke reusable jobs across any number of workflows. Using the `name` key ensures numbers are not appended to your job name (i.e. sayhello-1 , sayhello-2, etc.). The name you assign to the name key needs to be unique, otherwise the numbers will still be appended to the job name.\n" +
 		"- `context`: Jobs may be configured to use global environment variables set for an organization, see the Contexts document for adding a context in the application settings.\n" +
-		"- `type`: A job may have a type of `approval` indicating it must be manually approved before downstream jobs may proceed.\n" +
+		"- `type`: Job type, can be build, release, no-op, or approval. If not specified, defaults to build.\n" +
 		"- `filters`: Job Filters can have the key branches or tags.+\n" +
 		"- `matrix` : requires config `2.1`. The `matrix` stanza allows you to run a parameterized job multiple times with different arguments.\n" +
 		"- `pre-steps` and `post-steps`: requires config `2.1`. Steps under `pre-steps` are executed before any of the other steps in the job. The steps under `post-steps` are executed after all of the other steps.\n"
