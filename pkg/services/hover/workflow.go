@@ -53,9 +53,8 @@ func jobReference(name string) string {
 		"- `type`: Job type, can be build, release, no-op, or approval. If not specified, defaults to build.\n" +
 		"- `filters`: Job Filters can have the key branches or tags.+\n" +
 		"- `matrix` : requires config `2.1`. The `matrix` stanza allows you to run a parameterized job multiple times with different arguments.\n" +
-		"- `pre-steps` and `post-steps`: requires config `2.1`. Steps under `pre-steps` are executed before any of the other steps in the job. The steps under `post-steps` are executed after all of the other steps.\n"
-	"- `plan_name`: requires release job type. Used to link your release to a release plan. https://circleci.com/docs/deploy/deploys-overview/\n"
-
+		"- `pre-steps` and `post-steps`: requires config `2.1`. Steps under `pre-steps` are executed before any of the other steps in the job. The steps under `post-steps` are executed after all of the other steps.\n" +
+		"- `plan_name`: requires release job type. Used to link your release to a release plan. https://circleci.com/docs/deploy/deploys-overview/\n"
 }
 
 func HoverInWorkflows(doc yamlparser.YamlDocument, path []string) string {
