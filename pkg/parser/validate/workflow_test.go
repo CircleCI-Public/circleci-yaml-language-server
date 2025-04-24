@@ -90,6 +90,37 @@ workflows:
 		 - deploy:
 					override-with: local/deploy`,
 		},
+		{
+			Name: "No-op job type",
+			YamlContent: `version: 2.1
+
+workflows:
+  someworkflow:
+    jobs:
+      - hold:
+          type: no-op`,
+		},
+		{
+			Name: "Release job type",
+			YamlContent: `version: 2.1
+
+workflows:
+  someworkflow:
+    jobs:
+      - hold:
+          type: release
+					plan_name: my-service-release`,
+		},
+		{
+			Name: "Build job type",
+			YamlContent: `version: 2.1
+
+workflows:
+  someworkflow:
+    jobs:
+      - hold:
+          type: build`,
+		},
 	}
 
 	CheckYamlErrors(t, testCases)
