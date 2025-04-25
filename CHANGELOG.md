@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [0.14.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.13.0...0.14.0) (2025-04-25)
+
+
+### Features
+
+* Update job references to support overrides ([#328](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/328)) ([1758e45](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/1758e4529c04d3a127c4044d0769b51caf58c23b))
+
 ## [0.13.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.12.1...0.13.0) (2025-02-27)
 
 
