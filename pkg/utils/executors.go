@@ -203,6 +203,8 @@ var ValidMachinePairs = []struct {
 }
 
 var ValidXcodeVersions = []string{
+	"16.2.0",
+	"16.1.0",
 	"16.0.0",
 	"15.4.0",
 	"15.3.0",
@@ -219,6 +221,8 @@ var ValidXcodeVersions = []string{
 var ValidMacOSResourceClasses = []string{
 	"macos.m1.medium.gen1",
 	"macos.m1.large.gen1",
+	"m2pro.medium",
+	"m2pro.large",
 }
 
 var ValidDockerResourceClasses = ValidLinuxResourceClasses
