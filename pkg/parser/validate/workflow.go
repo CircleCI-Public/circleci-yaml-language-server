@@ -20,14 +20,22 @@ func (val Validate) validateSingleWorkflow(workflow ast.Workflow) error {
 			continue
 		}
 
-		isApprovalJob := jobRef.Type == "approval"
-		if isApprovalJob {
+		// Define valid job types
+		validJobTypesMap := map[string]bool{
+			"approval": true,
+			"build":    true,
+			"no-op":    true,
+			"release":  true,
+		}
+
+		// Direct lookup in the map
+		if validJobTypesMap[jobRef.Type] {
 			continue
 		}
 
 		jobTypeIsDefined := jobRef.Type != ""
 		if jobTypeIsDefined {
-			val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(jobRef.TypeRange, "Type can only be \"approval\""))
+			val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(jobRef.TypeRange, fmt.Sprintf("Job Type \"%s\" is not valid", jobRef.Type)))
 			continue
 		}
 
