@@ -175,7 +175,7 @@ commands:
 jobs:
   Create version file:
     docker:
-      - image: cimg/go:1.22.3
+      - image: cimg/go:1.23.4
     description: |
       Create a version to be used by the /scripts/ldflags.sh when building the binaries
     parameters:
@@ -211,7 +211,7 @@ jobs:
     environment:
       SCHEMA_LOCATION: /home/circleci/project/schema.json
     docker:
-      - image: cimg/go:1.22.3
+      - image: cimg/go:1.23.4
     parallelism: 5
     steps:
       - checkout
