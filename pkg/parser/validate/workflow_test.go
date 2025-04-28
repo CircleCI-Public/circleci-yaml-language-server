@@ -42,7 +42,7 @@ workflows:
 				utils.CreateErrorDiagnosticFromRange(protocol.Range{
 					Start: protocol.Position{Line: 0x6, Character: 0x10},
 					End:   protocol.Position{Line: 0x6, Character: 0x17},
-				}, "Type can only be \"approval\""),
+				}, "Job Type \"invalid\" is not valid"),
 			},
 		},
 		{
@@ -89,6 +89,37 @@ workflows:
 	 jobs:
 		 - deploy:
 					override-with: local/deploy`,
+		},
+		{
+			Name: "No-op job type",
+			YamlContent: `version: 2.1
+
+workflows:
+  someworkflow:
+    jobs:
+      - hold:
+          type: no-op`,
+		},
+		{
+			Name: "Release job type",
+			YamlContent: `version: 2.1
+
+workflows:
+  someworkflow:
+    jobs:
+      - hold:
+          type: release
+					plan_name: my-service-release`,
+		},
+		{
+			Name: "Build job type",
+			YamlContent: `version: 2.1
+
+workflows:
+  someworkflow:
+    jobs:
+      - hold:
+          type: build`,
 		},
 	}
 

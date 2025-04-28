@@ -2,6 +2,7 @@ package validate
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
@@ -20,14 +21,17 @@ func (val Validate) validateSingleWorkflow(workflow ast.Workflow) error {
 			continue
 		}
 
-		isApprovalJob := jobRef.Type == "approval"
-		if isApprovalJob {
+		// Define valid job types
+		validJobTypes := []string{"approval", "build", "no-op", "release"}
+
+		// Check if job type is valid
+		if slices.Contains(validJobTypes, jobRef.Type) {
 			continue
 		}
 
 		jobTypeIsDefined := jobRef.Type != ""
 		if jobTypeIsDefined {
-			val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(jobRef.TypeRange, "Type can only be \"approval\""))
+			val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(jobRef.TypeRange, fmt.Sprintf("Job Type \"%s\" is not valid", jobRef.Type)))
 			continue
 		}
 
