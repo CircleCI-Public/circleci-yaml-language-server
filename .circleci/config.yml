@@ -262,7 +262,7 @@ jobs:
           at: ~/
       - checkout
       - go/install:
-          version: 1.22.3
+          version: 1.23.4
       - run:
           name: Build
           command: |
