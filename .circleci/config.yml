@@ -33,6 +33,11 @@ orbs:
   slack: circleci/slack@4.12.1
   github-cli: circleci/github-cli@2.2.0
 
+executors:
+  go-executor:
+    docker:
+      - image: cimg/go:1.23.4
+
 commands:
   install-zig:
     steps:
@@ -174,8 +179,7 @@ commands:
 
 jobs:
   Create version file:
-    docker:
-      - image: cimg/go:1.22.3
+    executor: go-executor
     description: |
       Create a version to be used by the /scripts/ldflags.sh when building the binaries
     parameters:
@@ -210,8 +214,7 @@ jobs:
   Unit Tests:
     environment:
       SCHEMA_LOCATION: /home/circleci/project/schema.json
-    docker:
-      - image: cimg/go:1.22.3
+    executor: go-executor
     parallelism: 5
     steps:
       - checkout
@@ -231,8 +234,7 @@ jobs:
         type: string
       arch:
         type: string
-    docker:
-      - image: cimg/go:1.22.3
+    executor: go-executor
     resource_class: << parameters.resource_class >>
     steps:
       - attach_workspace:
@@ -277,8 +279,7 @@ jobs:
             - project/bin
 
   Build Windows:
-    docker:
-      - image: cimg/go:1.22.3
+    executor: go-executor
     steps:
       - attach_workspace:
           at: ~/
@@ -347,8 +348,7 @@ jobs:
           path: /tmp/circleci-lsp-vsix.zip
 
   Lint:
-    docker:
-      - image: cimg/go:1.22.3
+    executor: go-executor
     steps:
       - checkout
       - run:
@@ -400,8 +400,7 @@ jobs:
               --manifest-file .circleci/release/release-please-manifest.json
 
   Pre-Release:
-    docker:
-      - image: cimg/go:1.22.3
+    executor: go-executor
     steps:
       - checkout
       - attach_workspace:
@@ -487,8 +486,7 @@ jobs:
           destination: .
 
   Security Scan release:
-    docker:
-      - image: cimg/go:1.22.3
+    executor: go-executor
     steps:
       - checkout
       - run:
