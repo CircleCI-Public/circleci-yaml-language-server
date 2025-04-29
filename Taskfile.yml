@@ -59,16 +59,15 @@ tasks:
     cmds:
       - ./bin/start_server
     env:
-      PORT: '{{.PORT | default 10001}}'
+      PORT: "{{.PORT | default 10001}}"
       SCHEMA_LOCATION: ./publicschema.json
 
   init:
-      - go install github.com/automation-co/husky@latest
-      - go get -d ./...
-      - husky install
+    - go install github.com/automation-co/husky@latest
+    - go mod download
 
   licenses:
-      - go-licenses csv ./cmd/start_server >licenses.csv 2>licenses.errors
+    - go-licenses csv ./cmd/start_server >licenses.csv 2>licenses.errors
 
   lint:
     cmds:
