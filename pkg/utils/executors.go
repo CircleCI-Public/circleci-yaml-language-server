@@ -221,6 +221,8 @@ var ValidXcodeVersions = []string{
 }
 
 var ValidMacOSResourceClasses = []string{
+	"m4pro.medium",
+	"m4pro.large",
 	"macos.m1.medium.gen1",
 	"macos.m1.large.gen1",
 	"m2pro.medium",
