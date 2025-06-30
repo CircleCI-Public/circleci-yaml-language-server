@@ -18,6 +18,7 @@ func ParseDockerImageValue(value string) ast.DockerImageInfo {
 			Namespace: "library",
 			Name:      "",
 			Tag:       "",
+			Digest:    "",
 			FullPath:  value,
 		}
 	}
@@ -25,6 +26,7 @@ func ParseDockerImageValue(value string) ast.DockerImageInfo {
 	namespace := imageName[0][1]
 	repository := imageName[0][2]
 	tag := imageName[0][3]
+	digest := imageName[0][5]
 
 	if namespace == "" {
 		namespace = "library"
@@ -38,10 +40,16 @@ func ParseDockerImageValue(value string) ast.DockerImageInfo {
 		tag = tag[1:]
 	}
 
+	if digest != "" {
+		// The regex includes the leading "@", just snip it
+		digest = digest[1:]
+	}
+
 	return ast.DockerImageInfo{
 		Namespace: namespace,
 		Name:      repository,
 		Tag:       tag,
+		Digest:    digest,
 		FullPath:  value,
 	}
 }
