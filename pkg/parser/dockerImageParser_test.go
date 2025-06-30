@@ -120,6 +120,58 @@ func Test_parseDockerImageValue(t *testing.T) {
 				FullPath:  "cimg/go:<<parameters.go_version>>",
 			},
 		},
+
+		{
+			name: "SHA256 digest without tag",
+			args: args{
+				value: "cimg/node@sha256:76aae59c6259672ab68819b8960de5ef571394681089eab2b576f85f080c73ba",
+			},
+			want: ast.DockerImageInfo{
+				Namespace: "cimg",
+				Tag:       "",
+				Name:      "node",
+				FullPath:  "cimg/node@sha256:76aae59c6259672ab68819b8960de5ef571394681089eab2b576f85f080c73ba",
+			},
+		},
+
+		{
+			name: "SHA256 digest with tag",
+			args: args{
+				value: "cimg/node:22.11.0@sha256:76aae59c6259672ab68819b8960de5ef571394681089eab2b576f85f080c73ba",
+			},
+			want: ast.DockerImageInfo{
+				Namespace: "cimg",
+				Tag:       "22.11.0",
+				Name:      "node",
+				FullPath:  "cimg/node:22.11.0@sha256:76aae59c6259672ab68819b8960de5ef571394681089eab2b576f85f080c73ba",
+			},
+		},
+
+		{
+			name: "Library image with SHA256 digest",
+			args: args{
+				value: "node:18@sha256:abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+			},
+			want: ast.DockerImageInfo{
+				Namespace: "library",
+				Tag:       "18",
+				Name:      "node",
+				FullPath:  "node:18@sha256:abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+			},
+		},
+
+		{
+			name: "Library image with only SHA256 digest",
+			args: args{
+				value: "node@sha256:abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+			},
+			want: ast.DockerImageInfo{
+				Namespace: "library",
+				Tag:       "",
+				Name:      "node",
+				FullPath:  "node@sha256:abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+			},
+		},
 	}
 
 	for _, tt := range tests {
