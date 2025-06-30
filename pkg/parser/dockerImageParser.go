@@ -6,7 +6,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 )
 
-var dockerImageRegex = regexp.MustCompile(`^([a-z0-9\-_]+\/)?([a-z0-9\-_]+)(:(.*))?$`)
+var dockerImageRegex = regexp.MustCompile(`^([a-z0-9\-_]+\/)?([a-z0-9\-_]+)(:([^@]*))?(@sha256:[a-f0-9]{64})?$`)
 var aliasRemover = regexp.MustCompile(`^&[a-zA-Z0-9\-_]+\s*`)
 
 func ParseDockerImageValue(value string) ast.DockerImageInfo {
