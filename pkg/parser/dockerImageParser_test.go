@@ -184,6 +184,62 @@ func Test_parseDockerImageValue(t *testing.T) {
 				FullPath:  "node@sha256:abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
 			},
 		},
+
+		{
+			name: "Parse any string after @ as digest - short string",
+			args: args{
+				value: "cimg/go:1.24@foo",
+			},
+			want: ast.DockerImageInfo{
+				Namespace: "cimg",
+				Name:      "go",
+				Tag:       "1.24",
+				Digest:    "foo",
+				FullPath:  "cimg/go:1.24@foo",
+			},
+		},
+
+		{
+			name: "Parse any string after @ as digest - no sha256 prefix",
+			args: args{
+				value: "cimg/node:18@abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+			},
+			want: ast.DockerImageInfo{
+				Namespace: "cimg",
+				Name:      "node",
+				Tag:       "18",
+				Digest:    "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+				FullPath:  "cimg/node:18@abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+			},
+		},
+
+		{
+			name: "Parse any string after @ as digest - wrong hash length",
+			args: args{
+				value: "cimg/go:latest@sha256:abc123",
+			},
+			want: ast.DockerImageInfo{
+				Namespace: "cimg",
+				Name:      "go",
+				Tag:       "latest",
+				Digest:    "sha256:abc123",
+				FullPath:  "cimg/go:latest@sha256:abc123",
+			},
+		},
+
+		{
+			name: "Parse any string after @ as digest - non-hex characters",
+			args: args{
+				value: "node:alpine@sha256:ghijklmnopqrstuvwxyz1234567890abcdef1234567890abcdef1234567890",
+			},
+			want: ast.DockerImageInfo{
+				Namespace: "library",
+				Name:      "node",
+				Tag:       "alpine",
+				Digest:    "sha256:ghijklmnopqrstuvwxyz1234567890abcdef1234567890abcdef1234567890",
+				FullPath:  "node:alpine@sha256:ghijklmnopqrstuvwxyz1234567890abcdef1234567890abcdef1234567890",
+			},
+		},
 	}
 
 	for _, tt := range tests {
