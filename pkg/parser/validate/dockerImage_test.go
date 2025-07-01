@@ -200,6 +200,110 @@ workflows:
           image-tag: tag
 `,
 		},
+		{
+			Name: "Should give no diagnostic on valid SHA256 digest with tag",
+
+			Diagnostics: []ComparableDiagnostic{},
+
+			MockAPI: DockerHubMock{},
+
+			YamlContent: `version: 2.1
+
+executors:
+  some-executor:
+    docker:
+      - image: cimg/node:22.11.0@sha256:76aae59c6259672ab68819b8960de5ef571394681089eab2b576f85f080c73ba`,
+		},
+		{
+			Name: "Should give no diagnostic on valid SHA256 digest without tag",
+
+			Diagnostics: []ComparableDiagnostic{},
+
+			MockAPI: DockerHubMock{},
+
+			YamlContent: `version: 2.1
+
+executors:
+  some-executor:
+    docker:
+      - image: cimg/node@sha256:76aae59c6259672ab68819b8960de5ef571394681089eab2b576f85f080c73ba`,
+		},
+		{
+			Name: "Should give error on invalid digest format - too short",
+
+			Diagnostics: []ComparableDiagnostic{
+				{
+					Severity: protocol.DiagnosticSeverityError,
+					Message:  "Invalid Docker image digest format \"foo\". Expected format: sha256:<64 hex characters>",
+				},
+			},
+
+			MockAPI: DockerHubMock{},
+
+			YamlContent: `version: 2.1
+
+executors:
+  some-executor:
+    docker:
+      - image: cimg/go:1.24@foo`,
+		},
+		{
+			Name: "Should give error on invalid digest format - wrong prefix",
+
+			Diagnostics: []ComparableDiagnostic{
+				{
+					Severity: protocol.DiagnosticSeverityError,
+					Message:  "Invalid Docker image digest format \"abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890\". Expected format: sha256:<64 hex characters>",
+				},
+			},
+
+			MockAPI: DockerHubMock{},
+
+			YamlContent: `version: 2.1
+
+executors:
+  some-executor:
+    docker:
+      - image: cimg/node:18@abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890`,
+		},
+		{
+			Name: "Should give error on invalid digest format - wrong hash length",
+
+			Diagnostics: []ComparableDiagnostic{
+				{
+					Severity: protocol.DiagnosticSeverityError,
+					Message:  "Invalid Docker image digest format \"sha256:abc123\". Expected format: sha256:<64 hex characters>",
+				},
+			},
+
+			MockAPI: DockerHubMock{},
+
+			YamlContent: `version: 2.1
+
+executors:
+  some-executor:
+    docker:
+      - image: cimg/go:latest@sha256:abc123`,
+		},
+		{
+			Name: "Should give error on invalid digest format - non-hex characters",
+
+			Diagnostics: []ComparableDiagnostic{
+				{
+					Severity: protocol.DiagnosticSeverityError,
+					Message:  "Invalid Docker image digest format \"sha256:ghijklmnopqrstuvwxyz1234567890abcdef1234567890abcdef1234567890\". Expected format: sha256:<64 hex characters>",
+				},
+			},
+
+			MockAPI: DockerHubMock{},
+
+			YamlContent: `version: 2.1
+
+executors:
+  some-executor:
+    docker:
+      - image: node:alpine@sha256:ghijklmnopqrstuvwxyz1234567890abcdef1234567890abcdef1234567890`,
+		},
 	}
 
 	for _, tt := range testCases {
