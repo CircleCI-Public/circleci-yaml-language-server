@@ -968,7 +968,7 @@
 					"type": "object",
 					"description": "long form commands like `run:`",
 					"propertyNames": {
-						"pattern": "^[a-z][a-z\\d-\/_]*$",
+						"pattern": "^[a-z][a-z\\d\/_-]*$",
 						"not": {
 							"pattern": "^(when|unless)$"
 						}
