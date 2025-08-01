@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [0.14.2](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.14.1...0.14.2) (2025-08-01)
+
+
+### Bug Fixes
+
+* force release-please PR to update version  ([#344](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/344)) ([07ed568](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/07ed56823bbb198787952d415bc78e17fc52ead5))
+
 ## [0.14.1](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.14.0...0.14.1) (2025-06-16)
 
 
