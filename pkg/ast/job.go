@@ -45,6 +45,9 @@ type Job struct {
 	MacOS      MacOSExecutor
 	MacOSRange protocol.Range
 
+	Retention      RetentionSettings
+	RetentionRange protocol.Range
+
 	CompletionItem *[]protocol.CompletionItem
 }
 
