@@ -276,6 +276,10 @@ func (doc *YamlDocument) parseRunStep(runNode *sitter.Node) ast.Run {
 				res.WhenRange = doc.NodeToRange(valueNode)
 			case "environment":
 				res.Environment = doc.parseDictionary(valueNode)
+			case "max_auto_reruns":
+				res.MaxAutoReruns = doc.GetNodeText(valueNode)
+			case "auto_rerun_delay":
+				res.AutoRerunDelay = doc.GetNodeText(valueNode)
 			}
 		})
 		return res
