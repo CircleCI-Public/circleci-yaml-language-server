@@ -646,7 +646,27 @@
                                         "on_success",
                                         "on_fail"
                                     ]
+                                },
+                                "max_auto_reruns": {
+                                    "description": "Maximum number of automatic reruns for this step",
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 5
+                                },
+                                "auto_rerun_delay": {
+                                    "description": "Delay before automatic rerun of this step",
+                                    "type": "string",
+                                    "pattern": "^(10|[1-9])m$"
                                 }
+                            },
+                            "if": {
+                                "properties": {
+                                    "auto_rerun_delay": true
+                                },
+                                    "required": ["auto_rerun_delay"]
+                            },
+                            "then": {
+                                "required": ["max_auto_reruns"]
                             }
                         }
                     ]

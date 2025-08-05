@@ -18,10 +18,12 @@ steps:
         name: install deps
         command: npm install
         shell: /bin/sh
-        background: true
+        background: false
         working_directory: /home/user/project
         no_output_timeout: 20m
         when: always
+        max_auto_reruns: 3
+        auto_rerun_delay: 8m
     - setup_remote_docker
     - setup_remote_docker:
         docker_layer_caching: true
@@ -98,10 +100,12 @@ func TestYamlDocument_parseSteps(t *testing.T) {
 					Name:             "install deps",
 					Command:          "npm install",
 					Shell:            "/bin/sh",
-					Background:       true,
+					Background:       false,
 					WorkingDirectory: "/home/user/project",
 					NoOutputTimeout:  "20m",
 					When:             "always",
+					MaxAutoReruns:    "3",
+					AutoRerunDelay:   "8m",
 				},
 				ast.NamedStep{Name: "setup_remote_docker"},
 				ast.SetupRemoteDocker{
