@@ -64,6 +64,8 @@ type Run struct {
 	WhenRange        protocol.Range
 	Environment      map[string]string
 	IsDeployStep     bool
+	MaxAutoReruns    string
+	AutoRerunDelay   string
 }
 
 func (step Run) GetRange() protocol.Range {
