@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## [0.15.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.14.2...0.15.0) (2025-08-19)
+
+
+### Features
+
+* [PIPE-5246] add support for step auto-reruns ([#346](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/346)) ([a8056ce](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/a8056ce08f066adbb381ec7fc54d101f8676f7b6))
+* Introduce new retention field ([#339](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/339)) ([4c37882](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/4c37882e7e0219cb377156295d555b848d940e06))
+
 ## [0.14.2](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.14.1...0.14.2) (2025-08-01)
 
 
