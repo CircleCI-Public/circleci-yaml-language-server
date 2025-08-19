@@ -15,6 +15,14 @@ func (val Validate) ValidateWorkflows() {
 }
 
 func (val Validate) validateSingleWorkflow(workflow ast.Workflow) error {
+	if workflow.HasMaxAutoReruns {
+		if workflow.MaxAutoReruns < 1 {
+			val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(workflow.MaxAutoRerunsRange, "Must be greater than or equal to 1"))
+		} else if workflow.MaxAutoReruns > 5 {
+			val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(workflow.MaxAutoRerunsRange, "Must be less than or equal to 5"))
+		}
+	}
+
 	for _, jobRef := range workflow.JobRefs {
 		if val.Doc.IsFromUnfetchableOrb(jobRef.JobName) {
 			continue

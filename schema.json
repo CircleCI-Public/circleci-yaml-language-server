@@ -1501,6 +1501,11 @@
 							"additionalProperties": false
 						}
 					},
+          "max_auto_reruns": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
 					"when": {
 						"$ref": "#/definitions/logic"
 					},
