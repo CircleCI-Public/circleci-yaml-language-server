@@ -105,6 +105,10 @@ func (val Validate) validateSingleJob(job ast.Job) {
 		)
 	}
 
+	if job.Retention.Caches.Text != "" {
+		val.validateRetention(job.Retention)
+	}
+
 	if len(job.Docker.Image) > 0 {
 		val.validateDockerExecutor(job.Docker)
 	} else if job.MacOS.Xcode != "" {

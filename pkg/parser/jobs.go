@@ -73,6 +73,10 @@ func (doc *YamlDocument) parseSingleJob(jobNode *sitter.Node) ast.Job {
 			case "working_directory":
 				res.WorkingDirectory = doc.GetNodeText(valueNode)
 
+			case "retention":
+				res.RetentionRange = doc.NodeToRange(child)
+				res.Retention = doc.parseRetention(valueNode)
+
 			case "description":
 				res.Description = doc.GetNodeText(valueNode)
 

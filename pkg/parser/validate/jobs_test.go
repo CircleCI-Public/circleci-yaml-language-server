@@ -185,3 +185,96 @@ func TestResourceClass(t *testing.T) {
 		})
 	}
 }
+
+func TestRetention(t *testing.T) {
+	testCases := []struct {
+		label        string
+		yamlData     string
+		expectedDiag protocol.Diagnostic
+	}{
+		{
+			label: "invalid retention caches - too high",
+			yamlData: `jobs:
+  test:
+    retention:
+      caches: 16d
+    steps:
+      - checkout`,
+			expectedDiag: protocol.Diagnostic{
+				Range: protocol.Range{
+					Start: protocol.Position{Line: 3, Character: 6},
+					End:   protocol.Position{Line: 3, Character: 17},
+				},
+				Severity: protocol.DiagnosticSeverityError,
+			},
+		},
+		{
+			label: "invalid retention caches - too low",
+			yamlData: `jobs:
+  test:
+    retention:
+      caches: 0d
+    steps:
+      - checkout`,
+			expectedDiag: protocol.Diagnostic{
+				Range: protocol.Range{
+					Start: protocol.Position{Line: 3, Character: 6},
+					End:   protocol.Position{Line: 3, Character: 16},
+				},
+				Severity: protocol.DiagnosticSeverityError,
+			},
+		},
+		{
+			label: "invalid retention caches - invalid format",
+			yamlData: `jobs:
+  test:
+    retention:
+      caches: abc
+    steps:
+      - checkout`,
+			expectedDiag: protocol.Diagnostic{
+				Range: protocol.Range{
+					Start: protocol.Position{Line: 3, Character: 6},
+					End:   protocol.Position{Line: 3, Character: 17},
+				},
+				Severity: protocol.DiagnosticSeverityError,
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run("validate job retention: "+testCase.label, func(t *testing.T) {
+			ctx := &utils.LsContext{
+				Api: utils.ApiContext{
+					Token:   "XXXXXXXXXXXX",
+					HostUrl: "https://circleci.com",
+				},
+			}
+			doc, err := parser.ParseFromContent(
+				[]byte(testCase.yamlData),
+				ctx,
+				uri.URI(""),
+				protocol.Position{},
+			)
+			assert.NoError(t, err, "invalid YAML data")
+			assert.Contains(t, doc.Jobs, "test")
+
+			val := Validate{
+				APIs:        ValidateAPIs{DockerHubMock{}},
+				Context:     ctx,
+				Doc:         doc,
+				Diagnostics: &[]protocol.Diagnostic{},
+				Cache:       utils.CreateCache(),
+			}
+			val.validateSingleJob(doc.Jobs["test"])
+
+			for _, diag := range *val.Diagnostics {
+				if diag.Range == testCase.expectedDiag.Range &&
+					diag.Severity == testCase.expectedDiag.Severity {
+					return
+				}
+			}
+			t.Fatalf(`missing retention diagnostic for test case: %s`, testCase.label)
+		})
+	}
+}

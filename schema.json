@@ -1891,6 +1891,16 @@
 							"working_directory": {
 								"type": "string"
 							},
+							"retention": {
+								"type": "object",
+								"properties": {
+									"caches": {
+										"type": "string",
+										"pattern": "^([1-9]|1[0-5])d$"
+									}
+								},
+								"additionalProperties": false
+							},
 							"circleci_ip_ranges": {
 								"type": "boolean"
 							},
