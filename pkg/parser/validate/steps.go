@@ -42,6 +42,24 @@ func (val Validate) validateRunCommand(step ast.Run, jobOrCommandParameters map[
 		})
 	}
 
+	// Validate that background steps cannot use max_auto_reruns or auto_rerun_delay
+	if step.Background && (step.MaxAutoReruns != "" || step.AutoRerunDelay != "") {
+		val.addDiagnostic(protocol.Diagnostic{
+			Range:    step.Range,
+			Message:  "Background steps cannot use max_auto_reruns or auto_rerun_delay fields",
+			Severity: protocol.DiagnosticSeverityError,
+		})
+	}
+
+	// Validate that auto_rerun_delay requires max_auto_reruns
+	if step.AutoRerunDelay != "" && step.MaxAutoReruns == "" {
+		val.addDiagnostic(protocol.Diagnostic{
+			Range:    step.Range,
+			Message:  "auto_rerun_delay requires max_auto_reruns to be specified",
+			Severity: protocol.DiagnosticSeverityError,
+		})
+	}
+
 	var value string
 	// If the when field is a parameter, such as:
 	// when: << parameters.my_param >>
