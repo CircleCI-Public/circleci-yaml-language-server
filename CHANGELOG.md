@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [0.16.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.15.0...0.16.0) (2025-08-22)
+
+
+### Features
+
+* [PIPE-5246] add support for workflow auto-reruns ([#348](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/348)) ([f417e55](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/f417e5579155b963176f726bd115ae4b01773618))
+
 ## [0.15.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.14.2...0.15.0) (2025-08-19)
 
 
