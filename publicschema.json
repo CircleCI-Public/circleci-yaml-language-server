@@ -1332,6 +1332,12 @@
                             }
                         }
                     },
+                    "max_auto_reruns": {
+                        "description": "The maximum number of times a workflow will be automatically rerun if it fails",
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 5
+                    },
                     "jobs": {
                         "type": "array",
                         "items": {

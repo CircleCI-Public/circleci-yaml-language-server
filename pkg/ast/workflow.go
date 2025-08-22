@@ -13,6 +13,10 @@ type Workflow struct {
 	HasTrigger    bool
 	Triggers      []WorkflowTrigger
 	TriggersRange protocol.Range
+
+	MaxAutoReruns      int
+	MaxAutoRerunsRange protocol.Range
+	HasMaxAutoReruns   bool
 }
 
 type JobRef struct {

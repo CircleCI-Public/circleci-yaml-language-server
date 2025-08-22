@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"strconv"
 	"strings"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
@@ -92,6 +93,14 @@ func (doc *YamlDocument) parseSingleWorkflow(workflowNode *sitter.Node) ast.Work
 			res.HasTrigger = true
 			res.TriggersRange = doc.NodeToRange(child)
 			res.Triggers = doc.parseWorkflowTriggers(valueNode)
+		case "max_auto_reruns":
+			res.MaxAutoRerunsRange = doc.NodeToRange(valueNode)
+			res.HasMaxAutoReruns = true
+			if valueText := doc.GetNodeText(valueNode); valueText != "" {
+				if maxAutoReruns, err := strconv.Atoi(valueText); err == nil {
+					res.MaxAutoReruns = maxAutoReruns
+				}
+			}
 		}
 	})
 
