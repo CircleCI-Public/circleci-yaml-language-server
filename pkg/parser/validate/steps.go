@@ -2,8 +2,11 @@ package validate
 
 import (
 	"fmt"
+	"regexp"
 	"slices"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
@@ -15,6 +18,9 @@ var WHEN_KEYWORDS = []string{
 	"always",
 	"on_fail",
 }
+
+// AutoRerunDelay validation regex: matches 1-10 minutes or any number of seconds (but not both)
+var AUTO_RERUN_DELAY_REGEX = regexp.MustCompile(`^((10|[1-9])m|([1-9][0-9]*)s)$`)
 
 func (val Validate) validateSteps(steps []ast.Step, name string, jobOrCommandParameters map[string]ast.Parameter) error {
 	for _, step := range steps {
@@ -58,6 +64,48 @@ func (val Validate) validateRunCommand(step ast.Run, jobOrCommandParameters map[
 			Message:  "auto_rerun_delay requires max_auto_reruns to be specified",
 			Severity: protocol.DiagnosticSeverityError,
 		})
+	}
+
+	// Validate that max_auto_reruns is between 1 and 5
+	if step.MaxAutoReruns != "" {
+		rerunCount, err := strconv.Atoi(step.MaxAutoReruns)
+		if err != nil || rerunCount <= 0 || rerunCount > 5 {
+			val.addDiagnostic(protocol.Diagnostic{
+				Range:    step.Range,
+				Message:  "max_auto_reruns must be between 1 and 5",
+				Severity: protocol.DiagnosticSeverityError,
+			})
+		}
+	}
+
+	// Validate that auto_rerun_delay conforms to the specific format and duration limits
+	if step.AutoRerunDelay != "" {
+		// First check if it's a valid duration
+		duration, err := time.ParseDuration(step.AutoRerunDelay)
+		if err != nil {
+			val.addDiagnostic(protocol.Diagnostic{
+				Range:    step.Range,
+				Message:  "auto_rerun_delay must be a valid duration",
+				Severity: protocol.DiagnosticSeverityError,
+			})
+		} else {
+			// Check if it matches the required format
+			if !AUTO_RERUN_DELAY_REGEX.MatchString(step.AutoRerunDelay) {
+				val.addDiagnostic(protocol.Diagnostic{
+					Range:    step.Range,
+					Message:  "auto_rerun_delay must be in the format of 1-10 minutes (e.g., '1m', '10m') or any number of seconds (e.g., '30s', '120s')",
+					Severity: protocol.DiagnosticSeverityError,
+				})
+			}
+			// Check if duration exceeds 10 minutes
+			if duration > 10*time.Minute {
+				val.addDiagnostic(protocol.Diagnostic{
+					Range:    step.Range,
+					Message:  "auto_rerun_delay must not exceed 10 minutes",
+					Severity: protocol.DiagnosticSeverityError,
+				})
+			}
+		}
 	}
 
 	var value string
