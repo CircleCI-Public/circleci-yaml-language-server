@@ -656,7 +656,7 @@
                                 "auto_rerun_delay": {
                                     "description": "Delay before automatic rerun of this step",
                                     "type": "string",
-                                    "pattern": "^(10|[1-9])m$"
+                                    "pattern": "^(10|[1-9])m|([1-9][0-9]*)s$"
                                 }
                             },
                             "if": {

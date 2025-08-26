@@ -178,6 +178,354 @@ workflows:
 			expectErrors:    true,
 			errorSubstrings: []string{"auto_rerun_delay", "max_auto_reruns"},
 		},
+		{
+			name: "Valid: max_auto_reruns minimum value (1)",
+			yamlContent: `version: 2.1
+jobs:
+  test-job:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run:
+          name: "Task with minimum auto reruns"
+          command: "echo test"
+          max_auto_reruns: 1
+workflows:
+  test-workflow:
+    jobs:
+      - test-job`,
+			expectErrors: false,
+		},
+		{
+			name: "Valid: max_auto_reruns maximum value (5)",
+			yamlContent: `version: 2.1
+jobs:
+  test-job:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run:
+          name: "Task with maximum auto reruns"
+          command: "echo test"
+          max_auto_reruns: 5
+workflows:
+  test-workflow:
+    jobs:
+      - test-job`,
+			expectErrors: false,
+		},
+		{
+			name: "Invalid: max_auto_reruns below minimum (0)",
+			yamlContent: `version: 2.1
+jobs:
+  test-job:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run:
+          name: "Task with zero auto reruns"
+          command: "echo test"
+          max_auto_reruns: 0
+workflows:
+  test-workflow:
+    jobs:
+      - test-job`,
+			expectErrors:    true,
+			errorSubstrings: []string{"max_auto_reruns must be between 1 and 5"},
+		},
+		{
+			name: "Invalid: max_auto_reruns above maximum (6)",
+			yamlContent: `version: 2.1
+jobs:
+  test-job:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run:
+          name: "Task with too many auto reruns"
+          command: "echo test"
+          max_auto_reruns: 6
+workflows:
+  test-workflow:
+    jobs:
+      - test-job`,
+			expectErrors:    true,
+			errorSubstrings: []string{"max_auto_reruns must be between 1 and 5"},
+		},
+		{
+			name: "Valid: auto_rerun_delay with seconds",
+			yamlContent: `version: 2.1
+jobs:
+  test-job:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run:
+          name: "Task with delay in seconds"
+          command: "echo test"
+          max_auto_reruns: 2
+          auto_rerun_delay: 30s
+workflows:
+  test-workflow:
+    jobs:
+      - test-job`,
+			expectErrors: false,
+		},
+		{
+			name: "Valid: auto_rerun_delay with minutes",
+			yamlContent: `version: 2.1
+jobs:
+  test-job:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run:
+          name: "Task with delay in minutes"
+          command: "echo test"
+          max_auto_reruns: 3
+          auto_rerun_delay: 5m
+workflows:
+  test-workflow:
+    jobs:
+      - test-job`,
+			expectErrors: false,
+		},
+		{
+			name: "Invalid: auto_rerun_delay with milliseconds",
+			yamlContent: `version: 2.1
+jobs:
+  test-job:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run:
+          name: "Task with delay in milliseconds"
+          command: "echo test"
+          max_auto_reruns: 2
+          auto_rerun_delay: 500ms
+workflows:
+  test-workflow:
+    jobs:
+      - test-job`,
+			expectErrors:    true,
+			errorSubstrings: []string{"auto_rerun_delay must be in the format"},
+		},
+		{
+			name: "Valid: auto_rerun_delay at maximum (10m)",
+			yamlContent: `version: 2.1
+jobs:
+  test-job:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run:
+          name: "Task with maximum delay"
+          command: "echo test"
+          max_auto_reruns: 2
+          auto_rerun_delay: 10m
+workflows:
+  test-workflow:
+    jobs:
+      - test-job`,
+			expectErrors: false,
+		},
+		{
+			name: "Valid: auto_rerun_delay in seconds (600s = 10m)",
+			yamlContent: `version: 2.1
+jobs:
+  test-job:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run:
+          name: "Task with delay in seconds"
+          command: "echo test"
+          max_auto_reruns: 1
+          auto_rerun_delay: 600s
+workflows:
+  test-workflow:
+    jobs:
+      - test-job`,
+			expectErrors: false,
+		},
+		{
+			name: "Invalid: auto_rerun_delay exceeds maximum (11m)",
+			yamlContent: `version: 2.1
+jobs:
+  test-job:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run:
+          name: "Task with delay over maximum"
+          command: "echo test"
+          max_auto_reruns: 2
+          auto_rerun_delay: 11m
+workflows:
+  test-workflow:
+    jobs:
+      - test-job`,
+			expectErrors:    true,
+			errorSubstrings: []string{"auto_rerun_delay must not exceed 10 minutes"},
+		},
+		{
+			name: "Invalid: auto_rerun_delay exceeds maximum (700s)",
+			yamlContent: `version: 2.1
+jobs:
+  test-job:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run:
+          name: "Task with delay over 10m in seconds"
+          command: "echo test"
+          max_auto_reruns: 2
+          auto_rerun_delay: 700s
+workflows:
+  test-workflow:
+    jobs:
+      - test-job`,
+			expectErrors:    true,
+			errorSubstrings: []string{"auto_rerun_delay must not exceed 10 minutes"},
+		},
+		{
+			name: "Invalid: auto_rerun_delay with invalid format (no unit)",
+			yamlContent: `version: 2.1
+jobs:
+  test-job:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run:
+          name: "Task with invalid delay format"
+          command: "echo test"
+          max_auto_reruns: 2
+          auto_rerun_delay: 30
+workflows:
+  test-workflow:
+    jobs:
+      - test-job`,
+			expectErrors:    true,
+			errorSubstrings: []string{"auto_rerun_delay must be a valid duration"},
+		},
+		{
+			name: "Invalid: auto_rerun_delay with invalid text",
+			yamlContent: `version: 2.1
+jobs:
+  test-job:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run:
+          name: "Task with invalid delay text"
+          command: "echo test"
+          max_auto_reruns: 1
+          auto_rerun_delay: invalid
+workflows:
+  test-workflow:
+    jobs:
+      - test-job`,
+			expectErrors:    true,
+			errorSubstrings: []string{"auto_rerun_delay must be a valid duration"},
+		},
+		{
+			name: "Invalid: auto_rerun_delay with 0 seconds",
+			yamlContent: `version: 2.1
+jobs:
+  test-job:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run:
+          name: "Task with 0 seconds delay"
+          command: "echo test"
+          max_auto_reruns: 2
+          auto_rerun_delay: 0s
+workflows:
+  test-workflow:
+    jobs:
+      - test-job`,
+			expectErrors:    true,
+			errorSubstrings: []string{"auto_rerun_delay must be in the format"},
+		},
+		{
+			name: "Invalid: auto_rerun_delay with 0 minutes",
+			yamlContent: `version: 2.1
+jobs:
+  test-job:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run:
+          name: "Task with 0 minutes delay"
+          command: "echo test"
+          max_auto_reruns: 2
+          auto_rerun_delay: 0m
+workflows:
+  test-workflow:
+    jobs:
+      - test-job`,
+			expectErrors:    true,
+			errorSubstrings: []string{"auto_rerun_delay must be in the format"},
+		},
+		{
+			name: "Invalid: auto_rerun_delay with both minutes and seconds",
+			yamlContent: `version: 2.1
+jobs:
+  test-job:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run:
+          name: "Task with both minutes and seconds"
+          command: "echo test"
+          max_auto_reruns: 2
+          auto_rerun_delay: 1m30s
+workflows:
+  test-workflow:
+    jobs:
+      - test-job`,
+			expectErrors:    true,
+			errorSubstrings: []string{"auto_rerun_delay must be in the format"},
+		},
+		{
+			name: "Valid: auto_rerun_delay edge case (1s)",
+			yamlContent: `version: 2.1
+jobs:
+  test-job:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run:
+          name: "Task with minimum delay"
+          command: "echo test"
+          max_auto_reruns: 1
+          auto_rerun_delay: 1s
+workflows:
+  test-workflow:
+    jobs:
+      - test-job`,
+			expectErrors: false,
+		},
+		{
+			name: "Valid: auto_rerun_delay edge case (9m)",
+			yamlContent: `version: 2.1
+jobs:
+  test-job:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run:
+          name: "Task with 9 minute delay"
+          command: "echo test"
+          max_auto_reruns: 2
+          auto_rerun_delay: 9m
+workflows:
+  test-workflow:
+    jobs:
+      - test-job`,
+			expectErrors: false,
+		},
 	}
 
 	for _, tc := range testCases {
