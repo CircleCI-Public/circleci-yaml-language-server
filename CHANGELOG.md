@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [0.17.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.16.0...0.17.0) (2025-08-26)
+
+
+### Features
+
+* add validation for values of step rerun fields ([#350](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/350)) ([d7d2f7e](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/d7d2f7e14debcb252d2f19ed15e5ca0b7120aa86))
+
 ## [0.16.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.15.0...0.16.0) (2025-08-22)
 
 
