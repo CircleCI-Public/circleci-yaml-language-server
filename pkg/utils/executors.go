@@ -36,6 +36,7 @@ var ValidLinuxImages = []string{
 	"ubuntu-2004:edge",
 
 	// Ubuntu 22.04
+	"ubuntu-2204:2025.09.1",
 	"ubuntu-2204:2024.11.1",
 	"ubuntu-2204:2024.08.1",
 	"ubuntu-2204:2024.05.1",
@@ -57,6 +58,7 @@ var ValidLinuxImages = []string{
 	"ubuntu-2204:edge",
 
 	// Ubuntu 24.04
+	"ubuntu-2404:2025.09.1",
 	"ubuntu-2404:2024.11.1",
 	"ubuntu-2404:2024.08.1",
 	"ubuntu-2404:2024.05.1",
@@ -157,6 +159,10 @@ var ValidLinuxGPUImages = []string{
 	// CUDA 12
 	"linux-cuda-12:default",
 	"linux-cuda-12:edge",
+
+	// CUDA 13
+	// "linux-cuda-13:default",
+	"linux-cuda-13:edge",
 }
 
 var ValidLinuxGPUResourceClasses = []string{
