@@ -63,9 +63,7 @@ tasks:
       SCHEMA_LOCATION: ./publicschema.json
 
   init:
-      - go install github.com/automation-co/husky@latest
-      - go get -d ./...
-      - husky install
+    - go mod download
 
   licenses:
       - go-licenses csv ./cmd/start_server >licenses.csv 2>licenses.errors
