@@ -122,6 +122,11 @@ func TestComplete(t *testing.T) {
 					InsertText: "shell: ",
 					Kind:       protocol.CompletionItemKindProperty,
 				},
+				{
+					Label:      "type",
+					InsertText: "type: ",
+					Kind:       protocol.CompletionItemKindProperty,
+				},
 			},
 		},
 		{

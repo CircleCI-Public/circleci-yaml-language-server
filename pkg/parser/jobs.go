@@ -158,4 +158,7 @@ func (doc *YamlDocument) jobCompletionItem(job ast.Job) {
 	if job.Parallelism == 0 {
 		job.AddCompletionItem("parallelism", []string{":", " "})
 	}
+	if job.Type == "" {
+		job.AddCompletionItem("type", []string{":", " "})
+	}
 }
