@@ -15,3 +15,11 @@ func HasStoreTestResultStep(step []ast.Step) bool {
 	}
 	return false
 }
+
+// JobTypes is a list of all valid job types that are supported by CircleCI
+var JobTypes = []string{
+	"approval",
+	"build", // default
+	"no-op",
+	"release",
+}

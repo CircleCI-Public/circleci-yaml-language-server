@@ -2,6 +2,7 @@ package validate
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
@@ -16,7 +17,19 @@ func (val Validate) ValidateJobs() {
 }
 
 func (val Validate) validateSingleJob(job ast.Job) {
+	val.validateJobType(job)
+
 	val.validateSteps(job.Steps, job.Name, job.Parameters)
+
+	if job.Steps != nil && (job.Type == "approval" || job.Type == "no-op" || job.Type == "release") {
+		val.addDiagnostic(
+			protocol.Diagnostic{
+				Range:    job.StepsRange,
+				Message:  "If job type is approval, no-op or release, then steps will be ignored.",
+				Severity: protocol.DiagnosticSeverityWarning,
+			},
+		)
+	}
 
 	// Local orbs do not need unused checks because those checks collides with the overall YAML unused checks
 	if !val.IsLocalOrb && !val.checkIfJobIsUsed(job) {
@@ -138,4 +151,32 @@ func (val Validate) checkIfJobIsUsed(job ast.Job) bool {
 
 func (val Validate) jobIsUnused(job ast.Job) {
 	val.addDiagnostic(utils.CreateWarningDiagnosticFromRange(job.NameRange, "Job is unused"))
+}
+
+func (val Validate) validateJobType(job ast.Job) {
+	// Default job type is build, therefore empty `type:` is valid. No need to validate further
+	if job.Type == "" {
+		return
+	}
+
+	if !slices.Contains(utils.JobTypes, job.Type) {
+		val.addDiagnostic(
+			utils.CreateErrorDiagnosticFromRange(
+				job.TypeRange,
+				fmt.Sprintf("Invalid job type '%s'. Allowed types: %s",
+					job.Type,
+					strings.Join(utils.JobTypes, ", "))))
+
+		return
+	}
+
+	if job.Type == "build" {
+		val.addDiagnostic(
+			protocol.Diagnostic{
+				Range:    job.TypeRange,
+				Message:  "If no `type:` key is specified, the job will default to `type: build`.",
+				Severity: protocol.DiagnosticSeverityHint,
+			},
+		)
+	}
 }
