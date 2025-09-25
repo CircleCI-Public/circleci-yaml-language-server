@@ -1120,7 +1120,7 @@
                     "default": "org-global"
                 },
                 "type": {
-                    "description": "A job may have a `type` of `approval` indicating it must be manually approved before downstream jobs may proceed.",
+                    "description": "A job defined under the `workflows:` section may specify a type but it can only be `approval`.\n`approval` jobs must be manually approved before downstream jobs may proceed.\nFor [other job types](https://circleci.com/docs/reference/configuration-reference/#job-type), they must be specified under the `jobs:` section. Please see the [`type` under `workflows:` docs](https://circleci.com/docs/reference/configuration-reference/#type) for more information.",
                     "enum": [
                         "approval"
                     ]
@@ -1215,6 +1215,10 @@
                     "steps"
                 ],
                 "properties": {
+                    "type": {
+                        "description": "[Job Types](https://circleci.com/docs/reference/configuration-reference/#job-type)\nSome examples are `build`, `approval`, `no-op`, `release`.",
+                        "type": "string"
+                    },
                     "shell": {
                         "description": "Shell to use for execution command in all steps. Can be overridden by shell in each step",
                         "type": "string"
