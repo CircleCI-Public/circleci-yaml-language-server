@@ -42,7 +42,7 @@ workflows:
 				utils.CreateErrorDiagnosticFromRange(protocol.Range{
 					Start: protocol.Position{Line: 0x6, Character: 0x10},
 					End:   protocol.Position{Line: 0x6, Character: 0x17},
-				}, "Jobs defined inline under the `workflows:` section can only have `type: approval`. If you want a different job type, please put the `type: invalid` mapping under your job in the `jobs:` section of your config instead."),
+				}, "Only jobs with `type: approval` can be defined inline under the `workflows:` section. For `type: invalid`, define the job in the `jobs:` section instead."),
 			},
 		},
 		{
