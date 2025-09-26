@@ -35,7 +35,7 @@ func (val Validate) validateSingleWorkflow(workflow ast.Workflow) error {
 
 		jobTypeIsDefined := jobRef.Type != ""
 		if jobTypeIsDefined {
-			val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(jobRef.TypeRange, "Type can only be \"approval\""))
+			val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(jobRef.TypeRange, fmt.Sprintf("Only jobs with `type: approval` can be defined inline under the `workflows:` section. For `type: %s`, define the job in the `jobs:` section instead.", jobRef.Type)))
 			continue
 		}
 

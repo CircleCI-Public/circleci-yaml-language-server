@@ -49,6 +49,9 @@ type Job struct {
 	RetentionRange protocol.Range
 
 	CompletionItem *[]protocol.CompletionItem
+
+	Type      string
+	TypeRange protocol.Range
 }
 
 func (job *Job) AddCompletionItem(label string, commitCharacters []string) {

@@ -1726,6 +1726,10 @@
 							"description": {
 								"type": "string"
 							},
+							"type": {
+								"type": "string",
+								"description": "The job type. Further validation is handled by the language server."
+							},
 							"parallelism": {
 								"description": "A integer or a parameter evaluating to a integer",
 								"anyOf": [
@@ -2121,6 +2125,17 @@
 								]
 							}
 						]
+					},
+					{
+						"title": "Job with type explicitly specified. Some job types like approval or no-op don't require steps or executors defined to be valid, so this rule allows them to be omitted if type is specified.",
+						"type": "object",
+						"additionalProperties": false,
+						"properties": {
+							"type": {
+								"type": "string",
+								"description": "The job type. Further validation is handled by the language server."
+							}
+						}
 					},
 					{
 						"type": "string",

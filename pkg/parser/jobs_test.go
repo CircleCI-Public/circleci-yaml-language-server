@@ -27,6 +27,7 @@ func getJobsTests() []struct {
 			args: jobsArgs{
 				jobsString: `jobs:
     test:
+        type: build
         parallelism: 2
         working_directory: "~/testJob"
         shell: "superShell"
@@ -44,6 +45,7 @@ func getJobsTests() []struct {
 					WorkingDirectory: "~/testJob",
 					Shell:            "superShell",
 					ResourceClass:    "superFast",
+					Type:             "build",
 				},
 			},
 		},

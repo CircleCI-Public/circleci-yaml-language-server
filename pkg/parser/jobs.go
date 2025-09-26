@@ -121,6 +121,10 @@ func (doc *YamlDocument) parseSingleJob(jobNode *sitter.Node) ast.Job {
 				blockMapping := GetChildMapping(valueNode)
 				res.Environment = doc.parseDictionary(blockMapping)
 				res.EnvironmentRange = doc.NodeToRange(child)
+
+			case "type":
+				res.Type = doc.GetNodeText(valueNode)
+				res.TypeRange = doc.NodeToRange(child)
 			}
 		}
 	})
@@ -157,5 +161,8 @@ func (doc *YamlDocument) jobCompletionItem(job ast.Job) {
 	}
 	if job.Parallelism == 0 {
 		job.AddCompletionItem("parallelism", []string{":", " "})
+	}
+	if job.Type == "" {
+		job.AddCompletionItem("type", []string{":", " "})
 	}
 }
