@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [0.18.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.17.1...0.18.0) (2025-09-26)
+
+
+### Features
+
+* [PIPE-5019] Handle `no-op`, `approval`, and `release` job types ([#358](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/358)) ([8fdb325](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/8fdb325c630bb03fbda3c61705ff918ca028316a))
+
 ## [0.17.1](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.17.0...0.17.1) (2025-09-25)
 
 
