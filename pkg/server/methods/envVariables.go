@@ -1,8 +1,9 @@
 package methods
 
 import (
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
+
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
 func (methods *Methods) getAllEnvVariables(textDocument protocol.TextDocumentItem) {
@@ -17,7 +18,7 @@ func (methods *Methods) getAllEnvVariables(textDocument protocol.TextDocumentIte
 		methods.updateProjectEnvVariables(cachedFile)
 	}
 
-	utils.GetAllContext(methods.LsContext, cachedFile.Project.OrganizationName, cachedFile.Project.VcsInfo.Provider, methods.Cache)
+	_ = utils.GetAllContext(methods.LsContext, cachedFile.Project.OrganizationId, methods.Cache)
 }
 
 func (methods *Methods) updateProjectsEnvVariables() {

@@ -1,7 +1,11 @@
 package utils
 
 import (
-	"strings"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"time"
 )
 
 type Context struct {
@@ -35,93 +39,86 @@ func GetAllContextEnvVariables(lsContext *LsContext, cache *Cache, organizationI
 	return contextEnvVariables
 }
 
-type GetAllContextRes struct {
-	Organization struct {
-		Id       string
-		Contexts struct {
-			Edges []struct {
-				Node struct {
-					Groups struct {
-						Edges []struct {
-							Node struct {
-								Name string
-							}
-						}
-					}
-					Id        string
-					Name      string
-					Resources []struct {
-						Variable string
-					}
-				}
-			}
-			PageInfo struct {
-				HasPreviousPage bool
-				HasNextPage     bool
-			}
-			TotalCount int
-		}
-	}
+type EnvVar struct {
+	Variable       string    `json:"variable"`
+	TruncatedValue string    `json:"truncated_value"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
 }
 
-func GetAllContext(lsContext *LsContext, organization string, vcs string, cache *Cache) error {
-	cl := NewClient("https://circleci.com", "graphql-unstable", "", false)
+type ContextResponse struct {
+	Name                 string    `json:"name"`
+	ID                   string    `json:"id"`
+	CreatedAt            time.Time `json:"created_at"`
+	EnvironmentVariables []EnvVar  `json:"environment_variables"`
+}
 
-	query := `query($organization: String!, $vcsType: VCSType!) {
-		organization(vcsType: $vcsType, name: $organization) {
-		  id
-		  contexts {
-			edges {
-			  node {
-				groups {
-				  edges {
-					node {
-					  name
-					}
-				  }
-				}
-				id
-				name
-				resources {
-				  variable
-				}
-			  }
-			}
-			pageInfo {
-			  hasPreviousPage
-			  hasNextPage
-			}
-			totalCount
-		  }
+type GetAllContextRes struct {
+	Items         []ContextResponse `json:"items"`
+	NextPageToken *string           `json:"next_page_token"`
+}
+
+func GetAllContext(lsContext *LsContext, orgID string, cache *Cache) error {
+	var contexts []ContextResponse
+
+	pageToken := ""
+
+	for {
+		res, err := getContext(lsContext, orgID, pageToken)
+		if err != nil {
+			return err
 		}
-	  }`
 
-	request := NewRequest(query)
-	request.Var("organization", organization)
-	request.Var("vcsType", strings.ToUpper(vcs))
-	request.SetToken(lsContext.Api.Token)
-	request.SetUserId(lsContext.Api.userId)
+		for _, c := range res.Items {
+			contexts = append(contexts, c)
+		}
 
-	var Response GetAllContextRes
-	err := cl.Run(request, &Response)
-	if err != nil {
-		return err
+		if res.NextPageToken == nil {
+			break
+		}
+
+		pageToken = *res.NextPageToken
 	}
 
-	for _, context := range Response.Organization.Contexts.Edges {
-		cache.ContextCache.SetOrganizationContext(organization, &Context{
-			Id:           context.Node.Id,
-			Name:         context.Node.Name,
-			envVariables: resourcesToStringArray(context.Node.Resources),
+	for _, c := range contexts {
+		cache.ContextCache.SetOrganizationContext(orgID, &Context{
+			Id:           c.ID,
+			Name:         c.Name,
+			envVariables: envVarNames(c.EnvironmentVariables),
 		})
 	}
 
 	return nil
 }
 
-func resourcesToStringArray(resources []struct {
-	Variable string
-}) []string {
+func getContext(lsContext *LsContext, orgID string, nextPageToken string) (*GetAllContextRes, error) {
+	url := fmt.Sprintf("%s/api/v2/context?owner-id=%s&include-env-vars=true&page-token=%s", lsContext.Api.HostUrl, orgID, nextPageToken)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Circle-Token", lsContext.Api.Token)
+	req.Header.Set("User-Agent", UserAgent)
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	defer res.Body.Close()
+	defer io.Copy(io.Discard, res.Body)
+
+	var resp GetAllContextRes
+	err = json.NewDecoder(res.Body).Decode(&resp)
+	if err != nil {
+		return nil, err
+	}
+
+	return &resp, nil
+}
+
+func envVarNames(resources []EnvVar) []string {
 	var envVariables []string
 	for _, resource := range resources {
 		envVariables = append(envVariables, resource.Variable)
