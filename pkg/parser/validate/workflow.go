@@ -3,9 +3,10 @@ package validate
 import (
 	"fmt"
 
+	"go.lsp.dev/protocol"
+
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
-	"go.lsp.dev/protocol"
 )
 
 func (val Validate) ValidateWorkflows() {
@@ -60,7 +61,7 @@ func (val Validate) validateSingleWorkflow(workflow ast.Workflow) error {
 		if cachedFile := val.Cache.FileCache.GetFile(val.Doc.URI); val.Context.Api.Token != "" &&
 			cachedFile != nil && cachedFile.Project.OrganizationName != "" {
 			for _, context := range jobRef.Context {
-				if context.Text != "org-global" && val.Cache.ContextCache.GetOrganizationContext(cachedFile.Project.OrganizationName, context.Text) == nil {
+				if context.Text != "org-global" && val.Cache.ContextCache.GetOrganizationContext(cachedFile.Project.OrganizationId, context.Text) == nil {
 					val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
 						context.Range,
 						fmt.Sprintf("Context %s does not exist", context.Text)))
