@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [0.19.1](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.19.0...0.19.1) (2025-09-30)
+
+
+### Bug Fixes
+
+* environment variable lookup ([#364](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/364)) ([8dc40d9](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/8dc40d971ccea538b4cc13b6fd679ace457875c9))
+
 ## [0.19.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.18.0...0.19.0) (2025-09-30)
 
 
