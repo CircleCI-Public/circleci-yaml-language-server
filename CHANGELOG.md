@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## [0.19.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.18.0...0.19.0) (2025-09-30)
+
+
+### Features
+
+* make a release ([#362](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/362)) ([ae62ab9](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/ae62ab9890206edd0dab2959cb86113236498744))
+
+
+### Bug Fixes
+
+* correct a bad pattern in schema ([#342](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/342)) ([b882fe6](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/b882fe6d3151f518e7fb895616df07279bebb26c))
+* support Docker images with SHA256 digests ([#340](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/340)) ([72e27a8](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/72e27a8aac7ccb3cfd7688068c295954e5f5a679))
+
 ## [0.18.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.17.1...0.18.0) (2025-09-26)
 
 
