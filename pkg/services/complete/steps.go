@@ -1,9 +1,10 @@
 package complete
 
 import (
+	sitter "github.com/smacker/go-tree-sitter"
+
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
-	sitter "github.com/smacker/go-tree-sitter"
 )
 
 func (ch *CompletionHandler) completeSteps(entityName string, inJob bool, includeJobSteps bool, completionNode *sitter.Node) {
@@ -93,7 +94,7 @@ func (ch *CompletionHandler) addCompleteEnvVariables(contexts []string, paramete
 			ch.addCompletionItemWithDetail(env, "From project "+cachedFile.Project.Name, "B")
 		}
 
-		contextEnvVariables := utils.GetAllContextEnvVariables(ch.Context, ch.Cache, cachedFile.Project.OrganizationName, contexts)
+		contextEnvVariables := utils.GetAllContextEnvVariables(ch.Cache, cachedFile.Project.OrganizationId, contexts)
 		for _, env := range contextEnvVariables {
 			ch.addCompletionItemWithDetail(env.Name, "From context "+env.AssociatedContext, "B")
 		}

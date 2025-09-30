@@ -20,7 +20,7 @@ type ContextEnvVariable struct {
 	AssociatedContext string
 }
 
-func GetAllContextEnvVariables(lsContext *LsContext, cache *Cache, organizationId string, contexts []string) []ContextEnvVariable {
+func GetAllContextEnvVariables(cache *Cache, organizationId string, contexts []string) []ContextEnvVariable {
 	var contextEnvVariables []ContextEnvVariable
 	for _, context := range contexts {
 		cachedContext := cache.ContextCache.GetOrganizationContext(organizationId, context)
@@ -59,8 +59,6 @@ type GetAllContextRes struct {
 }
 
 func GetAllContext(lsContext *LsContext, orgID string, cache *Cache) error {
-	var contexts []ContextResponse
-
 	pageToken := ""
 
 	for {
@@ -70,7 +68,12 @@ func GetAllContext(lsContext *LsContext, orgID string, cache *Cache) error {
 		}
 
 		for _, c := range res.Items {
-			contexts = append(contexts, c)
+			cache.ContextCache.SetOrganizationContext(orgID, &Context{
+				Id:           c.ID,
+				Name:         c.Name,
+				CreatedAt:    c.CreatedAt.String(),
+				envVariables: envVarNames(c.EnvironmentVariables),
+			})
 		}
 
 		if res.NextPageToken == nil {
@@ -78,14 +81,6 @@ func GetAllContext(lsContext *LsContext, orgID string, cache *Cache) error {
 		}
 
 		pageToken = *res.NextPageToken
-	}
-
-	for _, c := range contexts {
-		cache.ContextCache.SetOrganizationContext(orgID, &Context{
-			Id:           c.ID,
-			Name:         c.Name,
-			envVariables: envVarNames(c.EnvironmentVariables),
-		})
 	}
 
 	return nil
