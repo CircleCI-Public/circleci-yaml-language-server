@@ -158,4 +158,4 @@ If you which to implement a client for your editor, please take a look at
     <img src="./assets/social/ln.png" alt="linkedin-link" width="60px"/>
 </a>
 
-Help us get the word out! Share our project
+Help us get the word out! Share our project.
