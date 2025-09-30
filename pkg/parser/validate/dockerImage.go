@@ -1,6 +1,7 @@
 package validate
 
 import (
+	"regexp"
 	"strings"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
@@ -10,6 +11,12 @@ import (
 	"github.com/Masterminds/semver"
 	"go.lsp.dev/protocol"
 )
+
+var validDigestRegex = regexp.MustCompile(`^sha256:[a-f0-9]{64}$`)
+
+func isValidDockerDigest(digest string) bool {
+	return validDigestRegex.MatchString(digest)
+}
 
 func DoesDockerImageExists(img *ast.DockerImage, cache *utils.DockerCache, api dockerhub.DockerHubAPI) bool {
 	cachedDockerImage := cache.Get(img.Image.FullPath)

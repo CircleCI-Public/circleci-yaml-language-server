@@ -126,6 +126,7 @@ type DockerImageInfo struct {
 	Namespace string
 	Name      string
 	Tag       string
+	Digest    string // SHA256 digest if present (e.g., "sha256:76aae59c6259672ab68819b8960de5ef571394681089eab2b576f85f080c73ba")
 
 	FullPath string
 }

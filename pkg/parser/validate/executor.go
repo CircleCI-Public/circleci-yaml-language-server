@@ -196,37 +196,54 @@ func (val Validate) validateDockerExecutor(executor ast.DockerExecutor) {
 				),
 			)
 		} else {
-			// Validate image tag
-			imgTag := img.Image.Tag
-
-			if imgTag == "" {
-				imgTag = "latest"
-			}
-
-			tagExists := DoesTagExist(&img, imgTag, &val.Cache.DockerTagsCache, val.APIs.DockerHub)
-
-			if !tagExists {
-				actions := GetImageTagActions(&val.Doc, &img, &val.Cache.DockerTagsCache, val.APIs.DockerHub)
+			// Validate digest format if present
+			if img.Image.Digest != "" && !isValidDockerDigest(img.Image.Digest) {
 				val.addDiagnostic(
-					utils.CreateDiagnosticFromRange(
+					utils.CreateErrorDiagnosticFromRange(
 						img.ImageRange,
-						protocol.DiagnosticSeverityError,
-						fmt.Sprintf("Docker image \"%s\" has no tag \"%s\"", img.Image.FullPath, imgTag),
-						actions,
+						fmt.Sprintf(
+							"Invalid Docker image digest format \"%s\". Expected format: sha256:<64 hex characters>",
+							img.Image.Digest,
+						),
 					),
 				)
+				continue
 			}
 
-			if tagExists && img.Image.Tag == "" {
-				actions := GetImageTagActions(&val.Doc, &img, &val.Cache.DockerTagsCache, val.APIs.DockerHub)
-				val.addDiagnostic(
-					utils.CreateDiagnosticFromRange(
-						img.ImageRange,
-						protocol.DiagnosticSeverityHint,
-						"It is recommended to set explicit tags",
-						actions,
-					),
-				)
+			// Exclude cases with only digest without tags, such as node@sha256:...
+			if img.Image.Tag != "" || img.Image.Digest == "" {
+				// Validate image tag
+				imgTag := img.Image.Tag
+
+				if imgTag == "" {
+					imgTag = "latest"
+				}
+
+				tagExists := DoesTagExist(&img, imgTag, &val.Cache.DockerTagsCache, val.APIs.DockerHub)
+
+				if !tagExists {
+					actions := GetImageTagActions(&val.Doc, &img, &val.Cache.DockerTagsCache, val.APIs.DockerHub)
+					val.addDiagnostic(
+						utils.CreateDiagnosticFromRange(
+							img.ImageRange,
+							protocol.DiagnosticSeverityError,
+							fmt.Sprintf("Docker image \"%s\" has no tag \"%s\"", img.Image.FullPath, imgTag),
+							actions,
+						),
+					)
+				}
+
+				if tagExists && img.Image.Tag == "" {
+					actions := GetImageTagActions(&val.Doc, &img, &val.Cache.DockerTagsCache, val.APIs.DockerHub)
+					val.addDiagnostic(
+						utils.CreateDiagnosticFromRange(
+							img.ImageRange,
+							protocol.DiagnosticSeverityHint,
+							"It is recommended to set explicit tags",
+							actions,
+						),
+					)
+				}
 			}
 		}
 
