@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [0.20.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.19.1...0.20.0) (2025-10-01)
+
+
+### Features
+
+* add method to checkout step fields ([#365](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/365)) ([faf0966](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/faf0966910c5fcb43b9555e78b59304b55c979b6))
+
 ## [0.19.1](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.19.0...0.19.1) (2025-09-30)
 
 
