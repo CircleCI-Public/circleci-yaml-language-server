@@ -302,6 +302,8 @@ func (doc *YamlDocument) parseCheckoutStep(checkoutNode *sitter.Node) ast.Checko
 			switch keyName {
 			case "path":
 				res.Path = doc.GetNodeText(valueNode)
+			case "method":
+				res.Method = doc.GetNodeText(valueNode)
 			}
 		})
 		return res

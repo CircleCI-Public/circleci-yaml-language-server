@@ -687,7 +687,10 @@
                         "path": {
                             "description": "Checkout directory (default: job's `working_directory`)",
                             "type": "string"
-                        }
+                        },
+                        "method": {
+                            "description": "The checkout method to be used ('blobless' or 'full', default 'full')",
+                            "type": "string"
                     }
                 },
                 "setup_remote_docker": {

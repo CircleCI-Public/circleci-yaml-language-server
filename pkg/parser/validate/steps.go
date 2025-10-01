@@ -31,6 +31,8 @@ func (val Validate) validateSteps(steps []ast.Step, name string, jobOrCommandPar
 			val.validateNamedStep(step, jobOrCommandParameters)
 		case ast.Steps:
 			val.validateStepSteps(step, name)
+		case ast.Checkout:
+			val.validateCheckout(step)
 		}
 	}
 	return nil
@@ -207,6 +209,21 @@ func (val Validate) validateStepSteps(step ast.Steps, name string) {
 			Range:    step.Range,
 			Message:  "Parameter type is not steps",
 			Source:   "cci-language-server",
+		})
+	}
+}
+
+func (val Validate) validateCheckout(step ast.Checkout) {
+	if step.Method == "" {
+		return
+	}
+
+	m := []string{"blobless", "full"}
+	if !slices.Contains(m, step.Method) {
+		val.addDiagnostic(protocol.Diagnostic{
+			Severity: protocol.DiagnosticSeverityError,
+			Range:    step.Range,
+			Message:  fmt.Sprintf("Checkout method '%s' is invalid", step.Method),
 		})
 	}
 }
