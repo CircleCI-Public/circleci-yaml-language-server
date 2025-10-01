@@ -161,7 +161,7 @@ var ValidLinuxGPUImages = []string{
 	"linux-cuda-12:edge",
 
 	// CUDA 13
-	// "linux-cuda-13:default",
+	"linux-cuda-13:default",
 	"linux-cuda-13:edge",
 }
 
