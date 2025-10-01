@@ -1,6 +1,7 @@
 package validate
 
 import (
+	"os"
 	"testing"
 
 	"go.lsp.dev/protocol"
@@ -67,5 +68,42 @@ workflows:
 		},
 	}
 
+	CheckYamlErrors(t, testCases)
+}
+
+func TestYamlDocument_parseCheckout(t *testing.T) {
+	validConfigFilePath := "./testdata/valid_checkout_method.yml"
+	validConfig, err := os.ReadFile(validConfigFilePath)
+	if err != nil {
+		t.Fatal("Failed to read valid_checkout_method.yml")
+	}
+
+	invalidConfigFilePath := "./testdata/invalid_checkout_method.yml"
+	invalidConfig, err := os.ReadFile(invalidConfigFilePath)
+	if err != nil {
+		t.Fatal("Failed to read invalid_checkout_method.yml")
+	}
+
+	testCases := []ValidateTestCase{
+		{
+			Name:        "Specifying checkout method full does not result in an error",
+			YamlContent: string(validConfig),
+			Diagnostics: []protocol.Diagnostic{},
+		},
+		{
+			Name:        "Specifying an invalid checkout method results in an error",
+			YamlContent: string(invalidConfig),
+			Diagnostics: []protocol.Diagnostic{
+				{
+					Severity: protocol.DiagnosticSeverityError,
+					Range: protocol.Range{
+						Start: protocol.Position{Line: 7, Character: 8},
+						End:   protocol.Position{Line: 7, Character: 16},
+					},
+					Message: "Checkout method 'invalid' is invalid",
+				},
+			},
+		},
+	}
 	CheckYamlErrors(t, testCases)
 }

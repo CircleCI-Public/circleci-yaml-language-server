@@ -1,0 +1,15 @@
+version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout:
+          method: full
+      - run: echo "hello world"
+
+workflows:
+  test-build:
+    jobs:
+      - build
