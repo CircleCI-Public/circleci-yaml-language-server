@@ -52,6 +52,12 @@ type Job struct {
 
 	Type      string
 	TypeRange protocol.Range
+
+	PlanName      string
+	PlanNameRange protocol.Range
+
+	Key      string
+	KeyRange protocol.Range
 }
 
 func (job *Job) AddCompletionItem(label string, commitCharacters []string) {
