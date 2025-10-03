@@ -127,6 +127,16 @@ func TestComplete(t *testing.T) {
 					InsertText: "type: ",
 					Kind:       protocol.CompletionItemKindProperty,
 				},
+				{
+					Label:      "plan_name",
+					InsertText: "plan_name: ",
+					Kind:       protocol.CompletionItemKindProperty,
+				},
+				{
+					Label:      "key",
+					InsertText: "key: ",
+					Kind:       protocol.CompletionItemKindProperty,
+				},
 			},
 		},
 		{

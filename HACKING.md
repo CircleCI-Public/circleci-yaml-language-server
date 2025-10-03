@@ -124,3 +124,87 @@ task prepare:vscode
 3. Next, open a VSCode instance at the root of the project, open the
    `Run and Debug` tab and run it via the `Run Extension` on the dropdown menu
    at the top of the tab.
+
+## Understanding the Schema Files
+
+The CircleCI YAML Language Server uses **two different schema files** for different purposes:
+
+| File                | Purpose                                      | Used By                                     |
+| ------------------- | -------------------------------------------- | ------------------------------------------- |
+| `schema.json`       | Core validation and language server features | Go language server binary, external tools   |
+| `publicschema.json` | Rich hover documentation                     | VSCode extension TypeScript hover providers |
+
+### Architecture
+
+This is a **two-tier schema system**:
+
+### `schema.json`
+
+**Primary Purpose**: Validates the YAML is valid according to our CircleCI rules
+
+**Used By**:
+
+- **Go Language Server Binary**: The main language server reads this schema via the `SCHEMA_LOCATION` environment variable
+  - Location: `pkg/services/diagnostics.go`, `pkg/services/validate.go`, etc.
+
+- **External Tools**: Used by the Red Hat YAML extension. This extension looks at [schemastore.org](https://www.schemastore.org/api/json/catalog.json), which reads the latest schema.json from this repo.
+  - URL: `https://raw.githubusercontent.com/CircleCI-Public/circleci-yaml-language-server/refs/heads/main/schema.json`
+
+- **VSCode Extension**: Downloaded from GitHub releases page and bundled with the extension
+  - Location in our private VSCode extension
+
+- **Go Tests**: Used for validation testing
+  - Location: `pkg/services/diagnostics_test.go`
+
+**Characteristics**:
+
+- JSON Schema draft-07
+
+### `publicschema.json`
+
+**Primary Purpose**: Documentation for IDE hover features
+
+**Used By**:
+
+- **VSCode Extension Hover Provider**
+  - Location: `circleci-vscode-extension/packages/vscode-extension/src/lsp/hover.ts:62-67`
+
+**Characteristics**:
+
+- JSON Schema draft-04
+- Includes inline CircleCI documentation URLs (e.g., `https://circleci.com/docs/configuration-reference#...`)
+- **Never used by the Go language server**
+
+### Why Two Schemas?
+
+The separation exists because:
+
+- The Go language server needs a comprehensive schema for validation that handles all edge cases
+- The hover provider needs clean documentation with links to CircleCI docs
+
+### Development Guidelines
+
+#### When to Update `schema.json`
+
+Update this schema when:
+
+- Adding or modifying CircleCI config validation rules
+- Changing supported configuration keys or values
+- Adding new CircleCI features that affect config structure
+- Fixing validation bugs
+
+#### When to Update `publicschema.json`
+
+Update this schema when:
+
+- Improving hover documentation text
+- Adding or updating links to CircleCI documentation
+- Changing the structure of hover hints
+- Making documentation more user-friendly
+
+#### Keeping Schemas in Sync
+
+> ⚠️ [!IMPORTANT]
+> Both schemas should represent the same CircleCI configuration format. When you update one schema's structure, you likely need to update the other.
+
+**Best Practice**: Make structural changes to both schemas in the same PR to prevent drift.
