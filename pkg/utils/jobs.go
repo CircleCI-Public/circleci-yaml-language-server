@@ -20,6 +20,8 @@ func HasStoreTestResultStep(step []ast.Step) bool {
 var JobTypes = []string{
 	"approval",
 	"build", // default
+	"lock",
 	"no-op",
 	"release",
+	"unlock",
 }
