@@ -1223,7 +1223,7 @@
                     ],
                     "properties": {
                         "type": {
-                            "description": "[Job Types](https://circleci.com/docs/reference/configuration-reference/#job-type)\nSome examples are `build`, `approval`, `no-op`, `release`.",
+                            "description": "[Job Types](https://circleci.com/docs/reference/configuration-reference/#job-type)\nThe job type. If not specified, defaults to `build`.",
                             "type": "string"
                         },
                         "shell": {
