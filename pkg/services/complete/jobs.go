@@ -33,6 +33,9 @@ func (ch *CompletionHandler) completeJobs() {
 	case utils.PosInRange(job.DockerRange, ch.Params.Position):
 		ch.completeDockerExecutor(job.Docker)
 		return
+	case utils.PosInRange(job.TypeRange, ch.Params.Position):
+		ch.addJobTypeCompletion()
+		return
 	}
 
 	ch.Items = append(ch.Items, (*job.CompletionItem)...)
@@ -77,4 +80,10 @@ func findJob(pos protocol.Position, doc yamlparser.YamlDocument) (ast.Job, error
 		}
 	}
 	return ast.Job{}, fmt.Errorf("no job found")
+}
+
+func (ch *CompletionHandler) addJobTypeCompletion() {
+	for _, jobType := range utils.JobTypes {
+		ch.addCompletionItem(jobType)
+	}
 }
