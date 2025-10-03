@@ -1,7 +1,560 @@
 {
-    "$schema": "http://json-schema.org/draft-06/schema#",
+    "$schema": "http://json-schema.org/draft-07/schema#",
     "title": "CircleCI Config",
     "definitions": {
+        "jobDefinition": {
+            "oneOf": [
+                {
+                    "type": "string",
+                    "description": "Job may be a string reference to another job"
+                },
+                {
+                    "type": "object",
+                    "description": "Job definition object",
+                    "properties": {
+                        "type": {
+                            "enum": [
+                                "build",
+                                "release",
+                                "lock",
+                                "unlock",
+                                "approval",
+                                "no-op"
+                            ],
+                            "description": "The job type. If not specified, defaults to build."
+                        }
+                    },
+                    "if": {
+                        "required": [
+                            "type"
+                        ],
+                        "properties": {
+                            "type": {
+                                "const": "release"
+                            }
+                        }
+                    },
+                    "then": {
+                        "description": "Release job.",
+                        "required": [
+                            "plan_name"
+                        ],
+                        "properties": {
+                            "plan_name": {
+                                "type": "string",
+                                "description": "Required plan name for release jobs."
+                            }
+                        },
+                        "additionalProperties": true
+                    },
+                    "else": {
+                        "if": {
+                            "required": [
+                                "type"
+                            ],
+                            "properties": {
+                                "type": {
+                                    "enum": [
+                                        "lock",
+                                        "unlock"
+                                    ]
+                                }
+                            }
+                        },
+                        "then": {
+                            "description": "A lock/unlock job",
+                            "required": [
+                                "key"
+                            ],
+                            "properties": {
+                                "key": {
+                                    "type": "string",
+                                    "description": "Required key for lock/unlock jobs."
+                                }
+                            },
+                            "additionalProperties": true
+                        },
+                        "else": {
+                            "if": {
+                                "required": [
+                                    "type"
+                                ],
+                                "properties": {
+                                    "type": {
+                                        "enum": [
+                                            "approval",
+                                            "no-op"
+                                        ]
+                                    }
+                                }
+                            },
+                            "then": {
+                                "description": "Approval/no-op jobs primarily act as workflow markers. Other keys like `steps:` are permitted but will be ignored in the final pipeline.",
+                                "additionalProperties": true
+                            },
+                            "else": {
+                                "if": {
+                                    "description": "Condition: The job must be of type 'build' or have no type specified.",
+                                    "anyOf": [
+                                        {
+                                            "not": {
+                                                "required": [
+                                                    "type"
+                                                ]
+                                            }
+                                        },
+                                        {
+                                            "required": [
+                                                "type"
+                                            ],
+                                            "properties": {
+                                                "type": {
+                                                    "const": "build"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                "then": {
+                                    "description": "Validation: The job must adhere to the structure of a build job.",
+                                    "properties": {
+                                        "description": {
+                                            "type": "string"
+                                        },
+                                        "type": {
+                                            "const": "build",
+                                            "description": "The job type. If not specified, defaults to build."
+                                        },
+                                        "parallelism": {
+                                            "description": "A integer or a parameter evaluating to a integer",
+                                            "anyOf": [
+                                                {
+                                                    "oneOf": [
+                                                        {
+                                                            "type": "string",
+                                                            "pattern": " *<< *parameters.([^ ]+) *>> *"
+                                                        },
+                                                        {
+                                                            "type": "string",
+                                                            "pattern": " *<< *pipeline.parameters.([^ ]+) *>> *"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "integer"
+                                                }
+                                            ]
+                                        },
+                                        "macos": {
+                                            "type": "object",
+                                            "properties": {
+                                                "xcode": {
+                                                    "type": [
+                                                        "string",
+                                                        "number"
+                                                    ]
+                                                },
+                                                "resource_class": {
+                                                    "type": "string"
+                                                },
+                                                "shell": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "xcode"
+                                            ],
+                                            "additionalProperties": false
+                                        },
+                                        "resource_class": {
+                                            "type": "string"
+                                        },
+                                        "docker": {
+                                            "type": "array",
+                                            "minItems": 1,
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "image": {
+                                                        "type": "string"
+                                                    },
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "entrypoint": {
+                                                        "oneOf": [
+                                                            {
+                                                                "type": "string"
+                                                            },
+                                                            {
+                                                                "type": "array",
+                                                                "items": {
+                                                                    "type": "string"
+                                                                }
+                                                            }
+                                                        ]
+                                                    },
+                                                    "command": {
+                                                        "oneOf": [
+                                                            {
+                                                                "type": "string"
+                                                            },
+                                                            {
+                                                                "type": "array",
+                                                                "items": {
+                                                                    "type": "string"
+                                                                }
+                                                            }
+                                                        ]
+                                                    },
+                                                    "user": {
+                                                        "type": "string"
+                                                    },
+                                                    "environment": {
+                                                        "oneOf": [
+                                                            {
+                                                                "description": "Allow null to account for empty `environment:` declarations.",
+                                                                "type": [
+                                                                    "string",
+                                                                    "null"
+                                                                ]
+                                                            },
+                                                            {
+                                                                "description": "An array of strings in the form KEY=VALUE",
+                                                                "type": "array",
+                                                                "items": {
+                                                                    "$ref": "#/definitions/environment"
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "object",
+                                                                "description": "The value should be a string, but we allow null, boolean and numbers too. Examples: `FOO: true` and `BAR: 2` `BAZ:`",
+                                                                "additionalProperties": {
+                                                                    "type": [
+                                                                        "string",
+                                                                        "boolean",
+                                                                        "number",
+                                                                        "null"
+                                                                    ]
+                                                                }
+                                                            }
+                                                        ]
+                                                    },
+                                                    "aws_auth": {
+                                                        "oneOf": [
+                                                            {
+                                                                "type": "object",
+                                                                "properties": {
+                                                                    "aws_access_key_id": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "aws_secret_access_key": {
+                                                                        "type": "string"
+                                                                    }
+                                                                },
+                                                                "required": [
+                                                                    "aws_access_key_id",
+                                                                    "aws_secret_access_key"
+                                                                ],
+                                                                "additionalProperties": false
+                                                            },
+                                                            {
+                                                                "type": "object",
+                                                                "properties": {
+                                                                    "oidc_role_arn": {
+                                                                        "type": "string"
+                                                                    }
+                                                                },
+                                                                "required": [
+                                                                    "oidc_role_arn"
+                                                                ],
+                                                                "additionalProperties": false
+                                                            }
+                                                        ]
+                                                    },
+                                                    "auth": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "username": {
+                                                                "type": "string"
+                                                            },
+                                                            "password": {
+                                                                "type": "string"
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "username",
+                                                            "password"
+                                                        ],
+                                                        "additionalProperties": false
+                                                    }
+                                                },
+                                                "required": [
+                                                    "image"
+                                                ],
+                                                "additionalProperties": false
+                                            }
+                                        },
+                                        "steps": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/step"
+                                            },
+                                            "minItems": 1
+                                        },
+                                        "working_directory": {
+                                            "type": "string"
+                                        },
+                                        "retention": {
+                                            "type": "object",
+                                            "properties": {
+                                                "caches": {
+                                                    "type": "string",
+                                                    "pattern": "^([1-9]|1[0-5])d$"
+                                                }
+                                            },
+                                            "additionalProperties": false
+                                        },
+                                        "circleci_ip_ranges": {
+                                            "type": "boolean"
+                                        },
+                                        "machine": {
+                                            "description": "Machine must be a boolean or a map",
+                                            "oneOf": [
+                                                {
+                                                    "description": "A boolean or a template parameter evaluating to a boolean",
+                                                    "anyOf": [
+                                                        {
+                                                            "type": "string",
+                                                            "pattern": " *<< *parameters.([^ ]+) *>> *"
+                                                        },
+                                                        {
+                                                            "type": "boolean"
+                                                        },
+                                                        {
+                                                            "type": "number"
+                                                        },
+                                                        {
+                                                            "type": "string"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "enabled": {
+                                                            "description": "A boolean or a template parameter evaluating to a boolean",
+                                                            "anyOf": [
+                                                                {
+                                                                    "type": "string",
+                                                                    "pattern": " *<< *parameters.([^ ]+) *>> *"
+                                                                },
+                                                                {
+                                                                    "type": "boolean"
+                                                                },
+                                                                {
+                                                                    "type": "number"
+                                                                },
+                                                                {
+                                                                    "type": "string"
+                                                                }
+                                                            ]
+                                                        },
+                                                        "image": {
+                                                            "type": "string"
+                                                        },
+                                                        "docker_layer_caching": {
+                                                            "description": "A boolean or a template parameter evaluating to a boolean",
+                                                            "anyOf": [
+                                                                {
+                                                                    "type": "string",
+                                                                    "pattern": " *<< *parameters.([^ ]+) *>> *"
+                                                                },
+                                                                {
+                                                                    "type": "boolean"
+                                                                },
+                                                                {
+                                                                    "type": "number"
+                                                                },
+                                                                {
+                                                                    "type": "string"
+                                                                }
+                                                            ]
+                                                        },
+                                                        "resource_class": {
+                                                            "type": "string"
+                                                        },
+                                                        "shell": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "additionalProperties": false
+                                                }
+                                            ]
+                                        },
+                                        "environment": {
+                                            "oneOf": [
+                                                {
+                                                    "description": "Allow null to account for empty `environment:` declarations.",
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                {
+                                                    "description": "An array of strings in the form KEY=VALUE",
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/definitions/environment"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "description": "The value should be a string, but we allow null, boolean and numbers too. Examples: `FOO: true` and `BAR: 2` `BAZ:`",
+                                                    "additionalProperties": {
+                                                        "type": [
+                                                            "string",
+                                                            "boolean",
+                                                            "number",
+                                                            "null"
+                                                        ]
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        "executor": {
+                                            "oneOf": [
+                                                {
+                                                    "type": "string",
+                                                    "description": "short executor invocation, name of executor"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "description": "executor invocation with arguments, i.e. parameters",
+                                                    "minProperties": 1,
+                                                    "additionalProperties": true,
+                                                    "properties": {
+                                                        "name": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "name"
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        "shell": {
+                                            "oneOf": [
+                                                {
+                                                    "type": "string"
+                                                },
+                                                {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        "parameters": {
+                                            "description": "Parameters given to a job.",
+                                            "type": "object",
+                                            "additionalProperties": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "type": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                            "boolean",
+                                                            "string",
+                                                            "steps",
+                                                            "enum",
+                                                            "executor",
+                                                            "integer",
+                                                            "env_var_name"
+                                                        ]
+                                                    },
+                                                    "default": {
+                                                        "oneOf": [
+                                                            {
+                                                                "type": "string"
+                                                            },
+                                                            {
+                                                                "type": "boolean"
+                                                            },
+                                                            {
+                                                                "type": "integer"
+                                                            },
+                                                            {
+                                                                "type": "array",
+                                                                "items": {
+                                                                    "$ref": "#/definitions/step"
+                                                                }
+                                                            }
+                                                        ]
+                                                    },
+                                                    "description": {
+                                                        "type": "string"
+                                                    },
+                                                    "enum": {
+                                                        "type": "array",
+                                                        "items": {
+                                                            "type": "string"
+                                                        }
+                                                    }
+                                                },
+                                                "additionalProperties": false,
+                                                "required": [
+                                                    "type"
+                                                ]
+                                            },
+                                            "minProperties": 1
+                                        }
+                                    },
+                                    "required": [
+                                        "steps"
+                                    ],
+                                    "additionalProperties": false,
+                                    "anyOf": [
+                                        {
+                                            "description": "A job must have one of `docker`, `machine`, `macos` or `executor` (which can provide docker/machine/macos information).",
+                                            "type": "object",
+                                            "required": [
+                                                "executor"
+                                            ]
+                                        },
+                                        {
+                                            "oneOf": [
+                                                {
+                                                    "type": "object",
+                                                    "required": [
+                                                        "machine"
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "required": [
+                                                        "docker"
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "required": [
+                                                        "macos"
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                "else": false
+                            }
+                        }
+                    }
+                }
+            ]
+        },
         "orb": {
             "oneOf": [
                 {
@@ -18,432 +571,7 @@
                                 "pattern": "^[A-Za-z][A-Za-z\\s\\d_-]*$"
                             },
                             "additionalProperties": {
-                                "oneOf": [
-                                    {
-                                        "title": "CircleCI Orb: Jobs",
-                                        "type": "object",
-                                        "properties": {
-                                            "description": {
-                                                "type": "string"
-                                            },
-                                            "parallelism": {
-                                                "description": "A integer or a parameter evaluating to a integer",
-                                                "anyOf": [
-                                                    {
-                                                        "oneOf": [
-                                                            {
-                                                                "type": "string",
-                                                                "pattern": " *<< *parameters.([^ ]+) *>> *"
-                                                            },
-                                                            {
-                                                                "type": "string",
-                                                                "pattern": " *<< *pipeline.parameters.([^ ]+) *>> *"
-                                                            }
-                                                        ]
-                                                    },
-                                                    {
-                                                        "type": "integer"
-                                                    }
-                                                ]
-                                            },
-                                            "macos": {
-                                                "type": "object",
-                                                "properties": {
-                                                    "xcode": {
-                                                        "type": [
-                                                            "string",
-                                                            "number"
-                                                        ]
-                                                    },
-                                                    "resource_class": {
-                                                        "type": "string"
-                                                    },
-                                                    "shell": {
-                                                        "type": "string"
-                                                    }
-                                                },
-                                                "required": [
-                                                    "xcode"
-                                                ],
-                                                "additionalProperties": false
-                                            },
-                                            "resource_class": {
-                                                "type": "string"
-                                            },
-                                            "docker": {
-                                                "type": "array",
-                                                "minItems": 1,
-                                                "items": {
-                                                    "type": "object",
-                                                    "properties": {
-                                                        "image": {
-                                                            "type": "string"
-                                                        },
-                                                        "name": {
-                                                            "type": "string"
-                                                        },
-                                                        "entrypoint": {
-                                                            "oneOf": [
-                                                                {
-                                                                    "type": "string"
-                                                                },
-                                                                {
-                                                                    "type": "array",
-                                                                    "items": {
-                                                                        "type": "string"
-                                                                    }
-                                                                }
-                                                            ]
-                                                        },
-                                                        "command": {
-                                                            "oneOf": [
-                                                                {
-                                                                    "type": "string"
-                                                                },
-                                                                {
-                                                                    "type": "array",
-                                                                    "items": {
-                                                                        "type": "string"
-                                                                    }
-                                                                }
-                                                            ]
-                                                        },
-                                                        "user": {
-                                                            "type": "string"
-                                                        },
-                                                        "environment": {
-                                                            "oneOf": [
-                                                                {
-                                                                    "description": "Allow null to account for empty `environment:` declarations.",
-                                                                    "type": [
-                                                                        "string",
-                                                                        "null"
-                                                                    ]
-                                                                },
-                                                                {
-                                                                    "description": "An array of strings in the form KEY=VALUE",
-                                                                    "type": "array",
-                                                                    "items": {
-                                                                        "$ref": "#/definitions/environment"
-                                                                    }
-                                                                },
-                                                                {
-                                                                    "type": "object",
-                                                                    "description": "The value should be a string, but we allow null, boolean and numbers too. Examples: `FOO: true` and `BAR: 2` `BAZ:`",
-                                                                    "additionalProperties": {
-                                                                        "type": [
-                                                                            "string",
-                                                                            "boolean",
-                                                                            "number",
-                                                                            "null"
-                                                                        ]
-                                                                    }
-                                                                }
-                                                            ]
-                                                        },
-                                                        "aws_auth": {
-                                                            "oneOf": [
-                                                                {
-                                                                    "type": "object",
-                                                                    "properties": {
-                                                                        "aws_access_key_id": {
-                                                                            "type": "string"
-                                                                        },
-                                                                        "aws_secret_access_key": {
-                                                                            "type": "string"
-                                                                        }
-                                                                    },
-                                                                    "required": [
-                                                                        "aws_access_key_id",
-                                                                        "aws_secret_access_key"
-                                                                    ],
-                                                                    "additionalProperties": false
-                                                                },
-                                                                {
-                                                                    "type": "object",
-                                                                    "properties": {
-                                                                        "oidc_role_arn": {
-                                                                            "type": "string"
-                                                                        }
-                                                                    },
-                                                                    "required": [
-                                                                        "oidc_role_arn"
-                                                                    ],
-                                                                    "additionalProperties": false
-                                                                }
-                                                            ]
-                                                        },
-                                                        "auth": {
-                                                            "type": "object",
-                                                            "properties": {
-                                                                "username": {
-                                                                    "type": "string"
-                                                                },
-                                                                "password": {
-                                                                    "type": "string"
-                                                                }
-                                                            },
-                                                            "required": [
-                                                                "username",
-                                                                "password"
-                                                            ],
-                                                            "additionalProperties": false
-                                                        }
-                                                    },
-                                                    "required": [
-                                                        "image"
-                                                    ],
-                                                    "additionalProperties": false
-                                                }
-                                            },
-                                            "steps": {
-                                                "type": "array",
-                                                "items": {
-                                                    "$ref": "#/definitions/step"
-                                                },
-                                                "minItems": 1
-                                            },
-                                            "working_directory": {
-                                                "type": "string"
-                                            },
-                                            "circleci_ip_ranges": {
-                                                "type": "boolean"
-                                            },
-                                            "machine": {
-                                                "description": "Machine must be a boolean or a map",
-                                                "oneOf": [
-                                                    {
-                                                        "description": "A boolean or a template parameter evaluating to a boolean",
-                                                        "anyOf": [
-                                                            {
-                                                                "type": "string",
-                                                                "pattern": " *<< *parameters.([^ ]+) *>> *"
-                                                            },
-                                                            {
-                                                                "type": "boolean"
-                                                            },
-                                                            {
-                                                                "type": "number"
-                                                            },
-                                                            {
-                                                                "type": "string"
-                                                            }
-                                                        ]
-                                                    },
-                                                    {
-                                                        "type": "object",
-                                                        "properties": {
-                                                            "enabled": {
-                                                                "description": "A boolean or a template parameter evaluating to a boolean",
-                                                                "anyOf": [
-                                                                    {
-                                                                        "type": "string",
-                                                                        "pattern": " *<< *parameters.([^ ]+) *>> *"
-                                                                    },
-                                                                    {
-                                                                        "type": "boolean"
-                                                                    },
-                                                                    {
-                                                                        "type": "number"
-                                                                    },
-                                                                    {
-                                                                        "type": "string"
-                                                                    }
-                                                                ]
-                                                            },
-                                                            "image": {
-                                                                "type": "string"
-                                                            },
-                                                            "docker_layer_caching": {
-                                                                "description": "A boolean or a template parameter evaluating to a boolean",
-                                                                "anyOf": [
-                                                                    {
-                                                                        "type": "string",
-                                                                        "pattern": " *<< *parameters.([^ ]+) *>> *"
-                                                                    },
-                                                                    {
-                                                                        "type": "boolean"
-                                                                    },
-                                                                    {
-                                                                        "type": "number"
-                                                                    },
-                                                                    {
-                                                                        "type": "string"
-                                                                    }
-                                                                ]
-                                                            },
-                                                            "resource_class": {
-                                                                "type": "string"
-                                                            },
-                                                            "shell": {
-                                                                "type": "string"
-                                                            }
-                                                        },
-                                                        "additionalProperties": false
-                                                    }
-                                                ]
-                                            },
-                                            "environment": {
-                                                "oneOf": [
-                                                    {
-                                                        "description": "Allow null to account for empty `environment:` declarations.",
-                                                        "type": [
-                                                            "string",
-                                                            "null"
-                                                        ]
-                                                    },
-                                                    {
-                                                        "description": "An array of strings in the form KEY=VALUE",
-                                                        "type": "array",
-                                                        "items": {
-                                                            "$ref": "#/definitions/environment"
-                                                        }
-                                                    },
-                                                    {
-                                                        "type": "object",
-                                                        "description": "The value should be a string, but we allow null, boolean and numbers too. Examples: `FOO: true` and `BAR: 2` `BAZ:`",
-                                                        "additionalProperties": {
-                                                            "type": [
-                                                                "string",
-                                                                "boolean",
-                                                                "number",
-                                                                "null"
-                                                            ]
-                                                        }
-                                                    }
-                                                ]
-                                            },
-                                            "executor": {
-                                                "oneOf": [
-                                                    {
-                                                        "type": "string",
-                                                        "description": "short executor invocation, name of executor"
-                                                    },
-                                                    {
-                                                        "type": "object",
-                                                        "description": "executor invocation with arguments, i.e. parameters",
-                                                        "minProperties": 1,
-                                                        "additionalProperties": true,
-                                                        "properties": {
-                                                            "name": {
-                                                                "type": "string"
-                                                            }
-                                                        },
-                                                        "required": [
-                                                            "name"
-                                                        ]
-                                                    }
-                                                ]
-                                            },
-                                            "shell": {
-                                                "oneOf": [
-                                                    {
-                                                        "type": "string"
-                                                    },
-                                                    {
-                                                        "type": "array",
-                                                        "items": {
-                                                            "type": "string"
-                                                        }
-                                                    }
-                                                ]
-                                            },
-                                            "parameters": {
-                                                "description": "Parameters given to a job.",
-                                                "type": "object",
-                                                "additionalProperties": {
-                                                    "type": "object",
-                                                    "properties": {
-                                                        "type": {
-                                                            "type": "string",
-                                                            "enum": [
-                                                                "boolean",
-                                                                "string",
-                                                                "steps",
-                                                                "enum",
-                                                                "executor",
-                                                                "integer",
-                                                                "env_var_name"
-                                                            ]
-                                                        },
-                                                        "default": {
-                                                            "oneOf": [
-                                                                {
-                                                                    "type": "string"
-                                                                },
-                                                                {
-                                                                    "type": "boolean"
-                                                                },
-                                                                {
-                                                                    "type": "integer"
-                                                                },
-                                                                {
-                                                                    "type": "array",
-                                                                    "items": {
-                                                                        "$ref": "#/definitions/step"
-                                                                    }
-                                                                }
-                                                            ]
-                                                        },
-                                                        "description": {
-                                                            "type": "string"
-                                                        },
-                                                        "enum": {
-                                                            "type": "array",
-                                                            "items": {
-                                                                "type": "string"
-                                                            }
-                                                        }
-                                                    },
-                                                    "additionalProperties": false,
-                                                    "required": [
-                                                        "type"
-                                                    ]
-                                                },
-                                                "minProperties": 1
-                                            }
-                                        },
-                                        "required": [
-                                            "steps"
-                                        ],
-                                        "additionalProperties": false,
-                                        "anyOf": [
-                                            {
-                                                "description": "A job must have one of `docker`, `machine`, `macos` or `executor` (which can provide docker/machine/macos information).",
-                                                "type": "object",
-                                                "required": [
-                                                    "executor"
-                                                ]
-                                            },
-                                            {
-                                                "oneOf": [
-                                                    {
-                                                        "type": "object",
-                                                        "required": [
-                                                            "machine"
-                                                        ]
-                                                    },
-                                                    {
-                                                        "type": "object",
-                                                        "required": [
-                                                            "docker"
-                                                        ]
-                                                    },
-                                                    {
-                                                        "type": "object",
-                                                        "required": [
-                                                            "macos"
-                                                        ]
-                                                    }
-                                                ]
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        "type": "string",
-                                        "description": "Job may be a string reference to another job"
-                                    }
-                                ]
+                                "$ref": "#/definitions/jobDefinition"
                             }
                         },
                         "commands": {
@@ -1810,457 +1938,7 @@
                 "pattern": "^[A-Za-z][A-Za-z\\s\\d_-]*$"
             },
             "additionalProperties": {
-                "oneOf": [
-                    {
-                        "title": "CircleCI Orb: Jobs",
-                        "type": "object",
-                        "properties": {
-                            "description": {
-                                "type": "string"
-                            },
-                            "type": {
-                                "type": "string",
-                                "description": "The job type. Further validation is handled by the language server."
-                            },
-                            "parallelism": {
-                                "description": "A integer or a parameter evaluating to a integer",
-                                "anyOf": [
-                                    {
-                                        "oneOf": [
-                                            {
-                                                "type": "string",
-                                                "pattern": " *<< *parameters.([^ ]+) *>> *"
-                                            },
-                                            {
-                                                "type": "string",
-                                                "pattern": " *<< *pipeline.parameters.([^ ]+) *>> *"
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        "type": "integer"
-                                    }
-                                ]
-                            },
-                            "macos": {
-                                "type": "object",
-                                "properties": {
-                                    "xcode": {
-                                        "type": [
-                                            "string",
-                                            "number"
-                                        ]
-                                    },
-                                    "resource_class": {
-                                        "type": "string"
-                                    },
-                                    "shell": {
-                                        "type": "string"
-                                    }
-                                },
-                                "required": [
-                                    "xcode"
-                                ],
-                                "additionalProperties": false
-                            },
-                            "resource_class": {
-                                "type": "string"
-                            },
-                            "docker": {
-                                "type": "array",
-                                "minItems": 1,
-                                "items": {
-                                    "type": "object",
-                                    "properties": {
-                                        "image": {
-                                            "type": "string"
-                                        },
-                                        "name": {
-                                            "type": "string"
-                                        },
-                                        "entrypoint": {
-                                            "oneOf": [
-                                                {
-                                                    "type": "string"
-                                                },
-                                                {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "type": "string"
-                                                    }
-                                                }
-                                            ]
-                                        },
-                                        "command": {
-                                            "oneOf": [
-                                                {
-                                                    "type": "string"
-                                                },
-                                                {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "type": "string"
-                                                    }
-                                                }
-                                            ]
-                                        },
-                                        "user": {
-                                            "type": "string"
-                                        },
-                                        "environment": {
-                                            "oneOf": [
-                                                {
-                                                    "description": "Allow null to account for empty `environment:` declarations.",
-                                                    "type": [
-                                                        "string",
-                                                        "null"
-                                                    ]
-                                                },
-                                                {
-                                                    "description": "An array of strings in the form KEY=VALUE",
-                                                    "type": "array",
-                                                    "items": {
-                                                        "$ref": "#/definitions/environment"
-                                                    }
-                                                },
-                                                {
-                                                    "type": "object",
-                                                    "description": "The value should be a string, but we allow null, boolean and numbers too. Examples: `FOO: true` and `BAR: 2` `BAZ:`",
-                                                    "additionalProperties": {
-                                                        "type": [
-                                                            "string",
-                                                            "boolean",
-                                                            "number",
-                                                            "null"
-                                                        ]
-                                                    }
-                                                }
-                                            ]
-                                        },
-                                        "aws_auth": {
-                                            "oneOf": [
-                                                {
-                                                    "type": "object",
-                                                    "properties": {
-                                                        "aws_access_key_id": {
-                                                            "type": "string"
-                                                        },
-                                                        "aws_secret_access_key": {
-                                                            "type": "string"
-                                                        }
-                                                    },
-                                                    "required": [
-                                                        "aws_access_key_id",
-                                                        "aws_secret_access_key"
-                                                    ],
-                                                    "additionalProperties": false
-                                                },
-                                                {
-                                                    "type": "object",
-                                                    "properties": {
-                                                        "oidc_role_arn": {
-                                                            "type": "string"
-                                                        }
-                                                    },
-                                                    "required": [
-                                                        "oidc_role_arn"
-                                                    ],
-                                                    "additionalProperties": false
-                                                }
-                                            ]
-                                        },
-                                        "auth": {
-                                            "type": "object",
-                                            "properties": {
-                                                "username": {
-                                                    "type": "string"
-                                                },
-                                                "password": {
-                                                    "type": "string"
-                                                }
-                                            },
-                                            "required": [
-                                                "username",
-                                                "password"
-                                            ],
-                                            "additionalProperties": false
-                                        }
-                                    },
-                                    "required": [
-                                        "image"
-                                    ],
-                                    "additionalProperties": false
-                                }
-                            },
-                            "steps": {
-                                "type": "array",
-                                "items": {
-                                    "$ref": "#/definitions/step"
-                                },
-                                "minItems": 1
-                            },
-                            "working_directory": {
-                                "type": "string"
-                            },
-                            "retention": {
-                                "type": "object",
-                                "properties": {
-                                    "caches": {
-                                        "type": "string",
-                                        "pattern": "^([1-9]|1[0-5])d$"
-                                    }
-                                },
-                                "additionalProperties": false
-                            },
-                            "circleci_ip_ranges": {
-                                "type": "boolean"
-                            },
-                            "machine": {
-                                "description": "Machine must be a boolean or a map",
-                                "oneOf": [
-                                    {
-                                        "description": "A boolean or a template parameter evaluating to a boolean",
-                                        "anyOf": [
-                                            {
-                                                "type": "string",
-                                                "pattern": " *<< *parameters.([^ ]+) *>> *"
-                                            },
-                                            {
-                                                "type": "boolean"
-                                            },
-                                            {
-                                                "type": "number"
-                                            },
-                                            {
-                                                "type": "string"
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        "type": "object",
-                                        "properties": {
-                                            "enabled": {
-                                                "description": "A boolean or a template parameter evaluating to a boolean",
-                                                "anyOf": [
-                                                    {
-                                                        "type": "string",
-                                                        "pattern": " *<< *parameters.([^ ]+) *>> *"
-                                                    },
-                                                    {
-                                                        "type": "boolean"
-                                                    },
-                                                    {
-                                                        "type": "number"
-                                                    },
-                                                    {
-                                                        "type": "string"
-                                                    }
-                                                ]
-                                            },
-                                            "image": {
-                                                "type": "string"
-                                            },
-                                            "docker_layer_caching": {
-                                                "description": "A boolean or a template parameter evaluating to a boolean",
-                                                "anyOf": [
-                                                    {
-                                                        "type": "string",
-                                                        "pattern": " *<< *parameters.([^ ]+) *>> *"
-                                                    },
-                                                    {
-                                                        "type": "boolean"
-                                                    },
-                                                    {
-                                                        "type": "number"
-                                                    },
-                                                    {
-                                                        "type": "string"
-                                                    }
-                                                ]
-                                            },
-                                            "resource_class": {
-                                                "type": "string"
-                                            },
-                                            "shell": {
-                                                "type": "string"
-                                            }
-                                        },
-                                        "additionalProperties": false
-                                    }
-                                ]
-                            },
-                            "environment": {
-                                "oneOf": [
-                                    {
-                                        "description": "Allow null to account for empty `environment:` declarations.",
-                                        "type": [
-                                            "string",
-                                            "null"
-                                        ]
-                                    },
-                                    {
-                                        "description": "An array of strings in the form KEY=VALUE",
-                                        "type": "array",
-                                        "items": {
-                                            "$ref": "#/definitions/environment"
-                                        }
-                                    },
-                                    {
-                                        "type": "object",
-                                        "description": "The value should be a string, but we allow null, boolean and numbers too. Examples: `FOO: true` and `BAR: 2` `BAZ:`",
-                                        "additionalProperties": {
-                                            "type": [
-                                                "string",
-                                                "boolean",
-                                                "number",
-                                                "null"
-                                            ]
-                                        }
-                                    }
-                                ]
-                            },
-                            "executor": {
-                                "oneOf": [
-                                    {
-                                        "type": "string",
-                                        "description": "short executor invocation, name of executor"
-                                    },
-                                    {
-                                        "type": "object",
-                                        "description": "executor invocation with arguments, i.e. parameters",
-                                        "minProperties": 1,
-                                        "additionalProperties": true,
-                                        "properties": {
-                                            "name": {
-                                                "type": "string"
-                                            }
-                                        },
-                                        "required": [
-                                            "name"
-                                        ]
-                                    }
-                                ]
-                            },
-                            "shell": {
-                                "oneOf": [
-                                    {
-                                        "type": "string"
-                                    },
-                                    {
-                                        "type": "array",
-                                        "items": {
-                                            "type": "string"
-                                        }
-                                    }
-                                ]
-                            },
-                            "parameters": {
-                                "description": "Parameters given to a job.",
-                                "type": "object",
-                                "additionalProperties": {
-                                    "type": "object",
-                                    "properties": {
-                                        "type": {
-                                            "type": "string",
-                                            "enum": [
-                                                "boolean",
-                                                "string",
-                                                "steps",
-                                                "enum",
-                                                "executor",
-                                                "integer",
-                                                "env_var_name"
-                                            ]
-                                        },
-                                        "default": {
-                                            "oneOf": [
-                                                {
-                                                    "type": "string"
-                                                },
-                                                {
-                                                    "type": "boolean"
-                                                },
-                                                {
-                                                    "type": "integer"
-                                                },
-                                                {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "$ref": "#/definitions/step"
-                                                    }
-                                                }
-                                            ]
-                                        },
-                                        "description": {
-                                            "type": "string"
-                                        },
-                                        "enum": {
-                                            "type": "array",
-                                            "items": {
-                                                "type": "string"
-                                            }
-                                        }
-                                    },
-                                    "additionalProperties": false,
-                                    "required": [
-                                        "type"
-                                    ]
-                                },
-                                "minProperties": 1
-                            }
-                        },
-                        "required": [
-                            "steps"
-                        ],
-                        "additionalProperties": false,
-                        "anyOf": [
-                            {
-                                "description": "A job must have one of `docker`, `machine`, `macos` or `executor` (which can provide docker/machine/macos information).",
-                                "type": "object",
-                                "required": [
-                                    "executor"
-                                ]
-                            },
-                            {
-                                "oneOf": [
-                                    {
-                                        "type": "object",
-                                        "required": [
-                                            "machine"
-                                        ]
-                                    },
-                                    {
-                                        "type": "object",
-                                        "required": [
-                                            "docker"
-                                        ]
-                                    },
-                                    {
-                                        "type": "object",
-                                        "required": [
-                                            "macos"
-                                        ]
-                                    }
-                                ]
-                            }
-                        ]
-                    },
-                    {
-                        "title": "Job with type explicitly specified. Some job types like approval or no-op don't require steps or executors defined to be valid, so this rule allows them to be omitted if type is specified.",
-                        "type": "object",
-                        "additionalProperties": false,
-                        "properties": {
-                            "type": {
-                                "type": "string",
-                                "description": "The job type. Further validation is handled by the language server."
-                            }
-                        }
-                    },
-                    {
-                        "type": "string",
-                        "description": "Job may be a string reference to another job"
-                    }
-                ]
+                "$ref": "#/definitions/jobDefinition"
             }
         },
         "orbs": {
