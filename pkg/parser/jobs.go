@@ -125,6 +125,15 @@ func (doc *YamlDocument) parseSingleJob(jobNode *sitter.Node) ast.Job {
 			case "type":
 				res.Type = doc.GetNodeText(valueNode)
 				res.TypeRange = doc.NodeToRange(child)
+
+			case "plan_name":
+				res.PlanName = doc.GetNodeText(valueNode)
+				res.PlanNameRange = doc.NodeToRange(child)
+
+			case "key":
+				res.Key = doc.GetNodeText(valueNode)
+				res.KeyRange = doc.NodeToRange(child)
+
 			}
 		}
 	})
@@ -164,5 +173,11 @@ func (doc *YamlDocument) jobCompletionItem(job ast.Job) {
 	}
 	if job.Type == "" {
 		job.AddCompletionItem("type", []string{":", " "})
+	}
+	if job.PlanName == "" {
+		job.AddCompletionItem("plan_name", []string{":", " "})
+	}
+	if job.Key == "" {
+		job.AddCompletionItem("key", []string{":", " "})
 	}
 }
