@@ -21,11 +21,11 @@ func (val Validate) validateSingleJob(job ast.Job) {
 
 	val.validateSteps(job.Steps, job.Name, job.Parameters)
 
-	if job.Steps != nil && (job.Type == "approval" || job.Type == "no-op" || job.Type == "release") {
+	if job.Steps != nil && job.Type != "" && job.Type != "build" {
 		val.addDiagnostic(
 			protocol.Diagnostic{
 				Range:    job.StepsRange,
-				Message:  "If job type is approval, no-op or release, then steps will be ignored.",
+				Message:  "Steps only exist in `build` jobs. Steps here will be ignored.",
 				Severity: protocol.DiagnosticSeverityWarning,
 			},
 		)
