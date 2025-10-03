@@ -331,7 +331,7 @@ func TestJobTypeValidation(t *testing.T) {
 					End:   protocol.Position{Line: 4, Character: 16},
 				},
 				Severity: protocol.DiagnosticSeverityWarning,
-				Message:  "If job type is approval, no-op or release, then steps will be ignored.",
+				Message:  "If job type is not `build`, steps will be ignored.",
 			},
 		},
 	}
