@@ -663,10 +663,14 @@
                                 "properties": {
                                     "auto_rerun_delay": true
                                 },
-                                    "required": ["auto_rerun_delay"]
+                                "required": [
+                                    "auto_rerun_delay"
+                                ]
                             },
                             "then": {
-                                "required": ["max_auto_reruns"]
+                                "required": [
+                                    "max_auto_reruns"
+                                ]
                             }
                         }
                     ]
@@ -691,692 +695,693 @@
                         "method": {
                             "description": "The checkout method to be used ('blobless' or 'full', default 'full')",
                             "type": "string"
-                    }
-                },
-                "setup_remote_docker": {
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/builtinSteps/documentation/setup_remote_docker"
                         }
-                    ],
-                    "type": "object",
-                    "additionalProperties": false,
-                    "properties": {
-                        "name": {
-                            "description": "Title of the step to be shown in the CircleCI UI",
-                            "type": "string"
-                        },
-                        "docker_layer_caching": {
-                            "description": "When `docker_layer_caching` is set to `true`, CircleCI will try to reuse Docker Images (layers) built during a previous job or workflow (Paid feature)",
-                            "type": "boolean",
-                            "default": false
-                        },
-                        "version": {
-                            "description": "If your build requires a specific docker image, you can set it as an image attribute",
-                            "anyOf": [
-                                {
-                                    "type": "string",
-                                    "enum": [
-                                        "20.10.24",
-                                        "20.10.23",
-                                        "20.10.18",
-                                        "20.10.17",
-                                        "20.10.14",
-                                        "20.10.12",
-                                        "20.10.11",
-                                        "20.10.7",
-                                        "20.10.6",
-                                        "20.10.2",
-                                        "19.03.13"
-                                    ]
-                                },
-                                {
-                                    "type": "string"
-                                }
-                            ]
-                        }
-                    }
-                },
-                "save_cache": {
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/builtinSteps/documentation/save_cache"
-                        }
-                    ],
-                    "type": "object",
-                    "additionalProperties": false,
-                    "required": [
-                        "paths",
-                        "key"
-                    ],
-                    "properties": {
-                        "paths": {
-                            "description": "List of directories which should be added to the cache",
-                            "type": "array",
-                            "items": {
+                    },
+                    "setup_remote_docker": {
+                        "allOf": [
+                            {
+                                "$ref": "#/definitions/builtinSteps/documentation/setup_remote_docker"
+                            }
+                        ],
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                            "name": {
+                                "description": "Title of the step to be shown in the CircleCI UI",
                                 "type": "string"
-                            }
-                        },
-                        "key": {
-                            "description": "Unique identifier for this cache",
-                            "type": "string"
-                        },
-                        "name": {
-                            "type": "string",
-                            "description": "Title of the step to be shown in the CircleCI UI (default: 'Saving Cache')"
-                        },
-                        "when": {
-                            "description": "Specify when to enable or disable the step. Takes the following values: `always`, `on_success`, `on_fail` (default: `on_success`)",
-                            "enum": [
-                                "always",
-                                "on_success",
-                                "on_fail"
-                            ]
-                        }
-                    }
-                },
-                "restore_cache": {
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/builtinSteps/documentation/restore_cache"
-                        }
-                    ],
-                    "oneOf": [
-                        {
-                            "type": "object",
-                            "additionalProperties": false,
-                            "required": [
-                                "key"
-                            ],
-                            "properties": {
-                                "key": {
-                                    "type": "string",
-                                    "description": "Single cache key to restore"
-                                },
-                                "name": {
-                                    "type": "string",
-                                    "description": "Title of the step to be shown in the CircleCI UI (default: 'Restoring Cache')"
-                                }
-                            }
-                        },
-                        {
-                            "type": "object",
-                            "additionalProperties": false,
-                            "required": [
-                                "keys"
-                            ],
-                            "properties": {
-                                "name": {
-                                    "type": "string",
-                                    "description": "Title of the step to be shown in the CircleCI UI (default: 'Restoring Cache')"
-                                },
-                                "keys": {
-                                    "description": "List of cache keys to lookup for a cache to restore. Only first existing key will be restored.",
-                                    "type": "array",
-                                    "items": {
+                            },
+                            "docker_layer_caching": {
+                                "description": "When `docker_layer_caching` is set to `true`, CircleCI will try to reuse Docker Images (layers) built during a previous job or workflow (Paid feature)",
+                                "type": "boolean",
+                                "default": false
+                            },
+                            "version": {
+                                "description": "If your build requires a specific docker image, you can set it as an image attribute",
+                                "anyOf": [
+                                    {
+                                        "type": "string",
+                                        "enum": [
+                                            "20.10.24",
+                                            "20.10.23",
+                                            "20.10.18",
+                                            "20.10.17",
+                                            "20.10.14",
+                                            "20.10.12",
+                                            "20.10.11",
+                                            "20.10.7",
+                                            "20.10.6",
+                                            "20.10.2",
+                                            "19.03.13"
+                                        ]
+                                    },
+                                    {
                                         "type": "string"
                                     }
+                                ]
+                            }
+                        }
+                    },
+                    "save_cache": {
+                        "allOf": [
+                            {
+                                "$ref": "#/definitions/builtinSteps/documentation/save_cache"
+                            }
+                        ],
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                            "paths",
+                            "key"
+                        ],
+                        "properties": {
+                            "paths": {
+                                "description": "List of directories which should be added to the cache",
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
                                 }
-                            }
-                        }
-                    ]
-                },
-                "deploy": {
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/builtinSteps/documentation/deploy"
-                        },
-                        {
-                            "$ref": "#/definitions/builtinSteps/configuration/run"
-                        }
-                    ]
-                },
-                "store_artifacts": {
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/builtinSteps/documentation/store_artifacts"
-                        }
-                    ],
-                    "type": "object",
-                    "additionalProperties": false,
-                    "required": [
-                        "path"
-                    ],
-                    "properties": {
-                        "name": {
-                            "description": "Title of the step to be shown in the CircleCI UI",
-                            "type": "string"
-                        },
-                        "path": {
-                            "description": "Directory in the primary container to save as job artifacts",
-                            "type": "string"
-                        },
-                        "destination": {
-                            "description": "Prefix added to the artifact paths in the artifacts API (default: the directory of the file specified in `path`)",
-                            "type": "string"
-                        }
-                    }
-                },
-                "store_test_results": {
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/builtinSteps/documentation/store_test_results"
-                        }
-                    ],
-                    "type": "object",
-                    "additionalProperties": false,
-                    "required": [
-                        "path"
-                    ],
-                    "properties": {
-                        "name": {
-                            "description": "Title of the step to be shown in the CircleCI UI",
-                            "type": "string"
-                        },
-                        "path": {
-                            "description": "Path (absolute, or relative to your `working_directory`) to directory containing subdirectories of JUnit XML or Cucumber JSON test metadata files",
-                            "type": "string"
-                        }
-                    }
-                },
-                "persist_to_workspace": {
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/builtinSteps/documentation/persist_to_workspace"
-                        }
-                    ],
-                    "type": "object",
-                    "additionalProperties": false,
-                    "required": [
-                        "root",
-                        "paths"
-                    ],
-                    "properties": {
-                        "name": {
-                            "description": "Title of the step to be shown in the CircleCI UI",
-                            "type": "string"
-                        },
-                        "root": {
-                            "description": "Either an absolute path or a path relative to `working_directory`",
-                            "type": "string"
-                        },
-                        "paths": {
-                            "description": "Glob identifying file(s), or a non-glob path to a directory to add to the shared workspace. Interpreted as relative to the workspace root. Must not be the workspace root itself.",
-                            "type": "array",
-                            "items": {
+                            },
+                            "key": {
+                                "description": "Unique identifier for this cache",
                                 "type": "string"
-                            }
-                        }
-                    }
-                },
-                "attach_workspace": {
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/builtinSteps/documentation/attach_workspace"
-                        }
-                    ],
-                    "type": "object",
-                    "additionalProperties": false,
-                    "required": [
-                        "at"
-                    ],
-                    "properties": {
-                        "name": {
-                            "description": "Title of the step to be shown in the CircleCI UI",
-                            "type": "string"
-                        },
-                        "at": {
-                            "description": "Directory to attach the workspace to",
-                            "type": "string"
-                        }
-                    }
-                },
-                "add_ssh_keys": {
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/builtinSteps/documentation/add_ssh_keys"
-                        }
-                    ],
-                    "type": "object",
-                    "additionalProperties": false,
-                    "properties": {
-                        "name": {
-                            "description": "Title of the step to be shown in the CircleCI UI",
-                            "type": "string"
-                        },
-                        "fingerprints": {
-                            "description": "Directory to attach the workspace to",
-                            "type": "array",
-                            "items": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                },
-                "when": {
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/builtinSteps/documentation/when"
-                        }
-                    ],
-                    "type": "object",
-                    "additionalProperties": false,
-                    "properties": {
-                        "condition": {
-                            "$ref": "#/definitions/logical"
-                        },
-                        "steps": {
-                            "description": "A list of steps to be performed",
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/step"
+                            },
+                            "name": {
+                                "type": "string",
+                                "description": "Title of the step to be shown in the CircleCI UI (default: 'Saving Cache')"
+                            },
+                            "when": {
+                                "description": "Specify when to enable or disable the step. Takes the following values: `always`, `on_success`, `on_fail` (default: `on_success`)",
+                                "enum": [
+                                    "always",
+                                    "on_success",
+                                    "on_fail"
+                                ]
                             }
                         }
                     },
-                    "required": [
-                        "condition",
-                        "steps"
-                    ]
-                },
-                "unless": {
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/builtinSteps/documentation/unless"
-                        }
-                    ],
-                    "type": "object",
-                    "additionalProperties": false,
-                    "properties": {
-                        "condition": {
-                            "$ref": "#/definitions/logical"
-                        },
-                        "steps": {
-                            "description": "A list of steps to be performed",
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/step"
+                    "restore_cache": {
+                        "allOf": [
+                            {
+                                "$ref": "#/definitions/builtinSteps/documentation/restore_cache"
                             }
-                        }
-                    },
-                    "required": [
-                        "condition",
-                        "steps"
-                    ]
-                }
-            }
-        },
-        "step": {
-            "anyOf": [
-                {
-                    "$ref": "#/definitions/builtinSteps/documentation/checkout",
-                    "enum": [
-                        "checkout"
-                    ]
-                },
-                {
-                    "$ref": "#/definitions/builtinSteps/documentation/setup_remote_docker",
-                    "enum": [
-                        "setup_remote_docker"
-                    ]
-                },
-                {
-                    "$ref": "#/definitions/builtinSteps/documentation/add_ssh_keys",
-                    "enum": [
-                        "add_ssh_keys"
-                    ]
-                },
-                {
-                    "description": "https://circleci.com/docs/reusing-config#invoking-reusable-commands\n\nA custom command defined via the top level commands key",
-                    "type": "string",
-                    "pattern": "^[a-z][a-z0-9_-]+$"
-                },
-                {
-                    "description": "https://circleci.com/docs/using-orbs#commands\n\nA custom command defined via an orb.",
-                    "type": "string",
-                    "pattern": "^[a-z][a-z0-9_-]+/[a-z][a-z0-9_-]+$"
-                },
-                {
-                    "type": "object",
-                    "minProperties": 1,
-                    "maxProperties": 1,
-                    "properties": {
-                        "run": {
-                            "$ref": "#/definitions/builtinSteps/configuration/run"
-                        },
-                        "checkout": {
-                            "$ref": "#/definitions/builtinSteps/configuration/checkout"
-                        },
-                        "setup_remote_docker": {
-                            "$ref": "#/definitions/builtinSteps/configuration/setup_remote_docker"
-                        },
-                        "save_cache": {
-                            "$ref": "#/definitions/builtinSteps/configuration/save_cache"
-                        },
-                        "restore_cache": {
-                            "$ref": "#/definitions/builtinSteps/configuration/restore_cache"
-                        },
-                        "deploy": {
-                            "$ref": "#/definitions/builtinSteps/configuration/deploy"
-                        },
-                        "store_artifacts": {
-                            "$ref": "#/definitions/builtinSteps/configuration/store_artifacts"
-                        },
-                        "store_test_results": {
-                            "$ref": "#/definitions/builtinSteps/configuration/store_test_results"
-                        },
-                        "persist_to_workspace": {
-                            "$ref": "#/definitions/builtinSteps/configuration/persist_to_workspace"
-                        },
-                        "attach_workspace": {
-                            "$ref": "#/definitions/builtinSteps/configuration/attach_workspace"
-                        },
-                        "add_ssh_keys": {
-                            "$ref": "#/definitions/builtinSteps/configuration/add_ssh_keys"
-                        },
-                        "when": {
-                            "$ref": "#/definitions/builtinSteps/configuration/when"
-                        },
-                        "unless": {
-                            "$ref": "#/definitions/builtinSteps/configuration/unless"
-                        }
-                    },
-                    "patternProperties": {
-                        "^[a-z][a-z0-9_-]+$": {
-                            "description": "https://circleci.com/docs/reusing-config#invoking-reusable-commands\n\nA custom command defined via the top level commands key"
-                        },
-                        "^[a-z][a-z0-9_-]+/[a-z][a-z0-9_-]+$": {
-                            "description": "https://circleci.com/docs/using-orbs#commands\n\nA custom command defined via an orb."
-                        }
-                    }
-                }
-            ]
-        },
-        "jobRef": {
-            "description": "Run a job as part of this workflow",
-            "type": "object",
-            "additionalProperties": true,
-            "properties": {
-                "requires": {
-                    "description": "Jobs are run in parallel by default, so you must explicitly require any dependencies by their job name.",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "name": {
-                    "description": "The name key can be used to ensure build numbers are not appended when invoking the same job multiple times (e.g., sayhello-1, sayhello-2). The name assigned needs to be unique, otherwise numbers will still be appended to the job name",
-                    "type": "string"
-                },
-                "context": {
-                    "description": "Either a single context name, or a list of contexts. The default name is `org-global`",
-                    "oneOf": [
-                        {
-                            "type": "string"
-                        },
-                        {
-                            "type": "array",
-                            "items": {
-                                "type": "string"
-                            }
-                        }
-                    ],
-                    "default": "org-global"
-                },
-                "type": {
-                    "description": "A job defined under the `workflows:` section may specify a type but it can only be `approval`.\n`approval` jobs must be manually approved before downstream jobs may proceed.\nFor [other job types](https://circleci.com/docs/reference/configuration-reference/#job-type), they must be specified under the `jobs:` section. Please see the [`type` under `workflows:` docs](https://circleci.com/docs/reference/configuration-reference/#type) for more information.",
-                    "enum": [
-                        "approval"
-                    ]
-                },
-                "filters": {
-                    "description": "A map defining rules for execution on specific branches",
-                    "type": "object",
-                    "additionalProperties": false,
-                    "properties": {
-                        "branches": {
-                            "$ref": "#/definitions/filter"
-                        },
-                        "tags": {
-                            "$ref": "#/definitions/filter"
-                        }
-                    }
-                },
-                "matrix": {
-                    "description": "https://circleci.com/docs/configuration-reference#matrix-requires-version-21\n\nThe matrix stanza allows you to run a parameterized job multiple times with different arguments.",
-                    "type": "object",
-                    "additionalProperties": false,
-                    "required": [
-                        "parameters"
-                    ],
-                    "properties": {
-                        "parameters": {
-                            "description": "A map of parameter names to every value the job should be called with",
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "array"
-                            }
-                        },
-                        "exclude": {
-                            "description": "A list of argument maps that should be excluded from the matrix",
-                            "type": "array",
-                            "items": {
-                                "type": "object"
-                            }
-                        },
-                        "alias": {
-                            "description": "An alias for the matrix, usable from another job's requires stanza. Defaults to the name of the job being executed",
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
-        "jobs": {
-            "description": "Jobs are collections of steps. All of the steps in the job are executed in a single unit, either within a fresh container or VM.",
-            "type": "object",
-            "additionalProperties": {
-                "type": "object",
-                "oneOf": [
-                    {
-                        "$ref": "#/definitions/executorChoice"
-                    },
-                    {
-                        "type": "object",
-                        "required": [
-                            "executor"
                         ],
-                        "properties": {
-                            "executor": {
-                                "description": "The name of the executor to use (defined via the top level executors map).",
-                                "type": "string"
-                            }
-                        }
-                    },
-                    {
-                        "type": "object",
-                        "required": [
-                            "executor"
-                        ],
-                        "properties": {
-                            "executor": {
-                                "description": "Executor stanza to use for the job",
+                        "oneOf": [
+                            {
                                 "type": "object",
+                                "additionalProperties": false,
                                 "required": [
-                                    "name"
+                                    "key"
+                                ],
+                                "properties": {
+                                    "key": {
+                                        "type": "string",
+                                        "description": "Single cache key to restore"
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Title of the step to be shown in the CircleCI UI (default: 'Restoring Cache')"
+                                    }
+                                }
+                            },
+                            {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                    "keys"
                                 ],
                                 "properties": {
                                     "name": {
-                                        "description": "The name of the executor to use (defined via the top level executors map).",
-                                        "type": "string"
+                                        "type": "string",
+                                        "description": "Title of the step to be shown in the CircleCI UI (default: 'Restoring Cache')"
+                                    },
+                                    "keys": {
+                                        "description": "List of cache keys to lookup for a cache to restore. Only first existing key will be restored.",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    "deploy": {
+                        "allOf": [
+                            {
+                                "$ref": "#/definitions/builtinSteps/documentation/deploy"
+                            },
+                            {
+                                "$ref": "#/definitions/builtinSteps/configuration/run"
+                            }
+                        ]
+                    },
+                    "store_artifacts": {
+                        "allOf": [
+                            {
+                                "$ref": "#/definitions/builtinSteps/documentation/store_artifacts"
+                            }
+                        ],
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                            "path"
+                        ],
+                        "properties": {
+                            "name": {
+                                "description": "Title of the step to be shown in the CircleCI UI",
+                                "type": "string"
+                            },
+                            "path": {
+                                "description": "Directory in the primary container to save as job artifacts",
+                                "type": "string"
+                            },
+                            "destination": {
+                                "description": "Prefix added to the artifact paths in the artifacts API (default: the directory of the file specified in `path`)",
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "store_test_results": {
+                        "allOf": [
+                            {
+                                "$ref": "#/definitions/builtinSteps/documentation/store_test_results"
+                            }
+                        ],
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                            "path"
+                        ],
+                        "properties": {
+                            "name": {
+                                "description": "Title of the step to be shown in the CircleCI UI",
+                                "type": "string"
+                            },
+                            "path": {
+                                "description": "Path (absolute, or relative to your `working_directory`) to directory containing subdirectories of JUnit XML or Cucumber JSON test metadata files",
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "persist_to_workspace": {
+                        "allOf": [
+                            {
+                                "$ref": "#/definitions/builtinSteps/documentation/persist_to_workspace"
+                            }
+                        ],
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                            "root",
+                            "paths"
+                        ],
+                        "properties": {
+                            "name": {
+                                "description": "Title of the step to be shown in the CircleCI UI",
+                                "type": "string"
+                            },
+                            "root": {
+                                "description": "Either an absolute path or a path relative to `working_directory`",
+                                "type": "string"
+                            },
+                            "paths": {
+                                "description": "Glob identifying file(s), or a non-glob path to a directory to add to the shared workspace. Interpreted as relative to the workspace root. Must not be the workspace root itself.",
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "attach_workspace": {
+                        "allOf": [
+                            {
+                                "$ref": "#/definitions/builtinSteps/documentation/attach_workspace"
+                            }
+                        ],
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                            "at"
+                        ],
+                        "properties": {
+                            "name": {
+                                "description": "Title of the step to be shown in the CircleCI UI",
+                                "type": "string"
+                            },
+                            "at": {
+                                "description": "Directory to attach the workspace to",
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "add_ssh_keys": {
+                        "allOf": [
+                            {
+                                "$ref": "#/definitions/builtinSteps/documentation/add_ssh_keys"
+                            }
+                        ],
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                            "name": {
+                                "description": "Title of the step to be shown in the CircleCI UI",
+                                "type": "string"
+                            },
+                            "fingerprints": {
+                                "description": "Directory to attach the workspace to",
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "when": {
+                        "allOf": [
+                            {
+                                "$ref": "#/definitions/builtinSteps/documentation/when"
+                            }
+                        ],
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                            "condition": {
+                                "$ref": "#/definitions/logical"
+                            },
+                            "steps": {
+                                "description": "A list of steps to be performed",
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/definitions/step"
+                                }
+                            }
+                        },
+                        "required": [
+                            "condition",
+                            "steps"
+                        ]
+                    },
+                    "unless": {
+                        "allOf": [
+                            {
+                                "$ref": "#/definitions/builtinSteps/documentation/unless"
+                            }
+                        ],
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                            "condition": {
+                                "$ref": "#/definitions/logical"
+                            },
+                            "steps": {
+                                "description": "A list of steps to be performed",
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/definitions/step"
+                                }
+                            }
+                        },
+                        "required": [
+                            "condition",
+                            "steps"
+                        ]
+                    }
+                }
+            },
+            "step": {
+                "anyOf": [
+                    {
+                        "$ref": "#/definitions/builtinSteps/documentation/checkout",
+                        "enum": [
+                            "checkout"
+                        ]
+                    },
+                    {
+                        "$ref": "#/definitions/builtinSteps/documentation/setup_remote_docker",
+                        "enum": [
+                            "setup_remote_docker"
+                        ]
+                    },
+                    {
+                        "$ref": "#/definitions/builtinSteps/documentation/add_ssh_keys",
+                        "enum": [
+                            "add_ssh_keys"
+                        ]
+                    },
+                    {
+                        "description": "https://circleci.com/docs/reusing-config#invoking-reusable-commands\n\nA custom command defined via the top level commands key",
+                        "type": "string",
+                        "pattern": "^[a-z][a-z0-9_-]+$"
+                    },
+                    {
+                        "description": "https://circleci.com/docs/using-orbs#commands\n\nA custom command defined via an orb.",
+                        "type": "string",
+                        "pattern": "^[a-z][a-z0-9_-]+/[a-z][a-z0-9_-]+$"
+                    },
+                    {
+                        "type": "object",
+                        "minProperties": 1,
+                        "maxProperties": 1,
+                        "properties": {
+                            "run": {
+                                "$ref": "#/definitions/builtinSteps/configuration/run"
+                            },
+                            "checkout": {
+                                "$ref": "#/definitions/builtinSteps/configuration/checkout"
+                            },
+                            "setup_remote_docker": {
+                                "$ref": "#/definitions/builtinSteps/configuration/setup_remote_docker"
+                            },
+                            "save_cache": {
+                                "$ref": "#/definitions/builtinSteps/configuration/save_cache"
+                            },
+                            "restore_cache": {
+                                "$ref": "#/definitions/builtinSteps/configuration/restore_cache"
+                            },
+                            "deploy": {
+                                "$ref": "#/definitions/builtinSteps/configuration/deploy"
+                            },
+                            "store_artifacts": {
+                                "$ref": "#/definitions/builtinSteps/configuration/store_artifacts"
+                            },
+                            "store_test_results": {
+                                "$ref": "#/definitions/builtinSteps/configuration/store_test_results"
+                            },
+                            "persist_to_workspace": {
+                                "$ref": "#/definitions/builtinSteps/configuration/persist_to_workspace"
+                            },
+                            "attach_workspace": {
+                                "$ref": "#/definitions/builtinSteps/configuration/attach_workspace"
+                            },
+                            "add_ssh_keys": {
+                                "$ref": "#/definitions/builtinSteps/configuration/add_ssh_keys"
+                            },
+                            "when": {
+                                "$ref": "#/definitions/builtinSteps/configuration/when"
+                            },
+                            "unless": {
+                                "$ref": "#/definitions/builtinSteps/configuration/unless"
+                            }
+                        },
+                        "patternProperties": {
+                            "^[a-z][a-z0-9_-]+$": {
+                                "description": "https://circleci.com/docs/reusing-config#invoking-reusable-commands\n\nA custom command defined via the top level commands key"
+                            },
+                            "^[a-z][a-z0-9_-]+/[a-z][a-z0-9_-]+$": {
+                                "description": "https://circleci.com/docs/using-orbs#commands\n\nA custom command defined via an orb."
+                            }
+                        }
+                    }
+                ]
+            },
+            "jobRef": {
+                "description": "Run a job as part of this workflow",
+                "type": "object",
+                "additionalProperties": true,
+                "properties": {
+                    "requires": {
+                        "description": "Jobs are run in parallel by default, so you must explicitly require any dependencies by their job name.",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "name": {
+                        "description": "The name key can be used to ensure build numbers are not appended when invoking the same job multiple times (e.g., sayhello-1, sayhello-2). The name assigned needs to be unique, otherwise numbers will still be appended to the job name",
+                        "type": "string"
+                    },
+                    "context": {
+                        "description": "Either a single context name, or a list of contexts. The default name is `org-global`",
+                        "oneOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            }
+                        ],
+                        "default": "org-global"
+                    },
+                    "type": {
+                        "description": "A job defined under the `workflows:` section may specify a type but it can only be `approval`.\n`approval` jobs must be manually approved before downstream jobs may proceed.\nFor [other job types](https://circleci.com/docs/reference/configuration-reference/#job-type), they must be specified under the `jobs:` section. Please see the [`type` under `workflows:` docs](https://circleci.com/docs/reference/configuration-reference/#type) for more information.",
+                        "enum": [
+                            "approval"
+                        ]
+                    },
+                    "filters": {
+                        "description": "A map defining rules for execution on specific branches",
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                            "branches": {
+                                "$ref": "#/definitions/filter"
+                            },
+                            "tags": {
+                                "$ref": "#/definitions/filter"
+                            }
+                        }
+                    },
+                    "matrix": {
+                        "description": "https://circleci.com/docs/configuration-reference#matrix-requires-version-21\n\nThe matrix stanza allows you to run a parameterized job multiple times with different arguments.",
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                            "parameters"
+                        ],
+                        "properties": {
+                            "parameters": {
+                                "description": "A map of parameter names to every value the job should be called with",
+                                "type": "object",
+                                "additionalProperties": {
+                                    "type": "array"
+                                }
+                            },
+                            "exclude": {
+                                "description": "A list of argument maps that should be excluded from the matrix",
+                                "type": "array",
+                                "items": {
+                                    "type": "object"
+                                }
+                            },
+                            "alias": {
+                                "description": "An alias for the matrix, usable from another job's requires stanza. Defaults to the name of the job being executed",
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "jobs": {
+                "description": "Jobs are collections of steps. All of the steps in the job are executed in a single unit, either within a fresh container or VM.",
+                "type": "object",
+                "additionalProperties": {
+                    "type": "object",
+                    "oneOf": [
+                        {
+                            "$ref": "#/definitions/executorChoice"
+                        },
+                        {
+                            "type": "object",
+                            "required": [
+                                "executor"
+                            ],
+                            "properties": {
+                                "executor": {
+                                    "description": "The name of the executor to use (defined via the top level executors map).",
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        {
+                            "type": "object",
+                            "required": [
+                                "executor"
+                            ],
+                            "properties": {
+                                "executor": {
+                                    "description": "Executor stanza to use for the job",
+                                    "type": "object",
+                                    "required": [
+                                        "name"
+                                    ],
+                                    "properties": {
+                                        "name": {
+                                            "description": "The name of the executor to use (defined via the top level executors map).",
+                                            "type": "string"
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
-                ],
-                "required": [
-                    "steps"
-                ],
-                "properties": {
-                    "type": {
-                        "description": "[Job Types](https://circleci.com/docs/reference/configuration-reference/#job-type)\nSome examples are `build`, `approval`, `no-op`, `release`.",
-                        "type": "string"
-                    },
-                    "shell": {
-                        "description": "Shell to use for execution command in all steps. Can be overridden by shell in each step",
-                        "type": "string"
-                    },
-                    "steps": {
-                        "description": "A list of steps to be performed",
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/definitions/step"
-                        }
-                    },
-                    "working_directory": {
-                        "description": "In which directory to run the steps. (default: `~/project`. `project` is a literal string, not the name of the project.) You can also refer the directory with `$CIRCLE_WORKING_DIRECTORY` environment variable.",
-                        "type": "string",
-                        "default": "~/project"
-                    },
-                    "parallelism": {
-                        "description": "Number of parallel instances of this job to run (default: 1)",
-                        "default": 1,
-                        "oneOf": [
-                            {
-                                "type": "integer"
-                            },
-                            {
-                                "type": "string",
-                                "pattern": "^<<.+\\..+>>$"
-                            }
-                        ]
-                    },
-                    "environment": {
-                        "description": "A map of environment variable names and variables (NOTE: these will override any environment variables you set in the CircleCI web interface).",
-                        "type": "object",
-                        "additionalProperties": {
-                            "type": [
-                                "string",
-                                "number"
-                            ]
-                        }
-                    },
-                    "branches": {
-                        "description": "A map defining rules for whitelisting/blacklisting execution of specific branches for a single job that is **not** in a workflow (default: all whitelisted). See Workflows for configuring branch execution for jobs in a workflow.",
-                        "type": "object",
-                        "additionalProperties": {
+                    ],
+                    "required": [
+                        "steps"
+                    ],
+                    "properties": {
+                        "type": {
+                            "description": "[Job Types](https://circleci.com/docs/reference/configuration-reference/#job-type)\nSome examples are `build`, `approval`, `no-op`, `release`.",
                             "type": "string"
+                        },
+                        "shell": {
+                            "description": "Shell to use for execution command in all steps. Can be overridden by shell in each step",
+                            "type": "string"
+                        },
+                        "steps": {
+                            "description": "A list of steps to be performed",
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/step"
+                            }
+                        },
+                        "working_directory": {
+                            "description": "In which directory to run the steps. (default: `~/project`. `project` is a literal string, not the name of the project.) You can also refer the directory with `$CIRCLE_WORKING_DIRECTORY` environment variable.",
+                            "type": "string",
+                            "default": "~/project"
+                        },
+                        "parallelism": {
+                            "description": "Number of parallel instances of this job to run (default: 1)",
+                            "default": 1,
+                            "oneOf": [
+                                {
+                                    "type": "integer"
+                                },
+                                {
+                                    "type": "string",
+                                    "pattern": "^<<.+\\..+>>$"
+                                }
+                            ]
+                        },
+                        "environment": {
+                            "description": "A map of environment variable names and variables (NOTE: these will override any environment variables you set in the CircleCI web interface).",
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": [
+                                    "string",
+                                    "number"
+                                ]
+                            }
+                        },
+                        "branches": {
+                            "description": "A map defining rules for whitelisting/blacklisting execution of specific branches for a single job that is **not** in a workflow (default: all whitelisted). See Workflows for configuring branch execution for jobs in a workflow.",
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
             }
-        }
-    },
-    "id": "https://json.schemastore.org/circleciconfig.json",
-    "properties": {
-        "version": {
-            "description": "The version field is intended to be used in order to issue warnings for deprecation or breaking changes.",
-            "default": 2.1,
-            "enum": [
-                2,
-                2.1
-            ]
         },
-        "orbs": {
-            "$ref": "#/definitions/orbs"
-        },
-        "commands": {
-            "$ref": "#/definitions/commands"
-        },
-        "executors": {
-            "$ref": "#/definitions/executors"
-        },
-        "jobs": {
-            "$ref": "#/definitions/jobs"
-        },
-        "workflows": {
-            "description": "Used for orchestrating all jobs. Each workflow consists of the workflow name as a key and a map as a value",
-            "type": "object",
-            "properties": {
-                "version": {
-                    "description": "The Workflows `version` field is used to issue warnings for deprecation or breaking changes during v2 Beta. It is deprecated as of CircleCI v2.1",
-                    "enum": [
-                        2
-                    ]
-                }
+        "id": "https://json.schemastore.org/circleciconfig.json",
+        "properties": {
+            "version": {
+                "description": "The version field is intended to be used in order to issue warnings for deprecation or breaking changes.",
+                "default": 2.1,
+                "enum": [
+                    2,
+                    2.1
+                ]
             },
-            "additionalProperties": {
+            "orbs": {
+                "$ref": "#/definitions/orbs"
+            },
+            "commands": {
+                "$ref": "#/definitions/commands"
+            },
+            "executors": {
+                "$ref": "#/definitions/executors"
+            },
+            "jobs": {
+                "$ref": "#/definitions/jobs"
+            },
+            "workflows": {
+                "description": "Used for orchestrating all jobs. Each workflow consists of the workflow name as a key and a map as a value",
                 "type": "object",
-                "additionalProperties": false,
                 "properties": {
-                    "triggers": {
-                        "description": "Specifies which triggers will cause this workflow to be executed. Default behavior is to trigger the workflow when pushing to a branch.",
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "additionalProperties": false,
-                            "properties": {
-                                "schedule": {
-                                    "description": "A workflow may have a schedule indicating it runs at a certain time, for example a nightly build that runs every day at 12am UTC:",
-                                    "type": "object",
-                                    "properties": {
-                                        "cron": {
-                                            "description": "See the [crontab man page](http://pubs.opengroup.org/onlinepubs/7908799/xcu/crontab.html)",
-                                            "type": "string"
-                                        },
-                                        "filters": {
-                                            "description": "A map defining rules for execution on specific branches",
-                                            "type": "object",
-                                            "additionalProperties": false,
-                                            "properties": {
-                                                "branches": {
-                                                    "$ref": "#/definitions/filter"
+                    "version": {
+                        "description": "The Workflows `version` field is used to issue warnings for deprecation or breaking changes during v2 Beta. It is deprecated as of CircleCI v2.1",
+                        "enum": [
+                            2
+                        ]
+                    }
+                },
+                "additionalProperties": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "triggers": {
+                            "description": "Specifies which triggers will cause this workflow to be executed. Default behavior is to trigger the workflow when pushing to a branch.",
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                    "schedule": {
+                                        "description": "A workflow may have a schedule indicating it runs at a certain time, for example a nightly build that runs every day at 12am UTC:",
+                                        "type": "object",
+                                        "properties": {
+                                            "cron": {
+                                                "description": "See the [crontab man page](http://pubs.opengroup.org/onlinepubs/7908799/xcu/crontab.html)",
+                                                "type": "string"
+                                            },
+                                            "filters": {
+                                                "description": "A map defining rules for execution on specific branches",
+                                                "type": "object",
+                                                "additionalProperties": false,
+                                                "properties": {
+                                                    "branches": {
+                                                        "$ref": "#/definitions/filter"
+                                                    }
                                                 }
                                             }
                                         }
                                     }
                                 }
                             }
-                        }
-                    },
-                    "max_auto_reruns": {
-                        "description": "The maximum number of times a workflow will be automatically rerun if it fails",
-                        "type": "integer",
-                        "minimum": 1,
-                        "maximum": 5
-                    },
-                    "jobs": {
-                        "type": "array",
-                        "items": {
-                            "oneOf": [
-                                {
-                                    "type": "string"
-                                },
-                                {
-                                    "type": "object",
-                                    "additionalProperties": {
+                        },
+                        "max_auto_reruns": {
+                            "description": "The maximum number of times a workflow will be automatically rerun if it fails",
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 5
+                        },
+                        "jobs": {
+                            "type": "array",
+                            "items": {
+                                "oneOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
                                         "type": "object",
-                                        "$ref": "#/definitions/jobRef"
+                                        "additionalProperties": {
+                                            "type": "object",
+                                            "$ref": "#/definitions/jobRef"
+                                        }
                                     }
-                                }
-                            ]
+                                ]
+                            }
+                        },
+                        "when": {
+                            "description": "Specify when to run the workflow.",
+                            "$ref": "#/definitions/logical"
+                        },
+                        "unless": {
+                            "description": "Specify when *not* to run the workflow.",
+                            "$ref": "#/definitions/logical"
                         }
-                    },
-                    "when": {
-                        "description": "Specify when to run the workflow.",
-                        "$ref": "#/definitions/logical"
-                    },
-                    "unless": {
-                        "description": "Specify when *not* to run the workflow.",
-                        "$ref": "#/definitions/logical"
                     }
                 }
             }
-        }
-    },
-    "required": [
-        "version"
-    ],
-    "title": "JSON schema for CircleCI configuration files",
-    "type": "object"
+        },
+        "required": [
+            "version"
+        ],
+        "title": "JSON schema for CircleCI configuration files",
+        "type": "object"
+    }
 }
