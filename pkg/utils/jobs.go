@@ -22,4 +22,6 @@ var JobTypes = []string{
 	"build", // default
 	"no-op",
 	"release",
+	"lock",
+	"unlock",
 }

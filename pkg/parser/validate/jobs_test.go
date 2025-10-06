@@ -315,7 +315,7 @@ func TestJobTypeValidation(t *testing.T) {
 					End:   protocol.Position{Line: 2, Character: 18},
 				},
 				Severity: protocol.DiagnosticSeverityError,
-				Message:  "Invalid job type 'bad-type'. Allowed types: approval, build, no-op, release",
+				Message:  "Invalid job type 'bad-type'. Allowed types: approval, build, no-op, release, lock, unlock",
 			},
 		},
 		{
@@ -331,7 +331,7 @@ func TestJobTypeValidation(t *testing.T) {
 					End:   protocol.Position{Line: 4, Character: 16},
 				},
 				Severity: protocol.DiagnosticSeverityWarning,
-				Message:  "If job type is approval, no-op or release, then steps will be ignored.",
+				Message:  "Steps only exist in `build` jobs. Steps here will be ignored.",
 			},
 		},
 	}
