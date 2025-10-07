@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## [0.21.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.20.0...0.21.0) (2025-10-06)
+
+
+### Features
+
+* Add lock jobs and improve job JSON schema validations ([#370](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/370)) ([e42c4d3](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/e42c4d3b19e217cb21a782aa90614a07b497dc91))
+* uncomment linux cuda 13 default ([#369](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/369)) ([35c674a](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/35c674a8c99dc6ba7c01e6685b85498f18639d07))
+
 ## [0.20.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.19.1...0.20.0) (2025-10-01)
 
 
