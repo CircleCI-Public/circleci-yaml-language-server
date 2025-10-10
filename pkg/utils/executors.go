@@ -66,6 +66,7 @@ var ValidLinuxImages = []string{
 	"ubuntu-2404:edge",
 
 	// Android
+	"android:2025.10.1",
 	"android:2024.11.1",
 	"android:2024.04.1",
 	"android:2024.01.1",
