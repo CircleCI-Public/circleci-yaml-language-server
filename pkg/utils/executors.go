@@ -125,7 +125,8 @@ var ValidWindowsImages = []string{
 	"windows-server-2019-vs2019:edge",
 
 	// Windows Server 2022
-	"windows-server-2022:2024.12.1",
+	"windows-server-2022-gui:2025.10.1",
+	"windows-server-2022-gui:2024.12.1",
 	"windows-server-2022-gui:2024.04.1",
 	"windows-server-2022-gui:2024.01.1",
 	"windows-server-2022-gui:2023.11.1",
@@ -143,6 +144,11 @@ var ValidWindowsImages = []string{
 	"windows-server-2022-gui:2022.04.1",
 	"windows-server-2022-gui:current",
 	"windows-server-2022-gui:edge",
+
+	// Windows Server 2025
+	"windows-server-2025-gui:2025.10.1",
+	// "windows-server-2025-gui:current",
+	"windows-server-2025-gui:edge",
 }
 
 var ValidWindowsResourceClasses = []string{
@@ -179,6 +185,8 @@ var ValidWindowsGPUImages = []string{
 	"windows-server-2019-cuda:edge",
 	"windows-server-2022-cuda:current",
 	"windows-server-2022-cuda:edge",
+	// "windows-server-2025-cuda:current",
+	"windows-server-2025-cuda:edge",
 }
 
 var ValidWindowsGPUResourceClasses = []string{
