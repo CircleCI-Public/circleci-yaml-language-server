@@ -6,8 +6,7 @@ jobs:
       - image: cimg/base:stable
     steps:
       - checkout:
-          method: "invalid"
-          depth: 1
+          method: shallow
       - run: echo "hello world"
 
 workflows:
