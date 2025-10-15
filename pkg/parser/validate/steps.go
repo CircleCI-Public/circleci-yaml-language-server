@@ -218,7 +218,7 @@ func (val Validate) validateCheckout(step ast.Checkout) {
 		return
 	}
 
-	m := []string{"blobless", "full"}
+	m := []string{"blobless", "full", "shallow"}
 	if !slices.Contains(m, step.Method) {
 		val.addDiagnostic(protocol.Diagnostic{
 			Severity: protocol.DiagnosticSeverityError,
@@ -226,6 +226,26 @@ func (val Validate) validateCheckout(step ast.Checkout) {
 			Message:  fmt.Sprintf("Checkout method '%s' is invalid", step.Method),
 		})
 	}
+
+	if step.Method == "shallow" {
+		depth, err := strconv.Atoi(step.Depth)
+		if err != nil || depth <= 0 {
+			val.addDiagnostic(protocol.Diagnostic{
+				Severity: protocol.DiagnosticSeverityError,
+				Range:    step.Range,
+				Message:  "Checkout depth must be a positive integer",
+			})
+		}
+	}
+
+	if step.Method != "shallow" && step.Depth != "" {
+		val.addDiagnostic(protocol.Diagnostic{
+			Severity: protocol.DiagnosticSeverityError,
+			Range:    step.Range,
+			Message:  "Checkout depth can only be used with the shallow checkout method",
+		})
+	}
+
 }
 
 func (val Validate) checkIfStepsContainStep(steps []ast.Step, stepName string) bool {
