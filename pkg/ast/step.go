@@ -84,6 +84,7 @@ type Checkout struct {
 	protocol.Range
 	Path   string
 	Method string
+	Depth  string
 }
 
 func (step Checkout) GetRange() protocol.Range {
