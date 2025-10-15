@@ -229,7 +229,15 @@ func (val Validate) validateCheckout(step ast.Checkout) {
 
 	if step.Method == "shallow" {
 		depth, err := strconv.Atoi(step.Depth)
-		if err != nil || depth <= 0 {
+		if err != nil {
+			val.addDiagnostic(protocol.Diagnostic{
+				Severity: protocol.DiagnosticSeverityError,
+				Range:    step.Range,
+				Message:  "Checkout depth must be a valid integer when using the shallow checkout method",
+			})
+			return
+		}
+		if depth <= 0 {
 			val.addDiagnostic(protocol.Diagnostic{
 				Severity: protocol.DiagnosticSeverityError,
 				Range:    step.Range,
