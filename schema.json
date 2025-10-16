@@ -474,7 +474,8 @@
                                                             "executor",
                                                             "integer",
                                                             "env_var_name"
-                                                        ]
+                                                        ],
+                                                        "markdownDescription": "The parameter type. See [Parameter Types](https://circleci.com/docs/reusing-config#parameter-syntax) for details:\n- `boolean`: A boolean parameter\n- `string`: A string parameter  \n- `integer`: An integer parameter\n- `enum`: An enum parameter (list of allowed string values)\n- `executor`: An executor parameter (allows job to choose executor)\n- `steps`: A steps parameter (allows mixing predefined and user-defined steps)\n- `env_var_name`: An environment variable name parameter (must match POSIX_NAME regexp)"
                                                     },
                                                     "default": {
                                                         "oneOf": [
@@ -496,13 +497,16 @@
                                                         ]
                                                     },
                                                     "description": {
-                                                        "type": "string"
+                                                        "type": "string",
+                                                        "markdownDescription": "A description of the parameter"
                                                     },
                                                     "enum": {
                                                         "type": "array",
                                                         "items": {
                                                             "type": "string"
-                                                        }
+                                                        },
+                                                        "minItems": 1,
+                                                        "markdownDescription": "List of allowed values for an `enum` type parameter"
                                                     }
                                                 },
                                                 "additionalProperties": false,
@@ -1078,34 +1082,41 @@
                             "items": {
                                 "$ref": "#/definitions/logic"
                             },
-                            "minItems": 1
+                            "minItems": 1,
+                            "markdownDescription": "https://circleci.com/docs/configuration-reference#logic-statements\n\nLogical and: true when all statements in the list are true"
                         },
                         "or": {
                             "type": "array",
                             "items": {
                                 "$ref": "#/definitions/logic"
                             },
-                            "minItems": 1
+                            "minItems": 1,
+                            "markdownDescription": "https://circleci.com/docs/configuration-reference#logic-statements\n\nLogical or: true when at least one statement in the list is true"
                         },
                         "not": {
-                            "$ref": "#/definitions/logic"
+                            "$ref": "#/definitions/logic",
+                            "markdownDescription": "https://circleci.com/docs/configuration-reference#logic-statements\n\nLogical not: true when statement is false"
                         },
                         "equal": {
                             "type": "array",
                             "items": {
                                 "$ref": "#/definitions/logic"
                             },
-                            "minItems": 1
+                            "minItems": 1,
+                            "markdownDescription": "https://circleci.com/docs/configuration-reference#logic-statements\n\nTrue when all elements in the list are equal"
                         },
                         "matches": {
                             "type": "object",
                             "additionalProperties": false,
+                            "markdownDescription": "https://circleci.com/docs/configuration-reference#logic-statements\n\nTrue when value matches the pattern",
                             "properties": {
                                 "pattern": {
-                                    "type": "string"
+                                    "type": "string",
+                                    "markdownDescription": "Regular expression pattern to match against"
                                 },
                                 "value": {
-                                    "type": "string"
+                                    "type": "string",
+                                    "markdownDescription": "Value to test against the pattern"
                                 }
                             },
                             "required": [
@@ -1145,6 +1156,7 @@
                     "maxProperties": 1,
                     "properties": {
                         "run": {
+                            "markdownDescription": "https://circleci.com/docs/configuration-reference#run\n\nUsed for invoking all command-line programs, taking either a map of configuration values, or, when called in its short-form, a string that will be used as both the `command` and `name`. Run commands are executed using non-login shells by default, so you must explicitly source any dotfiles as part of the command.",
                             "oneOf": [
                                 {
                                     "type": "string"
@@ -1153,12 +1165,297 @@
                                     "type": "object",
                                     "properties": {
                                         "command": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "markdownDescription": "Command to run via the shell"
+                                        },
+                                        "name": {
+                                            "type": "string",
+                                            "markdownDescription": "Title of the step to be shown in the CircleCI UI (default: full `command`)"
+                                        },
+                                        "shell": {
+                                            "type": "string",
+                                            "markdownDescription": "Shell to use for execution command"
+                                        },
+                                        "environment": {
+                                            "$ref": "#/definitions/environment",
+                                            "markdownDescription": "Additional environmental variables, locally scoped to command"
+                                        },
+                                        "background": {
+                                            "type": "boolean",
+                                            "default": false,
+                                            "markdownDescription": "Whether or not this step should run in the background (default: false)"
+                                        },
+                                        "working_directory": {
+                                            "type": "string",
+                                            "markdownDescription": "In which directory to run this step (default: `working_directory` of the job)"
+                                        },
+                                        "no_output_timeout": {
+                                            "type": "string",
+                                            "pattern": "\\d+(\\.\\d+)?[mhs]",
+                                            "default": "10m",
+                                            "markdownDescription": "Elapsed time the command can run without output. The string is a decimal with unit suffix, such as \"20m\", \"1.25h\", \"5s\" (default: 10 minutes)"
+                                        },
+                                        "when": {
+                                            "enum": ["always", "on_success", "on_fail"],
+                                            "markdownDescription": "Specify when to enable or disable the step. Takes the following values: `always`, `on_success`, `on_fail` (default: `on_success`)"
+                                        },
+                                        "max_auto_reruns": {
+                                            "type": "integer",
+                                            "minimum": 1,
+                                            "maximum": 5,
+                                            "markdownDescription": "Maximum number of automatic reruns for this step"
+                                        },
+                                        "auto_rerun_delay": {
+                                            "type": "string",
+                                            "pattern": "^(10|[1-9])m|([1-9][0-9]*)s$",
+                                            "markdownDescription": "Delay before automatic rerun of this step"
                                         }
                                     },
                                     "required": [
                                         "command"
-                                    ]
+                                    ],
+                                    "if": {
+                                        "properties": {
+                                            "auto_rerun_delay": true
+                                        },
+                                        "required": [
+                                            "auto_rerun_delay"
+                                        ]
+                                    },
+                                    "then": {
+                                        "required": [
+                                            "max_auto_reruns"
+                                        ]
+                                    }
+                                }
+                            ]
+                        },
+                        "checkout": {
+                            "markdownDescription": "https://circleci.com/docs/configuration-reference#checkout\n\nSpecial step used to check out source code to the configured `path` (defaults to the `working_directory`). The reason this is a special step is because it is more of a helper function designed to make checking out code easy for you. If you require doing git over HTTPS you should not use this step as it configures git to checkout over ssh.",
+                            "oneOf": [
+                                {
+                                    "type": "string",
+                                    "enum": ["checkout"]
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "path": {
+                                            "type": "string",
+                                            "markdownDescription": "Checkout directory (default: job's `working_directory`)"
+                                        },
+                                        "method": {
+                                            "type": "string",
+                                            "markdownDescription": "The checkout method to be used ('blobless' or 'full', default 'full')"
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                }
+                            ]
+                        },
+                        "setup_remote_docker": {
+                            "markdownDescription": "https://circleci.com/docs/configuration-reference#setup_remote_docker\n\nCreates a remote Docker environment configured to execute Docker commands.",
+                            "oneOf": [
+                                {
+                                    "type": "string",
+                                    "enum": ["setup_remote_docker"]
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "docker_layer_caching": {
+                                            "type": "boolean",
+                                            "default": false,
+                                            "markdownDescription": "When `docker_layer_caching` is set to `true`, CircleCI will try to reuse Docker Images (layers) built during a previous job or workflow (Paid feature)"
+                                        },
+                                        "version": {
+                                            "markdownDescription": "If your build requires a specific docker image, you can set it as an image attribute",
+                                            "anyOf": [
+                                                {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "20.10.24",
+                                                        "20.10.23",
+                                                        "20.10.18",
+                                                        "20.10.17",
+                                                        "20.10.14",
+                                                        "20.10.12",
+                                                        "20.10.11",
+                                                        "20.10.7",
+                                                        "20.10.6",
+                                                        "20.10.2",
+                                                        "19.03.13"
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "string"
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                }
+                            ]
+                        },
+                        "save_cache": {
+                            "markdownDescription": "https://circleci.com/docs/configuration-reference#save_cache\n\nGenerates and stores a cache of a file or directory of files such as dependencies or source code in our object storage. Later jobs can restore this cache using the `restore_cache` step.",
+                            "type": "object",
+                            "required": ["paths", "key"],
+                            "properties": {
+                                "paths": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    },
+                                    "markdownDescription": "List of directories which should be added to the cache"
+                                },
+                                "key": {
+                                    "type": "string",
+                                    "markdownDescription": "Unique identifier for this cache"
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "markdownDescription": "Title of the step to be shown in the CircleCI UI (default: 'Saving Cache')"
+                                },
+                                "when": {
+                                    "enum": ["always", "on_success", "on_fail"],
+                                    "markdownDescription": "Specify when to enable or disable the step. Takes the following values: `always`, `on_success`, `on_fail` (default: `on_success`)"
+                                }
+                            },
+                            "additionalProperties": false
+                        },
+                        "restore_cache": {
+                            "markdownDescription": "https://circleci.com/docs/configuration-reference#restore_cache\n\nRestores a previously saved cache based on a `key`. Cache needs to have been saved first for this key using the `save_cache` step.",
+                            "oneOf": [
+                                {
+                                    "type": "object",
+                                    "required": ["key"],
+                                    "properties": {
+                                        "key": {
+                                            "type": "string",
+                                            "markdownDescription": "Single cache key to restore"
+                                        },
+                                        "name": {
+                                            "type": "string",
+                                            "markdownDescription": "Title of the step to be shown in the CircleCI UI (default: 'Restoring Cache')"
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                },
+                                {
+                                    "type": "object",
+                                    "required": ["keys"],
+                                    "properties": {
+                                        "keys": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            },
+                                            "markdownDescription": "List of cache keys to lookup for a cache to restore. Only first existing key will be restored."
+                                        },
+                                        "name": {
+                                            "type": "string",
+                                            "markdownDescription": "Title of the step to be shown in the CircleCI UI (default: 'Restoring Cache')"
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                }
+                            ]
+                        },
+                        "store_artifacts": {
+                            "markdownDescription": "https://circleci.com/docs/configuration-reference#store_artifacts\n\nStep to store artifacts (for example logs, binaries, etc) to be available in the web app or through the API.",
+                            "type": "object",
+                            "required": ["path"],
+                            "properties": {
+                                "path": {
+                                    "type": "string",
+                                    "markdownDescription": "Directory in the primary container to save as job artifacts"
+                                },
+                                "destination": {
+                                    "type": "string",
+                                    "markdownDescription": "Prefix added to the artifact paths in the artifacts API (default: the directory of the file specified in `path`)"
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "markdownDescription": "Title of the step to be shown in the CircleCI UI"
+                                }
+                            },
+                            "additionalProperties": false
+                        },
+                        "store_test_results": {
+                            "markdownDescription": "https://circleci.com/docs/configuration-reference#storetestresults\n\nSpecial step used to upload test results so they display in builds' Test Summary section and can be used for timing analysis. To also see test result as build artifacts, please use the `store_artifacts` step.",
+                            "type": "object",
+                            "required": ["path"],
+                            "properties": {
+                                "path": {
+                                    "type": "string",
+                                    "markdownDescription": "Path (absolute, or relative to your `working_directory`) to directory containing subdirectories of JUnit XML or Cucumber JSON test metadata files"
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "markdownDescription": "Title of the step to be shown in the CircleCI UI"
+                                }
+                            },
+                            "additionalProperties": false
+                        },
+                        "persist_to_workspace": {
+                            "markdownDescription": "https://circleci.com/docs/configuration-reference#persist_to_workspace\n\nSpecial step used to persist a temporary file to be used by another job in the workflow",
+                            "type": "object",
+                            "required": ["root", "paths"],
+                            "properties": {
+                                "root": {
+                                    "type": "string",
+                                    "markdownDescription": "Either an absolute path or a path relative to `working_directory`"
+                                },
+                                "paths": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    },
+                                    "markdownDescription": "Glob identifying file(s), or a non-glob path to a directory to add to the shared workspace. Interpreted as relative to the workspace root. Must not be the workspace root itself."
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "markdownDescription": "Title of the step to be shown in the CircleCI UI"
+                                }
+                            },
+                            "additionalProperties": false
+                        },
+                        "attach_workspace": {
+                            "markdownDescription": "https://circleci.com/docs/configuration-reference#attach_workspace\n\nSpecial step used to attach the workflow's workspace to the current container. The full contents of the workspace are downloaded and copied into the directory the workspace is being attached at.",
+                            "type": "object",
+                            "required": ["at"],
+                            "properties": {
+                                "at": {
+                                    "type": "string",
+                                    "markdownDescription": "Directory to attach the workspace to"
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "markdownDescription": "Title of the step to be shown in the CircleCI UI"
+                                }
+                            },
+                            "additionalProperties": false
+                        },
+                        "add_ssh_keys": {
+                            "markdownDescription": "https://circleci.com/docs/configuration-reference#add_ssh_keys\n\nSpecial step that adds SSH keys from a project's settings to a container. Also configures SSH to use these keys.",
+                            "oneOf": [
+                                {
+                                    "type": "string",
+                                    "enum": ["add_ssh_keys"]
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "fingerprints": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            },
+                                            "markdownDescription": "List of fingerprints corresponding to the keys to be added"
+                                        }
+                                    },
+                                    "additionalProperties": false
                                 }
                             ]
                         }
@@ -1179,13 +1476,15 @@
                     "properties": {
                         "when": {
                             "type": "object",
+                            "markdownDescription": "https://circleci.com/docs/configuration-reference#the-when-step-requires-version-21\n\nConditional step to run on custom conditions (determined at config-compile time) that are checked before a workflow runs",
                             "required": [
                                 "condition",
                                 "steps"
                             ],
                             "properties": {
                                 "condition": {
-                                    "$ref": "#/definitions/logic"
+                                    "$ref": "#/definitions/logic",
+                                    "markdownDescription": "A logical condition that must evaluate to true for the steps to run"
                                 },
                                 "steps": {
                                     "oneOf": [
@@ -1198,19 +1497,22 @@
                                         {
                                             "$ref": "#/definitions/step"
                                         }
-                                    ]
+                                    ],
+                                    "markdownDescription": "A list of steps to be performed when the condition is true"
                                 }
                             }
                         },
                         "unless": {
                             "type": "object",
+                            "markdownDescription": "https://circleci.com/docs/configuration-reference#the-when-step-requires-version-21\n\nConditional step to run when custom conditions aren't met (determined at config-compile time) that are checked before a workflow runs",
                             "required": [
                                 "condition",
                                 "steps"
                             ],
                             "properties": {
                                 "condition": {
-                                    "$ref": "#/definitions/logic"
+                                    "$ref": "#/definitions/logic",
+                                    "markdownDescription": "A logical condition that must evaluate to false for the steps to run"
                                 },
                                 "steps": {
                                     "oneOf": [
@@ -1223,7 +1525,8 @@
                                         {
                                             "$ref": "#/definitions/step"
                                         }
-                                    ]
+                                    ],
+                                    "markdownDescription": "A list of steps to be performed when the condition is false"
                                 }
                             }
                         }
@@ -1276,6 +1579,25 @@
                             },
                             "resource_class": {
                                 "type": "string",
+                                "default": "medium",
+                                "enum": [
+                                    "small",
+                                    "medium",
+                                    "medium+",
+                                    "large",
+                                    "xlarge",
+                                    "2xlarge",
+                                    "2xlarge+",
+                                    "arm.medium",
+                                    "arm.large",
+                                    "arm.xlarge",
+                                    "arm.2xlarge",
+                                    "gpu.nvidia.small",
+                                    "gpu.nvidia.medium",
+                                    "windows.gpu.nvidia.medium",
+                                    "macos.m1.medium.gen1",
+                                    "macos.m1.large.gen1"
+                                ],
                                 "markdownDescription": "Amount of CPU and RAM allocated to each container in a job. Note: A performance plan is required to access this feature."
                             },
                             "docker": {
@@ -1607,6 +1929,7 @@
                     "properties": {
                         "branches": {
                             "type": "object",
+                            "markdownDescription": "A map defining rules for execution on specific branches",
                             "properties": {
                                 "only": {
                                     "oneOf": [
@@ -1619,7 +1942,8 @@
                                                 "type": "string"
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "markdownDescription": "Either a single branch specifier, or a list of branch specifiers"
                                 },
                                 "ignore": {
                                     "oneOf": [
@@ -1632,7 +1956,8 @@
                                                 "type": "string"
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "markdownDescription": "Either a single branch specifier, or a list of branch specifiers"
                                 }
                             },
                             "additionalProperties": false
@@ -1673,6 +1998,7 @@
                             "properties": {
                                 "schedule": {
                                     "type": "object",
+                                    "markdownDescription": "A workflow may have a schedule indicating it runs at a certain time, for example a nightly build that runs every day at 12am UTC:",
                                     "properties": {
                                         "cron": {
                                             "type": "string",
@@ -1680,9 +2006,11 @@
                                         },
                                         "filters": {
                                             "type": "object",
+                                            "markdownDescription": "A map defining rules for execution on specific branches",
                                             "properties": {
                                                 "branches": {
                                                     "type": "object",
+                                                    "markdownDescription": "A map defining rules for execution on specific branches",
                                                     "properties": {
                                                         "only": {
                                                             "oneOf": [
@@ -1713,15 +2041,12 @@
                                                             "markdownDescription": "Either a single branch specifier, or a list of branch specifiers"
                                                         }
                                                     },
-                                                    "additionalProperties": false,
-                                                    "markdownDescription": "A map defining rules for execution on specific branches"
+                                                    "additionalProperties": false
                                                 }
                                             },
-                                            "additionalProperties": false,
-                                            "markdownDescription": "A map defining rules for execution on specific branches"
+                                            "additionalProperties": false
                                         }
-                                    },
-                                    "markdownDescription": "A workflow may have a schedule indicating it runs at a certain time, for example a nightly build that runs every day at 12am UTC:"
+                                    }
                                 }
                             },
                             "additionalProperties": false
@@ -1805,6 +2130,7 @@
                                                 "properties": {
                                                     "branches": {
                                                         "type": "object",
+                                                        "markdownDescription": "A map defining rules for execution on specific branches",
                                                         "properties": {
                                                             "only": {
                                                                 "oneOf": [
@@ -1817,7 +2143,8 @@
                                                                             "type": "string"
                                                                         }
                                                                     }
-                                                                ]
+                                                                ],
+                                                                "markdownDescription": "Either a single branch specifier, or a list of branch specifiers"
                                                             },
                                                             "ignore": {
                                                                 "oneOf": [
@@ -1830,13 +2157,15 @@
                                                                             "type": "string"
                                                                         }
                                                                     }
-                                                                ]
+                                                                ],
+                                                                "markdownDescription": "Either a single branch specifier, or a list of branch specifiers"
                                                             }
                                                         },
                                                         "additionalProperties": false
                                                     },
                                                     "tags": {
                                                         "type": "object",
+                                                        "markdownDescription": "A map defining rules for execution on specific tags",
                                                         "properties": {
                                                             "only": {
                                                                 "oneOf": [
@@ -1850,7 +2179,7 @@
                                                                         }
                                                                     }
                                                                 ],
-                                                                "markdownDescription": "Either a single branch specifier, or a list of branch specifiers"
+                                                                "markdownDescription": "Either a single tag specifier, or a list of tag specifiers"
                                                             },
                                                             "ignore": {
                                                                 "oneOf": [
@@ -1864,11 +2193,10 @@
                                                                         }
                                                                     }
                                                                 ],
-                                                                "markdownDescription": "Either a single branch specifier, or a list of branch specifiers"
+                                                                "markdownDescription": "Either a single tag specifier, or a list of tag specifiers"
                                                             }
                                                         },
-                                                        "additionalProperties": false,
-                                                        "markdownDescription": "A map defining rules for execution on specific branches"
+                                                        "additionalProperties": false
                                                     }
                                                 },
                                                 "additionalProperties": false
@@ -1987,10 +2315,13 @@
             "additionalProperties": {
                 "oneOf": [
                     {
-                        "type": "string"
+                        "type": "string",
+                        "pattern": "^[a-z][a-z0-9_-]+/[a-z][a-z0-9_-]+@(dev:[\\.a-z0-9_-]+|\\d+|\\d+\\.\\d+|\\d+\\.\\d+\\.\\d+|volatile)$",
+                        "markdownDescription": "https://circleci.com/docs/creating-orbs#semantic-versioning-in-orbs\n\nAn orb to depend on and its semver range, or volatile for the most recent release."
                     },
                     {
                         "type": "object",
+                        "markdownDescription": "https://circleci.com/docs/creating-orbs#creating-inline-orbs\n\nInline orbs can be handy during development of an orb or as a convenience for name-spacing jobs and commands in lengthy configurations, particularly if you later intend to share the orb with others.",
                         "properties": {
                             "jobs": {
                                 "markdownDescription": "Jobs are collections of steps. All of the steps in the job are executed in a single unit, either within a fresh container or VM.",
@@ -2005,6 +2336,7 @@
                             },
                             "commands": {
                                 "type": "object",
+                                "markdownDescription": "https://circleci.com/docs/configuration-reference#commands-requires-version-21\n\nA command definition defines a sequence of steps as a map to be executed in a job, enabling you to reuse a single command definition across multiple jobs.",
                                 "propertyNames": {
                                     "pattern": "^[a-z][a-z\\d_-]*$"
                                 },
@@ -2014,7 +2346,8 @@
                                             "type": "object",
                                             "properties": {
                                                 "description": {
-                                                    "type": "string"
+                                                    "type": "string",
+                                                    "markdownDescription": "A string that describes the purpose of the command."
                                                 },
                                                 "parameters": {
                                                     "markdownDescription": "https://circleci.com/docs/reusing-config#using-the-parameters-declaration\n\nA map of parameter keys.",
@@ -2075,7 +2408,8 @@
                                                     "items": {
                                                         "$ref": "#/definitions/step"
                                                     },
-                                                    "minItems": 1
+                                                    "minItems": 1,
+                                                    "markdownDescription": "A sequence of steps run inside the calling job of the command."
                                                 }
                                             },
                                             "required": [
@@ -2092,6 +2426,7 @@
                             },
                             "executors": {
                                 "type": "object",
+                                "markdownDescription": "Executors define the environment in which the steps of a job will be run, allowing you to reuse a single executor definition across multiple jobs.",
                                 "propertyNames": {
                                     "pattern": "^[a-z][a-z\\d_-]*$"
                                 },
