@@ -1578,27 +1578,36 @@
                                 "additionalProperties": false
                             },
                             "resource_class": {
-                                "type": "string",
-                                "default": "medium",
-                                "enum": [
-                                    "small",
-                                    "medium",
-                                    "medium+",
-                                    "large",
-                                    "xlarge",
-                                    "2xlarge",
-                                    "2xlarge+",
-                                    "arm.medium",
-                                    "arm.large",
-                                    "arm.xlarge",
-                                    "arm.2xlarge",
-                                    "gpu.nvidia.small",
-                                    "gpu.nvidia.medium",
-                                    "windows.gpu.nvidia.medium",
-                                    "macos.m1.medium.gen1",
-                                    "macos.m1.large.gen1"
+                                "oneOf": [
+                                    {
+                                        "type": "string",
+                                        "default": "medium",
+                                        "enum": [
+                                            "small",
+                                            "medium",
+                                            "medium+",
+                                            "large",
+                                            "xlarge",
+                                            "2xlarge",
+                                            "2xlarge+",
+                                            "arm.medium",
+                                            "arm.large",
+                                            "arm.xlarge",
+                                            "arm.2xlarge",
+                                            "gpu.nvidia.small",
+                                            "gpu.nvidia.medium",
+                                            "windows.gpu.nvidia.medium",
+                                            "macos.m1.medium.gen1",
+                                            "macos.m1.large.gen1"
+                                        ]
+                                    },
+                                    {
+                                        "title": "Self-hosted runner",
+                                        "type": "string",
+                                        "pattern": "^[a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+$"
+                                    }
                                 ],
-                                "markdownDescription": "Amount of CPU and RAM allocated to each container in a job. Note: A performance plan is required to access this feature."
+                                "markdownDescription": "https://circleci.com/docs/reference/configuration-reference/#resourceclass\n\nResource class for the job. Can be either a predefined resource class (e.g., `medium`, `large`) or a self-hosted runner in the format `<namespace>/<runner-name>`."
                             },
                             "docker": {
                                 "type": "array",
