@@ -60,7 +60,7 @@ tasks:
       - ./bin/start_server
     env:
       PORT: "{{.PORT | default 10001}}"
-      SCHEMA_LOCATION: ./publicschema.json
+      SCHEMA_LOCATION: ./schema.json
 
   init:
     - go mod download

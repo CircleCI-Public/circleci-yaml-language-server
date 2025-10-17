@@ -329,7 +329,6 @@ jobs:
           at: ~/
       - install-vscode-extensions-deps
       - run: cp schema.json editors/vscode
-      - run: cp publicschema.json editors/vscode
       - run: cp -R bin editors/vscode/bin
       - run:
           name: Build VSIX

@@ -106,13 +106,13 @@ For example, I've the following in my `.emacs.d/init.el`:
 
 ## Testing within VSCode
 
-This repository embed a VSCode extension (located at `editors/vscode`) so you
-can test your code within the editor.
+This repository embeds a mini VSCode extension (located at `editors/vscode`) so you
+can test your changes to the language server using VS Code locally.
 
 1. In order to run the extension, you must first prepare installation. This
    command will install the necessary node packages and build the extension:
 
-```
+```bash
 task prepare:vscode
 ```
 
@@ -125,86 +125,41 @@ task prepare:vscode
    `Run and Debug` tab and run it via the `Run Extension` on the dropdown menu
    at the top of the tab.
 
-## Understanding the Schema Files
+   > [!NOTE]
+   > Do not do `Run Extension (user extensions enabled)`. Running with no other extensions enabled
+   > could cause confusion. Specifically, if you had the Red Hat YAML Language Server extension
+   > installed, it would display hover hints from the JSON schema from schemastore, rather than the local schema.json
+   > that you will often be making changes to locally and want to test.
 
-The CircleCI YAML Language Server uses **two different schema files** for different purposes:
+## Understanding the `schema.json` file
 
-| File                | Purpose                                      | Used By                                     |
-| ------------------- | -------------------------------------------- | ------------------------------------------- |
-| `schema.json`       | Core validation and language server features | Go language server binary, external tools   |
-| `publicschema.json` | Rich hover documentation                     | VSCode extension TypeScript hover providers |
+The CircleCI YAML Language Server uses the standardized [JSON schema](https://json-schema.org/) to help perform basic structural validations and documentation hover hints the CircleCI YAML files. Our schema lives in `schema.json` and is utilized in multiple different places both inside and outside the codebase.
 
-### Architecture
+### Use Cases for `schema.json`
 
-This is a **two-tier schema system**:
+- **External Tools**: This `schema.json` is notably used by the Red Hat YAML extension. Most VSCode users who open YAML files will have this extension installed. This extension by default will pull in schemas from [schemastore.org](https://www.schemastore.org/api/json/catalog.json). This extension on its own can detect if a user is reading a CircleCI config, then it will automatically pull in our `schema.json` by looking at schemastore, which in turn pulls the latest version of `schema.json` from the main branch of this repository.
+  - The Red Hat YAML language gets the schema.json from this URL: `https://raw.githubusercontent.com/CircleCI-Public/circleci-yaml-language-server/refs/heads/main/schema.json`
 
-### `schema.json`
+    > [!NOTE]
+    > A user without the CircleCI VS Code extension installed, and just the Red Hat YAML language server
+    > installed, still benefits from this `schema.json`. The Red Hat YAML Language server on its own will provide:
+    >
+    > 1. schema validation
+    > 2. a hover provider in VS Code for documentation hints
+    >
+    > The benefit of installing the CircleCI Extension in VSCode is that it also pulls in the Go binary, providing more
+    > complex validations against a user's CircleCI config that aren't possible with JSON Schema alone.
 
-**Primary Purpose**: Validates the YAML is valid according to our CircleCI rules
-
-**Used By**:
-
-- **Go Language Server Binary**: The main language server reads this schema via the `SCHEMA_LOCATION` environment variable
+- **CircleCI Go Language Server Binary**: The main language server reads this schema via the `SCHEMA_LOCATION` environment variable. The Go language server binary uses a JSON schema validation library and validates the config against the schema.
+  - As mentioned above, JSON Schema validation is also handled the Red Hat YAML language server. Our language server is intended to work standalone (but still be compatible with other language servers), so we also perform JSON schema validation in case the user only has our language server installed.
   - Location: `pkg/services/diagnostics.go`, `pkg/services/validate.go`, etc.
 
-- **External Tools**: Used by the Red Hat YAML extension. This extension looks at [schemastore.org](https://www.schemastore.org/api/json/catalog.json), which reads the latest schema.json from this repo.
-  - URL: `https://raw.githubusercontent.com/CircleCI-Public/circleci-yaml-language-server/refs/heads/main/schema.json`
-
-- **VSCode Extension**: Downloaded from GitHub releases page and bundled with the extension
-  - Location in our private VSCode extension
+- **CircleCI VSCode Extension**: CircleCI's closed-source VS Code extension will automatically pull in the latest version of the CircleCI language server from the GitHub releases page. The VS Code extension has some logic such that:
+  1. if it detects that the Red Hat YAML Language Server extension is not installed, it will register a hover provider
+     so that when the user hovers over the YAML code, it will provide hover hints from the `schema.json` it downloaded
+     from the CircleCI language server's releases page
+  2. if it detects the Red Hat YAML Language Server extension, it will defer the hover hints to the Red Hat
+     YAML Language Server, otherwise the user would see two instances of the hover hints.
 
 - **Go Tests**: Used for validation testing
   - Location: `pkg/services/diagnostics_test.go`
-
-**Characteristics**:
-
-- JSON Schema draft-07
-
-### `publicschema.json`
-
-**Primary Purpose**: Documentation for IDE hover features
-
-**Used By**:
-
-- **VSCode Extension Hover Provider**
-  - Location: `circleci-vscode-extension/packages/vscode-extension/src/lsp/hover.ts:62-67`
-
-**Characteristics**:
-
-- JSON Schema draft-04
-- Includes inline CircleCI documentation URLs (e.g., `https://circleci.com/docs/configuration-reference#...`)
-- **Never used by the Go language server**
-
-### Why Two Schemas?
-
-The separation exists because:
-
-- The Go language server needs a comprehensive schema for validation that handles all edge cases
-- The hover provider needs clean documentation with links to CircleCI docs
-
-### Development Guidelines
-
-#### When to Update `schema.json`
-
-Update this schema when:
-
-- Adding or modifying CircleCI config validation rules
-- Changing supported configuration keys or values
-- Adding new CircleCI features that affect config structure
-- Fixing validation bugs
-
-#### When to Update `publicschema.json`
-
-Update this schema when:
-
-- Improving hover documentation text
-- Adding or updating links to CircleCI documentation
-- Changing the structure of hover hints
-- Making documentation more user-friendly
-
-#### Keeping Schemas in Sync
-
-> ⚠️ [!IMPORTANT]
-> Both schemas should represent the same CircleCI configuration format. When you update one schema's structure, you likely need to update the other.
-
-**Best Practice**: Make structural changes to both schemas in the same PR to prevent drift.

@@ -62,33 +62,30 @@ export async function activate(context: vscode.ExtensionContext) {
             );
         });
 
-        const redHatYAMLExtension =
-            vscode.extensions.getExtension('redhat.vscode-yaml');
-
-        if (!redHatYAMLExtension?.isActive) {
-            vscode.languages.registerHoverProvider(
-                {
-                    scheme: 'file',
-                    language: 'yaml',
-                    pattern: '**/.circleci/**/*',
+        // Register a hover provider in VS Code that will read the schema.json and
+        // provide hover hints from the description/markdownDescription keys.
+        vscode.languages.registerHoverProvider(
+            {
+                scheme: 'file',
+                language: 'yaml',
+                pattern: '**/.circleci/**/*',
+            },
+            {
+                provideHover: (
+                    document: vscode.TextDocument,
+                    position: vscode.Position,
+                ): vscode.ProviderResult<vscode.Hover> => {
+                    return doHover(
+                        context,
+                        {
+                            ...document,
+                            uri: document.uri.toString(),
+                        },
+                        position,
+                    );
                 },
-                {
-                    provideHover: (
-                        document: vscode.TextDocument,
-                        position: vscode.Position,
-                    ): vscode.ProviderResult<vscode.Hover> => {
-                        return doHover(
-                            context,
-                            {
-                                ...document,
-                                uri: document.uri.toString(),
-                            },
-                            position,
-                        );
-                    },
-                },
-            );
-        }
+            },
+        );
     } catch (e) {
         console.trace();
         console.error(e);
