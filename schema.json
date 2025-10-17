@@ -2322,15 +2322,18 @@
             ],
             "markdownDescription": "https://circleci.com/docs/configuration-reference#orbs-requires-version-21\n\nOrbs are reusable packages of CircleCI configuration that you may share across projects, enabling you to create encapsulated, parameterized commands, jobs, and executors that can be used across multiple projects.",
             "additionalProperties": {
+                "markdownDescription": "An orb reference can be specified in multiple ways:\n\n**String with semantic version:**\n- `namespace/orb-name@1.2.3` - specific version\n- `namespace/orb-name@1.2` - latest patch version of 1.2.x\n- `namespace/orb-name@1` - latest minor and patch of 1.x.x\n- `namespace/orb-name@volatile` - most recent release\n- `namespace/orb-name@dev:branch-name` - development version\n\n**String with parameter substitution:**\n- `namespace/orb-name@<<parameters.version>>`\n- `namespace/orb-name@<<pipeline.parameters.version>>`\n\n**Inline orb object:** Define jobs, commands, and executors directly in this configuration.\n\nSee [Orb Concepts](https://circleci.com/docs/orbs/author/orb-concepts/#semantic-versioning) and [Creating Inline Orbs](https://circleci.com/docs/reference/reusing-config/#writing-inline-orbs) for more details.",
                 "oneOf": [
                     {
                         "type": "string",
-                        "pattern": "^[a-z][a-z0-9_-]+/[a-z][a-z0-9_-]+@(dev:[\\.a-z0-9_-]+|\\d+|\\d+\\.\\d+|\\d+\\.\\d+\\.\\d+|volatile)$",
-                        "markdownDescription": "https://circleci.com/docs/creating-orbs#semantic-versioning-in-orbs\n\nAn orb to depend on and its semver range, or volatile for the most recent release."
+                        "pattern": "^[a-z][a-z0-9_-]+/[a-z][a-z0-9_-]+@(dev:[\\.a-z0-9_-]+|\\d+|\\d+\\.\\d+|\\d+\\.\\d+\\.\\d+|volatile)$"
+                    },
+                    {
+                        "type": "string",
+                        "pattern": "^[a-z][a-z0-9_-]+/[a-z][a-z0-9_-]+@ *<<.+>> *$"
                     },
                     {
                         "type": "object",
-                        "markdownDescription": "https://circleci.com/docs/creating-orbs#creating-inline-orbs\n\nInline orbs can be handy during development of an orb or as a convenience for name-spacing jobs and commands in lengthy configurations, particularly if you later intend to share the orb with others.",
                         "properties": {
                             "jobs": {
                                 "markdownDescription": "Jobs are collections of steps. All of the steps in the job are executed in a single unit, either within a fresh container or VM.",
