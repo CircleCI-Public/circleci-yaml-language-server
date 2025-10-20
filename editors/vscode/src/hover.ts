@@ -55,15 +55,15 @@ export async function doHover(
 export const getYamlLanguageService = function (
     context: vscode.ExtensionContext,
 ): LanguageService {
-    const publicSchemaLocation = isInDevMode()
-        ? context.asAbsolutePath(path.join('..', '..', 'publicschema.json'))
-        : context.asAbsolutePath(path.join('publicschema.json'));
+    const schemaLocation = isInDevMode()
+        ? context.asAbsolutePath(path.join('..', '..', 'schema.json'))
+        : context.asAbsolutePath(path.join('schema.json'));
 
-    const publicSchema = readFileSync(publicSchemaLocation, 'utf8');
-    const parsedPublicSchema = JSON.parse(publicSchema) as JSONSchema;
+    const schema = readFileSync(schemaLocation, 'utf8');
+    const parsedSchema = JSON.parse(schema) as JSONSchema;
 
     const circleciHoverLanguageService: LanguageService =
-        getCircleHoverLanguageService(parsedPublicSchema);
+        getCircleHoverLanguageService(parsedSchema);
 
     return setHoverInLanguageServer(circleciHoverLanguageService);
 };
