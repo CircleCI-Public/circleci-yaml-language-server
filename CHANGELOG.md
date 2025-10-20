@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## [0.22.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.21.0...0.22.0) (2025-10-20)
+
+
+### Features
+
+* Add new 2025 Q3 Android image ([#373](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/373)) ([1ea7eec](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/1ea7eec434d56a09f7f62cc66e48a21a4280d726))
+* Add new 2025 Q3 Windows Images ([#375](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/375)) ([f01b675](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/f01b67589f987ca227bdca4c19067fa1fdf6b2ee))
+* Consolidate schemas into just schema.json ([#377](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/377)) ([9dc80f2](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/9dc80f29545ff7dca55d3010401d7676132f35f9))
+
 ## [0.21.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.20.0...0.21.0) (2025-10-06)
 
 
