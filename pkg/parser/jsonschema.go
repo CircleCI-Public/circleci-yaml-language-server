@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -25,8 +26,8 @@ func (validator *JSONSchemaValidator) LoadJsonSchema(schemaLocation string) erro
 
 	schema, err := gojsonschema.NewSchema(loader)
 	if err != nil {
-		fmt.Printf("Error while loading JSON Schema \"%s\"\n", schemaLocation)
-		fmt.Println(err.Error())
+		fmt.Fprintf(os.Stderr, "Error while loading JSON Schema \"%s\"\n", schemaLocation)
+		fmt.Fprintln(os.Stderr, err.Error())
 		return err
 	}
 
