@@ -267,7 +267,7 @@ func writeRemoteOrbSourceInFSCache(orbYaml string, source string) (string, error
 	_, err := os.Stat(filePath)
 
 	if errors.Is(err, os.ErrNotExist) {
-		fmt.Println("Writing remote orb source in cache:", filePath)
+		fmt.Fprintln(os.Stderr, "Writing remote orb source in cache:", filePath)
 
 		err = os.WriteFile(filePath, []byte(source), 0644)
 		return filePath, err

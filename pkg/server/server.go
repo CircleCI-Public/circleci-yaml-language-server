@@ -26,7 +26,7 @@ type JSONRPCServer struct {
 }
 
 func (server JSONRPCServer) commandHandler(_ context.Context, reply jsonrpc2.Replier, req jsonrpc2.Request) error {
-	fmt.Println("Called method: " + req.Method())
+	fmt.Fprintln(os.Stderr, "Called method: "+req.Method())
 
 	defer func() {
 		err := recover()
@@ -89,7 +89,7 @@ func (server JSONRPCServer) commandHandler(_ context.Context, reply jsonrpc2.Rep
 
 func (server JSONRPCServer) ServeStream(_ context.Context, conn jsonrpc2.Conn) error {
 	defer rollbar.Close()
-	fmt.Println("New client connection")
+	fmt.Fprintln(os.Stderr, "New client connection")
 
 	server.conn = conn
 	server.cache = utils.CreateCache()
