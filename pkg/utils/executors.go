@@ -147,7 +147,7 @@ var ValidWindowsImages = []string{
 
 	// Windows Server 2025
 	"windows-server-2025-gui:2025.10.1",
-	// "windows-server-2025-gui:current",
+	"windows-server-2025-gui:current",
 	"windows-server-2025-gui:edge",
 }
 
@@ -185,7 +185,7 @@ var ValidWindowsGPUImages = []string{
 	"windows-server-2019-cuda:edge",
 	"windows-server-2022-cuda:current",
 	"windows-server-2022-cuda:edge",
-	// "windows-server-2025-cuda:current",
+	"windows-server-2025-cuda:current",
 	"windows-server-2025-cuda:edge",
 }
 
