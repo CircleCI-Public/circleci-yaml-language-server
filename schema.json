@@ -2134,81 +2134,87 @@
                                                 }
                                             },
                                             "filters": {
-                                                "type": "object",
-                                                "markdownDescription": "This is similar to to other `filters` in config, but has an additional key, `tags`",
-                                                "properties": {
-                                                    "branches": {
+                                                "markdownDescription": "https://circleci.com/docs/reference/configuration-reference/#jobfilters \n\n A map or string to define filtering rules for job execution. Branch and tag filters require a map. Expression-based filters require a string.",
+                                                "oneOf": [
+                                                    {
                                                         "type": "object",
-                                                        "markdownDescription": "A map defining rules for execution on specific branches",
                                                         "properties": {
-                                                            "only": {
-                                                                "oneOf": [
-                                                                    {
-                                                                        "type": "string"
+                                                            "branches": {
+                                                                "type": "object",
+                                                                "markdownDescription": "A map defining rules for execution on specific branches",
+                                                                "properties": {
+                                                                    "only": {
+                                                                        "oneOf": [
+                                                                            {
+                                                                                "type": "string"
+                                                                            },
+                                                                            {
+                                                                                "type": "array",
+                                                                                "items": {
+                                                                                    "type": "string"
+                                                                                }
+                                                                            }
+                                                                        ],
+                                                                        "markdownDescription": "Either a single branch specifier, or a list of branch specifiers"
                                                                     },
-                                                                    {
-                                                                        "type": "array",
-                                                                        "items": {
-                                                                            "type": "string"
-                                                                        }
+                                                                    "ignore": {
+                                                                        "oneOf": [
+                                                                            {
+                                                                                "type": "string"
+                                                                            },
+                                                                            {
+                                                                                "type": "array",
+                                                                                "items": {
+                                                                                    "type": "string"
+                                                                                }
+                                                                            }
+                                                                        ],
+                                                                        "markdownDescription": "Either a single branch specifier, or a list of branch specifiers"
                                                                     }
-                                                                ],
-                                                                "markdownDescription": "Either a single branch specifier, or a list of branch specifiers"
+                                                                },
+                                                                "additionalProperties": false
                                                             },
-                                                            "ignore": {
-                                                                "oneOf": [
-                                                                    {
-                                                                        "type": "string"
+                                                            "tags": {
+                                                                "type": "object",
+                                                                "markdownDescription": "A map defining rules for execution on specific tags",
+                                                                "properties": {
+                                                                    "only": {
+                                                                        "oneOf": [
+                                                                            {
+                                                                                "type": "string"
+                                                                            },
+                                                                            {
+                                                                                "type": "array",
+                                                                                "items": {
+                                                                                    "type": "string"
+                                                                                }
+                                                                            }
+                                                                        ],
+                                                                        "markdownDescription": "Either a single tag specifier, or a list of tag specifiers"
                                                                     },
-                                                                    {
-                                                                        "type": "array",
-                                                                        "items": {
-                                                                            "type": "string"
-                                                                        }
+                                                                    "ignore": {
+                                                                        "oneOf": [
+                                                                            {
+                                                                                "type": "string"
+                                                                            },
+                                                                            {
+                                                                                "type": "array",
+                                                                                "items": {
+                                                                                    "type": "string"
+                                                                                }
+                                                                            }
+                                                                        ],
+                                                                        "markdownDescription": "Either a single tag specifier, or a list of tag specifiers"
                                                                     }
-                                                                ],
-                                                                "markdownDescription": "Either a single branch specifier, or a list of branch specifiers"
+                                                                },
+                                                                "additionalProperties": false
                                                             }
-                                                        },
-                                                        "additionalProperties": false
+                                                        }
                                                     },
-                                                    "tags": {
-                                                        "type": "object",
-                                                        "markdownDescription": "A map defining rules for execution on specific tags",
-                                                        "properties": {
-                                                            "only": {
-                                                                "oneOf": [
-                                                                    {
-                                                                        "type": "string"
-                                                                    },
-                                                                    {
-                                                                        "type": "array",
-                                                                        "items": {
-                                                                            "type": "string"
-                                                                        }
-                                                                    }
-                                                                ],
-                                                                "markdownDescription": "Either a single tag specifier, or a list of tag specifiers"
-                                                            },
-                                                            "ignore": {
-                                                                "oneOf": [
-                                                                    {
-                                                                        "type": "string"
-                                                                    },
-                                                                    {
-                                                                        "type": "array",
-                                                                        "items": {
-                                                                            "type": "string"
-                                                                        }
-                                                                    }
-                                                                ],
-                                                                "markdownDescription": "Either a single tag specifier, or a list of tag specifiers"
-                                                            }
-                                                        },
-                                                        "additionalProperties": false
+                                                    {
+                                                        "type": "string"
                                                     }
-                                                },
-                                                "additionalProperties": false
+                                                ]
                                             },
                                             "context": {
                                                 "oneOf": [
