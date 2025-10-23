@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [0.23.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.22.0...0.23.0) (2025-10-22)
+
+
+### Features
+
+* Support expression-based filters in VS code extension ([#379](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/379)) ([c383399](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/c383399fa416884e8c6e99b5ec4de238ad486da3))
+
 ## [0.22.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.21.0...0.22.0) (2025-10-20)
 
 
