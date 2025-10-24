@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [0.24.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.23.0...0.24.0) (2025-10-24)
+
+
+### Features
+
+* Add Windows server 2025 current images ([#381](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/381)) ([8afc1a6](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/8afc1a6b1fa5dcb6e99944ca0bc967b5ae1d1fda))
+
 ## [0.23.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.22.0...0.23.0) (2025-10-22)
 
 
