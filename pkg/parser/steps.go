@@ -304,6 +304,8 @@ func (doc *YamlDocument) parseCheckoutStep(checkoutNode *sitter.Node) ast.Checko
 				res.Path = doc.GetNodeText(valueNode)
 			case "method":
 				res.Method = doc.GetNodeText(valueNode)
+			case "depth":
+				res.Depth = doc.GetNodeText(valueNode)
 			}
 		})
 		return res
