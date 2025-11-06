@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [0.25.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.24.0...0.25.0) (2025-11-06)
+
+
+### Features
+
+* suppress errors/warnings/diagnostics via comments ([#385](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/385)) ([262b22d](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/262b22d9216b0c9a300d7cf78f3eaf62f1c0fec0))
+
 ## [0.24.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.23.0...0.24.0) (2025-10-28)
 
 
