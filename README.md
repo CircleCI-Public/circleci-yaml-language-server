@@ -103,6 +103,18 @@ CircleCI Configuration files. It offers:
     <img src="https://images.ctfassets.net/il1yandlcjgk/3jXaQvhOQgayhV9O4nfAhZ/b6d55e689ddfcf7673ab7e9b76ba0a53/config_helper_autocomplete.png" alt="circleci-vscode-autocomplete" width="50%"/>
 </p>
 
+- **Diagnostic suppression** - allows you to suppress specific warnings and errors using special comments:
+  - `# cci-ignore` - suppress diagnostic on the same line
+  - `# cci-ignore-next-line` - suppress diagnostic on the next line
+  - `# cci-ignore-start` / `# cci-ignore-end` - suppress diagnostics in a range
+  - `# cci-ignore-file` - suppress all diagnostics in the file
+
+  Quick-fix code actions are available to automatically insert suppression comments.
+
+<p align="center">
+    <img src="https://images.ctfassets.net/il1yandlcjgk/2HsFnWKVRDavrKYN6gns6T/f30a25920e1a0c47fc7beaa2e81b93a0/cci-ignore-next-line.gif" alt="circleci-ignore-comments" width="50%"/>
+</p>
+
 ## <a name="platforms"></a>Platforms, Deployment and Package Managers
 
 The tool is deployed through

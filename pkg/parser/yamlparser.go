@@ -43,6 +43,8 @@ func (doc *YamlDocument) ParseYAML(context *utils.LsContext, offset protocol.Pos
 	blockMappingNode := GetBlockMappingNode(doc.RootNode)
 	doc.YamlAnchors = ParseYamlAnchors(doc)
 
+	doc.SuppressionInfo = ParseSuppressionComments(doc)
+
 	doc.iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
 		keyNode, valueNode := doc.GetKeyValueNodes(child)
 		keyName := doc.GetNodeText(keyNode)
@@ -215,6 +217,8 @@ type YamlDocument struct {
 
 	LocalOrbName string
 	Offset       protocol.Position
+
+	SuppressionInfo *SuppressionInfo
 }
 
 func (doc *YamlDocument) IsBuiltIn(commandName string) bool {

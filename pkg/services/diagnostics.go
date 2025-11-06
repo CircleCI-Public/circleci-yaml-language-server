@@ -86,6 +86,15 @@ func DiagnosticYAML(yamlDocument yamlparser.YamlDocument, cache *utils.Cache, co
 	validateStruct.Validate()
 	diag.addDiagnostics(*validateStruct.Diagnostics)
 
+	// after ALL diagnostics are added, filter out the ones that the user wishes to suppress via cci-ignore comments
+	*diag.diagnostics = yamlparser.FilterSuppressedDiagnostics(*diag.diagnostics, diag.yamlDocument.SuppressionInfo)
+
+	// append some extra add code actions to every diagnostic to suppress said diagnostic
+	*diag.diagnostics, err = utils.AppendSuppressionCodeActions(yamlDocument.URI, *diag.diagnostics, yamlDocument.Content)
+	if err != nil {
+		return []protocol.Diagnostic{}, err
+	}
+
 	return *diag.diagnostics, nil
 }
 
