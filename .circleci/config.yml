@@ -255,7 +255,7 @@ jobs:
       arch:
         type: string
     macos:
-      xcode: 26.1.0
+      xcode: 26.1.1
     resource_class: m4pro.medium
     steps:
       - attach_workspace:
