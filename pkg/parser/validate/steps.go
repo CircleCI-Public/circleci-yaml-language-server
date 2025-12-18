@@ -233,7 +233,7 @@ func (val Validate) validateCheckout(step ast.Checkout) {
 			val.addDiagnostic(protocol.Diagnostic{
 				Severity: protocol.DiagnosticSeverityError,
 				Range:    step.Range,
-				Message:  "Checkout depth must be a valid integer when using the shallow checkout method",
+				Message:  "Checkout depth is not an integer",
 			})
 			return
 		}
