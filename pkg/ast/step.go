@@ -82,8 +82,10 @@ func (step Run) GetName() string {
 
 type Checkout struct {
 	protocol.Range
-	Path   string
-	Method string
+	Path        string
+	Method      string
+	MethodRange protocol.Range
+	Depth       string
 }
 
 func (step Checkout) GetRange() protocol.Range {

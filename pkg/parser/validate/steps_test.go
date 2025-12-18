@@ -1,10 +1,24 @@
 package validate
 
 import (
-	"os"
+	_ "embed"
 	"testing"
 
 	"go.lsp.dev/protocol"
+)
+
+var (
+	//go:embed testdata/valid_checkout_method.yml
+	validCheckoutMethodYml string
+
+	//go:embed testdata/invalid_checkout_method.yml
+	invalidCheckoutMethodYml string
+
+	//go:embed testdata/invalid_checkout_method_shallow.yml
+	invalidCheckoutMethodShallowYml string
+
+	//go:embed testdata/valid_checkout_method_shallow.yml
+	validCheckoutMethodShallowYml string
 )
 
 func TestStepsValidation(t *testing.T) {
@@ -72,27 +86,15 @@ workflows:
 }
 
 func TestYamlDocument_parseCheckout(t *testing.T) {
-	validConfigFilePath := "./testdata/valid_checkout_method.yml"
-	validConfig, err := os.ReadFile(validConfigFilePath)
-	if err != nil {
-		t.Fatal("Failed to read valid_checkout_method.yml")
-	}
-
-	invalidConfigFilePath := "./testdata/invalid_checkout_method.yml"
-	invalidConfig, err := os.ReadFile(invalidConfigFilePath)
-	if err != nil {
-		t.Fatal("Failed to read invalid_checkout_method.yml")
-	}
-
 	testCases := []ValidateTestCase{
 		{
 			Name:        "Specifying checkout method full does not result in an error",
-			YamlContent: string(validConfig),
+			YamlContent: validCheckoutMethodYml,
 			Diagnostics: []protocol.Diagnostic{},
 		},
 		{
 			Name:        "Specifying an invalid checkout method results in an error",
-			YamlContent: string(invalidConfig),
+			YamlContent: invalidCheckoutMethodYml,
 			Diagnostics: []protocol.Diagnostic{
 				{
 					Severity: protocol.DiagnosticSeverityError,
@@ -101,6 +103,33 @@ func TestYamlDocument_parseCheckout(t *testing.T) {
 						End:   protocol.Position{Line: 7, Character: 16},
 					},
 					Message: "Checkout method 'invalid' is invalid",
+				},
+				{
+					Severity: protocol.DiagnosticSeverityError,
+					Range: protocol.Range{
+						Start: protocol.Position{Line: 7, Character: 8},
+						End:   protocol.Position{Line: 7, Character: 16},
+					},
+					Message: "Checkout depth can only be used with the shallow checkout method",
+				},
+			},
+		},
+		{
+			Name:        "Specifying checkout method shallow with depth does not result in an error",
+			YamlContent: validCheckoutMethodShallowYml,
+			Diagnostics: []protocol.Diagnostic{},
+		},
+		{
+			Name:        "Specifying checkout method shallow without depth results in an error",
+			YamlContent: invalidCheckoutMethodShallowYml,
+			Diagnostics: []protocol.Diagnostic{
+				{
+					Severity: protocol.DiagnosticSeverityError,
+					Range: protocol.Range{
+						Start: protocol.Position{Line: 7, Character: 8},
+						End:   protocol.Position{Line: 7, Character: 16},
+					},
+					Message: "Checkout depth is not an integer",
 				},
 			},
 		},
