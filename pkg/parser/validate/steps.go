@@ -218,8 +218,7 @@ func (val Validate) validateCheckout(step ast.Checkout) {
 		return
 	}
 
-	m := []string{"blobless", "full", "shallow"}
-	if !slices.Contains(m, step.Method) {
+	if !slices.Contains(utils.CheckoutMethods, step.Method) {
 		val.addDiagnostic(protocol.Diagnostic{
 			Severity: protocol.DiagnosticSeverityError,
 			Range:    step.Range,

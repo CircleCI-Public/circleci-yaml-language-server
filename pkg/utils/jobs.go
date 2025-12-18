@@ -25,3 +25,10 @@ var JobTypes = []string{
 	"lock",
 	"unlock",
 }
+
+// CheckoutMethods is a list of all valid checkout methods that are supported by CircleCI
+var CheckoutMethods = []string{
+	"blobless",
+	"full", // default
+	"shallow",
+}

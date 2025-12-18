@@ -11,6 +11,10 @@ func (ch *CompletionHandler) completeSteps(entityName string, inJob bool, includ
 	if ch.isWritingAnEnvVariableInRunStep(entityName, inJob) {
 		return
 	}
+	if ch.isWritingCheckoutMethod(entityName, inJob) {
+		ch.addCheckoutMethodCompletion()
+		return
+	}
 	// We have two ifs to keep the order of the steps in the completion list.
 	ch.userDefinedCommands()
 	if includeJobSteps {
@@ -75,6 +79,32 @@ func (ch *CompletionHandler) isWritingAnEnvVariableInRunStep(entityName string, 
 	}
 
 	return false
+}
+
+func (ch *CompletionHandler) isWritingCheckoutMethod(entityName string, inJob bool) bool {
+	var steps []ast.Step
+	if inJob {
+		steps = ch.Doc.Jobs[entityName].Steps
+	} else {
+		steps = ch.Doc.Commands[entityName].Steps
+	}
+
+	for _, step := range steps {
+		switch step := step.(type) {
+		case ast.Checkout:
+			if utils.PosInRange(step.MethodRange, ch.Params.Position) {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+func (ch *CompletionHandler) addCheckoutMethodCompletion() {
+	for _, method := range utils.CheckoutMethods {
+		ch.addCompletionItem(method)
+	}
 }
 
 func (ch *CompletionHandler) addCompleteEnvVariables(contexts []string, parameters map[string]ast.Parameter, environmentField map[string]string) {
