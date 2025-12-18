@@ -129,7 +129,7 @@ func TestYamlDocument_parseCheckout(t *testing.T) {
 						Start: protocol.Position{Line: 7, Character: 8},
 						End:   protocol.Position{Line: 7, Character: 16},
 					},
-					Message: "Checkout depth must be a valid integer when using the shallow checkout method",
+					Message: "Checkout depth is not an integer",
 				},
 			},
 		},
