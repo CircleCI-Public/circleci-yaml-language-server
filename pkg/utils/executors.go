@@ -218,7 +218,8 @@ var ValidMachinePairs = []struct {
 }
 
 var ValidXcodeVersions = []string{
-	"26.1.0",
+	"26.2.0",
+	"26.1.1",
 	"26.0.1",
 	"16.4.0",
 	"16.3.0",
