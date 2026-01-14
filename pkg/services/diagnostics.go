@@ -1,6 +1,8 @@
 package languageservice
 
 import (
+	"fmt"
+
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/dockerhub"
 	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser/validate"
@@ -86,6 +88,8 @@ func DiagnosticYAML(yamlDocument yamlparser.YamlDocument, cache *utils.Cache, co
 	validateStruct.Validate()
 	diag.addDiagnostics(*validateStruct.Diagnostics)
 
+	*diag.diagnostics = deduplicateDiagnosticsByRange(*diag.diagnostics)
+
 	// after ALL diagnostics are added, filter out the ones that the user wishes to suppress via cci-ignore comments
 	*diag.diagnostics = yamlparser.FilterSuppressedDiagnostics(*diag.diagnostics, diag.yamlDocument.SuppressionInfo)
 
@@ -100,4 +104,24 @@ func DiagnosticYAML(yamlDocument yamlparser.YamlDocument, cache *utils.Cache, co
 
 func (diag *DiagnosticType) addDiagnostics(diagnostic []protocol.Diagnostic) {
 	*diag.diagnostics = append(*diag.diagnostics, diagnostic...)
+}
+
+// deduplicateDiagnosticsByRange removes duplicate diagnostics at same range
+// The primary use case of this is to handle YAML anchors where same content
+// is referenced multiple times, causing duplicate diagnostics on the original
+// anchored text.
+func deduplicateDiagnosticsByRange(diagnostics []protocol.Diagnostic) []protocol.Diagnostic {
+	seen := make(map[string]bool)
+	result := []protocol.Diagnostic{}
+
+	for _, diag := range diagnostics {
+		// Create unique key from range + message + severity
+		key := fmt.Sprintf("%v-%s-%v", diag.Range, diag.Message, diag.Severity)
+		if !seen[key] {
+			seen[key] = true
+			result = append(result, diag)
+		}
+	}
+
+	return result
 }

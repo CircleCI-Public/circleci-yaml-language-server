@@ -150,6 +150,10 @@ func TestYamlDocument_parseSingleJobReference(t *testing.T) {
 							Start: protocol.Position{Line: 3, Character: 10},
 							End:   protocol.Position{Line: 3, Character: 15},
 						},
+						StatusRange: protocol.Range{
+							Start: protocol.Position{Line: 3, Character: 10},
+							End:   protocol.Position{Line: 3, Character: 15},
+						},
 					},
 				},
 				MatrixParams: make(map[string][]ast.ParameterValue),
@@ -364,6 +368,10 @@ func TestYamlDocument_parseSingleJobReference(t *testing.T) {
 							Start: protocol.Position{Line: 3, Character: 10},
 							End:   protocol.Position{Line: 3, Character: 15},
 						},
+						StatusRange: protocol.Range{
+							Start: protocol.Position{Line: 3, Character: 17},
+							End:   protocol.Position{Line: 3, Character: 23},
+						},
 					},
 				},
 				MatrixParams: make(map[string][]ast.ParameterValue),
@@ -414,6 +422,10 @@ func TestYamlDocument_parseSingleJobReference(t *testing.T) {
 						Range: protocol.Range{
 							Start: protocol.Position{Line: 3, Character: 10},
 							End:   protocol.Position{Line: 3, Character: 15},
+						},
+						StatusRange: protocol.Range{
+							Start: protocol.Position{Line: 3, Character: 17},
+							End:   protocol.Position{Line: 3, Character: 36},
 						},
 					},
 				},

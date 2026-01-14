@@ -279,9 +279,19 @@ func (doc *YamlDocument) parseSingleJobRequires(requiresNode *sitter.Node) []ast
 				}
 				anchorValueNode := GetFirstChild(anchor.ValueNode)
 				text := doc.GetNodeText(anchorValueNode)
-				return ast.Require{Name: text, Status: defaultStatus, Range: doc.NodeToRange(anchorValueNode)}
+				return ast.Require{
+					Name:        text,
+					Status:      defaultStatus,
+					Range:       doc.NodeToRange(anchorValueNode),
+					StatusRange: doc.NodeToRange(node),
+				}
 			} else {
-				return ast.Require{Name: doc.GetNodeText(node), Status: defaultStatus, Range: doc.NodeToRange(node)}
+				return ast.Require{
+					Name:        doc.GetNodeText(node),
+					Status:      defaultStatus,
+					Range:       doc.NodeToRange(node),
+					StatusRange: doc.NodeToRange(node),
+				}
 			}
 		}
 
@@ -307,19 +317,53 @@ func (doc *YamlDocument) parseSingleJobRequires(requiresNode *sitter.Node) []ast
 				if GetFirstChild(value).Type() == "plain_scalar" {
 					status := make([]string, 1)
 					status[0] = doc.GetNodeText(value)
-					res = append(res, ast.Require{Name: doc.GetNodeText(key), Status: status, Range: doc.NodeToRange(key)})
+					res = append(res, ast.Require{
+						Name:        doc.GetNodeText(key),
+						Status:      status,
+						Range:       doc.NodeToRange(key),
+						StatusRange: doc.NodeToRange(value),
+					})
 				} else {
 					statusesNode := GetFirstChild(value)
 					status := make([]string, 0, statusesNode.ChildCount())
+					isBlockSequence := false
 					iterateOnBlockSequence(statusesNode, func(statusItemNode *sitter.Node) {
 						if statusItemNode.Type() == "flow_node" {
 							status = append(status, doc.GetNodeText(statusItemNode))
 						}
 						if statusItemNode.Type() == "block_sequence_item" {
 							status = append(status, doc.GetNodeText(statusItemNode.Child(1)))
+							isBlockSequence = true
 						}
 					})
-					res = append(res, ast.Require{Name: doc.GetNodeText(key), Status: status, Range: doc.NodeToRange(key)})
+					var statusRange protocol.Range
+					// For multi-line arrays, include everything from after the colon to end of
+					// multi-line value array.
+					if isBlockSequence {
+						keyRange := doc.NodeToRange(key)
+						valueRange := doc.NodeToRange(value)
+						statusRange = protocol.Range{
+							Start: protocol.Position{
+								Line:      keyRange.End.Line,
+								Character: keyRange.End.Character + 1, // +1 to skip the ':'
+							},
+							End: valueRange.End,
+						}
+					} else {
+						// For inline arrays, use the actual sequence node, not the value node
+						// which may include an anchor. e.g.
+						//
+						//  requires:
+						//    - job-name: &job-name-requires [ success, failed, canceled, not_run ]
+						//                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+						statusRange = doc.NodeToRange(statusesNode)
+					}
+					res = append(res, ast.Require{
+						Name:        doc.GetNodeText(key),
+						Status:      status,
+						Range:       doc.NodeToRange(key),
+						StatusRange: statusRange,
+					})
 				}
 			}
 		}
