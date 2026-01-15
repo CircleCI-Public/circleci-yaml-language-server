@@ -9,6 +9,8 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
+var TerminalJobStatuses = []string{"success", "failed", "canceled", "not_run"}
+
 func (val Validate) ValidateWorkflows() {
 	for _, workflow := range val.Doc.Workflows {
 		val.validateSingleWorkflow(workflow)
@@ -55,6 +57,47 @@ func (val Validate) validateSingleWorkflow(workflow ast.Workflow) error {
 				val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
 					require.Range,
 					fmt.Sprintf("Cannot find declaration for job reference %s", require.Name)))
+			}
+
+			if requireHasAllTerminalStatuses(require.Status) {
+				// Use " terminal" for multi-line arrays so there's a space after the colon.
+				// "terminal" for inline arrays since we're replacing an array that is
+				// already spaced after the colon. e.g.
+				//
+				// Inline:
+				// Before: - job_name: [inline-array]
+				// After:  - job_name: terminal
+				//
+				// Vs multi-line:
+				// Before:
+				// - job_name:
+				//   - success
+				//
+				// After:
+				// - job_name: terminal
+				newText := "terminal"
+				if require.StatusRange.Start.Line != require.StatusRange.End.Line {
+					newText = " terminal"
+				}
+				codeAction := utils.CreateCodeActionTextEdit(
+					"Simplify these statuses to 'terminal'",
+					val.Doc.URI,
+					[]protocol.TextEdit{
+						{
+							NewText: newText,
+							Range:   require.StatusRange,
+						},
+					},
+					true, // preferred
+				)
+				val.addDiagnostic(
+					protocol.Diagnostic{
+						Range:    require.StatusRange,
+						Message:  fmt.Sprintf("Statuses: '%v' can be simplified to just 'terminal'", require.Status),
+						Severity: protocol.DiagnosticSeverityHint,
+						Data:     []protocol.CodeAction{codeAction},
+					},
+				)
 			}
 		}
 
@@ -141,4 +184,31 @@ func (val Validate) validateDAG(workflow ast.Workflow) {
 			}
 		}
 	}
+}
+
+func requireHasAllTerminalStatuses(statuses []string) bool {
+	if len(statuses) != len(TerminalJobStatuses) {
+		return false
+	}
+
+	terminalSet := make(map[string]bool)
+	for _, status := range TerminalJobStatuses {
+		terminalSet[status] = false
+	}
+
+	for _, s := range statuses {
+		if _, ok := terminalSet[s]; ok {
+			terminalSet[s] = true
+		} else {
+			return false
+		}
+	}
+
+	for _, found := range terminalSet {
+		if !found {
+			return false
+		}
+	}
+
+	return true
 }

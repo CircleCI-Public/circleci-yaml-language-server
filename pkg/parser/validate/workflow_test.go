@@ -234,3 +234,279 @@ workflows:
 
 	CheckYamlErrors(t, testCases)
 }
+
+func TestTerminalJobStatusesHint(t *testing.T) {
+	testCases := []struct {
+		name            string
+		yamlContent     string
+		expectHint      bool
+		expectedNewText string
+		expectedRange   protocol.Range
+	}{
+		{
+			name: "All terminal statuses present - should show hint",
+			yamlContent: `version: 2.1
+
+jobs:
+  job1:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "test"
+  job2:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "test"
+
+workflows:
+  test-workflow:
+    jobs:
+      - job1
+      - job2:
+          requires:
+            - job1: [success, failed, canceled, not_run]`,
+			expectHint:      true,
+			expectedNewText: "terminal",
+			expectedRange: protocol.Range{
+				Start: protocol.Position{Line: 20, Character: 20},
+				End:   protocol.Position{Line: 20, Character: 56},
+			},
+		},
+		{
+			name: "All terminal statuses as YAML list - should show hint",
+			yamlContent: `version: 2.1
+
+jobs:
+  job1:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "test"
+  job2:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "test"
+
+workflows:
+  test-workflow:
+    jobs:
+      - job1
+      - job2:
+          requires:
+            - job1:
+              - success
+              - failed
+              - canceled
+              - not_run`,
+			expectHint:      true,
+			expectedNewText: " terminal",
+			expectedRange: protocol.Range{
+				Start: protocol.Position{Line: 20, Character: 19},
+				End:   protocol.Position{Line: 24, Character: 23},
+			},
+		},
+		{
+			name: "All terminal statuses in different order - should show hint",
+			yamlContent: `version: 2.1
+
+jobs:
+  job1:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "test"
+  job2:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "test"
+
+workflows:
+  test-workflow:
+    jobs:
+      - job1
+      - job2:
+          requires:
+            - job1: [not_run, canceled, failed, success]`,
+			expectHint:      true,
+			expectedNewText: "terminal",
+			expectedRange: protocol.Range{
+				Start: protocol.Position{Line: 20, Character: 20},
+				End:   protocol.Position{Line: 20, Character: 56},
+			},
+		},
+		{
+			name: "Only some terminal statuses - no hint",
+			yamlContent: `version: 2.1
+
+jobs:
+  job1:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "test"
+  job2:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "test"
+
+workflows:
+  test-workflow:
+    jobs:
+      - job1
+      - job2:
+          requires:
+            - job1: [success, failed]`,
+			expectHint: false,
+		},
+		{
+			name: "Mix of terminal and non-terminal statuses - no hint",
+			yamlContent: `version: 2.1
+
+jobs:
+  job1:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "test"
+  job2:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "test"
+
+workflows:
+  test-workflow:
+    jobs:
+      - job1
+      - job2:
+          requires:
+            - job1: [success, failed, canceled, not_run, unknown]`,
+			expectHint: false,
+		},
+		{
+			name: "All terminal statuses with anchor - should show hint",
+			yamlContent: `version: 2.1
+
+jobs:
+  job1:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "test"
+  job2:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "test"
+
+workflows:
+  test-workflow:
+    jobs:
+      - job1
+      - job2:
+          requires:
+            - job1: &terminal-statuses [success, failed, canceled, not_run]`,
+			expectHint:      true,
+			expectedNewText: "terminal",
+			expectedRange: protocol.Range{
+				Start: protocol.Position{Line: 20, Character: 39},
+				End:   protocol.Position{Line: 20, Character: 75},
+			},
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			val := CreateValidateFromYAML(tt.yamlContent)
+			val.Validate()
+
+			diags := *val.Diagnostics
+
+			// Filter for only Hint severity diagnostics
+			hintDiags := []protocol.Diagnostic{}
+			for _, d := range diags {
+				if d.Severity == protocol.DiagnosticSeverityHint {
+					hintDiags = append(hintDiags, d)
+				}
+			}
+
+			if !tt.expectHint {
+				if len(hintDiags) != 0 {
+					t.Errorf("Expected no hint diagnostics, got %d", len(hintDiags))
+				}
+				return
+			}
+
+			if len(hintDiags) != 1 {
+				t.Fatalf("Expected 1 hint diagnostic, got %d", len(hintDiags))
+			}
+
+			diag := hintDiags[0]
+			if diag.Severity != protocol.DiagnosticSeverityHint {
+				t.Errorf("Expected Hint severity, got %v", diag.Severity)
+			}
+
+			if diag.Data == nil {
+				t.Fatal("Expected diagnostic to have code actions")
+			}
+
+			codeActions, ok := diag.Data.([]protocol.CodeAction)
+			if !ok {
+				t.Fatalf("Expected Data to be []protocol.CodeAction, got %T", diag.Data)
+			}
+
+			if len(codeActions) == 0 {
+				t.Fatal("Expected at least one code action")
+			}
+
+			// Find the terminal simplification code action
+			var terminalAction *protocol.CodeAction
+			for i := range codeActions {
+				if codeActions[i].Title == "Simplify these statuses to 'terminal'" {
+					terminalAction = &codeActions[i]
+					break
+				}
+			}
+
+			if terminalAction == nil {
+				t.Fatal("Expected 'Simplify these statuses to 'terminal'' code action")
+			}
+
+			if terminalAction.Kind != "quickfix" {
+				t.Errorf("Expected kind 'quickfix', got %s", terminalAction.Kind)
+			}
+
+			if !terminalAction.IsPreferred {
+				t.Error("Expected IsPreferred to be true")
+			}
+
+			if terminalAction.Edit == nil {
+				t.Fatal("Expected Edit to be non-nil")
+			}
+
+			changes := terminalAction.Edit.Changes
+			if len(changes) != 1 {
+				t.Fatalf("Expected 1 change, got %d", len(changes))
+			}
+
+			for _, edits := range changes {
+				if len(edits) != 1 {
+					t.Fatalf("Expected 1 text edit, got %d", len(edits))
+				}
+
+				edit := edits[0]
+				if edit.NewText != tt.expectedNewText {
+					t.Errorf("Expected NewText %q, got %q", tt.expectedNewText, edit.NewText)
+				}
+
+				if edit.Range != tt.expectedRange {
+					t.Errorf("Expected Range %v, got %v", tt.expectedRange, edit.Range)
+				}
+			}
+		})
+	}
+}

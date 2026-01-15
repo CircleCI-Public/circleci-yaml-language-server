@@ -52,9 +52,10 @@ type JobRef struct {
 }
 
 type Require struct {
-	Name   string
-	Status []string
-	Range  protocol.Range
+	Name        string
+	Status      []string
+	Range       protocol.Range
+	StatusRange protocol.Range
 }
 
 type WorkflowTrigger struct {
