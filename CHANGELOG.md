@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## [0.26.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.25.0...0.26.0) (2026-01-15)
+
+
+### Features
+
+* [PIPE-5387] add "terminal" shorthand for upstream job requires array ([#389](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/389)) ([52b2250](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/52b22508d6bd45bb8440c6dd34175bff854f5309))
+* Add Xcode 26.1.1 and 26.2.0 ([#386](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/386)) ([ccc0070](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/ccc0070c0678a0df84ab29e182fe79da73cccc5d))
+* **EXEC-5710:** Add support for `shallow` checkout type ([#376](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/376)) ([a6fb080](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/a6fb0803504b3feaed601be171d24d0e51bafba6))
+* Extend the `requires` schema of a workflow job ([#387](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/387)) ([bd4f687](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/bd4f68773d5e8d22bf37f550a0474fd0c17cca96))
+
 ## [0.25.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.24.0...0.25.0) (2025-11-06)
 
 
