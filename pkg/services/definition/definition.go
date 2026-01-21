@@ -2,6 +2,7 @@ package definition
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
@@ -54,7 +55,7 @@ func (def DefinitionStruct) Definition() ([]protocol.Location, error) {
 	}
 
 	if err != nil {
-		fmt.Println("error occurred during definition:", err)
+		fmt.Fprintln(os.Stderr, "error occurred during definition:", err)
 	}
 	return res, nil
 }
