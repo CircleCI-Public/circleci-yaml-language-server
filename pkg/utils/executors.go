@@ -94,6 +94,16 @@ var ValidLinuxImages = []string{
 	"android:202102-01",
 }
 
+var ValidLinuxGen2Images = []string{
+	// Ubuntu 22.04
+	"ubuntu-2204:current",
+	"ubuntu-2204:edge",
+
+	// Ubuntu 24.04
+	"ubuntu-2404:current",
+	"ubuntu-2404:edge",
+}
+
 var ValidLinuxResourceClasses = []string{
 	"small",
 	"medium",
@@ -110,6 +120,14 @@ var ValidLinuxResourceClasses = []string{
 	// Special case: missing resource class or empty string means default linux
 	// resource class
 	"",
+}
+
+var ValidLinuxGen2ResourceClasses = []string{
+	"medium-gen2",
+	"large-gen2",
+	"xlarge-gen2",
+	"2xlarge-gen2",
+	"2xlarge+-gen2",
 }
 
 var ValidWindowsImages = []string{
@@ -198,6 +216,7 @@ var ValidMachineResourceClasses = slices.Concat(
 	ValidWindowsResourceClasses,
 	ValidLinuxGPUResourceClasses,
 	ValidWindowsGPUResourceClasses,
+	ValidLinuxGen2ResourceClasses,
 )
 
 var ValidMachineImages = slices.Concat(
@@ -205,6 +224,7 @@ var ValidMachineImages = slices.Concat(
 	ValidWindowsImages,
 	ValidLinuxGPUImages,
 	ValidWindowsGPUImages,
+	ValidLinuxGen2Images,
 )
 
 var ValidMachinePairs = []struct {
@@ -215,6 +235,7 @@ var ValidMachinePairs = []struct {
 	{Images: ValidWindowsImages, ResourceClasses: ValidWindowsResourceClasses},
 	{Images: ValidLinuxGPUImages, ResourceClasses: ValidLinuxGPUResourceClasses},
 	{Images: ValidWindowsGPUImages, ResourceClasses: ValidWindowsGPUResourceClasses},
+	{Images: ValidLinuxGen2Images, ResourceClasses: ValidLinuxGen2ResourceClasses},
 }
 
 var ValidXcodeVersions = []string{
