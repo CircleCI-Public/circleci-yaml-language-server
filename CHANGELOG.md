@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [0.27.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.26.0...0.27.0) (2026-02-06)
+
+
+### Features
+
+* Add gen2 linux resource classes and images ([#391](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/391)) ([3e9b0ad](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/3e9b0ad8cb1f7695525010346223a2ddb6dcb869))
+
 ## [0.26.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.25.0...0.26.0) (2026-01-15)
 
 
