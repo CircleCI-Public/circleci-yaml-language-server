@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## [0.27.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.26.0...0.27.0) (2026-02-09)
+
+
+### Features
+
+* Add gen2 linux resource classes and images ([#391](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/391)) ([3e9b0ad](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/3e9b0ad8cb1f7695525010346223a2ddb6dcb869))
+* Add XCode 26.3.0 ([#393](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/393)) ([c3454ee](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/c3454eef138abbb76e00500a2ab9671d31610335))
+
 ## [0.26.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.25.0...0.26.0) (2026-01-15)
 
 
