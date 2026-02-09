@@ -245,28 +245,13 @@ var ValidXcodeVersions = []string{
 	"26.0.1",
 	"16.4.0",
 	"16.3.0",
-	"16.2.0",
-	"16.1.0",
-	"16.0.0",
 	"15.4.0",
-	"15.3.0",
-	"15.2.0",
-	"15.1.0",
-	"15.0.0",
 	"14.3.1",
-	"14.2.0",
-	"14.1.0",
-	"14.0.1",
-	"13.4.1",
 }
 
 var ValidMacOSResourceClasses = []string{
 	"m4pro.medium",
 	"m4pro.large",
-	"m2pro.medium",
-	"m2pro.large",
-	"macos.m1.medium.gen1",
-	"macos.m1.large.gen1",
 }
 
 var ValidDockerResourceClasses = ValidLinuxResourceClasses

@@ -45,13 +45,13 @@ workflows:
 executors:
   macos-ios-executor:
     macos:
-      xcode: "15.1.0"
+      xcode: 26.3.0
     resource_class: large`,
 			Diagnostics: []protocol.Diagnostic{
 				utils.CreateErrorDiagnosticFromRange(protocol.Range{
 					Start: protocol.Position{Line: 6, Character: 4},
 					End:   protocol.Position{Line: 6, Character: 0x19},
-				}, "Invalid resource class \"large\" for Xcode version \"15.1.0\""),
+				}, "Invalid resource class \"large\" for Xcode version \"26.3.0\""),
 			},
 		},
 	}
