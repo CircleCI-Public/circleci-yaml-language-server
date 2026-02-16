@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## [0.28.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.27.0...0.28.0) (2026-02-16)
+
+
+### Features
+
+* Remove EOL M1 and M2 Mac resource classes ([#394](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/394)) ([0752a29](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/0752a298b425636887e0c4da1ae8c2ce40183a7a))
+
+
+### Bug Fixes
+
+* print on stderr to avoid violating LSP in stdio mode ([#378](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/378)) ([e20fa5b](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/e20fa5ba92e71a7c94b857150d354c2fd1c14c8d))
+
 ## [0.27.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.26.0...0.27.0) (2026-02-09)
 
 
