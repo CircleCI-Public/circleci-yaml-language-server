@@ -1204,10 +1204,26 @@
                                             "markdownDescription": "Specify when to enable or disable the step. Takes the following values: `always`, `on_success`, `on_fail` (default: `on_success`)"
                                         },
                                         "max_auto_reruns": {
-                                            "type": "integer",
-                                            "minimum": 1,
-                                            "maximum": 5,
-                                            "markdownDescription": "Maximum number of automatic reruns for this step"
+                                            "markdownDescription": "Maximum number of automatic reruns for this step. Can be an integer between 1 and 5, or a parameter expression.",
+                                            "anyOf": [
+                                                {
+                                                    "oneOf": [
+                                                        {
+                                                            "type": "string",
+                                                            "pattern": " *<< *parameters.([^ ]+) *>> *"
+                                                        },
+                                                        {
+                                                            "type": "string",
+                                                            "pattern": " *<< *pipeline.parameters.([^ ]+) *>> *"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "integer",
+                                                    "minimum": 1,
+                                                    "maximum": 5
+                                                }
+                                            ]
                                         },
                                         "auto_rerun_delay": {
                                             "type": "string",
@@ -2108,10 +2124,26 @@
                         "markdownDescription": "Specifies which triggers will cause this workflow to be executed. Default behavior is to trigger the workflow when pushing to a branch."
                     },
                     "max_auto_reruns": {
-                        "type": "integer",
-                        "minimum": 1,
-                        "maximum": 5,
-                        "markdownDescription": "The maximum number of times a workflow will be automatically rerun if it fails"
+                        "markdownDescription": "The maximum number of times a workflow will be automatically rerun if it fails. Can be an integer between 1 and 5, or a parameter expression.",
+                        "anyOf": [
+                            {
+                                "oneOf": [
+                                    {
+                                        "type": "string",
+                                        "pattern": " *<< *parameters.([^ ]+) *>> *"
+                                    },
+                                    {
+                                        "type": "string",
+                                        "pattern": " *<< *pipeline.parameters.([^ ]+) *>> *"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 5
+                            }
+                        ]
                     },
                     "when": {
                         "$ref": "#/definitions/logic",
