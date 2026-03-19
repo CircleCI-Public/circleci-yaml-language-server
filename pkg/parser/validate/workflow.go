@@ -9,7 +9,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
-var TerminalJobStatuses = []string{"success", "failed", "canceled", "not_run"}
+var TerminalJobStatuses = []string{"success", "failed", "canceled", "not_run", "unauthorized"}
 
 func (val Validate) ValidateWorkflows() {
 	for _, workflow := range val.Doc.Workflows {

@@ -265,12 +265,12 @@ workflows:
       - job1
       - job2:
           requires:
-            - job1: [success, failed, canceled, not_run]`,
+            - job1: [success, failed, canceled, not_run, unauthorized]`,
 			expectHint:      true,
 			expectedNewText: "terminal",
 			expectedRange: protocol.Range{
 				Start: protocol.Position{Line: 20, Character: 20},
-				End:   protocol.Position{Line: 20, Character: 56},
+				End:   protocol.Position{Line: 20, Character: 70},
 			},
 		},
 		{
@@ -299,12 +299,13 @@ workflows:
               - success
               - failed
               - canceled
-              - not_run`,
+              - not_run
+              - unauthorized`,
 			expectHint:      true,
 			expectedNewText: " terminal",
 			expectedRange: protocol.Range{
 				Start: protocol.Position{Line: 20, Character: 19},
-				End:   protocol.Position{Line: 24, Character: 23},
+				End:   protocol.Position{Line: 25, Character: 28},
 			},
 		},
 		{
@@ -329,12 +330,12 @@ workflows:
       - job1
       - job2:
           requires:
-            - job1: [not_run, canceled, failed, success]`,
+            - job1: [not_run, canceled, failed, success, unauthorized]`,
 			expectHint:      true,
 			expectedNewText: "terminal",
 			expectedRange: protocol.Range{
 				Start: protocol.Position{Line: 20, Character: 20},
-				End:   protocol.Position{Line: 20, Character: 56},
+				End:   protocol.Position{Line: 20, Character: 70},
 			},
 		},
 		{
@@ -384,7 +385,7 @@ workflows:
       - job1
       - job2:
           requires:
-            - job1: [success, failed, canceled, not_run, unknown]`,
+            - job1: [success, failed, canceled, not_run, unauthorized, unknown]`,
 			expectHint: false,
 		},
 		{
@@ -409,12 +410,12 @@ workflows:
       - job1
       - job2:
           requires:
-            - job1: &terminal-statuses [success, failed, canceled, not_run]`,
+            - job1: &terminal-statuses [success, failed, canceled, not_run, unauthorized]`,
 			expectHint:      true,
 			expectedNewText: "terminal",
 			expectedRange: protocol.Range{
 				Start: protocol.Position{Line: 20, Character: 39},
-				End:   protocol.Position{Line: 20, Character: 75},
+				End:   protocol.Position{Line: 20, Character: 89},
 			},
 		},
 	}
