@@ -27,7 +27,7 @@ type GithubRelease struct {
 }
 
 func getLatestVersion() string {
-	resp, err := http.Get("https://api.github.com/repos/CircleCI-Public/circleci-yaml-language-server/releases")
+	resp, err := http.Get("https://api.github.com/repos/CircleCI-Public/circleci-yaml-language-server/releases/latest")
 	if err != nil {
 		panic(err)
 	}
@@ -38,16 +38,20 @@ func getLatestVersion() string {
 		panic(err)
 	}
 
-	versions := []GithubRelease{}
-	err = json.Unmarshal(body, &versions)
+	if resp.StatusCode != http.StatusOK {
+		panic(fmt.Errorf("GitHub API returned %d: %s", resp.StatusCode, string(body)))
+	}
+
+	var release GithubRelease
+	err = json.Unmarshal(body, &release)
 	if err != nil {
 		panic(err)
 	}
-	if len(versions) == 0 {
+	if release.TagName == "" {
 		panic(fmt.Errorf("Did not find previous versions"))
 	}
 
-	return versions[0].TagName
+	return release.TagName
 }
 
 func incrementVersion(tagName string) string {
