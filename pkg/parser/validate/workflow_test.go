@@ -68,27 +68,27 @@ workflows:
 			Name: "Serial groups",
 			YamlContent: `version: 2.1
 jobs:
-	- deploy:
-			type: no-op
+  deploy:
+    type: no-op
 
 workflows:
- someworkflow:
-	 jobs:
-		 - deploy:
-					serial-group: deploy-group`,
+  someworkflow:
+    jobs:
+      - deploy:
+          serial-group: deploy-group`,
 		},
 		{
 			Name: "Job override",
 			YamlContent: `version: 2.1
 jobs:
-	- deploy:
-			type: no-op
+  deploy:
+    type: no-op
 
 workflows:
- someworkflow:
-	 jobs:
-		 - deploy:
-					override-with: local/deploy`,
+  someworkflow:
+    jobs:
+      - deploy:
+         override-with: local/deploy`,
 		},
 	}
 
@@ -100,6 +100,13 @@ func TestWorkflowMaxAutoReruns(t *testing.T) {
 		{
 			Name: "Valid max_auto_reruns value 1",
 			YamlContent: `version: 2.1
+
+jobs:
+  hold:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "hold"
 
 workflows:
   test-workflow:
@@ -114,6 +121,13 @@ workflows:
 			Name: "Valid max_auto_reruns value 3",
 			YamlContent: `version: 2.1
 
+jobs:
+  hold:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "hold"
+
 workflows:
   test-workflow:
     max_auto_reruns: 3
@@ -126,17 +140,17 @@ workflows:
 			YamlContent: `version: 2.1
 
 jobs:
-	test-job:
-		docker:
-			- image: cimg/base:stable
-		steps:
-			- run: echo "test"
+  test-job:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "test"
 
 workflows:
-	test-workflow:
-		max_auto_reruns: 5
-		jobs:
-			- test-job`,
+  test-workflow:
+    max_auto_reruns: 5
+    jobs:
+      - test-job`,
 			OnlyErrors:  true,
 			Diagnostics: []protocol.Diagnostic{},
 		},

@@ -84,7 +84,7 @@ orbs:
     jobs:
       localjob:
         docker:
-					- image: cimg/base:edge
+          - image: cimg/base:edge
         steps:
           - run: echo "Hello world"`,
 			Diagnostics: []protocol.Diagnostic{},

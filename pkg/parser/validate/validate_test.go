@@ -2,6 +2,7 @@ package validate
 
 import (
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/dockerhub"
@@ -48,6 +49,9 @@ func CheckYamlErrors(t *testing.T, testCases []ValidateTestCase) {
 	context.Api.Token = ""
 	for _, tt := range testCases {
 		t.Run(tt.Name, func(t *testing.T) {
+			if strings.Contains(tt.YamlContent, "\t") {
+				t.Fatal("Test YAML content contains tab characters -- YAML does not allow tabs for indentation. Use spaces instead.")
+			}
 			val := CreateValidateFromYAML(tt.YamlContent)
 			val.Validate()
 
