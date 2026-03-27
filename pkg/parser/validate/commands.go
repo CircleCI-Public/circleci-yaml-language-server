@@ -42,9 +42,9 @@ func (val Validate) checkIfCommandIsUsed(command ast.Command) bool {
 	}
 
 	for _, workflow := range val.Doc.Workflows {
-		for _, jobRef := range workflow.JobRefs {
-			steps := jobRef.PostSteps
-			steps = append(steps, jobRef.PreSteps...)
+		for _, jobInvocation := range workflow.JobInvocations {
+			steps := jobInvocation.PostSteps
+			steps = append(steps, jobInvocation.PreSteps...)
 
 			if val.checkIfStepsContainStep(steps, command.Name) {
 				return true

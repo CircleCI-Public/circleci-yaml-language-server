@@ -21,32 +21,32 @@ func getFirstChildOfType(rootNode *sitter.Node, typeName string) *sitter.Node {
 	return nil
 }
 
-func TestYamlDocument_parseSingleJobReference(t *testing.T) {
-	const jobRef1 = "- build"
-	const jobRef2 = `
+func TestYamlDocument_parseSingleJobInvocation(t *testing.T) {
+	const jobInvocation1 = "- build"
+	const jobInvocation2 = `
 - test:
     requires:
         - setup`
-	const jobRef3 = `
+	const jobInvocation3 = `
 - test:
     matrix:
         parameters:
             bar: [1, 2]`
-	const jobRef4 = `
+	const jobInvocation4 = `
 - test:
     name: say-my-name`
-	const jobRef5 = `
+	const jobInvocation5 = `
 - test:
     requires:
         - setup: failed`
-	const jobRef6 = `
+	const jobInvocation6 = `
 - test:
     requires:
         - setup: [success, canceled]`
-	const jobRef7 = `
+	const jobInvocation7 = `
 - deploy:
     serial-group: deploy-group`
-	const jobRef8 = `
+	const jobInvocation8 = `
 - deploy:
     override-with: foo/deploy`
 
@@ -55,21 +55,21 @@ func TestYamlDocument_parseSingleJobReference(t *testing.T) {
 		Workflows map[string]ast.Workflow
 	}
 	type args struct {
-		jobRefNode *sitter.Node
+		jobInvocationNode *sitter.Node
 	}
 	tests := []struct {
 		name   string
 		fields fields
 		args   args
-		want   ast.JobRef
+		want   ast.JobInvocation
 	}{
 		{
-			name:   "Simple named job reference",
-			fields: fields{Content: []byte(jobRef1)},
-			args:   args{jobRefNode: getFirstChildOfType(GetRootNode([]byte(jobRef1)), "block_sequence_item")},
-			want: ast.JobRef{
+			name:   "Simple named job invocation",
+			fields: fields{Content: []byte(jobInvocation1)},
+			args:   args{jobInvocationNode: getFirstChildOfType(GetRootNode([]byte(jobInvocation1)), "block_sequence_item")},
+			want: ast.JobInvocation{
 				JobName: "build",
-				JobRefRange: protocol.Range{
+				JobInvocationRange: protocol.Range{
 					Start: protocol.Position{
 						Line:      0,
 						Character: 0,
@@ -106,12 +106,12 @@ func TestYamlDocument_parseSingleJobReference(t *testing.T) {
 			},
 		},
 		{
-			name:   "Named job reference with parameters",
-			fields: fields{Content: []byte(jobRef2)},
-			args:   args{jobRefNode: getFirstChildOfType(GetRootNode([]byte(jobRef2)), "block_sequence_item")},
-			want: ast.JobRef{
+			name:   "Named job invocation with parameters",
+			fields: fields{Content: []byte(jobInvocation2)},
+			args:   args{jobInvocationNode: getFirstChildOfType(GetRootNode([]byte(jobInvocation2)), "block_sequence_item")},
+			want: ast.JobInvocation{
 				JobName: "test",
-				JobRefRange: protocol.Range{
+				JobInvocationRange: protocol.Range{
 					Start: protocol.Position{
 						Line:      1,
 						Character: 0,
@@ -161,12 +161,12 @@ func TestYamlDocument_parseSingleJobReference(t *testing.T) {
 			},
 		},
 		{
-			name:   "Named job reference with matrix parameters",
-			fields: fields{Content: []byte(jobRef3)},
-			args:   args{jobRefNode: getFirstChildOfType(GetRootNode([]byte(jobRef3)), "block_sequence_item")},
-			want: ast.JobRef{
+			name:   "Named job invocation with matrix parameters",
+			fields: fields{Content: []byte(jobInvocation3)},
+			args:   args{jobInvocationNode: getFirstChildOfType(GetRootNode([]byte(jobInvocation3)), "block_sequence_item")},
+			want: ast.JobInvocation{
 				JobName: "test",
-				JobRefRange: protocol.Range{
+				JobInvocationRange: protocol.Range{
 					Start: protocol.Position{
 						Line:      1,
 						Character: 0,
@@ -282,10 +282,10 @@ func TestYamlDocument_parseSingleJobReference(t *testing.T) {
 			},
 		},
 		{
-			name:   "Named job reference with matrix parameters",
-			fields: fields{Content: []byte(jobRef4)},
-			args:   args{jobRefNode: getFirstChildOfType(GetRootNode([]byte(jobRef4)), "block_sequence_item")},
-			want: ast.JobRef{
+			name:   "Named job invocation with matrix parameters",
+			fields: fields{Content: []byte(jobInvocation4)},
+			args:   args{jobInvocationNode: getFirstChildOfType(GetRootNode([]byte(jobInvocation4)), "block_sequence_item")},
+			want: ast.JobInvocation{
 				JobName: "test",
 				JobNameRange: protocol.Range{
 					Start: protocol.Position{
@@ -308,7 +308,7 @@ func TestYamlDocument_parseSingleJobReference(t *testing.T) {
 						Character: 21,
 					},
 				},
-				JobRefRange: protocol.Range{
+				JobInvocationRange: protocol.Range{
 					Start: protocol.Position{
 						Line:      1,
 						Character: 0,
@@ -324,12 +324,12 @@ func TestYamlDocument_parseSingleJobReference(t *testing.T) {
 			},
 		},
 		{
-			name:   "Job reference with requires and single status",
-			fields: fields{Content: []byte(jobRef5)},
-			args:   args{jobRefNode: getFirstChildOfType(GetRootNode([]byte(jobRef5)), "block_sequence_item")},
-			want: ast.JobRef{
+			name:   "Job invocation with requires and single status",
+			fields: fields{Content: []byte(jobInvocation5)},
+			args:   args{jobInvocationNode: getFirstChildOfType(GetRootNode([]byte(jobInvocation5)), "block_sequence_item")},
+			want: ast.JobInvocation{
 				JobName: "test",
-				JobRefRange: protocol.Range{
+				JobInvocationRange: protocol.Range{
 					Start: protocol.Position{
 						Line:      1,
 						Character: 0,
@@ -379,12 +379,12 @@ func TestYamlDocument_parseSingleJobReference(t *testing.T) {
 			},
 		},
 		{
-			name:   "Job reference with requires and multiple statuses",
-			fields: fields{Content: []byte(jobRef6)},
-			args:   args{jobRefNode: getFirstChildOfType(GetRootNode([]byte(jobRef6)), "block_sequence_item")},
-			want: ast.JobRef{
+			name:   "Job invocation with requires and multiple statuses",
+			fields: fields{Content: []byte(jobInvocation6)},
+			args:   args{jobInvocationNode: getFirstChildOfType(GetRootNode([]byte(jobInvocation6)), "block_sequence_item")},
+			want: ast.JobInvocation{
 				JobName: "test",
-				JobRefRange: protocol.Range{
+				JobInvocationRange: protocol.Range{
 					Start: protocol.Position{
 						Line:      1,
 						Character: 0,
@@ -434,12 +434,12 @@ func TestYamlDocument_parseSingleJobReference(t *testing.T) {
 			},
 		},
 		{
-			name:   "Job reference with serial group",
-			fields: fields{Content: []byte(jobRef7)},
-			args:   args{jobRefNode: getFirstChildOfType(GetRootNode([]byte(jobRef7)), "block_sequence_item")},
-			want: ast.JobRef{
+			name:   "Job invocation with serial group",
+			fields: fields{Content: []byte(jobInvocation7)},
+			args:   args{jobInvocationNode: getFirstChildOfType(GetRootNode([]byte(jobInvocation7)), "block_sequence_item")},
+			want: ast.JobInvocation{
 				JobName: "deploy",
-				JobRefRange: protocol.Range{
+				JobInvocationRange: protocol.Range{
 					Start: protocol.Position{
 						Line:      1,
 						Character: 0,
@@ -487,12 +487,12 @@ func TestYamlDocument_parseSingleJobReference(t *testing.T) {
 			},
 		},
 		{
-			name:   "Job reference with override",
-			fields: fields{Content: []byte(jobRef8)},
-			args:   args{jobRefNode: getFirstChildOfType(GetRootNode([]byte(jobRef8)), "block_sequence_item")},
-			want: ast.JobRef{
+			name:   "Job invocation with override",
+			fields: fields{Content: []byte(jobInvocation8)},
+			args:   args{jobInvocationNode: getFirstChildOfType(GetRootNode([]byte(jobInvocation8)), "block_sequence_item")},
+			want: ast.JobInvocation{
 				JobName: "deploy",
-				JobRefRange: protocol.Range{
+				JobInvocationRange: protocol.Range{
 					Start: protocol.Position{
 						Line:      1,
 						Character: 0,
@@ -545,10 +545,10 @@ func TestYamlDocument_parseSingleJobReference(t *testing.T) {
 			doc := &YamlDocument{
 				Content: tt.fields.Content,
 			}
-			got := doc.parseSingleJobReference(tt.args.jobRefNode)
+			got := doc.parseSingleJobInvocation(tt.args.jobInvocationNode)
 
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("YamlDocument.parseSingleJobReference() = got %v, want %v", got, tt.want)
+				t.Errorf("YamlDocument.parseSingleJobInvocation() = got %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -579,7 +579,7 @@ func TestYamlDocument_parseWorkflows(t *testing.T) {
 			fields: fields{Content: []byte(worfklows1), Workflows: make(map[string]ast.Workflow)},
 			args:   args{workflowsNode: workflowsNode1},
 			want: map[string]ast.Workflow{
-				"test-build": {Name: "test-build", JobRefs: []ast.JobRef{{JobName: "build"}}},
+				"test-build": {Name: "test-build", JobInvocations: []ast.JobInvocation{{JobName: "build"}}},
 			},
 		},
 	}

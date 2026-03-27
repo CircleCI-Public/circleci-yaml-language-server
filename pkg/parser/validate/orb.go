@@ -158,19 +158,19 @@ func (val Validate) checkIfOrbIsUsed(orb ast.Orb) bool {
 	}
 
 	for _, workflow := range val.Doc.Workflows {
-		for _, jobRef := range workflow.JobRefs {
-			if val.Doc.IsGivenOrb(jobRef.JobName, orb.Name) {
+		for _, jobInvocation := range workflow.JobInvocations {
+			if val.Doc.IsGivenOrb(jobInvocation.JobName, orb.Name) {
 				return true
 			}
 
-			steps := jobRef.PostSteps
-			steps = append(steps, jobRef.PreSteps...)
+			steps := jobInvocation.PostSteps
+			steps = append(steps, jobInvocation.PreSteps...)
 
 			if val.checkIfStepsContainOrb(steps, orb.Name) {
 				return true
 			}
 
-			if val.checkIfJobParamContainOrb(jobRef.Parameters, orb.Name) {
+			if val.checkIfJobParamContainOrb(jobInvocation.Parameters, orb.Name) {
 				return true
 			}
 		}

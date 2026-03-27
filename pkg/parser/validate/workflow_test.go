@@ -7,7 +7,7 @@ import (
 	"go.lsp.dev/protocol"
 )
 
-func TestWorkflowJobRefType(t *testing.T) {
+func TestWorkflowJobInvocationType(t *testing.T) {
 	testCases := []ValidateTestCase{
 		{
 			Name: "Approval jobs",

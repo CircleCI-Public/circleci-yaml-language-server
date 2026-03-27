@@ -26,37 +26,37 @@ func (val Validate) validateSingleWorkflow(workflow ast.Workflow) error {
 		}
 	}
 
-	for _, jobRef := range workflow.JobRefs {
-		if val.Doc.IsFromUnfetchableOrb(jobRef.JobName) {
+	for _, jobInvocation := range workflow.JobInvocations {
+		if val.Doc.IsFromUnfetchableOrb(jobInvocation.JobName) {
 			continue
 		}
 
-		isApprovalJob := jobRef.Type == "approval"
+		isApprovalJob := jobInvocation.Type == "approval"
 		if isApprovalJob {
 			continue
 		}
 
-		jobTypeIsDefined := jobRef.Type != ""
+		jobTypeIsDefined := jobInvocation.Type != ""
 		if jobTypeIsDefined {
-			val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(jobRef.TypeRange, fmt.Sprintf("Only jobs with `type: approval` can be defined inline under the `workflows:` section. For `type: %s`, define the job in the `jobs:` section instead.", jobRef.Type)))
+			val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(jobInvocation.TypeRange, fmt.Sprintf("Only jobs with `type: approval` can be defined inline under the `workflows:` section. For `type: %s`, define the job in the `jobs:` section instead.", jobInvocation.Type)))
 			continue
 		}
 
-		if !val.Doc.DoesJobExist(jobRef.JobName) &&
-			!(val.Doc.IsOrbReference(jobRef.JobName) && (val.Doc.IsOrbCommand(jobRef.JobName, val.Cache) || val.Doc.IsOrbJob(jobRef.JobName, val.Cache))) {
+		if !val.Doc.DoesJobExist(jobInvocation.JobName) &&
+			!(val.Doc.IsOrbReference(jobInvocation.JobName) && (val.Doc.IsOrbCommand(jobInvocation.JobName, val.Cache) || val.Doc.IsOrbJob(jobInvocation.JobName, val.Cache))) {
 			val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
-				jobRef.JobRefRange,
-				fmt.Sprintf("Cannot find declaration for job %s", jobRef.JobName)))
+				jobInvocation.JobInvocationRange,
+				fmt.Sprintf("Cannot find declaration for job %s", jobInvocation.JobName)))
 		}
 
-		if !val.Doc.IsOrbReference(jobRef.JobName) && !val.Doc.IsBuiltIn(jobRef.JobName) {
-			val.validateWorkflowParameters(jobRef, jobRef.JobName, jobRef.JobRefRange)
+		if !val.Doc.IsOrbReference(jobInvocation.JobName) && !val.Doc.IsBuiltIn(jobInvocation.JobName) {
+			val.validateWorkflowParameters(jobInvocation, jobInvocation.JobName, jobInvocation.JobInvocationRange)
 		}
-		for _, require := range jobRef.Requires {
-			if !val.doesJobRefExist(workflow, require.Name) && !utils.CheckIfMatrixParamIsPartiallyReferenced(require.Name) {
+		for _, require := range jobInvocation.Requires {
+			if !val.doesJobInvocationExist(workflow, require.Name) && !utils.CheckIfMatrixParamIsPartiallyReferenced(require.Name) {
 				val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
 					require.Range,
-					fmt.Sprintf("Cannot find declaration for job reference %s", require.Name)))
+					fmt.Sprintf("Cannot find declaration for job invocation %s", require.Name)))
 			}
 
 			if requireHasAllTerminalStatuses(require.Status) {
@@ -103,7 +103,7 @@ func (val Validate) validateSingleWorkflow(workflow ast.Workflow) error {
 
 		if cachedFile := val.Cache.FileCache.GetFile(val.Doc.URI); val.Context.Api.Token != "" &&
 			cachedFile != nil && cachedFile.Project.OrganizationName != "" {
-			for _, context := range jobRef.Context {
+			for _, context := range jobInvocation.Context {
 				if context.Text != "org-global" && val.Cache.ContextCache.GetOrganizationContext(cachedFile.Project.OrganizationId, context.Text) == nil {
 					val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
 						context.Range,
@@ -118,21 +118,21 @@ func (val Validate) validateSingleWorkflow(workflow ast.Workflow) error {
 	return nil
 }
 
-func (val Validate) doesJobRefExist(workflow ast.Workflow, requireName string) bool {
-	for _, jobRef := range workflow.JobRefs {
-		if jobRef.JobName == requireName || jobRef.StepName == requireName {
+func (val Validate) doesJobInvocationExist(workflow ast.Workflow, requireName string) bool {
+	for _, jobInvocation := range workflow.JobInvocations {
+		if jobInvocation.JobName == requireName || jobInvocation.StepName == requireName {
 			return true
 		}
 	}
 	return false
 }
 
-func (val Validate) validateWorkflowParameters(jobRef ast.JobRef, stepName string, stepRange protocol.Range) {
+func (val Validate) validateWorkflowParameters(jobInvocation ast.JobInvocation, stepName string, stepRange protocol.Range) {
 	definedParams := val.Doc.GetDefinedParams(stepName, val.Cache)
 
 	for _, definedParam := range definedParams {
-		_, okMatrix := jobRef.MatrixParams[definedParam.GetName()]
-		_, okParams := jobRef.Parameters[definedParam.GetName()]
+		_, okMatrix := jobInvocation.MatrixParams[definedParam.GetName()]
+		_, okParams := jobInvocation.Parameters[definedParam.GetName()]
 
 		if !okMatrix && !okParams && !definedParam.IsOptional() {
 			val.addDiagnostic(
@@ -145,7 +145,7 @@ func (val Validate) validateWorkflowParameters(jobRef ast.JobRef, stepName strin
 		}
 
 		if okMatrix {
-			for _, param := range jobRef.MatrixParams[definedParam.GetName()] {
+			for _, param := range jobInvocation.MatrixParams[definedParam.GetName()] {
 				if param.Type == "enum" {
 					for _, value := range param.Value.([]ast.ParameterValue) {
 						val.checkParamSimpleType(value, stepName, definedParam)
@@ -158,11 +158,11 @@ func (val Validate) validateWorkflowParameters(jobRef ast.JobRef, stepName strin
 				}
 			}
 		} else if okParams {
-			val.checkParamSimpleType(jobRef.Parameters[definedParam.GetName()], stepName, definedParam)
+			val.checkParamSimpleType(jobInvocation.Parameters[definedParam.GetName()], stepName, definedParam)
 		}
 	}
 
-	for _, param := range jobRef.Parameters {
+	for _, param := range jobInvocation.Parameters {
 		if definedParams[param.Name] == nil {
 			val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
 				param.Range,
@@ -176,10 +176,10 @@ func (val Validate) validateDAG(workflow ast.Workflow) {
 	nodes_in_cycle := isValidDAG(workflow.JobsDAG)
 
 	for _, node := range nodes_in_cycle {
-		for _, jobRef := range workflow.JobRefs {
-			if jobRef.JobName == node {
+		for _, jobInvocation := range workflow.JobInvocations {
+			if jobInvocation.JobName == node {
 				val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
-					jobRef.JobNameRange,
+					jobInvocation.JobNameRange,
 					fmt.Sprintf("The job `%s` is part of a cycle", node)))
 			}
 		}

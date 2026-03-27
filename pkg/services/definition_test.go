@@ -274,7 +274,7 @@ func TestDefinition(t *testing.T) {
 			},
 		},
 		{
-			name: "Definition for job ref",
+			name: "Definition for job invocation",
 			args: args{
 				filePath: "./testdata/references.yml",
 				position: protocol.Position{

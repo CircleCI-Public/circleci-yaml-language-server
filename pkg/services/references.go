@@ -124,8 +124,8 @@ type StepRangeAndName struct {
 
 func (ref ReferenceHandler) getStepsOfWorkflows() {
 	for _, workflow := range ref.Doc.Workflows {
-		for _, jobRef := range workflow.JobRefs {
-			*ref.FoundSteps = append(*ref.FoundSteps, StepRangeAndName{Name: jobRef.JobName, Range: jobRef.JobNameRange})
+		for _, jobInvocation := range workflow.JobInvocations {
+			*ref.FoundSteps = append(*ref.FoundSteps, StepRangeAndName{Name: jobInvocation.JobName, Range: jobInvocation.JobNameRange})
 		}
 	}
 }
@@ -167,10 +167,10 @@ func (ref ReferenceHandler) searchInOrbs() string {
 
 func (ref ReferenceHandler) searchInWorkflows() string {
 	for _, workflow := range ref.Doc.Workflows {
-		for _, jobRef := range workflow.JobRefs {
-			if utils.PosInRange(jobRef.JobNameRange, ref.Params.Position) {
-				if ref.Doc.DoesCommandOrJobOrExecutorExist(jobRef.JobName, false) {
-					return jobRef.JobName
+		for _, jobInvocation := range workflow.JobInvocations {
+			if utils.PosInRange(jobInvocation.JobNameRange, ref.Params.Position) {
+				if ref.Doc.DoesCommandOrJobOrExecutorExist(jobInvocation.JobName, false) {
+					return jobInvocation.JobName
 				}
 			}
 		}

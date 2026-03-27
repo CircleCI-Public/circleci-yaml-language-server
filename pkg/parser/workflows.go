@@ -87,8 +87,8 @@ func (doc *YamlDocument) parseSingleWorkflow(workflowNode *sitter.Node) ast.Work
 		switch keyName {
 		case "jobs":
 			res.JobsRange = doc.NodeToRange(child)
-			res.JobRefs = doc.parseJobReferences(valueNode)
-			res.JobsDAG = doc.buildJobsDAG(res.JobRefs)
+			res.JobInvocations = doc.parseJobInvocations(valueNode)
+			res.JobsDAG = doc.buildJobsDAG(res.JobInvocations)
 		case "triggers":
 			res.HasTrigger = true
 			res.TriggersRange = doc.NodeToRange(child)
@@ -107,55 +107,55 @@ func (doc *YamlDocument) parseSingleWorkflow(workflowNode *sitter.Node) ast.Work
 	return res
 }
 
-func (doc *YamlDocument) buildJobsDAG(jobRefs []ast.JobRef) map[string][]string {
+func (doc *YamlDocument) buildJobsDAG(jobInvocations []ast.JobInvocation) map[string][]string {
 	res := make(map[string][]string)
-	for _, jobRef := range jobRefs {
-		for _, requirement := range jobRef.Requires {
-			res[requirement.Name] = append(res[requirement.Name], jobRef.StepName)
+	for _, jobInvocation := range jobInvocations {
+		for _, requirement := range jobInvocation.Requires {
+			res[requirement.Name] = append(res[requirement.Name], jobInvocation.StepName)
 		}
 	}
 	return res
 }
 
-func (doc *YamlDocument) parseJobReferences(jobsRefsNode *sitter.Node) []ast.JobRef {
-	// jobsRefsNode is block_node
-	blockSequenceNode := GetChildSequence(jobsRefsNode)
-	jobReferences := []ast.JobRef{}
+func (doc *YamlDocument) parseJobInvocations(jobsInvocationsNode *sitter.Node) []ast.JobInvocation {
+	// jobsInvocationsNode is block_node
+	blockSequenceNode := GetChildSequence(jobsInvocationsNode)
+	jobInvocations := []ast.JobInvocation{}
 	if blockSequenceNode == nil {
-		return jobReferences
+		return jobInvocations
 	}
 
 	iterateOnBlockSequence(blockSequenceNode, func(child *sitter.Node) {
-		jobReferences = append(jobReferences, doc.parseSingleJobReference(child))
+		jobInvocations = append(jobInvocations, doc.parseSingleJobInvocation(child))
 	})
-	return jobReferences
+	return jobInvocations
 }
 
-func (doc *YamlDocument) parseSingleJobReference(jobRefNode *sitter.Node) ast.JobRef {
-	res := ast.JobRef{MatrixParams: make(map[string][]ast.ParameterValue), Parameters: make(map[string]ast.ParameterValue)}
-	if jobRefNode == nil {
+func (doc *YamlDocument) parseSingleJobInvocation(jobInvocationNode *sitter.Node) ast.JobInvocation {
+	res := ast.JobInvocation{MatrixParams: make(map[string][]ast.ParameterValue), Parameters: make(map[string]ast.ParameterValue)}
+	if jobInvocationNode == nil {
 		return res
 	}
-	res.JobRefRange = doc.NodeToRange(jobRefNode)
-	if jobRefNode.Type() != "block_sequence_item" {
+	res.JobInvocationRange = doc.NodeToRange(jobInvocationNode)
+	if jobInvocationNode.Type() != "block_sequence_item" {
 		return res
 	}
 
-	if jobRefNode.ChildCount() == 1 {
+	if jobInvocationNode.ChildCount() == 1 {
 		res.JobNameRange = protocol.Range{
 			Start: protocol.Position{
-				Line:      jobRefNode.StartPoint().Row,
-				Character: jobRefNode.StartPoint().Column + 1,
+				Line:      jobInvocationNode.StartPoint().Row,
+				Character: jobInvocationNode.StartPoint().Column + 1,
 			},
 			End: protocol.Position{
-				Line:      jobRefNode.StartPoint().Row,
-				Character: jobRefNode.StartPoint().Column + 2,
+				Line:      jobInvocationNode.StartPoint().Row,
+				Character: jobInvocationNode.StartPoint().Column + 2,
 			},
 		}
 		return res
 	}
 
-	element := jobRefNode.Child(1) // element is either flow_node or block_node
+	element := jobInvocationNode.Child(1) // element is either flow_node or block_node
 	res.Parameters = make(map[string]ast.ParameterValue)
 	res.HasMatrix = false
 

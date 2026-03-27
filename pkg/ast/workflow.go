@@ -4,11 +4,11 @@ import "go.lsp.dev/protocol"
 
 type Workflow struct {
 	protocol.Range
-	Name      string
-	NameRange protocol.Range
-	JobsRange protocol.Range
-	JobRefs   []JobRef
-	JobsDAG   map[string][]string // maps each job ref to its requirements, should be a directed acyclic graph
+	Name           string
+	NameRange      protocol.Range
+	JobsRange      protocol.Range
+	JobInvocations []JobInvocation
+	JobsDAG        map[string][]string // maps each job invocation to its requirements, should be a directed acyclic graph
 
 	HasTrigger    bool
 	Triggers      []WorkflowTrigger
@@ -19,8 +19,10 @@ type Workflow struct {
 	HasMaxAutoReruns   bool
 }
 
-type JobRef struct {
-	JobRefRange protocol.Range
+// A JobInvocation represents a job as it is orchestrated within a workflow.
+// It captures not just what to run (JobName), but also how and when to run it.
+type JobInvocation struct {
+	JobInvocationRange protocol.Range
 
 	// JobName is the name of the job that will be executed,
 	// it can be used to reference a job in the workflow

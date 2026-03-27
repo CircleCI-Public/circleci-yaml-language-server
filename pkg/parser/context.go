@@ -8,12 +8,12 @@ import (
 
 func (doc *YamlDocument) assignContexts() {
 	for _, workflow := range doc.Workflows {
-		for _, jobRef := range workflow.JobRefs {
-			for _, context := range jobRef.Context {
-				if !doc.DoesJobExist(jobRef.JobName) {
+		for _, jobInvocation := range workflow.JobInvocations {
+			for _, context := range jobInvocation.Context {
+				if !doc.DoesJobExist(jobInvocation.JobName) {
 					continue
 				}
-				job := doc.Jobs[jobRef.JobName]
+				job := doc.Jobs[jobInvocation.JobName]
 				doc.addContextToJob(job, context.Text)
 				for _, step := range job.Steps {
 					if doc.DoesCommandExist(step.GetName()) {

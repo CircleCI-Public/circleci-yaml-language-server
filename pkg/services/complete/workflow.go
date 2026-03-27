@@ -15,17 +15,17 @@ func (ch *CompletionHandler) completeWorkflows() {
 		return
 	}
 
-	if isJobReference(ch.Params.Position, wf) {
+	if isJobInvocation(ch.Params.Position, wf) {
 		ch.addJobsAndOrbsCompletion()
 		return
 	}
 
 	if isInRequired(ch.Params.Position, wf) {
-		ch.addExistingJobReferences(wf)
+		ch.addExistingJobInvocations(wf)
 		return
 	}
 
-	if wf.JobRefs == nil {
+	if wf.JobInvocations == nil {
 		ch.addCompletionItemFieldWithNewLine("jobs")
 	}
 	if !wf.HasTrigger {
@@ -44,9 +44,9 @@ func (ch *CompletionHandler) addJobsCompletion() {
 	}
 }
 
-func (ch *CompletionHandler) addExistingJobReferences(wf ast.Workflow) {
-	for _, jobRef := range wf.JobRefs {
-		ch.addCompletionItem(jobRef.JobName)
+func (ch *CompletionHandler) addExistingJobInvocations(wf ast.Workflow) {
+	for _, jobInvocation := range wf.JobInvocations {
+		ch.addCompletionItem(jobInvocation.JobName)
 	}
 }
 
@@ -60,8 +60,8 @@ func findWorkflow(pos protocol.Position, doc yamlparser.YamlDocument) (ast.Workf
 }
 
 func isInRequired(pos protocol.Position, wf ast.Workflow) bool {
-	for _, jobRef := range wf.JobRefs {
-		for _, require := range jobRef.Requires {
+	for _, jobInvocation := range wf.JobInvocations {
+		for _, require := range jobInvocation.Requires {
 			if utils.PosInRange(require.Range, pos) {
 				return true
 			}
@@ -71,16 +71,16 @@ func isInRequired(pos protocol.Position, wf ast.Workflow) bool {
 	return false
 }
 
-func isJobReference(pos protocol.Position, wf ast.Workflow) bool {
+func isJobInvocation(pos protocol.Position, wf ast.Workflow) bool {
 	if utils.PosInRange(wf.Range, pos) {
-		jobRef := findJobRef(pos, wf)
-		return jobRef != nil
+		jobInvocation := findJobInvocation(pos, wf)
+		return jobInvocation != nil
 	}
 	return false
 }
 
-func findJobRef(pos protocol.Position, wf ast.Workflow) *ast.JobRef {
-	for _, job := range wf.JobRefs {
+func findJobInvocation(pos protocol.Position, wf ast.Workflow) *ast.JobInvocation {
+	for _, job := range wf.JobInvocations {
 		if utils.PosInRange(job.JobNameRange, pos) {
 			return &job
 		}

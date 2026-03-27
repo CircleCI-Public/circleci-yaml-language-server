@@ -139,8 +139,8 @@ func (val Validate) checkIfJobIsUsed(job ast.Job) bool {
 	}
 
 	for _, workflow := range val.Doc.Workflows {
-		for _, jobRef := range workflow.JobRefs {
-			if jobRef.JobName == job.Name {
+		for _, jobInvocation := range workflow.JobInvocations {
+			if jobInvocation.JobName == job.Name {
 				return true
 			}
 		}

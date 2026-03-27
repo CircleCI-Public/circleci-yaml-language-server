@@ -44,8 +44,8 @@ func workflowDefinition(name string) string {
 		"- `unless` (optional): Inverse clause of `when`\n"
 }
 
-func jobReference(name string) string {
-	return fmt.Sprintf("`%s` - Job reference\n\n", name) +
+func jobInvocation(name string) string {
+	return fmt.Sprintf("`%s` - Job invocation\n\n", name) +
 		"A job can have the optional keys `requires`, `name`, `context`, `type`, and `filters`.\n\n" +
 		"- `requires`: Jobs are run in parallel by default, so you must explicitly require any dependencies by their job name.\n" +
 		"- `name`: can be used to invoke reusable jobs across any number of workflows. Using the `name` key ensures numbers are not appended to your job name (i.e. sayhello-1 , sayhello-2, etc.). The name you assign to the name key needs to be unique, otherwise the numbers will still be appended to the job name.\n" +
@@ -89,7 +89,7 @@ func hoverSingleWorklow(doc yamlparser.YamlDocument, path []string) string {
 	}
 
 	if currentKey == "jobs" {
-		return hoverJobReferences(doc, path[1:])
+		return hoverJobInvocations(doc, path[1:])
 	}
 	if currentKey == "triggers" {
 		return hoverSchedule(doc, path[1:])
@@ -98,17 +98,17 @@ func hoverSingleWorklow(doc yamlparser.YamlDocument, path []string) string {
 	return ""
 }
 
-func hoverJobReferences(doc yamlparser.YamlDocument, path []string) string {
-	jobReferenceName := path[0]
+func hoverJobInvocations(doc yamlparser.YamlDocument, path []string) string {
+	jobInvocationName := path[0]
 
 	if len(path) == 1 {
-		return jobReference(jobReferenceName)
+		return jobInvocation(jobInvocationName)
 	}
 
-	return hoverJobReferenceParameter(doc, path[1:])
+	return hoverJobInvocationParameter(doc, path[1:])
 }
 
-func hoverJobReferenceParameter(doc yamlparser.YamlDocument, path []string) string {
+func hoverJobInvocationParameter(doc yamlparser.YamlDocument, path []string) string {
 	parameterName := path[0]
 	if len(path) > 1 {
 		return ""
