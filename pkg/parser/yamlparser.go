@@ -24,6 +24,7 @@ func ParseFile(content []byte, context *utils.LsContext) YamlDocument {
 		Commands:           make(map[string]ast.Command),
 		Orbs:               make(map[string]ast.Orb),
 		Jobs:               make(map[string]ast.Job),
+		JobGroups:          make(map[string]ast.JobGroup),
 		Workflows:          make(map[string]ast.Workflow),
 		Executors:          make(map[string]ast.Executor),
 		PipelineParameters: make(map[string]ast.Parameter),
@@ -87,6 +88,13 @@ func (doc *YamlDocument) ParseYAML(context *utils.LsContext, offset protocol.Pos
 
 			doc.JobsRange = doc.NodeToRange(valueNode)
 			doc.parseJobs(valueNode)
+
+		case "job-groups":
+			if valueNode == nil {
+				break
+			}
+			doc.JobGroupsRange = doc.NodeToRange(valueNode)
+			doc.parseJobGroups(valueNode)
 
 		case "workflows":
 			if valueNode == nil {
@@ -200,6 +208,7 @@ type YamlDocument struct {
 	Executors          map[string]ast.Executor
 	Commands           map[string]ast.Command
 	Jobs               map[string]ast.Job
+	JobGroups          map[string]ast.JobGroup
 	Workflows          map[string]ast.Workflow
 	PipelineParameters map[string]ast.Parameter
 	YamlAnchors        map[string]YamlAnchor
@@ -209,6 +218,7 @@ type YamlDocument struct {
 	ExecutorsRange          protocol.Range
 	CommandsRange           protocol.Range
 	JobsRange               protocol.Range
+	JobGroupsRange          protocol.Range
 	WorkflowRange           protocol.Range
 	PipelineParametersRange protocol.Range
 	VersionRange            protocol.Range
@@ -340,6 +350,25 @@ func (doc *YamlDocument) IsAlias(commandName string) bool {
 func (doc *YamlDocument) DoesJobExist(jobName string) bool {
 	_, ok := doc.Jobs[jobName]
 	return ok
+}
+
+func (doc *YamlDocument) DoesJobGroupExist(jobGroupName string) bool {
+	_, ok := doc.JobGroups[jobGroupName]
+	return ok
+}
+
+// FindJobGroupContainingJob returns the name of the job-group that contains
+// a job invocation with the given jobName. Returns ("", false) if no group
+// contains it.
+func (doc *YamlDocument) FindJobGroupContainingJob(jobName string) (string, bool) {
+	for _, group := range doc.JobGroups {
+		for _, inv := range group.JobInvocations {
+			if inv.JobName == jobName {
+				return group.Name, true
+			}
+		}
+	}
+	return "", false
 }
 
 func (doc *YamlDocument) DoesCommandExist(commandName string) bool {
