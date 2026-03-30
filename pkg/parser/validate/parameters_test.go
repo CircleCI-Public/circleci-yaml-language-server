@@ -69,3 +69,220 @@ func TestJobParameterType(t *testing.T) {
 
 	CheckYamlErrors(t, testCases)
 }
+
+func TestJobInvocationMissingRequiredParameter(t *testing.T) {
+	testCases := []ValidateTestCase{
+		{
+			Name: "Missing required string parameter",
+			YamlContent: `version: 2.1
+
+jobs:
+  morejob:
+    parameters:
+      go_version:
+        description: the version of Go
+        type: string
+    docker:
+      - image: cimg/go:<<parameters.go_version>>
+    steps:
+      - checkout
+
+workflows:
+  test-workflow:
+    jobs:
+      - morejob`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+					Start: protocol.Position{Line: 16, Character: 6},
+					End:   protocol.Position{Line: 16, Character: 15},
+				}, "Parameter go_version is required for morejob"),
+			},
+		},
+		{
+			Name: "Optional parameter with default is not required",
+			YamlContent: `version: 2.1
+
+jobs:
+  morejob:
+    parameters:
+      go_version:
+        type: string
+        default: "1.21"
+    docker:
+      - image: cimg/go:<<parameters.go_version>>
+    steps:
+      - checkout
+
+workflows:
+  test-workflow:
+    jobs:
+      - morejob`,
+			OnlyErrors: true,
+		},
+		{
+			Name: "Required parameter provided - no error",
+			YamlContent: `version: 2.1
+
+jobs:
+  morejob:
+    parameters:
+      go_version:
+        type: string
+    docker:
+      - image: cimg/go:<<parameters.go_version>>
+    steps:
+      - checkout
+
+workflows:
+  test-workflow:
+    jobs:
+      - morejob:
+          go_version: "1.21"`,
+			OnlyErrors: true,
+		},
+		{
+			Name: "Multiple params - one required missing, one optional",
+			YamlContent: `version: 2.1
+
+jobs:
+  my-deploy:
+    parameters:
+      env:
+        type: string
+      verbose:
+        type: boolean
+        default: false
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "deploy"
+
+workflows:
+  test-workflow:
+    jobs:
+      - my-deploy`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+					Start: protocol.Position{Line: 18, Character: 6},
+					End:   protocol.Position{Line: 18, Character: 17},
+				}, "Parameter env is required for my-deploy"),
+			},
+		},
+	}
+
+	CheckYamlErrors(t, testCases)
+}
+
+func TestJobInvocationUndefinedParameter(t *testing.T) {
+	testCases := []ValidateTestCase{
+		{
+			Name: "Undefined parameter passed to job invocation",
+			YamlContent: `version: 2.1
+
+jobs:
+  my-deploy:
+    parameters:
+      env:
+        type: string
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "deploy"
+
+workflows:
+  test-workflow:
+    jobs:
+      - my-deploy:
+          env: prod
+          bogus_param: hello`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+					Start: protocol.Position{Line: 17, Character: 10},
+					End:   protocol.Position{Line: 17, Character: 28},
+				}, "Parameter bogus_param is not defined in my-deploy"),
+			},
+		},
+		{
+			Name: "No parameters defined on job but params passed",
+			YamlContent: `version: 2.1
+
+jobs:
+  my-build:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "build"
+
+workflows:
+  test-workflow:
+    jobs:
+      - my-build:
+          some_param: value`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+					Start: protocol.Position{Line: 13, Character: 10},
+					End:   protocol.Position{Line: 13, Character: 27},
+				}, "Parameter some_param is not defined in my-build"),
+			},
+		},
+	}
+
+	CheckYamlErrors(t, testCases)
+}
+
+func TestJobInvocationMatrixParams(t *testing.T) {
+	testCases := []ValidateTestCase{
+		{
+			Name: "Valid matrix enum values",
+			YamlContent: `version: 2.1
+
+jobs:
+  test:
+    parameters:
+      os:
+        type: string
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo <<parameters.os>>
+
+workflows:
+  test-workflow:
+    jobs:
+      - test:
+          matrix:
+            parameters:
+              os: [linux, macos]`,
+			OnlyErrors: true,
+		},
+		{
+			Name: "Matrix satisfies required parameter",
+			YamlContent: `version: 2.1
+
+jobs:
+  test:
+    parameters:
+      version:
+        type: string
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo <<parameters.version>>
+
+workflows:
+  test-workflow:
+    jobs:
+      - test:
+          matrix:
+            parameters:
+              version: ["14", "16", "18"]`,
+			OnlyErrors: true,
+		},
+	}
+
+	CheckYamlErrors(t, testCases)
+}

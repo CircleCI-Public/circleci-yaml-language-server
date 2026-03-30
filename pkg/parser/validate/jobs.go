@@ -32,8 +32,8 @@ func (val Validate) validateSingleJob(job ast.Job) {
 	}
 
 	// Local orbs do not need unused checks because those checks collides with the overall YAML unused checks
-	if !val.IsLocalOrb && !val.checkIfJobIsUsed(job) {
-		val.jobIsUnused(job)
+	if !val.IsLocalOrb {
+		val.checkAndReportUnusedJob(job)
 	}
 
 	if !utils.HasStoreTestResultStep(job.Steps) && strings.Contains(job.Name, "test") {
@@ -131,25 +131,24 @@ func (val Validate) validateSingleJob(job ast.Job) {
 	}
 }
 
-func (val Validate) checkIfJobIsUsed(job ast.Job) bool {
+func (val Validate) checkAndReportUnusedJob(job ast.Job) {
+	// Used directly in another job's steps
 	for _, definedJob := range val.Doc.Jobs {
 		if val.checkIfStepsContainStep(definedJob.Steps, job.Name) {
-			return true
+			return
 		}
 	}
 
+	// Used directly in a workflow
 	for _, workflow := range val.Doc.Workflows {
 		for _, jobInvocation := range workflow.JobInvocations {
 			if jobInvocation.JobName == job.Name {
-				return true
+				return
 			}
 		}
 	}
 
-	return false
-}
-
-func (val Validate) jobIsUnused(job ast.Job) {
+	// Not referenced anywhere
 	val.addDiagnostic(utils.CreateWarningDiagnosticFromRange(job.NameRange, "Job is unused"))
 }
 
