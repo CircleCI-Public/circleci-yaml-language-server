@@ -22,6 +22,6 @@ func (val Validate) validateSingleWorkflow(workflow ast.Workflow) {
 		}
 	}
 
-	val.validateInvocations(workflow.JobInvocations)
+	val.validateInvocations(workflow.JobInvocations, InvocationContext{Kind: InWorkflow})
 	val.validateDAG(workflow.JobInvocations, workflow.JobsDAG)
 }

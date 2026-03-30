@@ -11,6 +11,195 @@ import (
 	"go.lsp.dev/uri"
 )
 
+func validateYAML(t *testing.T, yamlData string) *[]protocol.Diagnostic {
+	t.Helper()
+	ctx := &utils.LsContext{
+		Api: utils.ApiContext{
+			Token:   "XXXXXXXXXXXX",
+			HostUrl: "https://circleci.com",
+		},
+	}
+	doc, err := parser.ParseFromContent(
+		[]byte(yamlData),
+		ctx,
+		uri.URI(""),
+		protocol.Position{},
+	)
+	assert.NoError(t, err, "invalid YAML data")
+
+	val := Validate{
+		APIs:        ValidateAPIs{DockerHubMock{}},
+		Context:     ctx,
+		Doc:         doc,
+		Diagnostics: &[]protocol.Diagnostic{},
+		Cache:       utils.CreateCache(),
+	}
+	val.Validate()
+	return val.Diagnostics
+}
+
+func diagnosticMessages(diags *[]protocol.Diagnostic) []string {
+	msgs := make([]string, len(*diags))
+	for i, d := range *diags {
+		msgs[i] = d.Message
+	}
+	return msgs
+}
+
+func TestJobUsedInJobGroup_GroupUsedInWorkflow(t *testing.T) {
+	yamlData := `version: 2.1
+
+jobs:
+  deploy:
+    docker:
+      - image: cimg/base:2024.01
+    steps:
+      - run: echo deploy
+  release:
+    docker:
+      - image: cimg/base:2024.01
+    steps:
+      - run: echo release
+
+job-groups:
+  deploy-group:
+    jobs:
+      - deploy
+      - release:
+          requires:
+            - deploy
+
+workflows:
+  main:
+    jobs:
+      - deploy-group`
+
+	diags := validateYAML(t, yamlData)
+	msgs := diagnosticMessages(diags)
+
+	for _, msg := range msgs {
+		if msg == "Job is unused" {
+			t.Fatalf("expected no 'Job is unused' diagnostic but got one.\nAll diagnostics: %v", msgs)
+		}
+	}
+}
+
+func TestJobUsedInJobGroup_GroupNotUsedInWorkflow(t *testing.T) {
+	yamlData := `version: 2.1
+
+jobs:
+  deploy:
+    docker:
+      - image: cimg/base:2024.01
+    steps:
+      - run: echo deploy
+  release:
+    docker:
+      - image: cimg/base:2024.01
+    steps:
+      - run: echo release
+  build:
+    docker:
+      - image: cimg/base:2024.01
+    steps:
+      - run: echo build
+
+job-groups:
+  deploy-group:
+    jobs:
+      - deploy
+      - release:
+          requires:
+            - deploy
+
+workflows:
+  main:
+    jobs:
+      - build`
+
+	diags := validateYAML(t, yamlData)
+	msgs := diagnosticMessages(diags)
+
+	expectedMsgs := []string{
+		`Job "deploy" is used in job group "deploy-group", but that group is never invoked in a workflow`,
+		`Job "release" is used in job group "deploy-group", but that group is never invoked in a workflow`,
+	}
+	for _, expected := range expectedMsgs {
+		found := false
+		for _, msg := range msgs {
+			if msg == expected {
+				found = true
+				break
+			}
+		}
+		assert.True(t, found, "expected diagnostic: %q\nAll diagnostics: %v", expected, msgs)
+	}
+}
+
+func TestJobUnusedInWorkflow(t *testing.T) {
+	yamlData := `version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:2024.01
+    steps:
+      - run: echo build
+  unused-job:
+    docker:
+      - image: cimg/base:2024.01
+    steps:
+      - run: echo unused
+
+workflows:
+  main:
+    jobs:
+      - build`
+
+	diags := validateYAML(t, yamlData)
+	msgs := diagnosticMessages(diags)
+
+	hasUnused := false
+	for _, msg := range msgs {
+		if msg == "Job is unused" {
+			hasUnused = true
+		}
+	}
+	assert.True(t, hasUnused, "expected 'Job is unused' diagnostic for unused-job.\nAll diagnostics: %v", msgs)
+}
+
+func TestJobGroupUnusedInWorkflow(t *testing.T) {
+	yamlData := `version: 2.1
+
+jobs:
+  deploy:
+    docker:
+      - image: cimg/base:2024.01
+    steps:
+      - run: echo deploy
+
+job-groups:
+  deploy-group:
+    jobs:
+      - deploy
+
+workflows:
+  main:
+    jobs:
+      - deploy`
+
+	diags := validateYAML(t, yamlData)
+	msgs := diagnosticMessages(diags)
+
+	hasUnusedGroup := false
+	for _, msg := range msgs {
+		if msg == "Job group is unused" {
+			hasUnusedGroup = true
+		}
+	}
+	assert.True(t, hasUnusedGroup, "expected 'Job group is unused' diagnostic.\nAll diagnostics: %v", msgs)
+}
+
 func TestExecutorParam(t *testing.T) {
 	testCases := []struct {
 		label        string

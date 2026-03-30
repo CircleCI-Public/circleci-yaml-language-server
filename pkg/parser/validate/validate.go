@@ -25,6 +25,7 @@ func (val *Validate) Validate() {
 	if !val.IsLocalOrb {
 		val.CheckIfParamsExist()
 		val.ValidateAnchors()
+		val.ValidateJobGroups()
 		val.ValidateWorkflows()
 		val.ValidateOrbs()
 		val.CheckNames()

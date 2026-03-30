@@ -148,8 +148,39 @@ func (val Validate) checkAndReportUnusedJob(job ast.Job) {
 		}
 	}
 
+	// Check if the job is invoked inside any job-group
+	for groupName, group := range val.Doc.JobGroups {
+		for _, jobInvocation := range group.JobInvocations {
+			if jobInvocation.JobName == job.Name {
+				if val.isJobGroupUsedInWorkflows(groupName) {
+					// Group is used in a workflow - job counts as used
+					return
+				}
+				// Job is in a group but that group is never invoked
+				val.addDiagnostic(utils.CreateWarningDiagnosticFromRange(
+					job.NameRange,
+					fmt.Sprintf("Job \"%s\" is used in job group \"%s\", but that group is never invoked in a workflow", job.Name, groupName),
+				))
+				return
+			}
+		}
+	}
+
 	// Not referenced anywhere
 	val.addDiagnostic(utils.CreateWarningDiagnosticFromRange(job.NameRange, "Job is unused"))
+}
+
+// isJobGroupUsedInWorkflows returns true if any workflow references the given
+// job-group name (either directly as JobName or via StepName).
+func (val Validate) isJobGroupUsedInWorkflows(groupName string) bool {
+	for _, workflow := range val.Doc.Workflows {
+		for _, jobInvocation := range workflow.JobInvocations {
+			if jobInvocation.JobName == groupName {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (val Validate) validateJobType(job ast.Job) {
