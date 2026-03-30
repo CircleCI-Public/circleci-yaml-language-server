@@ -255,9 +255,7 @@ func (val Validate) ValidateLocalOrbs() {
 
 			for _, job := range orbInfo.Jobs {
 				job.Name = fmt.Sprintf("%s/%s", orb.Name, job.Name)
-				if !val.checkIfJobIsUsed(job) {
-					val.jobIsUnused(job)
-				}
+				val.checkAndReportUnusedJob(job)
 			}
 
 			for _, command := range orbInfo.Commands {
