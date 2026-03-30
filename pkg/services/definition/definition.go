@@ -30,6 +30,10 @@ func (def DefinitionStruct) Definition() ([]protocol.Location, error) {
 	var err error = nil
 
 	switch true {
+	// Job Groups
+	case utils.PosInRange(def.Doc.JobGroupsRange, def.Params.Position):
+		res = def.searchForJobGroups()
+
 	// Workflows
 	case utils.PosInRange(def.Doc.WorkflowRange, def.Params.Position):
 		res = def.searchForWorkflows()

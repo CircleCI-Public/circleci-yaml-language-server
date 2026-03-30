@@ -18,6 +18,15 @@ func (def DefinitionStruct) getCommandOrJobLocation(name string, includeCommands
 		}, nil
 	}
 
+	if jobGroup, ok := def.Doc.JobGroups[name]; ok {
+		return []protocol.Location{
+			{
+				Range: jobGroup.Range,
+				URI:   def.Doc.URI,
+			},
+		}, nil
+	}
+
 	if command, ok := def.Doc.Commands[name]; ok && includeCommands {
 		return []protocol.Location{
 			{

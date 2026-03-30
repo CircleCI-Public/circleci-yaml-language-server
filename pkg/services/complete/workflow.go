@@ -17,6 +17,7 @@ func (ch *CompletionHandler) completeWorkflows() {
 
 	if isJobInvocation(ch.Params.Position, wf.JobInvocations) {
 		ch.addJobsAndOrbsCompletion()
+		ch.addJobGroupsCompletion()
 		return
 	}
 
