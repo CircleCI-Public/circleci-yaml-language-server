@@ -42,7 +42,7 @@ workflows:
 				utils.CreateErrorDiagnosticFromRange(protocol.Range{
 					Start: protocol.Position{Line: 0x6, Character: 0x10},
 					End:   protocol.Position{Line: 0x6, Character: 0x17},
-				}, "Only jobs with `type: approval` can be defined inline under the `workflows:` section. For `type: invalid`, define the job in the `jobs:` section instead."),
+				}, "Only jobs with `type: approval` can be defined inline under the `workflows:`/`job-groups:` section. For `type: invalid`, define the job in the `jobs:` section instead."),
 			},
 		},
 		{
@@ -524,6 +524,925 @@ workflows:
 					Start: protocol.Position{Line: 28, Character: 8},
 					End:   protocol.Position{Line: 28, Character: 14},
 				}, "The job `deploy` is part of a cycle"),
+			},
+		},
+	}
+
+	CheckYamlErrors(t, testCases)
+}
+
+func TestNestedJobGroups(t *testing.T) {
+	testCases := []ValidateTestCase{
+		{
+			Name: "nested job groups are not allowed",
+			YamlContent: `version: 2.1
+
+jobs:
+  test-job:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "test"
+
+job-groups:
+  my-group1:
+    jobs:
+      - test-job
+  my-group2:
+    jobs:
+      - my-group1
+
+workflows:
+  test-workflow:
+    jobs:
+      - my-group1`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				{
+					Range: protocol.Range{
+						Start: protocol.Position{Line: 15, Character: 8},
+						End:   protocol.Position{Line: 15, Character: 17},
+					},
+					Severity: protocol.DiagnosticSeverityError,
+					Source:   "cci-language-server",
+					Message:  `Job group "my-group2" cannot reference job group "my-group1" -- nesting is not supported`,
+					Data:     []protocol.CodeAction{},
+				},
+			},
+		},
+	}
+
+	CheckYamlErrors(t, testCases)
+}
+
+func TestJobInvocationNonExistentJob(t *testing.T) {
+	testCases := []ValidateTestCase{
+		{
+			Name: "Job invocation referencing a non-existent job/job-group produces an error diagnostic",
+			YamlContent: `version: 2.1
+
+workflows:
+  test-workflow:
+    jobs:
+      - my-ghost-job`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				{
+					Range: protocol.Range{
+						Start: protocol.Position{Line: 5, Character: 6},
+						End:   protocol.Position{Line: 5, Character: 20},
+					},
+					Severity: protocol.DiagnosticSeverityError,
+					Source:   "cci-language-server",
+					Message:  "Cannot find declaration for job \"my-ghost-job\"",
+					Data:     []protocol.CodeAction{},
+				},
+			},
+		},
+		{
+			Name: "Job invocation referencing a non-existent orb job produces an error diagnostic",
+			YamlContent: `version: 2.1
+
+workflows:
+  test-workflow:
+    jobs:
+      - my-orb/my-ghost-job`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				{
+					Range: protocol.Range{
+						Start: protocol.Position{Line: 5, Character: 6},
+						End:   protocol.Position{Line: 5, Character: 27},
+					},
+					Severity: protocol.DiagnosticSeverityError,
+					Source:   "cci-language-server",
+					Message:  "Cannot find declaration for job \"my-orb/my-ghost-job\"",
+					Data:     []protocol.CodeAction{},
+				},
+			},
+		},
+	}
+
+	CheckYamlErrors(t, testCases)
+}
+
+func TestJobInvocationRequiresNonExistentRef(t *testing.T) {
+	testCases := []ValidateTestCase{
+		{
+			Name: "Requires references a job that does not exist in invocations",
+			YamlContent: `version: 2.1
+
+jobs:
+  test:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "test"
+
+workflows:
+  test-workflow:
+    jobs:
+      - test:
+          requires:
+            - ghost-job`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+					Start: protocol.Position{Line: 14, Character: 14},
+					End:   protocol.Position{Line: 14, Character: 23},
+				}, "Cannot find declaration for job invocation \"ghost-job\""),
+			},
+		},
+		{
+			Name: "Requires with matrix partial reference is allowed",
+			YamlContent: `version: 2.1
+
+jobs:
+  build:
+    parameters:
+      os:
+        type: string
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo <<parameters.os>>
+  test:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "test"
+
+workflows:
+  test-workflow:
+    jobs:
+      - build:
+          matrix:
+            parameters:
+              os: [linux, macos]
+      - test:
+          requires:
+            - build-<< matrix.os >>`,
+			OnlyErrors: true,
+		},
+	}
+
+	CheckYamlErrors(t, testCases)
+}
+
+func TestJobInvocationExistsByStepName(t *testing.T) {
+	testCases := []ValidateTestCase{
+		{
+			Name: "Requires can reference a job by its step name alias",
+			YamlContent: `version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "build"
+  test:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "test"
+
+workflows:
+  test-workflow:
+    jobs:
+      - build:
+          name: my-build-alias
+      - test:
+          requires:
+            - my-build-alias`,
+			OnlyErrors: true,
+		},
+	}
+
+	CheckYamlErrors(t, testCases)
+}
+
+func TestJobInvocationInJobGroupContext(t *testing.T) {
+	testCases := []ValidateTestCase{
+		{
+			Name: "Job invocation validation works inside a job-group",
+			YamlContent: `version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "build"
+  test:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "test"
+
+job-groups:
+  ci-group:
+    jobs:
+      - build
+      - test:
+          requires:
+            - build
+
+workflows:
+  main:
+    jobs:
+      - ci-group`,
+			OnlyErrors: true,
+		},
+		{
+			Name: "Non-existent job in job-group produces error",
+			YamlContent: `version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "build"
+
+job-groups:
+  ci-group:
+    jobs:
+      - build
+      - ghost-job
+
+workflows:
+  main:
+    jobs:
+      - ci-group`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+					Start: protocol.Position{Line: 13, Character: 6},
+					End:   protocol.Position{Line: 13, Character: 17},
+				}, `Cannot find declaration for job "ghost-job"`),
+			},
+		},
+	}
+
+	CheckYamlErrors(t, testCases)
+}
+
+func TestRequiresJobGroupMember_FromWorkflow(t *testing.T) {
+	testCases := []ValidateTestCase{
+		{
+			Name:       "workflow job requires a member of a job-group",
+			OnlyErrors: true,
+			YamlContent: `version: 2.1
+
+jobs:
+  deploy:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "deploy"
+  after:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "after"
+
+job-groups:
+  deploy-group:
+    jobs:
+      - deploy
+
+workflows:
+  main:
+    jobs:
+      - deploy-group
+      - after:
+          requires:
+            - deploy`,
+			Diagnostics: []protocol.Diagnostic{
+				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+					Start: protocol.Position{Line: 25, Character: 14},
+					End:   protocol.Position{Line: 25, Character: 20},
+				}, `"deploy" is defined inside job group "deploy-group", not directly in this workflow`),
+			},
+		},
+	}
+
+	CheckYamlErrors(t, testCases)
+}
+
+func TestRequiresJobGroupMember_FromDifferentGroup(t *testing.T) {
+	testCases := []ValidateTestCase{
+		{
+			Name:       "job-group member requires a job from a different group",
+			OnlyErrors: true,
+			YamlContent: `version: 2.1
+
+jobs:
+  a:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "a"
+  b:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "b"
+
+job-groups:
+  g1:
+    jobs:
+      - a
+  g2:
+    jobs:
+      - b:
+          requires:
+            - a
+
+workflows:
+  main:
+    jobs:
+      - g1
+      - g2`,
+			Diagnostics: []protocol.Diagnostic{
+				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+					Start: protocol.Position{Line: 22, Character: 14},
+					End:   protocol.Position{Line: 22, Character: 15},
+				}, `"a" is not a member of this job group`),
+			},
+		},
+	}
+
+	CheckYamlErrors(t, testCases)
+}
+
+func TestRequiresJobGroupMember_SameGroupIsValid(t *testing.T) {
+	testCases := []ValidateTestCase{
+		{
+			Name:       "jobs within the same group can require each other",
+			OnlyErrors: true,
+			YamlContent: `version: 2.1
+
+jobs:
+  deploy:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "deploy"
+  release:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "release"
+
+job-groups:
+  deploy-group:
+    jobs:
+      - deploy
+      - release:
+          requires:
+            - deploy
+
+workflows:
+  main:
+    jobs:
+      - deploy-group`,
+		},
+	}
+
+	CheckYamlErrors(t, testCases)
+}
+
+func TestRequiresJobGroup_FromWorkflowIsValid(t *testing.T) {
+	testCases := []ValidateTestCase{
+		{
+			Name:       "requiring a job-group name from a workflow is valid",
+			OnlyErrors: true,
+			YamlContent: `version: 2.1
+
+jobs:
+  deploy:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "deploy"
+  notify:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "notify"
+
+job-groups:
+  deploy-group:
+    jobs:
+      - deploy
+
+workflows:
+  main:
+    jobs:
+      - deploy-group
+      - notify:
+          requires:
+            - deploy-group`,
+		},
+	}
+
+	CheckYamlErrors(t, testCases)
+}
+
+func TestValidateSingleJobInvocation_SerialGroups(t *testing.T) {
+	testCases := []ValidateTestCase{
+		{
+			Name:       "serial-group in workflow is allowed",
+			OnlyErrors: true,
+			YamlContent: `version: 2.1
+
+jobs:
+  deploy:
+    type: no-op
+
+workflows:
+  test-workflow:
+    jobs:
+      - deploy:
+          serial-group: deploy-group`,
+		},
+		{
+			Name:       "serial-group in job-group is not allowed",
+			OnlyErrors: true,
+			YamlContent: `version: 2.1
+
+jobs:
+  deploy:
+    type: no-op
+
+job-groups:
+  my-group:
+    jobs:
+      - deploy:
+          serial-group: deploy-group
+
+workflows:
+  test-workflow:
+    jobs:
+      - my-group`,
+			Diagnostics: []protocol.Diagnostic{
+				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+					Start: protocol.Position{Line: 10, Character: 24},
+					End:   protocol.Position{Line: 10, Character: 36},
+				}, "Use of `serial-group` on job invocations inside a job-group is not supported. Please consider using `serial-group` on the job-group instead."),
+			},
+		},
+	}
+
+	CheckYamlErrors(t, testCases)
+}
+
+func TestJobGroupInvocation_NameAttribute(t *testing.T) {
+	testCases := []ValidateTestCase{
+		{
+			Name:       "job-group invocation with name: is allowed and can be required by that name",
+			OnlyErrors: true,
+			YamlContent: `version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "build"
+  deploy:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "deploy"
+  notify:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "notify"
+
+job-groups:
+  deploy-group:
+    jobs:
+      - deploy
+
+workflows:
+  main:
+    jobs:
+      - build
+      - deploy-group:
+          name: prod-deploy
+          requires:
+            - build
+      - notify:
+          requires:
+            - prod-deploy`,
+		},
+		{
+			Name:       "same job-group invoked twice with different names is valid",
+			OnlyErrors: true,
+			YamlContent: `version: 2.1
+
+jobs:
+  deploy:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "deploy"
+
+job-groups:
+  deploy-group:
+    jobs:
+      - deploy
+
+workflows:
+  main:
+    jobs:
+      - deploy-group:
+          name: staging-deploy
+      - deploy-group:
+          name: prod-deploy
+          requires:
+            - staging-deploy`,
+		},
+		{
+			Name:       "same job-group invoked twice with same name is an error",
+			OnlyErrors: true,
+			YamlContent: `version: 2.1
+
+jobs:
+  deploy:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "deploy"
+
+job-groups:
+  deploy-group:
+    jobs:
+      - deploy
+
+workflows:
+  main:
+    jobs:
+      - deploy-group:
+          name: prod-deploy
+      - deploy-group:
+          name: prod-deploy`,
+			Diagnostics: []protocol.Diagnostic{
+				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+					Start: protocol.Position{Line: 20, Character: 16},
+					End:   protocol.Position{Line: 20, Character: 27},
+				}, `Job group "deploy-group" is already invoked with the name "prod-deploy"`),
+			},
+		},
+		{
+			Name:       "same job-group invoked twice without name is an error on both",
+			OnlyErrors: true,
+			YamlContent: `version: 2.1
+
+jobs:
+  deploy:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "deploy"
+
+job-groups:
+  deploy-group:
+    jobs:
+      - deploy
+
+workflows:
+  main:
+    jobs:
+      - deploy-group
+      - deploy-group`,
+			Diagnostics: []protocol.Diagnostic{
+				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+					Start: protocol.Position{Line: 17, Character: 8},
+					End:   protocol.Position{Line: 17, Character: 20},
+				}, `Job group "deploy-group" is invoked multiple times without a "name" attribute. Each invocation must have a unique name`),
+				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+					Start: protocol.Position{Line: 18, Character: 8},
+					End:   protocol.Position{Line: 18, Character: 20},
+				}, `Job group "deploy-group" is invoked multiple times without a "name" attribute. Each invocation must have a unique name`),
+			},
+		},
+		{
+			Name:       "one invocation without name, one with name is an error (the nameless one)",
+			OnlyErrors: true,
+			YamlContent: `version: 2.1
+
+jobs:
+  deploy:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "deploy"
+
+job-groups:
+  deploy-group:
+    jobs:
+      - deploy
+
+workflows:
+  main:
+    jobs:
+      - deploy-group
+      - deploy-group:
+          name: prod-deploy`,
+			Diagnostics: []protocol.Diagnostic{
+				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+					Start: protocol.Position{Line: 17, Character: 8},
+					End:   protocol.Position{Line: 17, Character: 20},
+				}, `Job group "deploy-group" is invoked multiple times without a "name" attribute. Each invocation must have a unique name`),
+			},
+		},
+	}
+
+	CheckYamlErrors(t, testCases)
+}
+
+func TestJobGroupInvocationDisallowedKeys(t *testing.T) {
+	testCases := []ValidateTestCase{
+		{
+			Name:       "matrix on job-group invocation is not allowed",
+			OnlyErrors: true,
+			YamlContent: `version: 2.1
+
+jobs:
+  deploy:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "deploy"
+
+job-groups:
+  deploy-group:
+    jobs:
+      - deploy
+
+workflows:
+  main:
+    jobs:
+      - deploy-group:
+          matrix:
+            parameters:
+              env: [staging, prod]`,
+			Diagnostics: []protocol.Diagnostic{
+				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+					Start: protocol.Position{Line: 18, Character: 10},
+					End:   protocol.Position{Line: 20, Character: 34},
+				}, "Job group invocations do not support `matrix`"),
+			},
+		},
+		{
+			Name:       "override-with on job-group invocation is not allowed",
+			OnlyErrors: true,
+			YamlContent: `version: 2.1
+
+jobs:
+  deploy:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "deploy"
+
+job-groups:
+  deploy-group:
+    jobs:
+      - deploy
+
+workflows:
+  main:
+    jobs:
+      - deploy-group:
+          override-with: other-job`,
+			Diagnostics: []protocol.Diagnostic{
+				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+					Start: protocol.Position{Line: 18, Character: 25},
+					End:   protocol.Position{Line: 18, Character: 34},
+				}, "Job group invocations do not support use of `override-with`"),
+			},
+		},
+		{
+			Name:       "type on job-group invocation is not allowed",
+			OnlyErrors: true,
+			YamlContent: `version: 2.1
+
+jobs:
+  deploy:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "deploy"
+
+job-groups:
+  deploy-group:
+    jobs:
+      - deploy
+
+workflows:
+  main:
+    jobs:
+      - deploy-group:
+          type: approval`,
+			Diagnostics: []protocol.Diagnostic{
+				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+					Start: protocol.Position{Line: 18, Character: 16},
+					End:   protocol.Position{Line: 18, Character: 24},
+				}, "Job group invocations do not support use of `type`"),
+			},
+		},
+		{
+			Name:       "context on job-group invocation is not allowed",
+			OnlyErrors: true,
+			YamlContent: `version: 2.1
+
+jobs:
+  deploy:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "deploy"
+
+job-groups:
+  deploy-group:
+    jobs:
+      - deploy
+
+workflows:
+  main:
+    jobs:
+      - deploy-group:
+          context:
+            - my-context`,
+			Diagnostics: []protocol.Diagnostic{
+				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+					Start: protocol.Position{Line: 17, Character: 6},
+					End:   protocol.Position{Line: 19, Character: 24},
+				}, "Job group invocations do not support use of `context`"),
+			},
+		},
+		{
+			Name:       "pre-steps on job-group invocation is not allowed",
+			OnlyErrors: true,
+			YamlContent: `version: 2.1
+
+jobs:
+  deploy:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "deploy"
+
+job-groups:
+  deploy-group:
+    jobs:
+      - deploy
+
+workflows:
+  main:
+    jobs:
+      - deploy-group:
+          pre-steps:
+            - run: echo "pre"`,
+			Diagnostics: []protocol.Diagnostic{
+				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+					Start: protocol.Position{Line: 18, Character: 10},
+					End:   protocol.Position{Line: 19, Character: 29},
+				}, "Job group invocations do not support use of `pre-steps`"),
+			},
+		},
+		{
+			Name:       "post-steps on job-group invocation is not allowed",
+			OnlyErrors: true,
+			YamlContent: `version: 2.1
+
+jobs:
+  deploy:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "deploy"
+
+job-groups:
+  deploy-group:
+    jobs:
+      - deploy
+
+workflows:
+  main:
+    jobs:
+      - deploy-group:
+          post-steps:
+            - run: echo "post"`,
+			Diagnostics: []protocol.Diagnostic{
+				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+					Start: protocol.Position{Line: 18, Character: 10},
+					End:   protocol.Position{Line: 19, Character: 30},
+				}, "Job group invocations do not support use of `post-steps`"),
+			},
+		},
+		{
+			Name:       "custom parameters on job-group invocation is not allowed",
+			OnlyErrors: true,
+			YamlContent: `version: 2.1
+
+jobs:
+  deploy:
+    parameters:
+      env:
+        type: string
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo <<parameters.env>>
+
+job-groups:
+  deploy-group:
+    jobs:
+      - deploy
+
+workflows:
+  main:
+    jobs:
+      - deploy-group:
+          env: staging`,
+			Diagnostics: []protocol.Diagnostic{
+				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+					Start: protocol.Position{Line: 20, Character: 6},
+					End:   protocol.Position{Line: 21, Character: 22},
+				}, "Job group invocations do not support custom parameters, but found: `env`"),
+			},
+		},
+		{
+			Name:       "requires and serial-group on job-group invocation are allowed",
+			OnlyErrors: true,
+			YamlContent: `version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "build"
+  deploy:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "deploy"
+
+job-groups:
+  deploy-group:
+    jobs:
+      - deploy
+
+workflows:
+  main:
+    jobs:
+      - build
+      - deploy-group:
+          serial-group: my-serial
+          requires:
+            - build`,
+		},
+		{
+			Name:       "multiple disallowed keys on job-group invocation produce multiple errors",
+			OnlyErrors: true,
+			YamlContent: `version: 2.1
+
+jobs:
+  deploy:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "deploy"
+
+job-groups:
+  deploy-group:
+    jobs:
+      - deploy
+
+workflows:
+  main:
+    jobs:
+      - deploy-group:
+          type: approval
+          context:
+            - my-context`,
+			Diagnostics: []protocol.Diagnostic{
+				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+					Start: protocol.Position{Line: 17, Character: 6},
+					End:   protocol.Position{Line: 20, Character: 24},
+				}, "Job group invocations do not support use of `context`"),
+				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+					Start: protocol.Position{Line: 18, Character: 16},
+					End:   protocol.Position{Line: 18, Character: 24},
+				}, "Job group invocations do not support use of `type`"),
 			},
 		},
 	}

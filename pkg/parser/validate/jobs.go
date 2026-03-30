@@ -3,6 +3,7 @@ package validate
 import (
 	"fmt"
 	"slices"
+	"sort"
 	"strings"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
@@ -148,8 +149,49 @@ func (val Validate) checkAndReportUnusedJob(job ast.Job) {
 		}
 	}
 
+	// Collect all job-groups that contain this job
+	var unusedGroups []string
+	for groupName, group := range val.Doc.JobGroups {
+		for _, jobInvocation := range group.JobInvocations {
+			// We compare against JobName (the original definition name), not StepName,
+			// because StepName is just a user-chosen alias for the invocation - the
+			// underlying job being referenced is always identified by JobName.
+			if jobInvocation.JobName == job.Name {
+				if val.isJobGroupUsedInWorkflows(groupName) {
+					// At least one group containing this job is used — job counts as used
+					return
+				}
+				unusedGroups = append(unusedGroups, groupName)
+			}
+		}
+	}
+
+	if len(unusedGroups) > 0 {
+		sort.Strings(unusedGroups)
+		val.addDiagnostic(utils.CreateWarningDiagnosticFromRange(
+			job.NameRange,
+			fmt.Sprintf("Job \"%s\" is used in job group \"%s\", but that group is never invoked in a workflow", job.Name, unusedGroups[0]),
+		))
+		return
+	}
+
 	// Not referenced anywhere
 	val.addDiagnostic(utils.CreateWarningDiagnosticFromRange(job.NameRange, "Job is unused"))
+}
+
+// isJobGroupUsedInWorkflows returns true if any workflow references the given
+// job-group name (either directly as JobName or via StepName).
+// We match on JobName because it identifies the actual entity being invoked;
+// StepName is only a display alias and doesn't change which job/group is referenced.
+func (val Validate) isJobGroupUsedInWorkflows(groupName string) bool {
+	for _, workflow := range val.Doc.Workflows {
+		for _, jobInvocation := range workflow.JobInvocations {
+			if jobInvocation.JobName == groupName {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (val Validate) validateJobType(job ast.Job) {
