@@ -15,8 +15,13 @@ func (ch *CompletionHandler) completeWorkflows() {
 		return
 	}
 
+	if wf.JobInvocations == nil {
+		ch.addCompletionItemFieldWithNewLine("jobs")
+	}
+
 	if isJobInvocation(ch.Params.Position, wf.JobInvocations) {
 		ch.addJobsAndOrbsCompletion()
+		ch.addJobGroupsCompletion()
 		return
 	}
 
@@ -24,10 +29,6 @@ func (ch *CompletionHandler) completeWorkflows() {
 	if isInRequires(ch.Params.Position, wf.JobInvocations) {
 		ch.addExistingJobInvocations(wf.JobInvocations)
 		return
-	}
-
-	if wf.JobInvocations == nil {
-		ch.addCompletionItemFieldWithNewLine("jobs")
 	}
 
 	if !wf.HasTrigger {

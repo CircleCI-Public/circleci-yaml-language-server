@@ -68,6 +68,11 @@ func SymbolsForDocument(document *parser.YamlDocument) []protocol.DocumentSymbol
 
 	symbols = append(
 		symbols,
+		resolveJobGroupsSymbols(document)...,
+	)
+
+	symbols = append(
+		symbols,
 		resolvePipelineParametersSymbols(document)...,
 	)
 

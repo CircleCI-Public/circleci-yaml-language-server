@@ -9,10 +9,23 @@ import (
 )
 
 func (def DefinitionStruct) getCommandOrJobLocation(name string, includeCommands bool) ([]protocol.Location, error) {
+	// The order of these checks is important. If a job, job-group,
+	// and command all have the same name, this function will return
+	// the job first (of course, there will also be a warning diagnostic
+	// about the ambiguous names).
 	if job, ok := def.Doc.Jobs[name]; ok {
 		return []protocol.Location{
 			{
 				Range: job.Range,
+				URI:   def.Doc.URI,
+			},
+		}, nil
+	}
+
+	if jobGroup, ok := def.Doc.JobGroups[name]; ok {
+		return []protocol.Location{
+			{
+				Range: jobGroup.Range,
 				URI:   def.Doc.URI,
 			},
 		}, nil

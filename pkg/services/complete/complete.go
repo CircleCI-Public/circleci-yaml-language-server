@@ -44,6 +44,8 @@ func (ch *CompletionHandler) GetCompletionItems() {
 			ch.completeWorkflows()
 		} else if utils.PosInRange(ch.Doc.JobsRange, ch.Params.Position) {
 			ch.completeJobs()
+		} else if utils.PosInRange(ch.Doc.JobGroupsRange, ch.Params.Position) {
+			ch.completeJobGroups()
 		} else if utils.PosInRange(ch.Doc.CommandsRange, ch.Params.Position) {
 			ch.completeCommands()
 		} else if utils.PosInRange(ch.Doc.ExecutorsRange, ch.Params.Position) {

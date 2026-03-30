@@ -91,7 +91,7 @@ var KEYWORDS = []string{
 }
 
 var ROOT_KEYWORDS = []string{
-	"workflows", "jobs", "version", "commands",
+	"workflows", "jobs", "job-groups", "version", "commands",
 	"executors", "parameters", "orbs", "setup",
 }
 
