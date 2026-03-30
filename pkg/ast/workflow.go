@@ -25,7 +25,7 @@ type JobInvocation struct {
 	JobInvocationRange protocol.Range
 
 	// JobName is the name of the job that will be executed,
-	// it can be used to reference a job in the workflow
+	// it can be used to invoke a job in the workflow
 	JobName      string
 	JobNameRange protocol.Range
 
@@ -50,6 +50,7 @@ type JobInvocation struct {
 	PostStepsRange protocol.Range
 
 	HasMatrix    bool
+	MatrixRange  protocol.Range
 	MatrixParams map[string][]ParameterValue
 }
 
