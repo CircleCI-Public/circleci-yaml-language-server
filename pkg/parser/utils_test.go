@@ -82,6 +82,61 @@ func Test_getBlockMappingNode(t *testing.T) {
 	}
 }
 
+func getFirstChildOfType(rootNode *sitter.Node, typeName string) *sitter.Node {
+	iter := sitter.NewIterator(rootNode, sitter.BFSMode)
+	node, err := iter.Next()
+	for err == nil {
+		if node.Type() == typeName {
+			return node
+		}
+		node, err = iter.Next()
+	}
+	return nil
+}
+
+func TestGetFirstChildOfType(t *testing.T) {
+	tests := []struct {
+		name     string
+		yaml     string
+		typeName string
+		wantNil  bool
+	}{
+		{
+			name:     "Find nested block_mapping_pair",
+			yaml:     YamlMap,
+			typeName: "block_mapping_pair",
+		},
+		{
+			name:     "Find block_sequence in nested structure",
+			yaml:     YamlBig,
+			typeName: "block_sequence",
+		},
+		{
+			name:     "Return nil for non-existent type",
+			yaml:     YamlFloat,
+			typeName: "flow_sequence",
+			wantNil:  true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := getFirstChildOfType(GetRootNode([]byte(tt.yaml)), tt.typeName)
+			if tt.wantNil {
+				if got != nil {
+					t.Errorf("getFirstChildOfType() = %v, want nil", got.Type())
+				}
+				return
+			}
+			if got == nil {
+				t.Fatal("getFirstChildOfType() = nil, want non-nil")
+			}
+			if got.Type() != tt.typeName {
+				t.Errorf("getFirstChildOfType() type = %v, want %v", got.Type(), tt.typeName)
+			}
+		})
+	}
+}
+
 func TestYamlDocument_GetNodeText(t *testing.T) {
 	type fields struct {
 		Content []byte
