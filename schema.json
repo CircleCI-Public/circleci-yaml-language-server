@@ -1784,6 +1784,7 @@
                                 "markdownDescription": "https://circleci.com/docs/configuration-reference#matrix-requires-version-21\n\nThe matrix stanza allows you to run a parameterized job multiple times with different arguments."
                             },
                             "serial-group": {
+                                "markdownDescription": "`serial-group` allows a group of jobs to run in series, rather than concurrently, across an organization. Serial groups control the orchestration of jobs across an organization, not just within projects and pipelines.\nSee <https://circleci.com/docs/reference/configuration-reference/#serial-group> for more details.",
                                 "type": "string",
                                 "minLength": 1
                             },
