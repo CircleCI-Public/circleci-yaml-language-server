@@ -5,7 +5,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/dockerhub"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/testHelpers"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
@@ -28,7 +27,7 @@ func CreateValidateFromYAML(yaml string) Validate {
 	doc, _ := parser.ParseFromContent([]byte(yaml), context, uri.File(""), protocol.Position{})
 	val := Validate{
 		APIs: ValidateAPIs{
-			DockerHub: dockerhub.NewAPI(),
+			DockerHub: DockerHubMock{},
 		},
 		Diagnostics: &[]protocol.Diagnostic{},
 		Cache:       utils.CreateCache(),
