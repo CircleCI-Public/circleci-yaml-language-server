@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## [0.29.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.28.0...0.29.0) (2026-04-03)
+
+
+### Features
+
+* Add Xcode 26.4 ([#411](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/411)) ([795bcbe](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/795bcbed0a71d5baacb7d398e3efa89a1ddb6fc8))
+
+
+### Bug Fixes
+
+* fix flaky tests using real Dockerhub ([#404](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/404)) ([5ef7ece](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/5ef7ece2675edfcbf38df59144e0f6d98a4b9c23))
+* use /releases/latest endpoint in pre-release script ([#399](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/399)) ([e71e150](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/e71e150fa41334bc48722130e9fc77f93c6bcece))
+
 ## [0.28.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.27.0...0.28.0) (2026-02-16)
 
 
