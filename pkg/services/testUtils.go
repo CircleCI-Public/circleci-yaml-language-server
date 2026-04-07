@@ -221,5 +221,5 @@ func (info ExpDiagInfo) ensureNoError() {
 		return
 	}
 
-	info.t.Errorf(info.parseError.Error())
+	info.t.Errorf("%s", info.parseError.Error())
 }

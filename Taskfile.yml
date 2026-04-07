@@ -69,12 +69,19 @@ tasks:
     - go-licenses csv ./cmd/start_server >licenses.csv 2>licenses.errors
 
   lint:
+    desc: Run golangci-lint
     cmds:
-      - task: lint:go
+      - go tool golangci-lint run ./...
 
-  lint:go:
+  fmt:
+    desc: Format the code
     cmds:
-      - gofmt -w pkg
+      - go tool golangci-lint fmt ./...
+
+  ci:lint:
+    desc: Check formatting (CI)
+    cmds:
+      - go tool golangci-lint fmt --diff ./...
 
   prepare:vscode:
     dir: editors/vscode

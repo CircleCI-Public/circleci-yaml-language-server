@@ -1,10 +1,11 @@
 package utils
 
 import (
+	"strings"
+
 	"github.com/segmentio/encoding/json"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
-	"strings"
 )
 
 func CreateCodeActionTextEdit(title string, textDocumentUri uri.URI, textEdits []protocol.TextEdit, isPreferred bool) protocol.CodeAction {

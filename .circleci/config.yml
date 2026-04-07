@@ -27,7 +27,7 @@ parameters:
     type: string
     default: ""
 orbs:
-  go: circleci/go@1.11.0
+  go: circleci/go@3.0.4
   node: circleci/node@5.0.2
   snyk: snyk/snyk@2.2.0
   slack: circleci/slack@4.12.1
@@ -350,9 +350,11 @@ jobs:
     executor: go-executor
     steps:
       - checkout
-      - run:
-          name: Linter check for Go
-          command: if [[ $(gofmt -l pkg | wc -c) -ne 0 ]]; then exit 1; fi
+      - go/mod-download-cached
+      - go/with-cache:
+          golangci-lint: true
+          steps:
+            - run: task ci:lint
 
   Lint PR title:
     docker:
