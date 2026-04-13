@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## [0.30.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.29.0...0.30.0) (2026-04-13)
+
+
+### Features
+
+* Add Xcode 26.5 ([#413](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/413)) ([eb8bfbe](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/eb8bfbe4c2e221d0f078268a7aa34d7d81482a20))
+* **PIPE-5445:** add job-groups AST, parser, and schema support [4/6] ([#408](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/408)) ([a55cc3b](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/a55cc3b96b19e02ccc7bb36adebe2cb1f4a78aef))
+* **PIPE-5445:** add job-groups LSP services [6/6] ([#410](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/410)) ([f18a2ea](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/f18a2ead5c119e4aca9e2d33dcce4d6ce127eb0c))
+* **PIPE-5445:** add job-groups validation [5/6] ([#409](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/409)) ([6f41298](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/6f412983d581e6b2b998666f04a861044dcac9aa))
+
 ## [0.29.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.28.0...0.29.0) (2026-04-03)
 
 
