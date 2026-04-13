@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"regexp"
 	"strconv"
 
@@ -27,7 +28,16 @@ type GithubRelease struct {
 }
 
 func getLatestVersion() string {
-	resp, err := http.Get("https://api.github.com/repos/CircleCI-Public/circleci-yaml-language-server/releases/latest")
+	req, err := http.NewRequest("GET", "https://api.github.com/repos/CircleCI-Public/circleci-yaml-language-server/releases/latest", nil)
+	if err != nil {
+		panic(err)
+	}
+
+	if token := os.Getenv("GITHUB_TOKEN"); token != "" {
+		req.Header.Set("Authorization", "token "+token)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		panic(err)
 	}
