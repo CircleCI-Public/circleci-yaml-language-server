@@ -144,8 +144,9 @@ YAML Language Server can be found in [HACKING.md](HACKING.md).
 - VSCode:
   [CircleCI VSCode extension](https://marketplace.visualstudio.com/items?itemName=circleci.circleci)
 - Neovim: [tomoakley Neovim plugin](https://github.com/tomoakley/circleci.nvim)
+- Emacs: [circleci-yaml-mode](./editors/emacs/)
 
-If you which to implement a client for your editor, please take a look at
+If you wish to implement a client for your editor, please take a look at
 [ADD_A_CLIENT.md](./ADD_A_CLIENT.md)
 
 ## <a name="quicklinks"></a>Quick links
