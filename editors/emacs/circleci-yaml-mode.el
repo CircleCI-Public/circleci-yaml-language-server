@@ -3,7 +3,7 @@
 ;; Author: CircleCI
 ;; URL: https://github.com/CircleCI-Public/circleci-yaml-language-server
 ;; x-release-please-start-version
-;; Version: 0.30.0
+;; Version: 0.31.0
 ;; x-release-please-end
 ;; Package-Requires: ((emacs "29.1") (yaml-mode "0.0.13"))
 ;; Keywords: languages tools
@@ -78,7 +78,7 @@
   :prefix "circleci-yaml-")
 
 ;; x-release-please-start-version
-(defcustom circleci-yaml-lsp-version "0.30.0"
+(defcustom circleci-yaml-lsp-version "0.31.0"
   ;; x-release-please-end
   "Version of the CircleCI YAML Language Server to install."
   :type 'string)

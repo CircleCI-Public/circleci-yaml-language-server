@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## [0.31.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.30.0...0.31.0) (2026-04-17)
+
+
+### Features
+
+* Add Emacs client (circleci-yaml-mode) ([#418](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/418)) ([0a7b5f9](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/0a7b5f9c134d36d7656d2959696a78db512eb636))
+
+
+### Bug Fixes
+
+* address MELPA packaging requirements for circleci-yaml-mode ([#421](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/421)) ([9139b91](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/9139b91e202d55c923a16dcf96ca309ebdf24e87))
+
 ## [0.30.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.29.0...0.30.0) (2026-04-13)
 
 
