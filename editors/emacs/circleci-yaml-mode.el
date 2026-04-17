@@ -1,14 +1,26 @@
 ;;; circleci-yaml-mode.el --- Major mode for CircleCI YAML config files -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2025 CircleCI
-
 ;; Author: CircleCI
 ;; URL: https://github.com/CircleCI-Public/circleci-yaml-language-server
 ;; x-release-please-start-version
 ;; Version: 0.30.0
 ;; x-release-please-end
-;; Package-Requires: ((emacs "28.1") (yaml-mode "0.0.13"))
+;; Package-Requires: ((emacs "29.1") (yaml-mode "0.0.13"))
 ;; Keywords: languages tools
+
+;; Copyright (C) 2025 CircleCI
+
+;; Licensed under the Apache License, Version 2.0 (the "License");
+;; you may not use this file except in compliance with the License.
+;; You may obtain a copy of the License at
+;;
+;;     http://www.apache.org/licenses/LICENSE-2.0
+;;
+;; Unless required by applicable law or agreed to in writing, software
+;; distributed under the License is distributed on an "AS IS" BASIS,
+;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+;; implied.  See the License for the specific language governing
+;; permissions and limitations under the License.
 
 ;;; Commentary:
 
