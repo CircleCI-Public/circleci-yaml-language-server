@@ -194,7 +194,7 @@ func TestYamlDocument_jobExecutors(t *testing.T) {
 		yamlInput := `jobs:
     job-macos:
         macos:
-            xcode: 26.4.0
+            xcode: 26.4.1
         resource_class: m4pro.large`
 
 		node := getNodeForString(yamlInput)
@@ -204,7 +204,7 @@ func TestYamlDocument_jobExecutors(t *testing.T) {
 		}
 		doc.parseJobs(node)
 
-		assert.Equal(t, "26.4.0", doc.Jobs["job-macos"].MacOS.Xcode)
+		assert.Equal(t, "26.4.1", doc.Jobs["job-macos"].MacOS.Xcode)
 		assert.Equal(t, "m4pro.large", doc.Jobs["job-macos"].ResourceClass)
 	}
 }
