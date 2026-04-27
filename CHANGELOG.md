@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## [0.32.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.31.0...0.32.0) (2026-04-27)
+
+
+### Features
+
+* Add Xcode 26.4.1 ([#423](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/423)) ([debaef4](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/debaef49ba54df4409bca7b06b9492a34108cd3b))
+* link to job-groups docs ([#424](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/424)) ([0307867](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/0307867822b725aea11ebeaad31431fd90979cc1))
+
 ## [0.31.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.30.0...0.31.0) (2026-04-17)
 
 
