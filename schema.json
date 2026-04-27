@@ -2388,7 +2388,7 @@
             }
         },
         "job-groups": {
-            "markdownDescription": "Job groups define named collections of jobs with internal dependency relationships that can be referenced as a single unit in workflows.",
+            "markdownDescription": "https://circleci.com/docs/reference/configuration-reference/#job-groups\n\nJob groups define named collections of jobs with internal dependency relationships that can be referenced as a single unit in workflows.",
             "type": "object",
             "propertyNames": {
                 "type": "string",
