@@ -2,7 +2,6 @@ package languageservice
 
 import (
 	"os"
-	"path/filepath"
 	"reflect"
 	"sort"
 	"testing"
@@ -14,9 +13,6 @@ import (
 )
 
 func TestReferences(t *testing.T) {
-	cwd, _ := os.Getwd()
-	schemaPath, _ := filepath.Abs(cwd + "/../../schema.json")
-	os.Setenv("SCHEMA_LOCATION", schemaPath)
 	cache := utils.CreateCache()
 
 	type args struct {

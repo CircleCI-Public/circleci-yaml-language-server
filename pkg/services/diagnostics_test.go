@@ -13,9 +13,6 @@ import (
 )
 
 func TestFindErrors(t *testing.T) {
-	cwd, _ := os.Getwd()
-	schemaPath, _ := filepath.Abs(cwd + "/../../schema.json")
-	os.Setenv("SCHEMA_LOCATION", schemaPath)
 	cache := utils.CreateCache()
 
 	type args struct {
@@ -57,7 +54,7 @@ func TestFindErrors(t *testing.T) {
 			context := testHelpers.GetDefaultLsContext()
 			context.Api.Token = ""
 			fileUri := uri.File(tt.args.filePath)
-			diagnostics, err := DiagnosticFile(fileUri, cache, context, schemaPath)
+			diagnostics, err := DiagnosticFile(fileUri, cache, context, "")
 
 			if err != nil {
 				t.Error("findErrors()", err)
@@ -65,6 +62,111 @@ func TestFindErrors(t *testing.T) {
 
 			if !reflect.DeepEqual(diagnostics, tt.want) {
 				t.Errorf("FindErrors() in file %s = %v, want %v", tt.args.filePath, diagnostics, tt.want)
+			}
+		})
+	}
+}
+
+func TestFindErrorsWithEmbeddedSchema(t *testing.T) {
+	cache := utils.CreateCache()
+
+	tests := []struct {
+		name     string
+		filePath string
+		want     []protocol.Diagnostic
+	}{
+		{
+			name:     "No errors with embedded schema",
+			filePath: "./testdata/noErrors.yml",
+			want:     make([]protocol.Diagnostic, 0),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			content, _ := os.ReadFile(tt.filePath)
+			cache.FileCache.SetFile(utils.CachedFile{
+				TextDocument: protocol.TextDocumentItem{
+					URI:  uri.File(tt.filePath),
+					Text: string(content),
+				},
+				Project:      utils.Project{},
+				EnvVariables: make([]string, 0),
+			})
+			context := testHelpers.GetDefaultLsContext()
+			context.Api.Token = ""
+			fileUri := uri.File(tt.filePath)
+
+			// Pass empty schemaLocation to exercise the embedded schema fallback
+			diagnostics, err := DiagnosticFile(fileUri, cache, context, "")
+
+			if err != nil {
+				t.Fatalf("DiagnosticFile() with embedded schema returned error: %v", err)
+			}
+
+			if !reflect.DeepEqual(diagnostics, tt.want) {
+				t.Errorf("DiagnosticFile() with embedded schema in file %s = %v, want %v", tt.filePath, diagnostics, tt.want)
+			}
+		})
+	}
+}
+
+func TestOverrideSchemaMatchesEmbeddedSchema(t *testing.T) {
+	cwd, _ := os.Getwd()
+	schemaPath := filepath.Join(cwd, "..", "..", "schema.json")
+
+	tests := []struct {
+		name           string
+		filePath       string
+		expectNonEmpty bool
+	}{
+		{
+			name:           "Clean file produces no diagnostics from either schema",
+			filePath:       "./testdata/noErrors.yml",
+			expectNonEmpty: false,
+		},
+		{
+			name:           "File with schema error produces matching diagnostics",
+			filePath:       "./testdata/schemaError.yml",
+			expectNonEmpty: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cache := utils.CreateCache()
+			content, err := os.ReadFile(tt.filePath)
+			if err != nil {
+				t.Fatalf("failed to read test file %s: %v", tt.filePath, err)
+			}
+			cache.FileCache.SetFile(utils.CachedFile{
+				TextDocument: protocol.TextDocumentItem{
+					URI:  uri.File(tt.filePath),
+					Text: string(content),
+				},
+				Project:      utils.Project{},
+				EnvVariables: make([]string, 0),
+			})
+			context := testHelpers.GetDefaultLsContext()
+			context.Api.Token = ""
+			fileUri := uri.File(tt.filePath)
+
+			fileDiags, err := DiagnosticFile(fileUri, cache, context, schemaPath)
+			if err != nil {
+				t.Fatalf("DiagnosticFile() with file schema returned error: %v", err)
+			}
+
+			embeddedDiags, err := DiagnosticFile(fileUri, cache, context, "")
+			if err != nil {
+				t.Fatalf("DiagnosticFile() with embedded schema returned error: %v", err)
+			}
+
+			if tt.expectNonEmpty && len(fileDiags) == 0 {
+				t.Error("expected diagnostics from file schema but got none")
+			}
+
+			if !reflect.DeepEqual(fileDiags, embeddedDiags) {
+				t.Errorf("Override schema produced different diagnostics than embedded schema.\nFile: %v\nEmbedded: %v", fileDiags, embeddedDiags)
 			}
 		})
 	}

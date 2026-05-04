@@ -7,6 +7,8 @@ import (
 	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser/validate"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
+
+	schema "github.com/CircleCI-Public/circleci-yaml-language-server"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 )
@@ -66,7 +68,13 @@ func DiagnosticYAML(yamlDocument yamlparser.YamlDocument, cache *utils.Cache, co
 	validator := yamlparser.JSONSchemaValidator{
 		Doc: yamlDocument,
 	}
-	err := validator.LoadJsonSchema(yamlDocument.SchemaLocation)
+
+	var err error
+	if yamlDocument.SchemaLocation != "" {
+		err = validator.LoadJsonSchema(yamlDocument.SchemaLocation)
+	} else {
+		err = validator.LoadJsonSchemaFromBytes(schema.EmbeddedSchemaJSON)
+	}
 
 	if err != nil {
 		return []protocol.Diagnostic{}, err

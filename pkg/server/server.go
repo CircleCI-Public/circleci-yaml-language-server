@@ -134,7 +134,11 @@ func StartServer(port int, host string, schemaLocation string) {
 	go func() {
 		time.Sleep(1 * time.Second)
 		fmt.Printf("Server started on port %d, version %s\n", port, utils.ServerVersion)
-		fmt.Printf("   JSON Schema: %s", schemaLocation)
+		if schemaLocation != "" {
+			fmt.Printf("   JSON Schema: %s\n", schemaLocation)
+		} else {
+			fmt.Println("   JSON Schema: (embedded)")
+		}
 	}()
 
 	err = jsonrpc2.Serve(ctx, ln, server, 0)

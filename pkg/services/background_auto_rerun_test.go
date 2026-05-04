@@ -1,8 +1,6 @@
 package languageservice
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/testHelpers"
@@ -12,9 +10,6 @@ import (
 )
 
 func TestBackgroundAutoRerunValidation(t *testing.T) {
-	cwd, _ := os.Getwd()
-	schemaPath, _ := filepath.Abs(cwd + "/../../schema.json")
-	os.Setenv("SCHEMA_LOCATION", schemaPath)
 	cache := utils.CreateCache()
 	context := testHelpers.GetDefaultLsContext()
 	context.Api.Token = ""
@@ -541,7 +536,7 @@ workflows:
 				EnvVariables: make([]string, 0),
 			})
 
-			diagnostics, err := DiagnosticFile(testUri, cache, context, schemaPath)
+			diagnostics, err := DiagnosticFile(testUri, cache, context, "")
 			if err != nil {
 				t.Errorf("DiagnosticFile failed: %v", err)
 				return

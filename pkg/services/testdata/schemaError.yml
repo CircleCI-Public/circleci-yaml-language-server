@@ -1,0 +1,14 @@
+version: true
+
+jobs:
+  build:
+    docker:
+      - image: cimg/node:20.0.0
+    steps:
+      - checkout
+      - run: echo "hello world"
+
+workflows:
+  test:
+    jobs:
+      - build

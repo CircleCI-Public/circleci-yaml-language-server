@@ -8,28 +8,18 @@ aware of.
 
 ### `schema.json`
 
-The Language Server (LS) needs the [`schema.json`](/schema.json) file to
-validate the YAMLs. To run the LS, you must have the file available locally and
-provide its path as `-schema` argument to the LS executable.
+The [`schema.json`](/schema.json) used for YAML validation is **embedded in the
+binary** at compile time. No external schema file is needed to run the language
+server.
 
-As the `schema.json` is versioned like the rest of the code, it is provided with
-every release, this means that when updating the LS binary should always come
-with an update of the `schema.json`.
+If you need to override the built-in schema (e.g., for development), you can
+pass `-schema /path/to/schema.json` to the LS executable. The schema file is
+also included in every GitHub release for reference.
 
 ### Hover
 
-The
-[`textDocument/hover`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_hover)
-functionality is not actually implemented by the LS. Nevertheless, you will see
-reference to the functionality as it is implemented directly in the Typescript
-code of the VSCode extension. The functionality is provided thanks to the
-[SchemaStore JSON schema for CircleCI configs](https://github.com/SchemaStore/schemastore/blob/master/src/schemas/json/circleciconfig.json)
-that CircleCI help maintain and the
+The [`textDocument/hover`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_hover) functionality is not yet implemented by the LS. The VS Code extension currently works around this by implementing hover hints client-side using the
 [vscode-json-languageservice](https://github.com/microsoft/vscode-json-languageservice).
-
-If you plan on implementing the feature you should look for a way to take
-advantage of this JSON and find an equivalent of `vscode-json-languageservice`
-that works for your editor.
 
 ### Configuration
 
