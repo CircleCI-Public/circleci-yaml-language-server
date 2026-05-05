@@ -212,8 +212,6 @@ jobs:
             - version
 
   Unit Tests:
-    environment:
-      SCHEMA_LOCATION: /home/circleci/project/schema.json
     executor: go-executor
     parallelism: 5
     steps:
@@ -303,6 +301,9 @@ jobs:
           paths:
             - project/bin
 
+  # NOTE: The binary embeds the JSON schema, so this file is no longer
+  # required to run the language server. It is still bundled for editors
+  # (e.g. VS Code) that read the schema from disk for hover/validation.
   Copy JSON schema:
     docker:
       - image: cimg/base:stable

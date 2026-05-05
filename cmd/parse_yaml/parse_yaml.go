@@ -18,18 +18,14 @@ func main() {
 	// filepath := "examples/config1.yml"
 	// filepath := "/home/adib/circleci/circle/.circleci/config.yml"
 
-	schemaRef := flag.String("schema", "", "Location of the schema")
+	schemaRef := flag.String("schema", "", "Location of the schema (optional, uses built-in schema if not provided)")
 
 	flag.Parse()
 
+	// If no schema is provided via flag or env, the embedded schema will be used.
 	schema := *schemaRef
 	if schema == "" {
 		schema = os.Getenv("SCHEMA_LOCATION")
-
-		if schema == "" {
-			fmt.Print("No schema defined")
-			return
-		}
 	}
 
 	content, err := os.ReadFile(filepath)

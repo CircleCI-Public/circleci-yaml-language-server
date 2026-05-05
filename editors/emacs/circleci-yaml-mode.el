@@ -29,7 +29,7 @@
 ;;
 ;; Derives from `yaml-mode' and activates for files under .circleci/
 ;; directories.  On first use, downloads the CircleCI YAML Language
-;; Server binary and schema from GitHub releases.
+;; Server binary from GitHub releases.
 ;;
 ;; Works with both eglot (built-in from Emacs 29) and lsp-mode.
 ;; Whichever LSP client is loaded will be configured and started
@@ -85,7 +85,7 @@
 
 (defcustom circleci-yaml-lsp-install-dir
   (expand-file-name "circleci-yaml-lsp" user-emacs-directory)
-  "Directory where the language server binary and schema are installed."
+  "Directory where the language server binary is installed."
   :type 'directory)
 
 (defcustom circleci-yaml-api-token nil
@@ -133,10 +133,6 @@ is started when `circleci-yaml-mode' activates."
     (expand-file-name (concat "circleci-yaml-language-server" ext)
                       (expand-file-name "bin" circleci-yaml-lsp-install-dir))))
 
-(defun circleci-yaml--schema-path ()
-  "Return the path to schema.json."
-  (expand-file-name "schema.json" circleci-yaml-lsp-install-dir))
-
 (defun circleci-yaml--version-file ()
   "Return the path to the installed version marker file."
   (expand-file-name ".version" circleci-yaml-lsp-install-dir))
@@ -145,8 +141,7 @@ is started when `circleci-yaml-mode' activates."
 
 (defun circleci-yaml--installed-p ()
   "Return non-nil if the language server is installed."
-  (and (file-executable-p (circleci-yaml--lsp-bin))
-       (file-exists-p (circleci-yaml--schema-path))))
+  (file-executable-p (circleci-yaml--lsp-bin)))
 
 (defun circleci-yaml--installed-version ()
   "Return the installed version string, or nil."
@@ -173,11 +168,9 @@ is started when `circleci-yaml-mode' activates."
   "Download and install the CircleCI YAML Language Server."
   (interactive)
   (let ((bin (circleci-yaml--lsp-bin))
-        (schema (circleci-yaml--schema-path))
         (version-file (circleci-yaml--version-file)))
     (circleci-yaml--download (circleci-yaml--download-url (circleci-yaml--asset-name)) bin)
     (set-file-modes bin #o755)
-    (circleci-yaml--download (circleci-yaml--download-url "schema.json") schema)
     (with-temp-file version-file
       (insert circleci-yaml-lsp-version))
     (message "circleci-yaml-mode: installed v%s" circleci-yaml-lsp-version)))
@@ -207,7 +200,7 @@ automatically, downloading it on first use if needed.")
 
 (defun circleci-yaml--eglot-server-command ()
   "Return the eglot server command for the CircleCI YAML LS."
-  (list (circleci-yaml--lsp-bin) "-stdio" "-schema" (circleci-yaml--schema-path)))
+  (list (circleci-yaml--lsp-bin) "-stdio"))
 
 (with-eval-after-load 'eglot
   (add-to-list 'eglot-server-programs

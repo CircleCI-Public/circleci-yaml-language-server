@@ -84,15 +84,8 @@ export class LSP {
   }
 
   private async spawnLSPServer(port: number): Promise<cp.ChildProcess> {
-    const inDevMode = isInDevMode();
-
-    const schemaLocation = inDevMode
-      ? this.context.asAbsolutePath(path.join("..", "..", "schema.json"))
-      : this.context.asAbsolutePath(path.join("schema.json"));
-
     const servProcess = cp.spawn(this.serverPath, [], {
       env: {
-        SCHEMA_LOCATION: schemaLocation,
         HOME: os.homedir(),
         PORT: port.toString(),
       },

@@ -3,7 +3,6 @@ package languageservice
 import (
 	"os"
 	"path"
-	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -18,9 +17,6 @@ import (
 )
 
 func TestDefinition(t *testing.T) {
-	cwd, _ := os.Getwd()
-	schemaPath, _ := filepath.Abs(cwd + "/../../schema.json")
-	os.Setenv("SCHEMA_LOCATION", schemaPath)
 	cache := utils.CreateCache()
 
 	context := testHelpers.GetDefaultLsContext()

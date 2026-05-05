@@ -55,9 +55,7 @@
       "program": "${workspaceFolder}/cmd/start_server/start_server.go",
       "args": [
         "--port",
-        "10001",
-        "--schema",
-        "${workspaceFolder}/schema.json"
+        "10001"
       ]
     },
     {

@@ -14,7 +14,7 @@ import (
 func main() {
 	hostRef := flag.String("host", "", "Hostname of the server")
 	portRef := flag.Int("port", -1, "port number")
-	schemaRef := flag.String("schema", "", "Location of the schema")
+	schemaRef := flag.String("schema", "", "Location of the schema (optional, uses built-in schema if not provided)")
 	versionRef := flag.Bool("version", false, "display version")
 	stdioRef := flag.Bool("stdio", false, "Use stdio instead of socket to communicate")
 	flag.Parse()
@@ -27,24 +27,20 @@ func main() {
 	}
 
 	// Parameter: schema
+	// If no schema is provided via flag or env, the embedded schema will be used.
 	schema := *schemaRef
 	if schema == "" {
 		schema = os.Getenv("SCHEMA_LOCATION")
+	}
 
-		if schema == "" {
-			fmt.Print("No schema defined")
-			return
+	if schema != "" && !path.IsAbs(schema) {
+		cwd, err := os.Getwd()
+
+		if err != nil {
+			fmt.Printf("Error while resolving schema path \"%s\"", schema)
+			panic(err)
 		}
-
-		if !path.IsAbs(schema) {
-			cwd, err := os.Getwd()
-
-			if err != nil {
-				fmt.Printf("Error while resolving schema path \"%s\"", schema)
-				panic(err)
-			}
-			schema = path.Join(cwd, schema)
-		}
+		schema = path.Join(cwd, schema)
 	}
 
 	// Command: stdio

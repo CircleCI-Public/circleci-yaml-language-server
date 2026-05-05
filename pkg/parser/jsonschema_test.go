@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	schema "github.com/CircleCI-Public/circleci-yaml-language-server"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/expect"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/testHelpers"
 	"github.com/stretchr/testify/assert"
@@ -293,8 +294,7 @@ jobs:
 					Doc: yamlDocument,
 				}
 
-				schemaPath := "../../schema.json"
-				err := validator.LoadJsonSchema(schemaPath)
+				err := validator.LoadJsonSchemaFromBytes(schema.EmbeddedSchemaJSON)
 				if err != nil {
 					t.Logf("Warning: Could not load schema: %v", err)
 					t.SkipNow()
