@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [0.33.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.32.0...0.33.0) (2026-05-05)
+
+
+### Features
+
+* embed schema in binary to ease distribution ([#426](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/426)) ([9c78adf](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/9c78adfda88b8d04f163915d00ddae129889838b))
+
 ## [0.32.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.31.0...0.32.0) (2026-04-27)
 
 
