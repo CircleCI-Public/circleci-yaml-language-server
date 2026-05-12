@@ -100,13 +100,19 @@ func getContext(lsContext *LsContext, orgID string, nextPageToken string) (*GetA
 	if err != nil {
 		return nil, err
 	}
-
 	defer res.Body.Close()
-	defer io.Copy(io.Discard, res.Body)
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if res.StatusCode < 200 || res.StatusCode >= 300 {
+		return nil, fmt.Errorf("list contexts (owner-id=%s): HTTP %d: %s", orgID, res.StatusCode, string(body))
+	}
 
 	var resp GetAllContextRes
-	err = json.NewDecoder(res.Body).Decode(&resp)
-	if err != nil {
+	if err = json.Unmarshal(body, &resp); err != nil {
 		return nil, err
 	}
 

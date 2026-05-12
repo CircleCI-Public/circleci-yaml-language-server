@@ -254,7 +254,11 @@ func (val Validate) validateSingleJobInvocation(jobInvocation ast.JobInvocation,
 	if cachedFile := val.Cache.FileCache.GetFile(val.Doc.URI); val.Context.Api.Token != "" &&
 		cachedFile != nil && cachedFile.Project.OrganizationName != "" {
 		for _, context := range jobInvocation.Context {
-			if context.Text != "org-global" && val.Cache.ContextCache.GetOrganizationContext(cachedFile.Project.OrganizationId, context.Text) == nil {
+			if context.Text != "org-global" && val.Cache.ContextCache.ResolveWorkflowContext(
+				cachedFile.Project.OrganizationId,
+				cachedFile.Project.OrganizationSlug,
+				context.Text,
+			) == nil {
 				val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
 					context.Range,
 					fmt.Sprintf("Context %s does not exist", context.Text)))
