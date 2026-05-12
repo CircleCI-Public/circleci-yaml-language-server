@@ -123,11 +123,11 @@ var ValidLinuxResourceClasses = []string{
 }
 
 var ValidLinuxGen2ResourceClasses = []string{
-	"medium-gen2",
-	"large-gen2",
-	"xlarge-gen2",
-	"2xlarge-gen2",
-	"2xlarge+-gen2",
+	"medium.gen2",
+	"large.gen2",
+	"xlarge.gen2",
+	"2xlarge.gen2",
+	"2xlarge+.gen2",
 }
 
 var ValidWindowsImages = []string{
