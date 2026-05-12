@@ -83,7 +83,10 @@ func GetProjectOrg(projectSlug string) string {
 func GetProjectId(projectSlug string, lsContext *LsContext) (Project, error) {
 	url := fmt.Sprintf("%s/api/v2/project/%s", lsContext.Api.HostUrl, projectSlug)
 
-	req, _ := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return Project{}, err
+	}
 
 	req.Header.Add("Circle-Token", lsContext.Api.Token)
 	req.Header.Set("User-Agent", UserAgent)
@@ -98,6 +101,10 @@ func GetProjectId(projectSlug string, lsContext *LsContext) (Project, error) {
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		return Project{}, err
+	}
+
+	if res.StatusCode < 200 || res.StatusCode >= 300 {
+		return Project{}, fmt.Errorf("get project %q: HTTP %d: %s", projectSlug, res.StatusCode, string(body))
 	}
 
 	var projectIdRes Project

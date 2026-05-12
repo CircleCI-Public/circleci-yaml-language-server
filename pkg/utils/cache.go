@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 	"slices"
+	"strings"
 	"sync"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
@@ -284,7 +285,18 @@ func (c *ContextCache) SetOrganizationContext(organizationId string, ctx *Contex
 	if c.contextCache[organizationId] == nil {
 		c.contextCache[organizationId] = make(map[string]*Context)
 	}
-	c.contextCache[organizationId][ctx.Name] = ctx
+	orgMap := c.contextCache[organizationId]
+	orgMap[ctx.Name] = ctx
+	// CircleCI configs often use the short context name for the project's org; the API may
+	// return a qualified name (org/context). Also index by the suffix so lookups match.
+	if i := strings.LastIndex(ctx.Name, "/"); i >= 0 {
+		short := ctx.Name[i+1:]
+		if short != "" && short != ctx.Name {
+			if _, exists := orgMap[short]; !exists {
+				orgMap[short] = ctx
+			}
+		}
+	}
 	return ctx
 }
 
@@ -292,6 +304,34 @@ func (c *ContextCache) GetOrganizationContext(organizationId string, name string
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()
 	return c.contextCache[organizationId][name]
+}
+
+// ResolveWorkflowContext looks up a context as referenced in config: exact key, then common
+// alternates between short vs org-qualified names (API and config do not always agree).
+func (c *ContextCache) ResolveWorkflowContext(organizationId, organizationSlug, workflowContextName string) *Context {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	org := c.contextCache[organizationId]
+	if org == nil {
+		return nil
+	}
+	if ctx := org[workflowContextName]; ctx != nil {
+		return ctx
+	}
+	if i := strings.LastIndex(workflowContextName, "/"); i >= 0 {
+		short := workflowContextName[i+1:]
+		if short != "" {
+			if ctx := org[short]; ctx != nil {
+				return ctx
+			}
+		}
+	}
+	if organizationSlug != "" && !strings.Contains(workflowContextName, "/") {
+		if ctx := org[organizationSlug+"/"+workflowContextName]; ctx != nil {
+			return ctx
+		}
+	}
+	return nil
 }
 
 func (c *ContextCache) RemoveOrganizationContext(organizationId string, name string) {
