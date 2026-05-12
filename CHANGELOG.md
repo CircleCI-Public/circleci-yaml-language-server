@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [0.33.1](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.33.0...0.33.1) (2026-05-12)
+
+
+### Bug Fixes
+
+* Update gen2 resource class names ([#430](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/430)) ([9a2ab45](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/9a2ab457e8dd7291379fe69c4a420bb965671c4a))
+
 ## [0.33.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.32.0...0.33.0) (2026-05-05)
 
 
