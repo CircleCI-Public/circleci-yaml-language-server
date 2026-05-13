@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [0.34.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.33.1...0.34.0) (2026-05-13)
+
+
+### Features
+
+* Add new Q2 2026 linux images ([#433](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/433)) ([dd6778b](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/dd6778b4363df0bcd7be6023ee43a093caa60565))
+
 ## [0.33.1](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.33.0...0.33.1) (2026-05-12)
 
 
