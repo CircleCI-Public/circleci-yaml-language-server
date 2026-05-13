@@ -36,6 +36,7 @@ var ValidLinuxImages = []string{
 	"ubuntu-2004:edge",
 
 	// Ubuntu 22.04
+	"ubuntu-2204:2026.05.1",
 	"ubuntu-2204:2025.09.1",
 	"ubuntu-2204:2024.11.1",
 	"ubuntu-2204:2024.08.1",
@@ -58,12 +59,17 @@ var ValidLinuxImages = []string{
 	"ubuntu-2204:edge",
 
 	// Ubuntu 24.04
+	"ubuntu-2404:2026.05.1",
 	"ubuntu-2404:2025.09.1",
 	"ubuntu-2404:2024.11.1",
 	"ubuntu-2404:2024.08.1",
 	"ubuntu-2404:2024.05.1",
 	"ubuntu-2404:current",
 	"ubuntu-2404:edge",
+
+	// Ubuntu 26.04
+	"ubuntu-2604:2026.05.1",
+	"ubuntu-2604:edge",
 
 	// Android
 	"android:2025.10.1",
@@ -102,6 +108,9 @@ var ValidLinuxGen2Images = []string{
 	// Ubuntu 24.04
 	"ubuntu-2404:current",
 	"ubuntu-2404:edge",
+
+	// Ubuntu 26.04
+	"ubuntu-2604:edge",
 }
 
 var ValidLinuxResourceClasses = []string{
