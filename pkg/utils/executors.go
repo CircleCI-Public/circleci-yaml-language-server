@@ -72,6 +72,7 @@ var ValidLinuxImages = []string{
 	"ubuntu-2604:edge",
 
 	// Android
+	"android:2026.05.1",
 	"android:2025.10.1",
 	"android:2024.11.1",
 	"android:2024.04.1",
@@ -152,6 +153,7 @@ var ValidWindowsImages = []string{
 	"windows-server-2019-vs2019:edge",
 
 	// Windows Server 2022
+	"windows-server-2022-gui:2026.05.1",
 	"windows-server-2022-gui:2025.10.1",
 	"windows-server-2022-gui:2024.12.1",
 	"windows-server-2022-gui:2024.04.1",
@@ -173,6 +175,7 @@ var ValidWindowsImages = []string{
 	"windows-server-2022-gui:edge",
 
 	// Windows Server 2025
+	"windows-server-2025-gui:2026.05.1",
 	"windows-server-2025-gui:2025.10.1",
 	"windows-server-2025-gui:current",
 	"windows-server-2025-gui:edge",
