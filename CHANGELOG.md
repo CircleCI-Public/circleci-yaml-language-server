@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [0.35.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.34.0...0.35.0) (2026-05-22)
+
+
+### Features
+
+* Add new Q2 2026 Android and Windows images ([#436](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/436)) ([eb5af82](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/eb5af822bda4ebe714f00c57f7f1775d910c4f89))
+
 ## [0.34.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.33.1...0.34.0) (2026-05-13)
 
 
