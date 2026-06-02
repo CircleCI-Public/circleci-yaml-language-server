@@ -644,13 +644,3 @@ workflows:
     jobs:
       - Unit Tests
       - Lint
-      - Create version file:
-          is-prerelease: true
-          context:
-            - devex-release
-      - Build Linux:
-          name: Build Linux arm64
-          resource_class: arm.medium
-          arch: arm64
-          requires:
-            - Create version file
