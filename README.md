@@ -6,8 +6,9 @@
 [![GitHub release](https://img.shields.io/github/v/release/circleci-public/circleci-yaml-language-server)](https://github.com/circleci-public/circleci-yaml-language-server/releases)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE.md)
 
-## This is CircleCI's YAML Language Server.
+## This is CircleCI's YAML Language Server
 
+..
 The official CircleCI extension for Visual Studio Code is available
 [on the VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=circleci.circleci).
 This extension was developed by the Developer Experience team of CircleCI and it
