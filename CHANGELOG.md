@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [0.35.1](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.35.0...0.35.1) (2026-06-02)
+
+
+### Bug Fixes
+
+* Remove EOL'ed Xcode versions ([#439](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/439)) ([437f8f8](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/437f8f8ab74d606b96a1f6dacc0999556f175215))
+
 ## [0.35.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.34.0...0.35.0) (2026-05-22)
 
 
