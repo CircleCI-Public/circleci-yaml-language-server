@@ -46,7 +46,7 @@ func findExecutor(pos protocol.Position, doc yamlparser.YamlDocument) (ast.Execu
 
 func (ch *CompletionHandler) completeDockerExecutor(executor ast.DockerExecutor) {
 	if utils.PosInRange(executor.ResourceClassRange, ch.Params.Position) {
-		ch.addResourceClassCompletion(utils.ValidDockerResourceClasses)
+		ch.addResourceClassCompletion(utils.DockerResourceClasses(ch.Context, ch.Cache))
 		return
 	}
 
@@ -124,7 +124,7 @@ func (ch *CompletionHandler) completeDockerExecutor(executor ast.DockerExecutor)
 
 func (ch *CompletionHandler) completeMachineExecutor(executor ast.MachineExecutor) {
 	if utils.PosInRange(executor.ResourceClassRange, ch.Params.Position) {
-		for _, resourceClass := range utils.ValidMachineResourceClasses {
+		for _, resourceClass := range utils.MachineResourceClasses(ch.Context, ch.Cache) {
 			ch.addCompletionItem(resourceClass)
 		}
 		if ch.Context.Api.IsLoggedIn() {
@@ -136,8 +136,10 @@ func (ch *CompletionHandler) completeMachineExecutor(executor ast.MachineExecuto
 		return
 	}
 
+	images := utils.MachineImages(ch.Context, ch.Cache)
+
 	if utils.PosInRange(executor.ImageRange, ch.Params.Position) {
-		for _, img := range utils.ValidMachineImages {
+		for _, img := range images {
 			ch.addCompletionItem(img)
 		}
 		return
@@ -148,7 +150,7 @@ func (ch *CompletionHandler) completeMachineExecutor(executor ast.MachineExecuto
 		extendedRange.End.Character += 999
 
 		if utils.PosInRange(extendedRange, ch.Params.Position) {
-			for _, img := range utils.ValidMachineImages {
+			for _, img := range images {
 				ch.addCompletionItem(img)
 			}
 
@@ -161,7 +163,7 @@ func (ch *CompletionHandler) completeMachineExecutor(executor ast.MachineExecuto
 
 func (ch *CompletionHandler) completeMacOSExecutor(executor ast.MacOSExecutor) {
 	if utils.PosInRange(executor.ResourceClassRange, ch.Params.Position) {
-		ch.addResourceClassCompletion(utils.ValidMacOSResourceClasses)
+		ch.addResourceClassCompletion(utils.MacOSResourceClasses(ch.Context, ch.Cache))
 		return
 	} else {
 		ch.checkAndAddResourceClassFieldCompletion(executor)

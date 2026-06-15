@@ -34,10 +34,15 @@ func (val Validate) ValidateExecutors() {
 // MacOSExecutor
 
 func (val Validate) validateMacOSExecutor(executor ast.MacOSExecutor) {
-	if slices.Contains(utils.ValidXcodeVersions, executor.Xcode) {
+	xcodeVersions := utils.XcodeVersions(val.Context, val.Cache)
+	if xcodeVersions == nil {
+		return
+	}
+
+	if slices.Contains(xcodeVersions, executor.Xcode) {
 		val.checkIfValidResourceClass(
 			executor.ResourceClass,
-			utils.ValidMacOSResourceClasses,
+			utils.MacOSResourceClasses(val.Context, val.Cache),
 			executor.ResourceClassRange,
 			fmt.Sprintf("Xcode version \"%s\"", executor.Xcode),
 		)
@@ -56,6 +61,11 @@ func (val Validate) validateMachineExecutor(executor ast.MachineExecutor) {
 		return
 	}
 
+	pairs := utils.MachinePairs(val.Context, val.Cache)
+	if pairs == nil {
+		return
+	}
+
 	rcParam := utils.ContainsParam(executor.ResourceClass)
 	imgParam := utils.ContainsParam(executor.Image)
 
@@ -63,7 +73,7 @@ func (val Validate) validateMachineExecutor(executor ast.MachineExecutor) {
 		if executor.ResourceClass != "" &&
 			!utils.IsSelfHostedRunner(executor.ResourceClass) &&
 			!rcParam &&
-			!slices.Contains(utils.ValidMachineResourceClasses, executor.ResourceClass) {
+			!slices.Contains(utils.MachineResourceClasses(val.Context, val.Cache), executor.ResourceClass) {
 
 			val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
 				executor.ResourceClassRange,
@@ -87,9 +97,9 @@ func (val Validate) validateMachineExecutor(executor ast.MachineExecutor) {
 
 	var validResourceClass bool
 	var validImage bool
-	for _, pair := range utils.ValidMachinePairs {
-		hasRC := slices.Contains(pair.ResourceClasses, executor.ResourceClass) ||
-			rcParam
+	for _, pair := range pairs {
+		hasRC := pair.ResourceClass == executor.ResourceClass ||
+			rcParam || executor.ResourceClass == ""
 		hasImg := slices.Contains(pair.Images, executor.Image) ||
 			imgParam
 
@@ -136,46 +146,19 @@ func (val Validate) validateMachineExecutor(executor ast.MachineExecutor) {
 			),
 		))
 	}
-
-	// if executor.ResourceClass != "" {
-	// 	// Resource class is defined, check that the resource class/image pair
-	// 	// is valid
-	// 	for _, pair := range utils.ValidPairs {
-	// 		if slices.Contains(pair.Images, executor.Image) {
-	// 			val.checkIfValidResourceClass(
-	// 				executor.ResourceClass,
-	// 				pair.ResourceClasses,
-	// 				executor.ResourceClassRange,
-	// 				fmt.Sprintf("machine image \"%s\"", executor.Image),
-	// 			)
-	// 			return
-	// 		}
-	// 	}
-	// } else if executor.Image != "" {
-	// 	// No resource class, assume linux, check for valid image
-	// 	if !slices.Contains(utils.ValidLinuxImages, executor.Image) {
-	// 		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
-	// 			executor.ImageRange,
-	// 			"Invalid or deprecated machine image",
-	// 		))
-	// 	}
-	// } else if !executor.IsDeprecated && !utils.IsSelfHostedRunner(executor.ResourceClass) {
-	// 	val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
-	// 		executor.Range,
-	// 		"Missing machine image",
-	// 	))
-	// }
 }
 
 // DockerExecutor
 
 func (val Validate) validateDockerExecutor(executor ast.DockerExecutor) {
-	val.checkIfValidResourceClass(
-		executor.ResourceClass,
-		utils.ValidDockerResourceClasses,
-		executor.ResourceClassRange,
-		"Docker executor",
-	)
+	if dockerResourceClasses := utils.DockerResourceClasses(val.Context, val.Cache); dockerResourceClasses != nil {
+		val.checkIfValidResourceClass(
+			executor.ResourceClass,
+			dockerResourceClasses,
+			executor.ResourceClassRange,
+			"Docker executor",
+		)
+	}
 
 	for _, img := range executor.Image {
 

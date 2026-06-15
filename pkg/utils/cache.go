@@ -14,12 +14,13 @@ import (
 )
 
 type Cache struct {
-	FileCache          FileCache
-	OrbCache           OrbCache
-	DockerCache        DockerCache
-	DockerTagsCache    DockerTagsCache
-	ResourceClassCache ResourceClassCache
-	ContextCache       ContextCache
+	FileCache             FileCache
+	OrbCache              OrbCache
+	DockerCache           DockerCache
+	DockerTagsCache       DockerTagsCache
+	ResourceClassCache    ResourceClassCache
+	ContextCache          ContextCache
+	MachineOfferingsCache MachineOfferingsCache
 }
 
 type DockerCache struct {

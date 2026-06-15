@@ -52,6 +52,7 @@ func CheckYamlErrors(t *testing.T, testCases []ValidateTestCase) {
 				t.Fatal("Test YAML content contains tab characters -- YAML does not allow tabs for indentation. Use spaces instead.")
 			}
 			val := CreateValidateFromYAML(tt.YamlContent)
+			val.Cache.MachineOfferingsCache.Set(testMachineOfferings())
 			val.Validate()
 
 			diags := *val.Diagnostics
