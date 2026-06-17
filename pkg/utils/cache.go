@@ -62,9 +62,9 @@ type OrbCache struct {
 }
 
 type ContextCache struct {
-	cacheMutex            *sync.Mutex
-	contextCache          map[string]map[string]*Context
-	ambiguousShortNames   map[string]map[string]struct{}
+	cacheMutex          *sync.Mutex
+	contextCache        map[string]map[string]*Context
+	ambiguousShortNames map[string]map[string]struct{}
 }
 
 type ResourceClassCache struct {
