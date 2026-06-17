@@ -1,0 +1,98 @@
+package utils
+
+import (
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+	"time"
+)
+
+func Test_getContext(t *testing.T) {
+	orgID := "11111111-2222-3333-4444-555555555555"
+	createdAt := time.Date(2024, 1, 2, 3, 4, 5, 0, time.UTC)
+
+	tests := []struct {
+		name       string
+		statusCode int
+		body       string
+		wantErr    string
+		wantItems  int
+	}{
+		{
+			name:       "success",
+			statusCode: http.StatusOK,
+			body: `{
+				"items": [{
+					"name": "my-org/deploy",
+					"id": "ctx-id",
+					"created_at": "2024-01-02T03:04:05Z",
+					"environment_variables": []
+				}]
+			}`,
+			wantItems: 1,
+		},
+		{
+			name:       "unauthorized",
+			statusCode: http.StatusUnauthorized,
+			body:       `{"message":"Unauthorized"}`,
+			wantErr:    "HTTP 401",
+		},
+		{
+			name:       "invalid json on success status",
+			statusCode: http.StatusOK,
+			body:       `{`,
+			wantErr:    "unexpected end of JSON input",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if got := r.Header.Get("Circle-Token"); got != "test-token" {
+					t.Errorf("Circle-Token = %q, want %q", got, "test-token")
+				}
+				if !strings.Contains(r.URL.Path, "/api/v2/context") {
+					t.Fatalf("unexpected path: %s", r.URL.Path)
+				}
+				if got := r.URL.Query().Get("owner-id"); got != orgID {
+					t.Fatalf("owner-id = %q, want %q", got, orgID)
+				}
+
+				w.WriteHeader(tt.statusCode)
+				_, _ = w.Write([]byte(tt.body))
+			}))
+			defer server.Close()
+
+			lsContext := &LsContext{
+				Api: ApiContext{
+					Token:   "test-token",
+					HostUrl: server.URL,
+				},
+			}
+
+			got, err := getContext(lsContext, orgID, "")
+			if tt.wantErr != "" {
+				if err == nil {
+					t.Fatalf("getContext() error = nil, want error containing %q", tt.wantErr)
+				}
+				if !strings.Contains(err.Error(), tt.wantErr) {
+					t.Fatalf("getContext() error = %q, want containing %q", err.Error(), tt.wantErr)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("getContext() unexpected error: %v", err)
+			}
+			if len(got.Items) != tt.wantItems {
+				t.Fatalf("len(Items) = %d, want %d", len(got.Items), tt.wantItems)
+			}
+			if got.Items[0].Name != "my-org/deploy" {
+				t.Fatalf("Items[0].Name = %q, want %q", got.Items[0].Name, "my-org/deploy")
+			}
+			if !got.Items[0].CreatedAt.Equal(createdAt) {
+				t.Fatalf("Items[0].CreatedAt = %v, want %v", got.Items[0].CreatedAt, createdAt)
+			}
+		})
+	}
+}
