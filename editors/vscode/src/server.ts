@@ -198,7 +198,7 @@ export class LSP {
 
     await client.start();
 
-    const token = process.env.TOKEN;
+    const token = process.env.CIRCLE_TOKEN ?? process.env.TOKEN;
     const setTokenCommand = {
       command: "setToken",
       arguments: [token ?? ""],
