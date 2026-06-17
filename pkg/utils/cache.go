@@ -62,8 +62,9 @@ type OrbCache struct {
 }
 
 type ContextCache struct {
-	cacheMutex   *sync.Mutex
-	contextCache map[string]map[string]*Context
+	cacheMutex            *sync.Mutex
+	contextCache          map[string]map[string]*Context
+	ambiguousShortNames   map[string]map[string]struct{}
 }
 
 type ResourceClassCache struct {
@@ -86,6 +87,7 @@ func (c *Cache) init() {
 
 	c.ContextCache.cacheMutex = &sync.Mutex{}
 	c.ContextCache.contextCache = make(map[string]map[string]*Context)
+	c.ContextCache.ambiguousShortNames = make(map[string]map[string]struct{})
 
 	c.ResourceClassCache.cacheMutex = &sync.Mutex{}
 	c.ResourceClassCache.resourceClassCache = make(map[protocol.URI]*[]string)
@@ -288,16 +290,41 @@ func (c *ContextCache) SetOrganizationContext(organizationId string, ctx *Contex
 	orgMap := c.contextCache[organizationId]
 	orgMap[ctx.Name] = ctx
 	// CircleCI configs often use the short context name for the project's org; the API may
-	// return a qualified name (org/context). Also index by the suffix so lookups match.
+	// return a qualified name (org/context). Also index by the suffix when unambiguous.
 	if i := strings.LastIndex(ctx.Name, "/"); i >= 0 {
 		short := ctx.Name[i+1:]
-		if short != "" && short != ctx.Name {
-			if _, exists := orgMap[short]; !exists {
-				orgMap[short] = ctx
-			}
+		if short == "" {
+			return ctx
 		}
+		if c.isAmbiguousShortName(organizationId, short) {
+			return ctx
+		}
+		if existing, exists := orgMap[short]; exists {
+			if existing != ctx {
+				delete(orgMap, short)
+				c.markAmbiguousShortName(organizationId, short)
+			}
+			return ctx
+		}
+		orgMap[short] = ctx
 	}
 	return ctx
+}
+
+func (c *ContextCache) isAmbiguousShortName(organizationId, short string) bool {
+	ambiguous, ok := c.ambiguousShortNames[organizationId]
+	if !ok {
+		return false
+	}
+	_, ok = ambiguous[short]
+	return ok
+}
+
+func (c *ContextCache) markAmbiguousShortName(organizationId, short string) {
+	if c.ambiguousShortNames[organizationId] == nil {
+		c.ambiguousShortNames[organizationId] = make(map[string]struct{})
+	}
+	c.ambiguousShortNames[organizationId][short] = struct{}{}
 }
 
 func (c *ContextCache) GetOrganizationContext(organizationId string, name string) *Context {
