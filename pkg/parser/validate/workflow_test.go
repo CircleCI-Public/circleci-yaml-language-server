@@ -155,6 +155,54 @@ workflows:
 				},
 			},
 		},
+		{
+			Name: "Valid max_auto_reruns with pipeline parameter expression",
+			YamlContent: `version: 2.1
+
+parameters:
+  retries:
+    type: integer
+    default: 3
+
+jobs:
+  test-job:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "test"
+
+workflows:
+  test-workflow:
+    max_auto_reruns: << pipeline.parameters.retries >>
+    jobs:
+      - test-job`,
+			OnlyErrors:  true,
+			Diagnostics: []protocol.Diagnostic{},
+		},
+		{
+			Name: "Valid max_auto_reruns with another pipeline parameter expression",
+			YamlContent: `version: 2.1
+
+parameters:
+  max-reruns:
+    type: integer
+    default: 2
+
+jobs:
+  test-job:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "test"
+
+workflows:
+  test-workflow:
+    max_auto_reruns: << pipeline.parameters.max-reruns >>
+    jobs:
+      - test-job`,
+			OnlyErrors:  true,
+			Diagnostics: []protocol.Diagnostic{},
+		},
 	}
 
 	CheckYamlErrors(t, testCases)
