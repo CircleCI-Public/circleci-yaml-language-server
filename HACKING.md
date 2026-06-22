@@ -131,6 +131,32 @@ task prepare:vscode
    > installed, it would display hover hints from the JSON schema from schemastore, rather than the local `schema.json`
    > that you will often be making changes to locally and want to test.
 
+### Authentication / API token
+
+Some language server features require a CircleCI API token. For example,
+resolving private orbs, fetching contexts, and validating project-specific
+settings. The embedded VS Code extension reads the token from the environment
+and sends it to the running language server via the `setToken` LSP command
+immediately after the server initialises.
+
+Set `CIRCLE_TOKEN` before launching VS Code (the `TOKEN` environment variable
+is also accepted as a fallback):
+
+```bash
+export CIRCLE_TOKEN=<your-token>
+code .
+```
+
+If neither variable is set the extension starts without a token. The server
+still works, but features that call the CircleCI API will be unavailable.
+
+> [!NOTE]
+> This is how the **development** extension passes the token. Production
+> clients (e.g. the CircleCI VS Code marketplace extension) handle
+> authentication through their own UI flows and send the same `setToken`
+> command once the user has logged in. See `ADD_A_CLIENT.md` for details on
+> implementing this in other editors.
+
 ## Understanding the `schema.json` file
 
 The CircleCI YAML Language Server uses the standardized [JSON schema](https://json-schema.org/) to help perform basic structural validations on CircleCI YAML files. Our schema lives in `schema.json` at the repository root.
