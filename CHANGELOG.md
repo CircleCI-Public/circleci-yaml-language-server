@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [0.35.2](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.35.1...0.35.2) (2026-06-22)
+
+
+### Bug Fixes
+
+* **WEBEX-208:** context validation (API errors and context name lookup) ([#432](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/432)) ([5db8022](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/5db802283596b85b108ba4c0153e5ac9709331be))
+
 ## [0.35.1](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.35.0...0.35.1) (2026-06-02)
 
 
