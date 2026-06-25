@@ -23,6 +23,12 @@ func (methods *Methods) getAllEnvVariables(textDocument protocol.TextDocumentIte
 	err := utils.GetAllContext(methods.LsContext, cachedFile.Project.OrganizationId, methods.Cache)
 	if err != nil {
 		log.Printf("error getting contexts: %s", err)
+		return
+	}
+	methods.Cache.ContextCache.MarkOrganizationContextListLoaded(cachedFile.Project.OrganizationId)
+
+	if err := utils.GetAllContextWithEnvVars(methods.LsContext, cachedFile.Project.OrganizationId, methods.Cache); err != nil {
+		log.Printf("error getting context environment variables: %s", err)
 	}
 }
 

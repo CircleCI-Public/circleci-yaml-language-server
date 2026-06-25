@@ -62,7 +62,7 @@ func GetAllContext(lsContext *LsContext, orgID string, cache *Cache) error {
 	pageToken := ""
 
 	for {
-		res, err := getContext(lsContext, orgID, pageToken)
+		res, err := getContext(lsContext, orgID, pageToken, false)
 		if err != nil {
 			return err
 		}
@@ -86,8 +86,48 @@ func GetAllContext(lsContext *LsContext, orgID string, cache *Cache) error {
 	return nil
 }
 
-func getContext(lsContext *LsContext, orgID string, nextPageToken string) (*GetAllContextRes, error) {
-	url := fmt.Sprintf("%s/api/v2/context?owner-id=%s&include-env-vars=true&page-token=%s", lsContext.Api.HostUrl, orgID, nextPageToken)
+// GetAllContextWithEnvVars loads contexts including environment variable names when the token
+// has permission. Used for completion; callers should prefer GetAllContext for validation.
+func GetAllContextWithEnvVars(lsContext *LsContext, orgID string, cache *Cache) error {
+	pageToken := ""
+
+	for {
+		res, err := getContext(lsContext, orgID, pageToken, true)
+		if err != nil {
+			return err
+		}
+
+		for _, c := range res.Items {
+			existing := cache.ContextCache.GetOrganizationContext(orgID, c.Name)
+			if existing != nil {
+				existing.envVariables = envVarNames(c.EnvironmentVariables)
+				continue
+			}
+			cache.ContextCache.SetOrganizationContext(orgID, &Context{
+				Id:           c.ID,
+				Name:         c.Name,
+				CreatedAt:    c.CreatedAt.String(),
+				envVariables: envVarNames(c.EnvironmentVariables),
+			})
+		}
+
+		if res.NextPageToken == nil {
+			break
+		}
+
+		pageToken = *res.NextPageToken
+	}
+
+	return nil
+}
+
+func getContext(lsContext *LsContext, orgID string, nextPageToken string, includeEnvVars bool) (*GetAllContextRes, error) {
+	url := fmt.Sprintf("%s/api/v2/context?owner-id=%s&page-token=%s", lsContext.Api.HostUrl, orgID, nextPageToken)
+	if includeEnvVars {
+		// Requires permission to read context environment variables; many users can list
+		// contexts but receive HTTP 403 when env vars are included (private contexts).
+		url = fmt.Sprintf("%s/api/v2/context?owner-id=%s&include-env-vars=true&page-token=%s", lsContext.Api.HostUrl, orgID, nextPageToken)
+	}
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
