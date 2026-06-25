@@ -290,7 +290,6 @@ func (cache *Cache) clearContextCache() {
 	cache.ContextCache.listLoadedOrgs = make(map[string]bool)
 }
 
-
 func (c *ContextCache) MarkOrganizationContextListLoaded(organizationId string) {
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()

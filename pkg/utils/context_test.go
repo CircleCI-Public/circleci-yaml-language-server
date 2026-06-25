@@ -97,7 +97,6 @@ func Test_getContext(t *testing.T) {
 	}
 }
 
-
 func Test_getContext_withoutEnvVarsQueryParam(t *testing.T) {
 	orgID := "11111111-2222-3333-4444-555555555555"
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

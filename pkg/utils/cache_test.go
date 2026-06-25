@@ -87,7 +87,6 @@ func TestContextCache_SetOrganizationContext_shortNameCollision(t *testing.T) {
 	}
 }
 
-
 func TestContextCache_listLoadedTracking(t *testing.T) {
 	orgID := "org-uuid"
 	cache := CreateCache()

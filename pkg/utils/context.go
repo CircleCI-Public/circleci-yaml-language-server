@@ -86,7 +86,6 @@ func GetAllContext(lsContext *LsContext, orgID string, cache *Cache) error {
 	return nil
 }
 
-
 // GetAllContextWithEnvVars loads contexts including environment variable names when the token
 // has permission. Used for completion; callers should prefer GetAllContext for validation.
 func GetAllContextWithEnvVars(lsContext *LsContext, orgID string, cache *Cache) error {
