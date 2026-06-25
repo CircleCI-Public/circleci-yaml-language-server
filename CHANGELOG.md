@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [0.35.3](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.35.2...0.35.3) (2026-06-25)
+
+
+### Bug Fixes
+
+* **WEBEX-208:** list contexts without env vars for validation ([#446](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/446)) ([4cd516e](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/4cd516ecf21a49e4d5e31467aed8c45d5b2e554e))
+
 ## [0.35.2](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.35.1...0.35.2) (2026-06-22)
 
 
