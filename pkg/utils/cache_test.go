@@ -86,3 +86,16 @@ func TestContextCache_SetOrganizationContext_shortNameCollision(t *testing.T) {
 		t.Fatalf("short key should stay dropped after later collision, got %q", got.Name)
 	}
 }
+
+
+func TestContextCache_listLoadedTracking(t *testing.T) {
+	orgID := "org-uuid"
+	cache := CreateCache()
+	if cache.ContextCache.IsOrganizationContextListLoaded(orgID) {
+		t.Fatal("expected list not loaded initially")
+	}
+	cache.ContextCache.MarkOrganizationContextListLoaded(orgID)
+	if !cache.ContextCache.IsOrganizationContextListLoaded(orgID) {
+		t.Fatal("expected list loaded after mark")
+	}
+}

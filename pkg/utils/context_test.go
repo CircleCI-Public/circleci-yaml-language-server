@@ -71,7 +71,7 @@ func Test_getContext(t *testing.T) {
 				},
 			}
 
-			got, err := getContext(lsContext, orgID, "")
+			got, err := getContext(lsContext, orgID, "", false)
 			if tt.wantErr != "" {
 				if err == nil {
 					t.Fatalf("getContext() error = nil, want error containing %q", tt.wantErr)
@@ -94,5 +94,74 @@ func Test_getContext(t *testing.T) {
 				t.Fatalf("Items[0].CreatedAt = %v, want %v", got.Items[0].CreatedAt, createdAt)
 			}
 		})
+	}
+}
+
+
+func Test_getContext_withoutEnvVarsQueryParam(t *testing.T) {
+	orgID := "11111111-2222-3333-4444-555555555555"
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Query().Has("include-env-vars") {
+			t.Fatalf("unexpected include-env-vars query param: %s", r.URL.RawQuery)
+		}
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"items":[]}`))
+	}))
+	defer server.Close()
+
+	lsContext := &LsContext{Api: ApiContext{Token: "test-token", HostUrl: server.URL}}
+	if _, err := getContext(lsContext, orgID, "", false); err != nil {
+		t.Fatalf("getContext() error = %v", err)
+	}
+}
+
+func Test_getContext_withEnvVarsQueryParam(t *testing.T) {
+	orgID := "11111111-2222-3333-4444-555555555555"
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if got := r.URL.Query().Get("include-env-vars"); got != "true" {
+			t.Fatalf("include-env-vars = %q, want true", got)
+		}
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"items":[]}`))
+	}))
+	defer server.Close()
+
+	lsContext := &LsContext{Api: ApiContext{Token: "test-token", HostUrl: server.URL}}
+	if _, err := getContext(lsContext, orgID, "", true); err != nil {
+		t.Fatalf("getContext() error = %v", err)
+	}
+}
+
+func Test_GetAllContextWithEnvVars_mergesEnvVarNames(t *testing.T) {
+	orgID := "11111111-2222-3333-4444-555555555555"
+	requests := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests++
+		w.WriteHeader(http.StatusOK)
+		if r.URL.Query().Has("include-env-vars") {
+			_, _ = w.Write([]byte(`{"items":[{"name":"my-org/deploy","id":"ctx-id","created_at":"2024-01-02T03:04:05Z","environment_variables":[{"variable":"SECRET","truncated_value":"x","created_at":"2024-01-02T03:04:05Z","updated_at":"2024-01-02T03:04:05Z"}]}]}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{"items":[{"name":"my-org/deploy","id":"ctx-id","created_at":"2024-01-02T03:04:05Z"}]}`))
+	}))
+	defer server.Close()
+
+	cache := CreateCache()
+	lsContext := &LsContext{Api: ApiContext{Token: "test-token", HostUrl: server.URL}}
+	if err := GetAllContext(lsContext, orgID, cache); err != nil {
+		t.Fatalf("GetAllContext() error = %v", err)
+	}
+	if err := GetAllContextWithEnvVars(lsContext, orgID, cache); err != nil {
+		t.Fatalf("GetAllContextWithEnvVars() error = %v", err)
+	}
+	ctx := cache.ContextCache.GetOrganizationContext(orgID, "my-org/deploy")
+	if ctx == nil {
+		t.Fatal("expected context in cache")
+	}
+	if len(ctx.envVariables) != 1 || ctx.envVariables[0] != "SECRET" {
+		t.Fatalf("envVariables = %#v, want [SECRET]", ctx.envVariables)
+	}
+	if requests != 2 {
+		t.Fatalf("requests = %d, want 2", requests)
 	}
 }

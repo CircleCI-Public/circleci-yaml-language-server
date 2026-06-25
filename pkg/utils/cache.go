@@ -65,6 +65,7 @@ type ContextCache struct {
 	cacheMutex          *sync.Mutex
 	contextCache        map[string]map[string]*Context
 	ambiguousShortNames map[string]map[string]struct{}
+	listLoadedOrgs      map[string]bool
 }
 
 type ResourceClassCache struct {
@@ -88,6 +89,7 @@ func (c *Cache) init() {
 	c.ContextCache.cacheMutex = &sync.Mutex{}
 	c.ContextCache.contextCache = make(map[string]map[string]*Context)
 	c.ContextCache.ambiguousShortNames = make(map[string]map[string]struct{})
+	c.ContextCache.listLoadedOrgs = make(map[string]bool)
 
 	c.ResourceClassCache.cacheMutex = &sync.Mutex{}
 	c.ResourceClassCache.resourceClassCache = make(map[protocol.URI]*[]string)
@@ -277,9 +279,40 @@ func GetOrbCacheFSPath(orbYaml string) string {
 func (cache *Cache) ClearHostData() {
 	cache.RemoveOrbFiles()
 	cache.OrbCache.RemoveOrbs()
+	cache.clearContextCache()
 }
 
-// Context cache
+func (cache *Cache) clearContextCache() {
+	cache.ContextCache.cacheMutex.Lock()
+	defer cache.ContextCache.cacheMutex.Unlock()
+	cache.ContextCache.contextCache = make(map[string]map[string]*Context)
+	cache.ContextCache.ambiguousShortNames = make(map[string]map[string]struct{})
+	cache.ContextCache.listLoadedOrgs = make(map[string]bool)
+}
+
+
+func (c *ContextCache) MarkOrganizationContextListLoaded(organizationId string) {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	if c.listLoadedOrgs == nil {
+		c.listLoadedOrgs = make(map[string]bool)
+	}
+	c.listLoadedOrgs[organizationId] = true
+}
+
+func (c *ContextCache) IsOrganizationContextListLoaded(organizationId string) bool {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	return c.listLoadedOrgs[organizationId]
+}
+
+func (c *ContextCache) ClearOrganizationContextList(organizationId string) {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	delete(c.contextCache, organizationId)
+	delete(c.ambiguousShortNames, organizationId)
+	delete(c.listLoadedOrgs, organizationId)
+}
 
 func (c *ContextCache) SetOrganizationContext(organizationId string, ctx *Context) *Context {
 	c.cacheMutex.Lock()

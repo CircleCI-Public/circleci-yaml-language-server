@@ -252,7 +252,8 @@ func (val Validate) validateSingleJobInvocation(jobInvocation ast.JobInvocation,
 	}
 
 	if cachedFile := val.Cache.FileCache.GetFile(val.Doc.URI); val.Context.Api.Token != "" &&
-		cachedFile != nil && cachedFile.Project.OrganizationName != "" {
+		cachedFile != nil && cachedFile.Project.OrganizationName != "" &&
+		val.Cache.ContextCache.IsOrganizationContextListLoaded(cachedFile.Project.OrganizationId) {
 		for _, context := range jobInvocation.Context {
 			if context.Text != "org-global" && val.Cache.ContextCache.ResolveWorkflowContext(
 				cachedFile.Project.OrganizationId,
