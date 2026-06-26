@@ -325,7 +325,7 @@ func TestResourceClass(t *testing.T) {
 			yamlData: `jobs:
   test:
     macos:
-      xcode: ` + utils.ValidXcodeVersions[0] + `
+      xcode: 26.5.0
     resource_class: toto
     steps:
       - checkout`,
@@ -363,6 +363,7 @@ func TestResourceClass(t *testing.T) {
 				Diagnostics: &[]protocol.Diagnostic{},
 				Cache:       utils.CreateCache(),
 			}
+			val.Cache.MachineOfferingsCache.Set(testMachineOfferings())
 			val.validateSingleJob(doc.Jobs["test"])
 
 			for _, diag := range *val.Diagnostics {
@@ -456,6 +457,7 @@ func TestRetention(t *testing.T) {
 				Diagnostics: &[]protocol.Diagnostic{},
 				Cache:       utils.CreateCache(),
 			}
+			val.Cache.MachineOfferingsCache.Set(testMachineOfferings())
 			val.validateSingleJob(doc.Jobs["test"])
 
 			for _, diag := range *val.Diagnostics {

@@ -21,6 +21,18 @@ func TestComplete(t *testing.T) {
 
 	context := testHelpers.GetDefaultLsContext()
 
+	cache.MachineOfferingsCache.Set(&utils.Offerings{
+		Linux: map[string][]string{
+			"medium": {"ubuntu-2404:current", "ubuntu-2204:current"},
+			"large":  {"ubuntu-2404:current", "ubuntu-2204:current"},
+		},
+		Windows: map[string][]string{"windows.medium": {"windows-server-2022-gui:current"}},
+		MacOS: map[string][]string{
+			"m4pro.medium": {"26.5.0"},
+			"m4pro.large":  {"26.5.0"},
+		},
+	})
+
 	parsedOrb, err := parser.ParseFromURI(
 		uri.File(path.Join("./testdata/orb.yaml")),
 		context,
@@ -232,7 +244,7 @@ func TestComplete(t *testing.T) {
 					Character: 19,
 				},
 			},
-			want: createCompletionItemForLabels(utils.ValidMachineImages),
+			want: createCompletionItemForLabels(utils.MachineImages(context, cache)),
 		},
 		{
 			name: "Completion for resource class",
@@ -243,7 +255,7 @@ func TestComplete(t *testing.T) {
 					Character: 24,
 				},
 			},
-			want: createCompletionItemForLabels(utils.ValidMacOSResourceClasses),
+			want: createCompletionItemForLabels(utils.MacOSResourceClasses(context, cache)),
 		},
 		{
 			name: "Completion for executors reference in jobs",
