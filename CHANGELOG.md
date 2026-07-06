@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [0.36.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.35.3...0.36.0) (2026-07-06)
+
+
+### Features
+
+* source machine images and resource classes from the offerings API ([#443](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/443)) ([2e09889](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/2e09889a0a2dc5fc55679c54913d8c33ccf9774e))
+
 ## [0.35.3](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.35.2...0.35.3) (2026-06-25)
 
 
