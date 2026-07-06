@@ -2,6 +2,8 @@ package validate
 
 import (
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"regexp"
 	"strings"
 	"testing"
@@ -78,6 +80,34 @@ func yamlForMachine(resourceClass, image string) string {
 	return builder.String()
 }
 
+// testMachineOfferings is a minimal offerings set: separate linux, windows, and macOS
+// classes, so a linux class paired with a windows image is an invalid pair.
+func testMachineOfferings() *utils.Offerings {
+	return &utils.Offerings{
+		Linux:   map[string][]string{"medium": {utils.CurrentLinuxImage}},
+		Windows: map[string][]string{"windows.medium": {"windows-server-2022-gui:current"}},
+		MacOS: map[string][]string{
+			"m4pro.medium": {"xcode:26.5.0"},
+			"m4pro.large":  {"xcode:26.5.0"},
+		},
+	}
+}
+
+// When the offerings API is unavailable, machine validation is skipped rather than
+// flagging valid images as errors.
+func TestMachineExecutorSkipsWhenOfferingsUnavailable(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer server.Close()
+
+	val := CreateValidateFromYAML(yamlForMachine("toto", "bogus:image"))
+	val.Context.Api.HostUrl = server.URL
+	val.Validate()
+
+	assert.Len(t, *val.Diagnostics, 0)
+}
+
 func TestMachineExecutor(t *testing.T) {
 	type testCase struct {
 		name        string
@@ -106,11 +136,11 @@ func TestMachineExecutor(t *testing.T) {
 		},
 		{
 			name:        "rc:linux img:undefined",
-			yamlContent: yamlForMachine(utils.ValidLinuxResourceClasses[0], ""),
+			yamlContent: yamlForMachine("medium", ""),
 		},
 		{
 			name:        "rc:windows img:undefined",
-			yamlContent: yamlForMachine(utils.ValidWindowsResourceClasses[0], ""),
+			yamlContent: yamlForMachine("windows.medium", ""),
 		},
 		{
 			name:        "rc:toto img:undefined",
@@ -136,7 +166,7 @@ func TestMachineExecutor(t *testing.T) {
 		},
 		{
 			name:        "rc:windows img:windows",
-			yamlContent: yamlForMachine(utils.ValidWindowsResourceClasses[0], utils.ValidWindowsImages[0]),
+			yamlContent: yamlForMachine("windows.medium", "windows-server-2022-gui:current"),
 		},
 		{
 			name:        "rc:undefined img:toto",
@@ -145,7 +175,7 @@ func TestMachineExecutor(t *testing.T) {
 		},
 		{
 			name:        "rc:linux img:toto",
-			yamlContent: yamlForMachine(utils.ValidLinuxResourceClasses[0], "toto"),
+			yamlContent: yamlForMachine("medium", "toto"),
 			errRegex:    "Unknown machine image",
 		},
 		{
@@ -160,7 +190,7 @@ func TestMachineExecutor(t *testing.T) {
 		},
 		{
 			name:        "rc:linux img:windows",
-			yamlContent: yamlForMachine(utils.ValidLinuxResourceClasses[0], utils.ValidWindowsImages[0]),
+			yamlContent: yamlForMachine("medium", "windows-server-2022-gui:current"),
 			errRegex:    "Machine image \".*?\" is not available for",
 		},
 	}
@@ -168,6 +198,7 @@ func TestMachineExecutor(t *testing.T) {
 	for _, c := range testCases {
 		t.Run(c.name, func(t *testing.T) {
 			val := CreateValidateFromYAML(c.yamlContent)
+			val.Cache.MachineOfferingsCache.Set(testMachineOfferings())
 			val.Validate()
 
 			if c.errRegex == "" {
