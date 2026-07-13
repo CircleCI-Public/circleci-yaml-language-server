@@ -1,8 +1,6 @@
 package utils
 
 import (
-	"strings"
-
 	"go.lsp.dev/protocol"
 )
 
@@ -23,13 +21,23 @@ func IndexToPos(index int, content []byte) protocol.Position {
 }
 
 func PosToIndex(pos protocol.Position, content []byte) int {
-	index := 0
-	for i := 0; i < int(pos.Line); i++ {
-		if i < int(pos.Line) {
-			index = index + strings.Index(string(content[index:]), "\n") + 1
-		}
+	if len(content) == 0 {
+		return 0
 	}
 
-	index = index + int(pos.Character)
-	return index
+	idx := 0
+	line := uint32(0)
+	for idx < len(content) && line < pos.Line {
+		if content[idx] == '\n' {
+			line++
+		}
+		idx++
+	}
+
+	target := idx + int(pos.Character)
+	if target > len(content) {
+		return len(content)
+	}
+
+	return target
 }

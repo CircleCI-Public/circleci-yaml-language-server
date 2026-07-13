@@ -87,3 +87,32 @@ func TestIndexToPos(t *testing.T) {
 		})
 	}
 }
+
+func TestPosToIndex(t *testing.T) {
+	content := []byte("foo\nbar\nbaz\nbiz\nboo")
+	tests := []struct {
+		pos  protocol.Position
+		want int
+	}{
+		{protocol.Position{Line: 0, Character: 0}, 0},
+		{protocol.Position{Line: 0, Character: 3}, 3},
+		{protocol.Position{Line: 1, Character: 0}, 4},
+		{protocol.Position{Line: 1, Character: 3}, 7},
+		{protocol.Position{Line: 4, Character: 1}, 17},
+	}
+	for _, tt := range tests {
+		if got := PosToIndex(tt.pos, content); got != tt.want {
+			t.Errorf("PosToIndex(%v) = %d, want %d", tt.pos, got, tt.want)
+		}
+	}
+}
+
+func TestPosToIndexRoundTrip(t *testing.T) {
+	content := []byte("foo\nbar\nbaz\nbiz\nboo")
+	for index := 0; index < len(content); index++ {
+		pos := IndexToPos(index, content)
+		if got := PosToIndex(pos, content); got != index {
+			t.Errorf("round trip failed at index %d: got %d", index, got)
+		}
+	}
+}

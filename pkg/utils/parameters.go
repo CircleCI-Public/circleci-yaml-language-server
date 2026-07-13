@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"bytes"
 	"fmt"
 	"regexp"
 	"strings"
@@ -19,41 +20,43 @@ func ContainsParam(content string) bool {
 func GetParamNameUsedAtPos(content []byte, position protocol.Position) (string, bool) {
 	isPipelineParam := false
 
-	// Get the content of the YAML at the beginning of the line
-	PosToIndex := PosToIndex(position, content)
-
-	// We check if the line contain a parameter
-	lineIdx := strings.LastIndex(string(content[:PosToIndex]), "\n")
-	if lineIdx == -1 {
-		lineIdx = 0
+	posIndex := PosToIndex(position, content)
+	if posIndex > len(content) {
+		posIndex = len(content)
 	}
 
-	endOfLine := strings.Index(string(content[lineIdx+1:]), "\n")
-	if endOfLine == -1 {
-		endOfLine = len(content[lineIdx:]) - 1
+	lineStart := bytes.LastIndex(content[:posIndex], []byte("\n"))
+	if lineStart == -1 {
+		lineStart = 0
+	} else {
+		lineStart++
 	}
 
-	if !paramRegex.MatchString(string(content[lineIdx : lineIdx+endOfLine+1])) {
+	lineEndRel := bytes.Index(content[lineStart:], []byte("\n"))
+	var lineEnd int
+	if lineEndRel == -1 {
+		lineEnd = len(content)
+	} else {
+		lineEnd = lineStart + lineEndRel
+	}
+
+	if !paramRegex.Match(content[lineStart:lineEnd]) {
 		return "", isPipelineParam
 	}
 
-	// This is needed if two parameters are in the same string, we only want
-	// the one that has been declared before the cursor
-	startOfParam := strings.LastIndex(string(content[:PosToIndex]), "<<")
+	startOfParam := bytes.LastIndex(content[:posIndex], []byte("<<"))
 	if startOfParam == -1 {
 		return "", isPipelineParam
 	}
 
-	endOfParam := strings.Index(string(content[startOfParam:]), ">>")
-	if endOfParam == -1 {
+	endOfParamRel := bytes.Index(content[startOfParam:], []byte(">>"))
+	if endOfParamRel == -1 {
 		return "", isPipelineParam
 	}
 
-	// We add the length of the ">>" and startOfParam so that we can
-	// have the right index based on the beginning of content
-	endOfParam += startOfParam + 2
+	endOfParam := startOfParam + endOfParamRel + 2
 
-	param := paramRegex.Find([]byte(content[startOfParam:endOfParam]))
+	param := paramRegex.Find(content[startOfParam:endOfParam])
 
 	// Not a parameter if the regex does not match
 	if param == nil {
