@@ -90,6 +90,11 @@ func testMachineOfferings() *utils.Offerings {
 			"m4pro.medium": {"xcode:26.5.0"},
 			"m4pro.large":  {"xcode:26.5.0"},
 		},
+		Deprecated: map[string][]string{
+			"linux":   {"ubuntu-2004:2024.04.4"},
+			"windows": {},
+			"macos":   {"xcode:26.0.1"},
+		},
 	}
 }
 
@@ -106,6 +111,51 @@ func TestMachineExecutorSkipsWhenOfferingsUnavailable(t *testing.T) {
 	val.Validate()
 
 	assert.Len(t, *val.Diagnostics, 0)
+}
+
+func TestDeprecatedImageWarnings(t *testing.T) {
+	testCases := []struct {
+		name        string
+		yamlContent string
+		wantMessage string
+	}{
+		{
+			name:        "deprecated machine image",
+			yamlContent: yamlForMachine("", "ubuntu-2004:2024.04.4"),
+			wantMessage: "Machine image \"ubuntu-2004:2024.04.4\" is deprecated",
+		},
+		{
+			name: "deprecated xcode version",
+			yamlContent: `version: 2.1
+executors:
+  macos-executor:
+    macos:
+      xcode: 26.0.1`,
+			wantMessage: "Xcode version \"26.0.1\" is deprecated",
+		},
+	}
+
+	for _, c := range testCases {
+		t.Run(c.name, func(t *testing.T) {
+			val := CreateValidateFromYAML(c.yamlContent)
+			val.Cache.MachineOfferingsCache.Set(testMachineOfferings())
+			val.Validate()
+
+			var found *protocol.Diagnostic
+			for i := range *val.Diagnostics {
+				if (*val.Diagnostics)[i].Message == c.wantMessage {
+					found = &(*val.Diagnostics)[i]
+					break
+				}
+			}
+
+			if found == nil {
+				t.Fatalf("expected diagnostic %q, got %+v", c.wantMessage, *val.Diagnostics)
+			}
+			assert.Equal(t, protocol.DiagnosticSeverityWarning, found.Severity)
+			assert.Contains(t, found.Tags, protocol.DiagnosticTagDeprecated)
+		})
+	}
 }
 
 func TestMachineExecutor(t *testing.T) {

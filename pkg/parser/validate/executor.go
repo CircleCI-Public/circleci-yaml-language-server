@@ -46,6 +46,11 @@ func (val Validate) validateMacOSExecutor(executor ast.MacOSExecutor) {
 			executor.ResourceClassRange,
 			fmt.Sprintf("Xcode version \"%s\"", executor.Xcode),
 		)
+	} else if slices.Contains(utils.DeprecatedXcodeVersions(val.Context, val.Cache), executor.Xcode) {
+		val.addDiagnostic(utils.CreateDeprecatedDiagnosticFromRange(
+			executor.XcodeRange,
+			fmt.Sprintf("Xcode version \"%s\" is deprecated", executor.Xcode),
+		))
 	} else {
 		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
 			executor.XcodeRange,
@@ -126,13 +131,23 @@ func (val Validate) validateMachineExecutor(executor ast.MachineExecutor) {
 	}
 
 	if !validImage {
-		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
-			executor.ImageRange,
-			fmt.Sprintf(
-				"Unknown machine image \"%s\"",
-				executor.Image,
-			),
-		))
+		if slices.Contains(utils.DeprecatedMachineImages(val.Context, val.Cache), executor.Image) {
+			val.addDiagnostic(utils.CreateDeprecatedDiagnosticFromRange(
+				executor.ImageRange,
+				fmt.Sprintf(
+					"Machine image \"%s\" is deprecated",
+					executor.Image,
+				),
+			))
+		} else {
+			val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
+				executor.ImageRange,
+				fmt.Sprintf(
+					"Unknown machine image \"%s\"",
+					executor.Image,
+				),
+			))
+		}
 	}
 
 	if validResourceClass && validImage {
