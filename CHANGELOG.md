@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## [0.36.1](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.36.0...0.36.1) (2026-07-14)
+
+
+### Bug Fixes
+
+* diagnostics on large .circleci/config.yml files taking ~80 seconds and consuming excessive CPU/RAM. ([#450](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/450)) ([2493f86](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/2493f869ae750842c0746c37a46a9eaccecada79))
+* warn instead of erroring on deprecated machine/Xcode images ([#451](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/451)) ([d1ad403](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/d1ad4038b2055f3a5ab6cee2802cc72640d8c53a))
+
 ## [0.36.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.35.3...0.36.0) (2026-07-06)
 
 
