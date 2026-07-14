@@ -38,6 +38,14 @@ func CreateEmptyAssignationWarning(rng protocol.Range) protocol.Diagnostic {
 	return CreateWarningDiagnosticFromRange(rng, "Empty assignation")
 }
 
+func CreateDeprecatedDiagnosticFromRange(rng protocol.Range, msg string) protocol.Diagnostic {
+	diagnostic := CreateWarningDiagnosticFromRange(rng, msg)
+	diagnostic.Tags = []protocol.DiagnosticTag{
+		protocol.DiagnosticTagDeprecated,
+	}
+	return diagnostic
+}
+
 func CreateInformationDiagnosticFromRange(rng protocol.Range, msg string) protocol.Diagnostic {
 	return CreateDiagnosticFromRange(
 		rng,

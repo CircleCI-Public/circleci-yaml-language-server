@@ -18,6 +18,9 @@ type Offerings struct {
 	Linux   map[string][]string `json:"linux"`
 	Windows map[string][]string `json:"windows"`
 	MacOS   map[string][]string `json:"macos"`
+	// Unlike the lists above, Deprecated is keyed by executor, not resource class, and
+	// excludes images already present there.
+	Deprecated map[string][]string `json:"deprecated"`
 }
 
 type MachinePair struct {
@@ -129,6 +132,30 @@ func MachineResourceClasses(lsContext *LsContext, cache *Cache) []string {
 		classes = append(classes, pair.ResourceClass)
 	}
 	return classes
+}
+
+func DeprecatedMachineImages(lsContext *LsContext, cache *Cache) []string {
+	o := machineOfferings(lsContext, cache)
+	if o == nil {
+		return nil
+	}
+	images := []string{}
+	images = append(images, o.Deprecated["linux"]...)
+	images = append(images, o.Deprecated["windows"]...)
+	return images
+}
+
+func DeprecatedXcodeVersions(lsContext *LsContext, cache *Cache) []string {
+	o := machineOfferings(lsContext, cache)
+	if o == nil {
+		return nil
+	}
+	versions := []string{}
+	for _, image := range o.Deprecated["macos"] {
+		// API returns "xcode:<version>"; the config field is the bare version.
+		versions = append(versions, strings.TrimPrefix(image, "xcode:"))
+	}
+	return versions
 }
 
 func XcodeVersions(lsContext *LsContext, cache *Cache) []string {
