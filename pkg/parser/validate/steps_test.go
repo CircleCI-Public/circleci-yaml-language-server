@@ -80,6 +80,59 @@ workflows:
 			OnlyErrors:  true,
 			Diagnostics: []protocol.Diagnostic{},
 		},
+		{
+			Name: "Valid usage of max_auto_reruns with parameter expression",
+			YamlContent: `version: 2.1
+
+jobs:
+  test-job:
+    docker:
+      - image: cimg/base:stable
+    parameters:
+      retries:
+        type: integer
+        default: 3
+    steps:
+      - run:
+          name: "Task with parameterized reruns"
+          command: "echo test"
+          max_auto_reruns: << parameters.retries >>
+
+workflows:
+  test-workflow:
+    jobs:
+      - test-job
+`,
+			OnlyErrors:  true,
+			Diagnostics: []protocol.Diagnostic{},
+		},
+		{
+			Name: "Valid usage of max_auto_reruns with pipeline parameter expression",
+			YamlContent: `version: 2.1
+
+parameters:
+  retries:
+    type: integer
+    default: 2
+
+jobs:
+  test-job:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run:
+          name: "Task with pipeline parameterized reruns"
+          command: "echo test"
+          max_auto_reruns: << pipeline.parameters.retries >>
+
+workflows:
+  test-workflow:
+    jobs:
+      - test-job
+`,
+			OnlyErrors:  true,
+			Diagnostics: []protocol.Diagnostic{},
+		},
 	}
 
 	CheckYamlErrors(t, testCases)

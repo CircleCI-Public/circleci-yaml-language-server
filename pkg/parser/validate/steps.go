@@ -68,8 +68,9 @@ func (val Validate) validateRunCommand(step ast.Run, jobOrCommandParameters map[
 		})
 	}
 
-	// Validate that max_auto_reruns is between 1 and 5
-	if step.MaxAutoReruns != "" {
+	// Validate that max_auto_reruns is between 1 and 5;
+	// skip validation when the value is a parameter expression (resolved at compile time)
+	if step.MaxAutoReruns != "" && !utils.CheckIfOnlyParamUsed(step.MaxAutoReruns) {
 		rerunCount, err := strconv.Atoi(step.MaxAutoReruns)
 		if err != nil || rerunCount <= 0 || rerunCount > 5 {
 			val.addDiagnostic(protocol.Diagnostic{
