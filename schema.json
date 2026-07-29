@@ -1409,6 +1409,14 @@
                                 "name": {
                                     "type": "string",
                                     "markdownDescription": "Title of the step to be shown in the CircleCI UI"
+                                },
+                                "when": {
+                                    "enum": [
+                                        "always",
+                                        "on_success",
+                                        "on_fail"
+                                    ],
+                                    "markdownDescription": "Specify when to enable or disable the step. Takes the following values: `always`, `on_success`, `on_fail` (default: `on_success`)"
                                 }
                             },
                             "additionalProperties": false
@@ -1427,6 +1435,14 @@
                                 "name": {
                                     "type": "string",
                                     "markdownDescription": "Title of the step to be shown in the CircleCI UI"
+                                },
+                                "when": {
+                                    "enum": [
+                                        "always",
+                                        "on_success",
+                                        "on_fail"
+                                    ],
+                                    "markdownDescription": "Specify when to enable or disable the step. Takes the following values: `always`, `on_success`, `on_fail` (default: `on_success`)"
                                 }
                             },
                             "additionalProperties": false
@@ -1453,6 +1469,14 @@
                                 "name": {
                                     "type": "string",
                                     "markdownDescription": "Title of the step to be shown in the CircleCI UI"
+                                },
+                                "when": {
+                                    "enum": [
+                                        "always",
+                                        "on_success",
+                                        "on_fail"
+                                    ],
+                                    "markdownDescription": "Specify when to enable or disable the step. Takes the following values: `always`, `on_success`, `on_fail` (default: `on_success`)"
                                 }
                             },
                             "additionalProperties": false
@@ -1471,6 +1495,14 @@
                                 "name": {
                                     "type": "string",
                                     "markdownDescription": "Title of the step to be shown in the CircleCI UI"
+                                },
+                                "when": {
+                                    "enum": [
+                                        "always",
+                                        "on_success",
+                                        "on_fail"
+                                    ],
+                                    "markdownDescription": "Specify when to enable or disable the step. Takes the following values: `always`, `on_success`, `on_fail` (default: `on_success`)"
                                 }
                             },
                             "additionalProperties": false
