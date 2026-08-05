@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [0.37.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.36.1...0.37.0) (2026-08-05)
+
+
+### Features
+
+* **schema:** add support for URL orbs ([#454](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/454)) ([0c39a29](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/0c39a2912a390a3e9601455ffb9f29e966f6aa66))
+
 ## [0.36.1](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.36.0...0.36.1) (2026-07-14)
 
 
