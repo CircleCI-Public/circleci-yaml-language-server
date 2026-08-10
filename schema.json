@@ -1149,7 +1149,7 @@
                     "propertyNames": {
                         "pattern": "^[a-z][a-z\\d\/_-]*$",
                         "not": {
-                            "pattern": "^(when|unless)$"
+                            "pattern": "^(when|unless|with_tool_cache)$"
                         }
                     },
                     "minProperties": 1,
@@ -1567,6 +1567,50 @@
                                         }
                                     ],
                                     "markdownDescription": "A list of steps to be performed when the condition is false"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "type": "object",
+                    "markdownDescription": "A `with_tool_cache` step, which wraps a list of steps with the setup and teardown needed to cache a build tool's outputs.",
+                    "additionalProperties": false,
+                    "minProperties": 1,
+                    "maxProperties": 1,
+                    "properties": {
+                        "with_tool_cache": {
+                            "type": "object",
+                            "markdownDescription": "Wraps a list of steps with the setup and teardown needed to cache a build tool's outputs. The cache server is started before the wrapped steps run, configured for the given tool, and stopped afterwards.",
+                            "additionalProperties": false,
+                            "required": [
+                                "tool",
+                                "steps"
+                            ],
+                            "properties": {
+                                "tool": {
+                                    "type": "string",
+                                    "enum": [
+                                        "gradle",
+                                        "bazel",
+                                        "turborepo",
+                                        "xcode"
+                                    ],
+                                    "markdownDescription": "The build tool to configure the cache for"
+                                },
+                                "steps": {
+                                    "oneOf": [
+                                        {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/step"
+                                            }
+                                        },
+                                        {
+                                            "$ref": "#/definitions/step"
+                                        }
+                                    ],
+                                    "markdownDescription": "A list of steps to be performed with the tool cache available"
                                 }
                             }
                         }

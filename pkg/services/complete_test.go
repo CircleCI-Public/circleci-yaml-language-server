@@ -207,6 +207,9 @@ func TestComplete(t *testing.T) {
 					Label: "when",
 				},
 				{
+					Label: "with_tool_cache",
+				},
+				{
 					Label: "superOrb/supermethod",
 				},
 			},

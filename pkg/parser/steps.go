@@ -112,9 +112,11 @@ func (doc *YamlDocument) parseStep(blockMapping *sitter.Node) []ast.Step {
 	case "add_ssh_keys":
 		return []ast.Step{doc.parseAddSSHKeyStep(valueNode)}
 	case "when":
-		return doc.parseWhenUnlessStep(valueNode)
+		return doc.parseWrappedSteps(valueNode)
 	case "unless":
-		return doc.parseWhenUnlessStep(valueNode)
+		return doc.parseWrappedSteps(valueNode)
+	case "with_tool_cache":
+		return doc.parseWrappedSteps(valueNode)
 	case "steps":
 		stepName := doc.GetNodeText(valueNode)
 		_, stepName = utils.ExtractParameterName(stepName)
@@ -142,7 +144,7 @@ func (doc *YamlDocument) parseAnchorStep(blockNode *sitter.Node) []ast.Step {
 	return nil
 }
 
-func (doc *YamlDocument) parseWhenUnlessStep(blockNode *sitter.Node) []ast.Step {
+func (doc *YamlDocument) parseWrappedSteps(blockNode *sitter.Node) []ast.Step {
 	// blockNode is a block_node
 	steps := make([]ast.Step, 0)
 

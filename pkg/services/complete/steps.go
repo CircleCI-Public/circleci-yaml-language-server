@@ -39,6 +39,7 @@ func (ch *CompletionHandler) builtInSteps() {
 		"add_ssh_keys",
 		"unless",
 		"when",
+		"with_tool_cache",
 	}
 	for _, stepName := range BUILT_IN_STEPS {
 		ch.addCompletionItem(stepName)
