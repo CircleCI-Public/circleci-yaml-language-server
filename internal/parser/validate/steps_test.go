@@ -821,3 +821,97 @@ workflows:
 		"15: Infinite loop detected: command third calls itself through first, then second",
 	}))
 }
+
+func TestTeardownStepsValidation(t *testing.T) {
+	testCases := []ValidateTestCase{
+		{
+			Name: "A valid teardown step does not result in an error",
+			YamlContent: `version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run:
+          command: make build
+          teardown:
+            - run:
+                command: ./save-cache.sh
+                when: always
+
+workflows:
+  workflow:
+    jobs:
+      - build
+`,
+			OnlyErrors:  true,
+			Diagnostics: []protocol.Diagnostic{},
+		},
+		{
+			Name: "A teardown step's own fields are validated",
+			YamlContent: `version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run:
+          command: make build
+          teardown:
+            - run:
+                command: ./save-cache.sh
+                when: sometimes
+
+workflows:
+  workflow:
+    jobs:
+      - build
+`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(protocol.Range{
+					Start: protocol.Position{Line: 12, Character: 22},
+					End:   protocol.Position{Line: 12, Character: 31},
+				}, "Invalid when condition: expected `on_success`, `always`, `on_fail`; got `sometimes`"),
+			},
+		},
+		{
+			Name: "A teardown step declared inside a command is validated",
+			YamlContent: `version: 2.1
+
+commands:
+  greet:
+    steps:
+      - run:
+          command: echo hello
+          teardown:
+            - run:
+                command: ./save-cache.sh
+                when: nope
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - greet
+
+workflows:
+  workflow:
+    jobs:
+      - build
+`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(protocol.Range{
+					Start: protocol.Position{Line: 10, Character: 22},
+					End:   protocol.Position{Line: 10, Character: 26},
+				}, "Invalid when condition: expected `on_success`, `always`, `on_fail`; got `nope`"),
+			},
+		},
+	}
+
+	CheckYamlErrors(t, testCases)
+}
