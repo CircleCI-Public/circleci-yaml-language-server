@@ -27,6 +27,7 @@ func (val Validate) validateSteps(steps []ast.Step, name string, jobOrCommandPar
 		switch step := step.(type) {
 		case ast.Run:
 			val.validateRunCommand(step, jobOrCommandParameters)
+			val.validateSteps(step.Teardown, name, jobOrCommandParameters)
 		case ast.NamedStep:
 			val.validateNamedStep(step, jobOrCommandParameters)
 		case ast.Steps:

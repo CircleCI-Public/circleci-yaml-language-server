@@ -280,10 +280,25 @@ func (doc *YamlDocument) parseRunStep(runNode *sitter.Node) ast.Run {
 				res.MaxAutoReruns = doc.GetNodeText(valueNode)
 			case "auto_rerun_delay":
 				res.AutoRerunDelay = doc.GetNodeText(valueNode)
+			case "teardown":
+				res.Teardown = doc.parseTeardownSteps(valueNode)
 			}
 		})
 		return res
 	}
+}
+
+// Teardown steps are a list of run steps, or a single one.
+func (doc *YamlDocument) parseTeardownSteps(blockNode *sitter.Node) []ast.Step {
+	if GetChildSequence(blockNode) != nil {
+		return doc.parseSteps(blockNode)
+	}
+
+	if blockMapping := GetChildMapping(blockNode); blockMapping != nil {
+		return doc.parseStep(blockMapping)
+	}
+
+	return nil
 }
 
 func (doc *YamlDocument) parseCheckoutStep(checkoutNode *sitter.Node) ast.Checkout {

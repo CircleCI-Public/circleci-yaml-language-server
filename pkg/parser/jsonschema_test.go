@@ -331,3 +331,132 @@ jobs:
 		})
 	}
 }
+
+func Test_TeardownSteps(t *testing.T) {
+	testCases := []struct {
+		name          string
+		steps         string
+		expectInvalid bool
+		expectError   string
+	}{
+		{
+			name: "a list of teardown steps, with the keys that are not inherited from the parent",
+			steps: `
+      - run:
+          command: make build
+          teardown:
+            - run: ./save-cache.sh
+            - run:
+                command: ./report.sh
+                when: on_fail
+                shell: /bin/sh
+                working_directory: /tmp
+                no_output_timeout: 5m
+                background: false`,
+		},
+		{
+			name: "a single teardown step, not in a list",
+			steps: `
+      - run:
+          command: make build
+          teardown:
+            run:
+              command: ./save-cache.sh
+              when: always`,
+		},
+		{
+			name: "a backgrounded teardown step is rejected",
+			steps: `
+      - run:
+          command: make build
+          teardown:
+            - run:
+                command: ./tail-logs.sh
+                background: true`,
+			expectInvalid: true,
+			expectError:   "background",
+		},
+		{
+			// `not` gives no field name, so only the rejection itself can be asserted.
+			name: "a teardown step cannot declare teardown steps of its own",
+			steps: `
+      - run:
+          command: make build
+          teardown:
+            - run:
+                command: ./save-cache.sh
+                teardown:
+                  - run: ./nested.sh`,
+			expectInvalid: true,
+		},
+		{
+			name: "a teardown step must be a run step",
+			steps: `
+      - run:
+          command: make build
+          teardown:
+            - save_cache:
+                key: k
+                paths:
+                  - /tmp`,
+			expectInvalid: true,
+			expectError:   "run",
+		},
+		{
+			name: "an invalid when is rejected",
+			steps: `
+      - run:
+          command: make build
+          teardown:
+            - run:
+                command: ./save-cache.sh
+                when: sometimes`,
+			expectInvalid: true,
+			expectError:   "when",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			content := `version: 2.1
+jobs:
+  build:
+    docker:
+      - image: cimg/base:stable
+    steps:` + tc.steps + `
+workflows:
+  workflow:
+    jobs:
+      - build
+`
+			context := testHelpers.GetDefaultLsContext()
+			yamlDocument, _ := ParseFromContent([]byte(content), context, uri.File(""), protocol.Position{})
+
+			validator := JSONSchemaValidator{Doc: yamlDocument}
+			if err := validator.LoadJsonSchemaFromBytes(schema.EmbeddedSchemaJSON); err != nil {
+				t.Fatalf("could not load schema: %v", err)
+			}
+
+			diagnostics := validator.ValidateWithJSONSchema(yamlDocument.RootNode, yamlDocument.Content)
+
+			if !tc.expectInvalid {
+				assert.Empty(t, diagnostics, "expected the config to validate")
+				return
+			}
+
+			assert.NotEmpty(t, diagnostics, "expected a validation error")
+			if tc.expectError == "" {
+				return
+			}
+
+			found := false
+			for _, d := range diagnostics {
+				if strings.Contains(strings.ToLower(d.Message), tc.expectError) {
+					found = true
+					break
+				}
+			}
+			assert.True(t, found, "expected an error mentioning %q, got %v", tc.expectError, diagnostics)
+		})
+	}
+}

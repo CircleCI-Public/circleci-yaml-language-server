@@ -1137,6 +1137,59 @@
                 }
             ]
         },
+        "teardownStep": {
+            "type": "object",
+            "markdownDescription": "A step to be run at the end of the job.",
+            "properties": {
+                "run": {
+                    "oneOf": [
+                        {
+                            "type": "string",
+                            "markdownDescription": "`{run: \"...\"}` is shorthand for `{run: {command: \"...\"}}`"
+                        },
+                        {
+                            "type": "object",
+                            "properties": {
+                                "command": {
+                                    "type": "string",
+                                    "markdownDescription": "Command to run via the shell"
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "markdownDescription": "Title of the step to be shown in the CircleCI UI (default: full `command`)"
+                                },
+                                "when": {
+                                    "enum": [
+                                        "always",
+                                        "on_success",
+                                        "on_fail"
+                                    ],
+                                    "markdownDescription": "Specify when to enable or disable the step. Takes the following values: `always`, `on_success`, `on_fail` (default: `always` for teardown steps)"
+                                },
+                                "background": {
+                                    "enum": [
+                                        false
+                                    ],
+                                    "markdownDescription": "A teardown step cannot be backgrounded, it would be cancelled as soon as it started"
+                                }
+                            },
+                            "required": [
+                                "command"
+                            ],
+                            "not": {
+                                "required": [
+                                    "teardown"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            },
+            "required": [
+                "run"
+            ],
+            "additionalProperties": false
+        },
         "step": {
             "oneOf": [
                 {
@@ -1213,6 +1266,20 @@
                                             "type": "string",
                                             "pattern": "^(10|[1-9])m|([1-9][0-9]*)s$",
                                             "markdownDescription": "Delay before automatic rerun of this step"
+                                        },
+                                        "teardown": {
+                                            "markdownDescription": "Steps to be run at the end of the job, in reverse order, whether or not it succeeded.",
+                                            "oneOf": [
+                                                {
+                                                    "$ref": "#/definitions/teardownStep"
+                                                },
+                                                {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/definitions/teardownStep"
+                                                    }
+                                                }
+                                            ]
                                         }
                                     },
                                     "required": [
