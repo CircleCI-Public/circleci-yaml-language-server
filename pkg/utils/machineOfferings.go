@@ -181,16 +181,27 @@ func MacOSResourceClasses(lsContext *LsContext, cache *Cache) []string {
 	return slices.Collect(maps.Keys(o.MacOS))
 }
 
-// DockerResourceClasses is the base Linux classes plus the Docker-only small and medium+.
-// The machine-only Linux variants (.gen*, .multi, gpu.*) are excluded as Docker can't use them.
+// DockerResourceClasses is the base Linux classes plus Docker-only sizes.
+// The offerings API only returns machine resource classes, so Docker-only classes
+// (small, medium+, and the .gen2 family) are added here. Machine-only Linux
+// variants (.gen*, .multi, gpu.*) from that API are excluded.
+// See https://circleci.com/docs/configuration-reference/#docker-execution-environment
 func DockerResourceClasses(lsContext *LsContext, cache *Cache) []string {
 	o := machineOfferings(lsContext, cache)
 	if o == nil {
 		return nil
 	}
-	// small and medium+ are Docker-only and not part of the offerings API, which only
-	// returns machine resource classes, so they are added here.
-	classes := []string{"small", "medium+"}
+	classes := []string{
+		"small",
+		"medium+",
+		"small.gen2",
+		"medium.gen2",
+		"medium+.gen2",
+		"large.gen2",
+		"xlarge.gen2",
+		"2xlarge.gen2",
+		"2xlarge+.gen2",
+	}
 	for class := range o.Linux {
 		if strings.Contains(class, ".gen") || strings.Contains(class, ".multi") || strings.HasPrefix(class, "gpu.") {
 			continue

@@ -1897,7 +1897,9 @@
                                             "windows.gpu.nvidia.medium",
                                             "m4pro.medium",
                                             "m4pro.large",
+                                            "small.gen2",
                                             "medium.gen2",
+                                            "medium+.gen2",
                                             "large.gen2",
                                             "xlarge.gen2",
                                             "2xlarge.gen2",
@@ -2451,7 +2453,7 @@
             ],
             "markdownDescription": "https://circleci.com/docs/configuration-reference#orbs-requires-version-21\n\nOrbs are reusable packages of CircleCI configuration that you may share across projects, enabling you to create encapsulated, parameterized commands, jobs, and executors that can be used across multiple projects.",
             "additionalProperties": {
-                "markdownDescription": "An orb reference can be specified in multiple ways:\n\n**String with semantic version:**\n- `namespace/orb-name@1.2.3` - specific version\n- `namespace/orb-name@1.2` - latest patch version of 1.2.x\n- `namespace/orb-name@1` - latest minor and patch of 1.x.x\n- `namespace/orb-name@volatile` - most recent release\n- `namespace/orb-name@dev:branch-name` - development version\n\n**String with parameter substitution:**\n- `namespace/orb-name@<<parameters.version>>`\n- `namespace/orb-name@<<pipeline.parameters.version>>`\n\n**Inline orb object:** Define jobs, commands, and executors directly in this configuration.\n\nSee [Orb Concepts](https://circleci.com/docs/orbs/author/orb-concepts/#semantic-versioning) and [Creating Inline Orbs](https://circleci.com/docs/reference/reusing-config/#writing-inline-orbs) for more details.",
+                "markdownDescription": "An orb reference can be specified in multiple ways:\n\n**String with semantic version:**\n- `namespace/orb-name@1.2.3` - specific version\n- `namespace/orb-name@1.2` - latest patch version of 1.2.x\n- `namespace/orb-name@1` - latest minor and patch of 1.x.x\n- `namespace/orb-name@volatile` - most recent release\n- `namespace/orb-name@dev:branch-name` - development version\n\n**String with parameter substitution:**\n- `namespace/orb-name@<<parameters.version>>`\n- `namespace/orb-name@<<pipeline.parameters.version>>`\n\n**Inline orb object:** Define jobs, commands, and executors directly in this configuration.\n\n**URL orb:** A HTTPS URL to a YAML file containing the orb definition, for example in a GitHub repository.\n\nSee [Orb Concepts](https://circleci.com/docs/orbs/author/orb-concepts/#semantic-versioning) and [Creating Inline Orbs](https://circleci.com/docs/reference/reusing-config/#writing-inline-orbs) for more details.",
                 "oneOf": [
                     {
                         "type": "string",
@@ -2460,6 +2462,11 @@
                     {
                         "type": "string",
                         "pattern": "^[a-z][a-z0-9_-]+/[a-z][a-z0-9_-]+@ *<<.+>> *$"
+                    },
+                    {
+                        "type": "string",
+                        "pattern": "^https://.+$",
+                        "format": "uri"
                     },
                     {
                         "type": "object",

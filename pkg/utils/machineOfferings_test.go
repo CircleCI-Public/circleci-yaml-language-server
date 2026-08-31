@@ -72,9 +72,12 @@ func TestOfferingAccessors(t *testing.T) {
 	})
 	assert.ElementsMatch(t, XcodeVersions(ctx, cache), []string{"16.4.0"})
 	assert.ElementsMatch(t, MacOSResourceClasses(ctx, cache), []string{"m4pro.medium"})
-	// Docker excludes the machine-only .gen and gpu. variants.
+	// Docker excludes machine-only .gen/.multi/gpu variants from offerings, and
+	// includes Docker-only sizes (small, medium+, and the .gen2 family).
 	assert.ElementsMatch(t, DockerResourceClasses(ctx, cache), []string{
 		"large", "medium", "medium+", "small",
+		"small.gen2", "medium.gen2", "medium+.gen2", "large.gen2",
+		"xlarge.gen2", "2xlarge.gen2", "2xlarge+.gen2",
 	})
 }
 
