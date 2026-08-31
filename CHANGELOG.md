@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## [0.37.1](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.37.0...0.37.1) (2026-08-31)
+
+
+### Bug Fixes
+
+* accept Docker gen2 resource classes ([#456](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/456)) ([1a40c23](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/1a40c23fece2d17aabb1dd63643f876b6dfffbab))
+* allow `when` on store and workspace steps ([#453](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/453)) ([6b3bd68](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/6b3bd68215fdd806cf9637a33c7dd9971523f4af))
+* **schema:** allow when on all built-in steps via shared definition ([#459](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/459)) ([3cd64f0](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/3cd64f0959c1787d28462a33ead1ceadf4883f54))
+
 ## [0.37.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.36.1...0.37.0) (2026-08-05)
 
 
