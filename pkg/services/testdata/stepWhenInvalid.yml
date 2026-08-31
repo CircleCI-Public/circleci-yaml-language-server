@@ -1,0 +1,51 @@
+version: 2.1
+
+jobs:
+  everyStepWithBadWhen:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - checkout:
+          path: ~/src
+          when: sometimes
+      - setup_remote_docker:
+          docker_layer_caching: true
+          when: sometimes
+      - add_ssh_keys:
+          fingerprints:
+            - "SO:ME:FIN:G:ER:PR:IN:T"
+          when: sometimes
+      - restore_cache:
+          key: v1-deps-{{ checksum "go.sum" }}
+          when: sometimes
+      - restore_cache:
+          keys:
+            - v1-deps-{{ checksum "go.sum" }}
+          when: sometimes
+      - run:
+          command: echo "hello"
+          when: sometimes
+      - save_cache:
+          key: v1-deps-{{ checksum "go.sum" }}
+          paths:
+            - ~/go/pkg/mod
+          when: sometimes
+      - store_artifacts:
+          path: build/reports
+          when: sometimes
+      - store_test_results:
+          path: test-results
+          when: sometimes
+      - persist_to_workspace:
+          root: workspace
+          paths:
+            - artifact
+          when: sometimes
+      - attach_workspace:
+          at: workspace
+          when: sometimes
+
+workflows:
+  test-when:
+    jobs:
+      - everyStepWithBadWhen

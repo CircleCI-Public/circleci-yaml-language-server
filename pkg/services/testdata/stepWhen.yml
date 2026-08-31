@@ -1,0 +1,52 @@
+version: 2.1
+
+jobs:
+  everyStepWithWhen:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - checkout:
+          path: ~/src
+          when: always
+      - setup_remote_docker:
+          docker_layer_caching: true
+          when: on_success
+      - add_ssh_keys:
+          fingerprints:
+            - "SO:ME:FIN:G:ER:PR:IN:T"
+          when: always
+      - restore_cache:
+          key: v1-deps-{{ checksum "go.sum" }}
+          when: always
+      - restore_cache:
+          keys:
+            - v1-deps-{{ checksum "go.sum" }}
+            - v1-deps-
+          when: on_success
+      - run:
+          command: echo "hello"
+          when: on_fail
+      - save_cache:
+          key: v1-deps-{{ checksum "go.sum" }}
+          paths:
+            - ~/go/pkg/mod
+          when: always
+      - store_artifacts:
+          path: build/reports
+          when: always
+      - store_test_results:
+          path: test-results
+          when: always
+      - persist_to_workspace:
+          root: workspace
+          paths:
+            - artifact
+          when: on_success
+      - attach_workspace:
+          at: workspace
+          when: on_fail
+
+workflows:
+  test-when:
+    jobs:
+      - everyStepWithWhen
