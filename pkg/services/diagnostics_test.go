@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/testHelpers"
@@ -36,6 +37,11 @@ func TestFindErrors(t *testing.T) {
 		{
 			name: "No errors",
 			args: args{filePath: "./testdata/requiresNoErrors.yml"},
+			want: make([]protocol.Diagnostic, 0),
+		},
+		{
+			name: "No errors",
+			args: args{filePath: "./testdata/stepWhen.yml"},
 			want: make([]protocol.Diagnostic, 0),
 		},
 	}
@@ -78,6 +84,11 @@ func TestFindErrorsWithEmbeddedSchema(t *testing.T) {
 		{
 			name:     "No errors with embedded schema",
 			filePath: "./testdata/noErrors.yml",
+			want:     make([]protocol.Diagnostic, 0),
+		},
+		{
+			name:     "when attribute on every built-in step with embedded schema",
+			filePath: "./testdata/stepWhen.yml",
 			want:     make([]protocol.Diagnostic, 0),
 		},
 	}
@@ -378,6 +389,57 @@ func TestDeduplicateDiagnosticsByRange(t *testing.T) {
 			if !reflect.DeepEqual(result, tt.expected) {
 				t.Errorf("deduplicateDiagnosticsByRange() = %v, want %v", result, tt.expected)
 			}
+		})
+	}
+}
+
+func TestStepWhenRejectsInvalidValue(t *testing.T) {
+	const filePath = "./testdata/stepWhenInvalid.yml"
+
+	stepNames := []string{
+		"checkout",
+		"setup_remote_docker",
+		"add_ssh_keys",
+		"restore_cache",
+		"run",
+		"save_cache",
+		"store_artifacts",
+		"store_test_results",
+		"persist_to_workspace",
+		"attach_workspace",
+	}
+
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cache := utils.CreateCache()
+	cache.FileCache.SetFile(utils.CachedFile{
+		TextDocument: protocol.TextDocumentItem{
+			URI:  uri.File(filePath),
+			Text: string(content),
+		},
+		Project:      utils.Project{},
+		EnvVariables: make([]string, 0),
+	})
+	context := testHelpers.GetDefaultLsContext()
+	context.Api.Token = ""
+
+	diagnostics, err := DiagnosticFile(uri.File(filePath), cache, context, "")
+	if err != nil {
+		t.Fatalf("DiagnosticFile() returned error: %v", err)
+	}
+
+	for _, stepName := range stepNames {
+		t.Run(stepName, func(t *testing.T) {
+			wanted := "." + stepName + `.when must be one of the following: "always", "on_success", "on_fail"`
+			for _, diagnostic := range diagnostics {
+				if strings.Contains(diagnostic.Message, wanted) {
+					return
+				}
+			}
+			t.Errorf("DiagnosticFile() in file %s = %v, want a diagnostic containing %q", filePath, diagnostics, wanted)
 		})
 	}
 }
