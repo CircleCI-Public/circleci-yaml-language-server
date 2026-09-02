@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -12,19 +13,14 @@ import (
 	"golang.org/x/mod/semver"
 )
 
-type OrbResponse struct {
-	OrbVersion OrbQuery
-}
-
+// OrbGQLData identifies an orb, independent of any particular version.
 type OrbGQLData struct {
 	ID   string
 	Name string
 }
 
-type OrbByNameResponse struct {
-	Orb OrbGQLData
-}
-
+// OrbQuery is a resolved orb version: the version itself, its YAML source, and
+// the sibling versions its orb has published.
 type OrbQuery struct {
 	Id      string
 	Version string
@@ -48,38 +44,22 @@ func GetOrbInfo(orbVersionCode string, cache *utils.Cache, context *utils.LsCont
 	return cache.OrbCache.GetOrb(orbVersionCode), nil
 }
 
-func GetOrbByName(orbName string, context *utils.LsContext) (OrbGQLData, error) {
-	if context.Api.HostUrl == "" {
-		return OrbGQLData{}, errors.New("host URL not defined")
-	}
+// GetOrbByName looks an orb up by its fully qualified "namespace/orb" name,
+// ignoring versions. It reports an error when the orb does not exist, is
+// private to an org the token cannot see, or could not be looked up.
+func GetOrbByName(orbName string, lsContext *utils.LsContext) (OrbGQLData, error) {
+	registry := utils.NewOrbRegistryFromContext(lsContext)
 
-	client := utils.NewClient(context.Api.HostUrl, "graphql-unstable", context.Api.Token, false)
-	query := `
-		query($orbName: String!) {
-			orb(name: $orbName) {
-				id
-				name
-			}
-		}
-	`
-
-	request := utils.NewRequest(query)
-	request.SetToken(client.Token)
-	request.SetUserId(context.UserIdForTelemetry)
-	request.Var("orbName", orbName)
-
-	var response OrbByNameResponse
-	err := client.Run(request, &response)
-
+	orb, err := registry.FetchOrb(context.Background(), orbName)
 	if err != nil {
+		if utils.IsNotFound(err) {
+			return OrbGQLData{}, fmt.Errorf("orb %s does not exist", orbName)
+		}
+
 		return OrbGQLData{}, err
 	}
 
-	if response.Orb.Name == "" {
-		return OrbGQLData{}, fmt.Errorf("Orb does not exists")
-	}
-
-	return response.Orb, nil
+	return OrbGQLData{ID: orb.ID, Name: orb.Name}, nil
 }
 
 func ParseRemoteOrbs(orbs map[string]ast.Orb, cache *utils.Cache, context *utils.LsContext) {
@@ -198,68 +178,62 @@ func GetVersionInfo(
 	return latest, latestMinor, latestPatch
 }
 
+// GetRemoteOrb resolves an orb reference such as "circleci/go@1.7.1" and
+// returns the version it names, that version's YAML source, and the versions
+// its orb has published.
+//
+// Exact versions, partial versions ("circleci/go@1.7"), "volatile" and
+// development tags all resolve.
 func GetRemoteOrb(orbId string, token string, hostUrl, userId string) (OrbQuery, error) {
-	if hostUrl == "" {
-		return OrbQuery{}, errors.New("host URL not defined")
-	}
+	registry := utils.NewOrbRegistry(hostUrl, token, userId, false)
 
-	client := utils.NewClient(hostUrl, "graphql-unstable", token, false)
-	query := `query($orbVersionRef: String!) {
-		orbVersion(orbVersionRef: $orbVersionRef) {
-			id
-			version
-			orb {
-				id
-				versions(count: 100) {
-					version
-				}
-			}
-			source
+	resolved, err := registry.ResolveVersion(context.Background(), orbId)
+	if err != nil {
+		if utils.IsNotFound(err) {
+			// validateSingleOrb keys off this prefix to report an unknown
+			// version rather than an unknown orb.
+			return OrbQuery{}, fmt.Errorf("could not find orb %s", orbId)
 		}
-	}`
 
-	request := utils.NewRequest(query)
-	request.SetToken(client.Token)
-	request.SetUserId(userId)
-	request.Var("orbVersionRef", orbId)
-
-	var response OrbResponse
-	err := client.Run(request, &response)
-
-	if response.OrbVersion.Id == "" {
-		return response.OrbVersion, fmt.Errorf("could not find orb %s", orbId)
+		return OrbQuery{}, err
 	}
 
-	return response.OrbVersion, err
+	orbQuery := OrbQuery{
+		Id:      resolved.ID,
+		Version: resolved.Version,
+		Source:  resolved.Source,
+	}
+	orbQuery.Orb.Id = resolved.OrbPackageID
+	orbQuery.Orb.Versions = toVersionList(resolved.Versions)
+
+	return orbQuery, nil
 }
 
+// GetOrbVersions returns every version published by the orb an reference
+// names, ignoring the version in the reference itself.
 func GetOrbVersions(orbId string, token string, hostUrl, userId string) ([]struct{ Version string }, error) {
-	if hostUrl == "" {
-		emptyList := make([]struct{ Version string }, 0)
-		return emptyList, fmt.Errorf("host URL not defined")
-	}
+	registry := utils.NewOrbRegistry(hostUrl, token, userId, false)
 
-	client := utils.NewClient(hostUrl, "graphql-unstable", token, false)
-	query := `query($orbVersionRef: String!) {
-		orbVersion(orbVersionRef: $orbVersionRef) {
-			version
+	orbPackage, err := registry.FetchOrb(context.Background(), utils.OrbPackageName(orbId))
+	if err != nil {
+		if utils.IsNotFound(err) {
+			return []struct{ Version string }{}, fmt.Errorf("could not find orb %s", orbId)
 		}
-	}`
 
-	request := utils.NewRequest(query)
-	request.SetToken(client.Token)
-	request.SetUserId(userId)
-	request.Var("orbVersionRef", orbId)
-
-	var response OrbResponse
-	err := client.Run(request, &response)
-
-	if response.OrbVersion.Id == "" {
-		emptyList := make([]struct{ Version string }, 0)
-		return emptyList, fmt.Errorf("could not find orb %s", orbId)
+		return []struct{ Version string }{}, err
 	}
 
-	return response.OrbVersion.Orb.Versions, err
+	return toVersionList(orbPackage.Versions), nil
+}
+
+// toVersionList adapts the API's versions to the shape GetVersionInfo takes.
+func toVersionList(versions []utils.OrbPackageVersion) []struct{ Version string } {
+	list := make([]struct{ Version string }, 0, len(versions))
+	for _, version := range versions {
+		list = append(list, struct{ Version string }{Version: version.Version})
+	}
+
+	return list
 }
 
 func writeRemoteOrbSourceInFSCache(orbYaml string, source string) (string, error) {

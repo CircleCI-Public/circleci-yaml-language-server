@@ -11,12 +11,15 @@ import (
 	"net/url"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 )
 
 // A Client is an HTTP client for our GraphQL endpoint.
+//
+// The V3 REST API has replaced GraphQL for orb and namespace metadata on
+// circleci.com, but CircleCI Server does not serve the V3 orb routes, so this
+// client remains as the fallback. See OrbRegistry.
 type Client struct {
 	Debug      bool
 	Endpoint   string
@@ -25,35 +28,15 @@ type Client struct {
 	httpClient *http.Client
 }
 
-func GetClient() *http.Client {
-	return &http.Client{
-		Timeout: 30 * time.Second,
-		Transport: &http.Transport{
-			ExpectContinueTimeout: 1 * time.Second,
-			IdleConnTimeout:       90 * time.Second,
-			MaxIdleConns:          10,
-			TLSHandshakeTimeout:   10 * time.Second,
-		},
-	}
-}
-
 // NewClient returns a reference to a Client.
 func NewClient(host, endpoint, token string, debug bool) *Client {
 	return &Client{
-		httpClient: GetClient(),
+		httpClient: GetHTTPClient(),
 		Endpoint:   endpoint,
 		Host:       host,
 		Token:      token,
 		Debug:      debug,
 	}
-}
-
-// Reset replaces the existing fields with out creating a new client instance
-func (cl *Client) Reset(host, endpoint, token string, debug bool) {
-	cl.Endpoint = endpoint
-	cl.Host = host
-	cl.Token = token
-	cl.Debug = debug
 }
 
 // NewRequest returns a new GraphQL request.
@@ -107,34 +90,6 @@ type Response struct {
 
 // ResponseErrorsCollection represents a slice of errors returned by the GraphQL server out-of-band from the actual data.
 type ResponseErrorsCollection []ResponseError
-
-/*
-An Example Error for an enum error looks like this:
-
-{
-  "errors": [
-    {
-      "message": "Provided argument value `GRUBHUB' is not member of enum type.",
-      "locations": [
-        {
-          "line": 3,
-          "column": 3
-        }
-      ],
-      "extensions": {
-        "field": "organization",
-        "argument": "vcsType",
-        "value": "GRUBHUB",
-        "allowed-values": [
-          "GITHUB",
-          "BITBUCKET"
-        ],
-        "enum-type": "VCSType"
-      }
-    }
-  ]
-}
-*/
 
 // ResponseError represents the key-value pair of data returned by the GraphQL server to represent errors.
 type ResponseError struct {
@@ -196,7 +151,7 @@ func prepareRequest(ctx context.Context, address string, request *Request) (*htt
 	if err != nil {
 		return nil, err
 	}
-	r, err := http.NewRequest(http.MethodPost, address, &requestBody)
+	r, err := http.NewRequestWithContext(ctx, http.MethodPost, address, &requestBody)
 	if err != nil {
 		return nil, err
 	}
@@ -209,16 +164,18 @@ func prepareRequest(ctx context.Context, address string, request *Request) (*htt
 		}
 	}
 
-	r = r.WithContext(ctx)
 	return r, nil
 }
 
 // Run sends an HTTP request to the GraphQL server and deserializes the response or returns an error.
-// TODO(zzak): This function is fairly complex, we should refactor it
-// nolint: gocyclo
 func (cl *Client) Run(request *Request, resp interface{}) error {
+	return cl.RunWithContext(context.Background(), request, resp)
+}
+
+// RunWithContext sends an HTTP request to the GraphQL server and deserializes
+// the response or returns an error.
+func (cl *Client) RunWithContext(ctx context.Context, request *Request, resp interface{}) error {
 	l := log.New(os.Stderr, "", 0)
-	ctx := context.Background()
 
 	select {
 	case <-ctx.Done():
@@ -291,34 +248,4 @@ func (cl *Client) Run(request *Request, resp interface{}) error {
 	}
 
 	return nil
-}
-
-// These vars set by `goreleaser`:
-var (
-	// Version is the current Git tag (the v prefix is stripped) or the name of
-	// the snapshot, if you’re using the --snapshot flag
-	Version = "0.0.0-dev"
-	// Commit is the current git commit SHA
-	Commit = "dirty-local-tree"
-)
-
-// PackageManager defines the package manager which was used to install the CLI.
-// You can override this value using -X flag to the compiler ldflags. This is
-// overridden when we build for Homebrew, but not for Snap. the binary that we
-// ship with Snap is the same binary that we ship to the GitHub release.
-var packageManager = "source"
-
-func PackageManager() string {
-	if runningInsideSnap() {
-		return "snap"
-	}
-	return packageManager
-}
-
-func runningInsideSnap() bool {
-	// Snap sets a bunch of env vars when apps are running inside the snap
-	// containers. SNAP_NAME is the name of the snap as specified in the
-	// `snapcraft.yaml` file.
-	// https://snapcraft.io/docs/environment-variables
-	return os.Getenv("SNAP_NAME") == "circleci"
 }
