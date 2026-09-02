@@ -10,10 +10,7 @@ import (
 	"go.lsp.dev/protocol"
 )
 
-var orbCache = OrbCache{
-	registryOrbs: make(map[string]*NamespaceOrbResponse),
-	orbData:      make(map[string]*OrbGQLData),
-}
+var orbCache = NewOrbCache()
 
 func (ch *CompletionHandler) completeOrbs() {
 	if ch.DocTag != "original" {
@@ -121,18 +118,22 @@ func getOrbNameCompletions(name, hostUrl, token, userId string) ([]string, error
 	parts := strings.Split(name, "/")
 	registry := parts[0]
 
-	response, err := orbCache.GetOrbsOfRegistry(registry, hostUrl, token, userId)
+	orbs, err := orbCache.GetOrbsOfRegistry(registry, hostUrl, token, userId)
 
 	if err != nil {
 		return nil, err
 	}
 
-	completions := make([]string, len(response.RegistryNamespace.Orbs.Edges))
+	completions := make([]string, 0, len(orbs))
 
-	for i, v := range response.RegistryNamespace.Orbs.Edges {
-		if len(v.Node.Versions) > 0 {
-			completions[i] = fmt.Sprintf("%s@%s", v.Node.Name, v.Node.Versions[0].Version)
+	// Versions are newest first, so the first is the one to suggest. An orb
+	// with nothing published has no reference worth completing to.
+	for _, orb := range orbs {
+		if len(orb.Versions) == 0 {
+			continue
 		}
+
+		completions = append(completions, fmt.Sprintf("%s@%s", orb.Name, orb.Versions[0].Version))
 	}
 
 	return completions, nil

@@ -1,6 +1,7 @@
 package validate
 
 import (
+	"context"
 	"fmt"
 	"slices"
 	"strings"
@@ -301,33 +302,18 @@ func (val Validate) checkIfValidResourceClass(
 	}
 }
 
-type RegistryNamespace struct {
-	RegistryNameSpace *struct {
-		Name string
-	}
-}
-
 func (val Validate) validateExecutorNamespace(resourceClass string, resourceClassRange protocol.Range) {
-	client := utils.NewClient(val.Context.Api.HostUrl, "graphql-unstable", val.Context.Api.Token, false)
+	registry := utils.NewOrbRegistryFromContext(val.Context)
 
-	query := `query($name: String!) {
-		registryNamespace(name: $name) {
-			name
-		}
-	}`
-
-	request := utils.NewRequest(query)
-	request.SetToken(val.Context.Api.Token)
-	request.Var("name", resourceClass)
-	request.SetUserId(val.Context.UserIdForTelemetry)
-
-	var response RegistryNamespace
-	err := client.Run(request, &response)
-	if err != nil {
+	_, err := registry.FetchNamespace(context.Background(), resourceClass)
+	if err == nil {
 		return
 	}
 
-	if response.RegistryNameSpace == nil {
+	// Only a definitive "no such namespace" earns a diagnostic. A request that
+	// simply failed is not evidence the namespace is missing, and reporting one
+	// would mean flagging valid configs whenever the API is unreachable.
+	if utils.IsNotFound(err) {
 		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
 			resourceClassRange,
 			fmt.Sprintf("Namespace \"%s\" does not exist", resourceClass),

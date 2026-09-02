@@ -1,176 +1,111 @@
 package complete
 
 import (
+	"context"
 	"fmt"
 	"sync"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
-const versionCount = 10000
-
+// OrbCache memoises the orb metadata that autocomplete needs, so that typing
+// in an orb reference does not re-query the registry on every keystroke.
 type OrbCache struct {
-	mutex        sync.Mutex
-	registryOrbs map[string]*NamespaceOrbResponse
-	orbData      map[string]*OrbGQLData
+	mutex sync.Mutex
+	// registryOrbs maps a namespace name to the orbs it publishes.
+	registryOrbs map[string][]OrbData
+	orbData      map[string]*OrbData
 }
 
-type OrbGQLData struct {
+// OrbData is an orb and the versions it has published, newest first.
+type OrbData struct {
 	ID       string       `json:"id"`
 	Name     string       `json:"name"`
 	Versions []OrbVersion `json:"versions"`
 }
 
+// OrbVersion is one published version of an orb.
 type OrbVersion struct {
 	Version string `json:"version"`
 }
 
-type NamespaceOrbResponse struct {
-	RegistryNamespace struct {
-		ID   string
-		Name string
-		Orbs struct {
-			Edges []struct {
-				Cursor string
-				Node   OrbGQLData
-			}
-			TotalCount int
-			PageInfo   struct {
-				HasNextPage bool
-			}
-		}
+// NewOrbCache returns an empty cache.
+func NewOrbCache() *OrbCache {
+	return &OrbCache{
+		registryOrbs: make(map[string][]OrbData),
+		orbData:      make(map[string]*OrbData),
 	}
 }
 
-type RequestConfig struct {
-	HostUrl  string
-	Token    string
-	UserId   string
-	Query    string
-	Params   map[string]interface{}
-	Response interface{}
-}
-
-func (cache *OrbCache) request(config RequestConfig) (err error) {
-	client := utils.NewClient(
-		config.HostUrl,
-		"graphql-unstable",
-		config.Token,
-		false,
-	)
-	request := utils.NewRequest(config.Query)
-	request.SetToken(client.Token)
-	request.SetUserId(config.UserId)
-	for key, value := range config.Params {
-		request.Var(key, value)
-	}
-
-	err = client.Run(request, config.Response)
-
-	return
-}
-
-func (cache *OrbCache) GetOrbsOfRegistry(registry, hostUrl, token, userId string) (*NamespaceOrbResponse, error) {
+// GetOrbsOfRegistry returns every orb published in a namespace.
+func (cache *OrbCache) GetOrbsOfRegistry(registry, hostUrl, token, userId string) ([]OrbData, error) {
 	cache.mutex.Lock()
 	defer cache.mutex.Unlock()
 
-	// If data is cached return it
-	cached, cacheExists := cache.registryOrbs[registry]
-	if cacheExists {
+	if cached, ok := cache.registryOrbs[registry]; ok {
 		return cached, nil
 	}
 
-	// Else request it
-	query := `
-	query OrbsByRegistry($name: String!, $versionCount: Int!) {
-			registryNamespace(name: $name) {
-				orbs(first: 1000){
-					edges {
-						cursor
-						node {
-							id
-							name
-							versions(count: $versionCount) {
-								version
-							}
-						}
-					}
-				}
-			}
-		}
-	`
-	var response NamespaceOrbResponse
-	err := cache.request(RequestConfig{
-		HostUrl: hostUrl,
-		Token:   token,
-		UserId:  userId,
-		Query:   query,
-		Params: map[string]interface{}{
-			"name":         registry,
-			"versionCount": versionCount,
-		},
-		Response: &response,
-	})
+	orbRegistry := utils.NewOrbRegistry(hostUrl, token, userId, false)
+
+	packages, err := orbRegistry.ListNamespaceOrbs(context.Background(), registry)
 	if err != nil {
+		if utils.IsNotFound(err) {
+			return nil, fmt.Errorf("no namespace named %s", registry)
+		}
+
 		return nil, err
 	}
 
-	// Then cache it and return it
-	cache.registryOrbs[registry] = &response
-	for i, orb := range response.RegistryNamespace.Orbs.Edges {
-		// Here we point to response.RegistryNamespace.Orbs.Edges[i].Node and not to orb.Node.Name
-		// because orb.Node.Name points to the loop-local variable orb and not to the real data of the
-		// response struct, thus creating pointer errors
-		cache.orbData[orb.Node.Name] = &response.RegistryNamespace.Orbs.Edges[i].Node
+	orbs := make([]OrbData, 0, len(packages))
+	for _, pkg := range packages {
+		orbs = append(orbs, toOrbData(pkg))
 	}
 
-	return &response, nil
+	cache.registryOrbs[registry] = orbs
+	for i := range orbs {
+		cache.orbData[orbs[i].Name] = &orbs[i]
+	}
+
+	return orbs, nil
 }
 
-func (cache *OrbCache) GetVersionsOfOrb(orbName, hostUrl, token, userId string) (*OrbGQLData, error) {
+// GetVersionsOfOrb returns an orb and its versions, given the orb's fully
+// qualified "namespace/orb" name.
+func (cache *OrbCache) GetVersionsOfOrb(orbName, hostUrl, token, userId string) (*OrbData, error) {
 	cache.mutex.Lock()
 	defer cache.mutex.Unlock()
 
-	// If data is cached return it
-	cached, cacheExists := cache.orbData[orbName]
-	if cacheExists {
+	if cached, ok := cache.orbData[orbName]; ok {
 		return cached, nil
 	}
 
-	// Else request it
-	query := `
-	query OrbVersions($name: String!, $versionCount: Int!) {
-			orb(name: $name) {
-				name
-				versions(count: $versionCount) {
-					version
-				}
-			}
-		}
-	`
-	response := map[string]OrbGQLData{}
-	err := cache.request(RequestConfig{
-		HostUrl: hostUrl,
-		Token:   token,
-		UserId:  userId,
-		Query:   query,
-		Params: map[string]interface{}{
-			"name":         orbName,
-			"versionCount": versionCount,
-		},
-		Response: &response,
-	})
+	orbRegistry := utils.NewOrbRegistry(hostUrl, token, userId, false)
+
+	pkg, err := orbRegistry.FetchOrb(context.Background(), orbName)
 	if err != nil {
+		if utils.IsNotFound(err) {
+			return nil, fmt.Errorf("no orb named %s", orbName)
+		}
+
 		return nil, err
 	}
 
-	orb, ok := response["orb"]
-	if !ok {
-		return nil, fmt.Errorf("No orb found")
-	}
-
-	// Then store it in the cache and return it
+	orb := toOrbData(*pkg)
 	cache.orbData[orbName] = &orb
 
 	return &orb, nil
+}
+
+func toOrbData(pkg utils.OrbPackage) OrbData {
+	versions := make([]OrbVersion, 0, len(pkg.Versions))
+	for _, version := range pkg.Versions {
+		versions = append(versions, OrbVersion{Version: version.Version})
+	}
+
+	return OrbData{
+		ID:       pkg.ID,
+		Name:     pkg.Name,
+		Versions: versions,
+	}
 }
