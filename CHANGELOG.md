@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [0.38.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.37.1...0.38.0) (2026-09-02)
+
+
+### Features
+
+* use V3 orb APIs, with GraphQL fallback for CircleCI Server ([#461](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/461)) ([80e8e42](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/80e8e421ec5ce1f4dc9c680ad12729df4505e583))
+
 ## [0.37.1](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.37.0...0.37.1) (2026-08-31)
 
 
