@@ -3,8 +3,9 @@ package validate
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"go.lsp.dev/protocol"
+	"gotest.tools/v3/assert"
+	"gotest.tools/v3/assert/cmp"
 )
 
 func getWarningMessages(diags *[]protocol.Diagnostic) []string {
@@ -40,7 +41,7 @@ workflows:
 `
 	val := CreateValidateFromYAML(yaml)
 	val.CheckNames()
-	assert.Empty(t, *val.Diagnostics)
+	assert.Check(t, cmp.Len(*val.Diagnostics, 0))
 }
 
 func TestCheckNames_WorkflowJobConflict(t *testing.T) {
@@ -63,11 +64,11 @@ workflows:
 	val.CheckNames()
 
 	msgs := getWarningMessages(val.Diagnostics)
-	assert.Len(t, msgs, 2)
-	assert.Contains(t, msgs[0], `"deploy"`)
-	assert.Contains(t, msgs[0], "job")
-	assert.Contains(t, msgs[1], `"deploy"`)
-	assert.Contains(t, msgs[1], "workflow")
+	assert.Check(t, cmp.Len(msgs, 2))
+	assert.Check(t, cmp.Contains(msgs[0], `"deploy"`))
+	assert.Check(t, cmp.Contains(msgs[0], "job"))
+	assert.Check(t, cmp.Contains(msgs[1], `"deploy"`))
+	assert.Check(t, cmp.Contains(msgs[1], "workflow"))
 }
 
 func TestCheckNames_WorkflowCommandConflict(t *testing.T) {
@@ -95,11 +96,11 @@ workflows:
 	val.CheckNames()
 
 	msgs := getWarningMessages(val.Diagnostics)
-	assert.Len(t, msgs, 2)
-	assert.Contains(t, msgs[0], `"ci"`)
-	assert.Contains(t, msgs[0], "command")
-	assert.Contains(t, msgs[1], `"ci"`)
-	assert.Contains(t, msgs[1], "workflow")
+	assert.Check(t, cmp.Len(msgs, 2))
+	assert.Check(t, cmp.Contains(msgs[0], `"ci"`))
+	assert.Check(t, cmp.Contains(msgs[0], "command"))
+	assert.Check(t, cmp.Contains(msgs[1], `"ci"`))
+	assert.Check(t, cmp.Contains(msgs[1], "workflow"))
 }
 
 func TestCheckNames_JobCommandConflict(t *testing.T) {
@@ -127,11 +128,11 @@ workflows:
 	val.CheckNames()
 
 	msgs := getWarningMessages(val.Diagnostics)
-	assert.Len(t, msgs, 2)
-	assert.Contains(t, msgs[0], `"setup"`)
-	assert.Contains(t, msgs[0], "command")
-	assert.Contains(t, msgs[1], `"setup"`)
-	assert.Contains(t, msgs[1], "job")
+	assert.Check(t, cmp.Len(msgs, 2))
+	assert.Check(t, cmp.Contains(msgs[0], `"setup"`))
+	assert.Check(t, cmp.Contains(msgs[0], "command"))
+	assert.Check(t, cmp.Contains(msgs[1], `"setup"`))
+	assert.Check(t, cmp.Contains(msgs[1], "job"))
 }
 
 func TestCheckNames_MultipleConflicts(t *testing.T) {
@@ -160,9 +161,9 @@ workflows:
 
 	// 3 pairs: workflow-job, workflow-command, job-command = 6 warnings
 	msgs := getWarningMessages(val.Diagnostics)
-	assert.Len(t, msgs, 6)
+	assert.Check(t, cmp.Len(msgs, 6))
 	for _, msg := range msgs {
-		assert.Contains(t, msg, `"shared"`)
+		assert.Check(t, cmp.Contains(msg, `"shared"`))
 	}
 }
 
@@ -191,5 +192,5 @@ workflows:
 `
 	val := CreateValidateFromYAML(yaml)
 	val.CheckNames()
-	assert.Empty(t, *val.Diagnostics)
+	assert.Check(t, cmp.Len(*val.Diagnostics, 0))
 }

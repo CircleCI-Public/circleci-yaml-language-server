@@ -9,8 +9,9 @@ import (
 	"testing"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
-	"github.com/stretchr/testify/assert"
 	"go.lsp.dev/protocol"
+	"gotest.tools/v3/assert"
+	"gotest.tools/v3/assert/cmp"
 )
 
 func TestExecutorValidation(t *testing.T) {
@@ -110,7 +111,7 @@ func TestMachineExecutorSkipsWhenOfferingsUnavailable(t *testing.T) {
 	val.Context.Api.HostUrl = server.URL
 	val.Validate()
 
-	assert.Len(t, *val.Diagnostics, 0)
+	assert.Check(t, cmp.Len(*val.Diagnostics, 0))
 }
 
 func TestDeprecatedImageWarnings(t *testing.T) {
@@ -152,8 +153,8 @@ executors:
 			if found == nil {
 				t.Fatalf("expected diagnostic %q, got %+v", c.wantMessage, *val.Diagnostics)
 			}
-			assert.Equal(t, protocol.DiagnosticSeverityWarning, found.Severity)
-			assert.Contains(t, found.Tags, protocol.DiagnosticTagDeprecated)
+			assert.Check(t, cmp.Equal(protocol.DiagnosticSeverityWarning, found.Severity))
+			assert.Check(t, cmp.Contains(found.Tags, protocol.DiagnosticTagDeprecated))
 		})
 	}
 }
@@ -252,7 +253,7 @@ func TestMachineExecutor(t *testing.T) {
 			val.Validate()
 
 			if c.errRegex == "" {
-				assert.Len(t, *val.Diagnostics, 0)
+				assert.Check(t, cmp.Len(*val.Diagnostics, 0))
 				return
 			}
 

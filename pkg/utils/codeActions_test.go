@@ -3,8 +3,9 @@ package utils
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"go.lsp.dev/protocol"
+	"gotest.tools/v3/assert"
+	"gotest.tools/v3/assert/cmp"
 )
 
 func TestAppendSuppressionCodeActions(t *testing.T) {
@@ -34,7 +35,7 @@ func TestAppendSuppressionCodeActions(t *testing.T) {
 				for _, action := range actions {
 					if action.Title == "Ignore this line" {
 						edits := action.Edit.Changes[docURI]
-						assert.Equal(t, "    # cci-ignore-next-line\n", edits[0].NewText)
+						assert.Check(t, cmp.Equal("    # cci-ignore-next-line\n", edits[0].NewText))
 						return
 					}
 				}
@@ -63,7 +64,7 @@ func TestAppendSuppressionCodeActions(t *testing.T) {
 				for _, action := range actions {
 					if action.Title == "Ignore this line (inline)" {
 						edits := action.Edit.Changes[docURI]
-						assert.Equal(t, " # cci-ignore", edits[0].NewText)
+						assert.Check(t, cmp.Equal(" # cci-ignore", edits[0].NewText))
 						return
 					}
 				}
@@ -87,8 +88,8 @@ func TestAppendSuppressionCodeActions(t *testing.T) {
 				for _, action := range actions {
 					if action.Title == "Ignore this line" {
 						edits := action.Edit.Changes[docURI]
-						assert.Equal(t, "# cci-ignore-next-line\n", edits[0].NewText)
-						assert.Equal(t, uint32(1), edits[0].Range.Start.Line)
+						assert.Check(t, cmp.Equal("# cci-ignore-next-line\n", edits[0].NewText))
+						assert.Check(t, cmp.Equal(uint32(1), edits[0].Range.Start.Line))
 						return
 					}
 				}
@@ -117,11 +118,11 @@ func TestAppendSuppressionCodeActions(t *testing.T) {
 				for _, action := range actions {
 					if action.Title == "Ignore this range" {
 						edits := action.Edit.Changes[docURI]
-						assert.Len(t, edits, 2)
-						assert.Equal(t, "# cci-ignore-start\n", edits[0].NewText)
-						assert.Equal(t, uint32(1), edits[0].Range.Start.Line)
-						assert.Equal(t, "# cci-ignore-end\n", edits[1].NewText)
-						assert.Equal(t, uint32(4), edits[1].Range.Start.Line)
+						assert.Check(t, cmp.Len(edits, 2))
+						assert.Check(t, cmp.Equal("# cci-ignore-start\n", edits[0].NewText))
+						assert.Check(t, cmp.Equal(uint32(1), edits[0].Range.Start.Line))
+						assert.Check(t, cmp.Equal("# cci-ignore-end\n", edits[1].NewText))
+						assert.Check(t, cmp.Equal(uint32(4), edits[1].Range.Start.Line))
 						return
 					}
 				}
@@ -155,8 +156,8 @@ func TestAppendSuppressionCodeActions(t *testing.T) {
 						break
 					}
 				}
-				assert.True(t, found, "Existing code action should be preserved")
-				assert.GreaterOrEqual(t, len(actions), 4, "Should have existing + suppression actions")
+				assert.Check(t, found, "Existing code action should be preserved")
+				assert.Check(t, len(actions) >= 4, "Should have existing + suppression actions")
 			},
 		},
 	}
@@ -164,11 +165,11 @@ func TestAppendSuppressionCodeActions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result, err := AppendSuppressionCodeActions(docURI, tt.diagnostics, tt.docContent)
-			assert.NoError(t, err)
-			assert.Len(t, result, len(tt.diagnostics))
+			assert.Check(t, err)
+			assert.Check(t, cmp.Len(result, len(tt.diagnostics)))
 
 			actions, ok := result[0].Data.([]protocol.CodeAction)
-			assert.True(t, ok)
+			assert.Check(t, ok)
 
 			if len(tt.wantCodeActionTitles) > 0 {
 				titles := make([]string, len(actions))
@@ -176,7 +177,7 @@ func TestAppendSuppressionCodeActions(t *testing.T) {
 					titles[j] = action.Title
 				}
 				for _, expectedTitle := range tt.wantCodeActionTitles {
-					assert.Contains(t, titles, expectedTitle)
+					assert.Check(t, cmp.Contains(titles, expectedTitle))
 				}
 			}
 

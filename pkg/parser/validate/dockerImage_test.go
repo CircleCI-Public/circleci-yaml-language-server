@@ -5,8 +5,9 @@ import (
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/dockerhub"
-	"github.com/stretchr/testify/assert"
 	"go.lsp.dev/protocol"
+	"gotest.tools/v3/assert"
+	"gotest.tools/v3/assert/cmp"
 )
 
 type ComparableAction struct {
@@ -366,7 +367,7 @@ func TestChooseTagToRecommend(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.Name, func(t *testing.T) {
-			assert.Equal(t, tt.Output, chooseTagToRecommend(tt.Tags))
+			assert.Check(t, cmp.Equal(tt.Output, chooseTagToRecommend(tt.Tags)))
 		})
 	}
 }
@@ -426,7 +427,7 @@ func TestCreateTagTextEdit(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.Name, func(t *testing.T) {
-			assert.Equal(t, tt.Output, createTagTextEdit(&img, tag))
+			assert.Check(t, cmp.DeepEqual(tt.Output, createTagTextEdit(&img, tag)))
 		})
 	}
 }
@@ -438,7 +439,7 @@ func compareDiagnostics(t *testing.T, expected []ComparableDiagnostic, diagnosti
 		actual = append(actual, diagnosticToComparableDiagnostic(diag))
 	}
 
-	assert.Equal(t, expected, actual)
+	assert.Check(t, cmp.DeepEqual(expected, actual))
 }
 
 func diagnosticToComparableDiagnostic(diag protocol.Diagnostic) ComparableDiagnostic {

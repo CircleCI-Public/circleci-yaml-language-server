@@ -5,8 +5,9 @@ import (
 	"testing"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
-	"github.com/stretchr/testify/assert"
 	"go.lsp.dev/protocol"
+	"gotest.tools/v3/assert"
+	"gotest.tools/v3/assert/cmp"
 )
 
 type orbsArgs struct {
@@ -180,7 +181,7 @@ func TestParseOrbDefinition(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(t *testing.T) {
 			def := getOrbDefinitionFromTextAndRange(testCase.Text, testCase.Range)
-			assert.Equal(t, testCase.Expected, def)
+			assert.Check(t, cmp.DeepEqual(testCase.Expected, def))
 		})
 	}
 }

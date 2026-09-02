@@ -3,8 +3,9 @@ package utils
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"go.lsp.dev/protocol"
+	"gotest.tools/v3/assert"
+	"gotest.tools/v3/assert/cmp"
 )
 
 func TestLineContentRange(t *testing.T) {
@@ -25,7 +26,7 @@ some-key:
 		},
 	}
 
-	assert.Equal(t, expected, actual)
+	assert.Check(t, cmp.DeepEqual(expected, actual))
 }
 
 func TestAllLineContentRange(t *testing.T) {
@@ -59,5 +60,5 @@ some-key:
 		},
 	}
 
-	assert.Equal(t, expected, actual)
+	assert.Check(t, cmp.DeepEqual(expected, actual))
 }

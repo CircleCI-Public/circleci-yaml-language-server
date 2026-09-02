@@ -8,9 +8,11 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/testHelpers"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
-	"github.com/stretchr/testify/assert"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
+	"gotest.tools/v3/assert"
+	"gotest.tools/v3/assert/cmp"
 )
 
 type ErrorTestCase struct {
@@ -266,7 +268,7 @@ workflows:
 
 func TestOrbStepsUsedInParameters(t *testing.T) {
 	content, err := os.ReadFile("testdata/orb_steps_used_in_params.yml")
-	assert.NoError(t, err)
+	assert.Check(t, err)
 	val := CreateValidateFromYAML(string(content))
 	val.Validate()
 	for _, diag := range *val.Diagnostics {
@@ -280,10 +282,10 @@ func TestLocalOrbUsedPartsFalsePositive(t *testing.T) {
 	fileURI := uri.File("some-uri")
 	context := testHelpers.GetDefaultLsContext()
 	content, err := os.ReadFile("./testdata/orbs/local-orb-used-parts.yml")
-	assert.Nil(t, err)
+	assert.Check(t, err)
 
 	doc, err := parser.ParseFromContent(content, context, fileURI, protocol.Position{})
-	assert.Nil(t, err)
+	assert.Check(t, err)
 
 	val := Validate{
 		APIs: ValidateAPIs{
@@ -295,17 +297,17 @@ func TestLocalOrbUsedPartsFalsePositive(t *testing.T) {
 		Context:     context,
 	}
 	val.Validate()
-	assert.Len(t, *val.Diagnostics, 0)
+	assert.Check(t, cmp.Len(*val.Diagnostics, 0))
 }
 
 func TestLocalOrbUnusedPartsFalseNegative(t *testing.T) {
 	fileURI := uri.File("some-uri")
 	context := testHelpers.GetDefaultLsContext()
 	content, err := os.ReadFile("./testdata/orbs/local-orb-unused-parts.yml")
-	assert.Nil(t, err)
+	assert.Check(t, err)
 
 	doc, err := parser.ParseFromContent(content, context, fileURI, protocol.Position{})
-	assert.Nil(t, err)
+	assert.Check(t, err)
 
 	val := Validate{
 		APIs: ValidateAPIs{
@@ -318,5 +320,10 @@ func TestLocalOrbUnusedPartsFalseNegative(t *testing.T) {
 	}
 	val.Validate()
 	messages := getDiagnosticMessages(val.Diagnostics)
-	assert.ElementsMatch(t, []string{"Orb is unused", "Job is unused", "Command is unused"}, messages)
+	assert.Check(t, cmp.DeepEqual(
+		messages,
+		[]string{"Orb is unused", "Job is unused", "Command is unused"},
+		// The three warnings are independent, so their order is incidental.
+		cmpopts.SortSlices(func(a, b string) bool { return a < b }),
+	))
 }

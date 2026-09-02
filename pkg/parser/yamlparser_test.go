@@ -8,18 +8,17 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/testHelpers"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
-	"github.com/stretchr/testify/assert"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
+	"gotest.tools/v3/assert"
+	"gotest.tools/v3/assert/cmp"
 )
 
 func TestCacheMissingError(t *testing.T) {
 	cache := utils.CreateCache()
 	_, err := parser.ParseFromUriWithCache(uri.New("file:///toto.yaml"), cache, nil)
 
-	if assert.Error(t, err) {
-		assert.ErrorIs(t, err, parser.CacheMissingError)
-	}
+	assert.Check(t, cmp.ErrorIs(err, parser.CacheMissingError))
 }
 
 func TestJobExecutorMachineTrueOnApp(t *testing.T) {
@@ -38,8 +37,8 @@ jobs:
 		protocol.Position{},
 	)
 
-	assert.Equal(t, err, nil)
-	assert.True(t, yamlDocument.Context.Api.UseDefaultInstance())
+	assert.Check(t, err)
+	assert.Check(t, yamlDocument.Context.Api.UseDefaultInstance())
 	img := utils.CurrentLinuxImage
 	machineRange := protocol.Range{
 		Start: protocol.Position{Line: 3, Character: 4},
@@ -78,9 +77,9 @@ jobs:
 		protocol.Position{},
 	)
 
-	assert.Equal(t, err, nil)
-	assert.True(t, yamlDocument.Context.Api.UseDefaultInstance())
-	assert.Empty(t, *yamlDocument.Diagnostics)
+	assert.Check(t, err)
+	assert.Check(t, yamlDocument.Context.Api.UseDefaultInstance())
+	assert.Check(t, cmp.Len(*yamlDocument.Diagnostics, 0))
 }
 
 func TestJobExecutorMachineTrueOnSelfHosted(t *testing.T) {
@@ -99,9 +98,9 @@ jobs:
 		protocol.Position{},
 	)
 
-	assert.Equal(t, err, nil)
-	assert.False(t, yamlDocument.Context.Api.UseDefaultInstance())
-	assert.Empty(t, *yamlDocument.Diagnostics)
+	assert.Check(t, err)
+	assert.Check(t, !yamlDocument.Context.Api.UseDefaultInstance())
+	assert.Check(t, cmp.Len(*yamlDocument.Diagnostics, 0))
 }
 
 func TestJobExecutorMachineTrueOnPublicRunner(t *testing.T) {
@@ -125,8 +124,8 @@ jobs:
 		protocol.Position{},
 	)
 
-	assert.Equal(t, err, nil)
-	assert.True(t, yamlDocument.Context.Api.UseDefaultInstance())
+	assert.Check(t, err)
+	assert.Check(t, yamlDocument.Context.Api.UseDefaultInstance())
 	img := utils.CurrentLinuxImage
 	machineRange := protocol.Range{
 		Start: protocol.Position{Line: 7, Character: 4},
@@ -168,9 +167,9 @@ jobs:
 		protocol.Position{},
 	)
 
-	assert.Equal(t, err, nil)
-	assert.True(t, yamlDocument.Context.Api.UseDefaultInstance())
-	assert.Empty(t, *yamlDocument.Diagnostics)
+	assert.Check(t, err)
+	assert.Check(t, yamlDocument.Context.Api.UseDefaultInstance())
+	assert.Check(t, cmp.Len(*yamlDocument.Diagnostics, 0))
 }
 
 func TestExecutorWithDefinedMachine(t *testing.T) {
@@ -195,9 +194,9 @@ jobs:
 		protocol.Position{},
 	)
 
-	assert.Equal(t, err, nil)
-	assert.True(t, yamlDocument.Context.Api.UseDefaultInstance())
-	assert.Empty(t, *yamlDocument.Diagnostics)
+	assert.Check(t, err)
+	assert.Check(t, yamlDocument.Context.Api.UseDefaultInstance())
+	assert.Check(t, cmp.Len(*yamlDocument.Diagnostics, 0))
 }
 
 func TestExecutorWithMachineTrue(t *testing.T) {
@@ -220,8 +219,8 @@ jobs:
 		protocol.Position{},
 	)
 
-	assert.Equal(t, err, nil)
-	assert.True(t, yamlDocument.Context.Api.UseDefaultInstance())
+	assert.Check(t, err)
+	assert.Check(t, yamlDocument.Context.Api.UseDefaultInstance())
 	img := utils.CurrentLinuxImage
 	machineRange := protocol.Range{
 		Start: protocol.Position{Line: 3, Character: 4},
@@ -257,9 +256,9 @@ orbs:
   ccc: cci-dev/ccc@<<pipeline.parameters.dev-orb-version>>
 `), testHelpers.GetDefaultLsContext(), uri.File(""), protocol.Position{})
 
-	assert.Nil(t, err)
-	assert.True(t, yamlDocument.IsFromUnfetchableOrb("ccc/entity"))
-	assert.False(t, yamlDocument.IsFromUnfetchableOrb("slack/entity"))
+	assert.Check(t, err)
+	assert.Check(t, yamlDocument.IsFromUnfetchableOrb("ccc/entity"))
+	assert.Check(t, !yamlDocument.IsFromUnfetchableOrb("slack/entity"))
 }
 
 func TestSetupKey(t *testing.T) {
@@ -358,9 +357,9 @@ jobs:
 	for _, tt := range testCases {
 		t.Run(tt.Name, func(t *testing.T) {
 			yamlDocument, err := parser.ParseFromContent([]byte(tt.Content), testHelpers.GetDefaultLsContext(), uri.File(""), protocol.Position{})
-			assert.Nil(t, err)
-			assert.Equal(t, tt.ExpectValue, yamlDocument.Setup)
-			assert.Equal(t, tt.ExpectRange, yamlDocument.SetupRange)
+			assert.Check(t, err)
+			assert.Check(t, cmp.Equal(tt.ExpectValue, yamlDocument.Setup))
+			assert.Check(t, cmp.DeepEqual(tt.ExpectRange, yamlDocument.SetupRange))
 		})
 	}
 }
