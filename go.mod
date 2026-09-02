@@ -5,6 +5,7 @@ go 1.25.0
 require (
 	github.com/Masterminds/semver v1.5.0
 	github.com/go-git/go-git/v5 v5.13.0
+	github.com/google/go-cmp v0.7.0
 	github.com/pkg/errors v0.9.1
 	github.com/rollbar/rollbar-go v1.4.5
 	github.com/segmentio/encoding v0.4.0
@@ -113,7 +114,6 @@ require (
 	github.com/golangci/revgrep v0.8.0 // indirect
 	github.com/golangci/swaggoswag v0.0.0-20250504205917-77f2aca3143e // indirect
 	github.com/golangci/unconvert v0.0.0-20250410112200-a129a6e6413e // indirect
-	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/gordonklaus/ineffassign v0.2.0 // indirect
 	github.com/gostaticanalysis/analysisutil v0.7.1 // indirect
 	github.com/gostaticanalysis/comment v1.5.0 // indirect
@@ -246,7 +246,7 @@ require (
 	github.com/adrg/xdg v0.4.0
 	github.com/bep/debounce v1.2.1
 	github.com/segmentio/asm v1.2.0 // indirect
-	github.com/stretchr/testify v1.11.1
+	github.com/stretchr/testify v1.11.1 // indirect
 	go.lsp.dev/pkg v0.0.0-20210717090340-384b27a52fb2 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect

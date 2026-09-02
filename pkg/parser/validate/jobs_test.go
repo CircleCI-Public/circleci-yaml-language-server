@@ -6,9 +6,10 @@ import (
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
-	"github.com/stretchr/testify/assert"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
+	"gotest.tools/v3/assert"
+	"gotest.tools/v3/assert/cmp"
 )
 
 func validateYAML(t *testing.T, yamlData string) *[]protocol.Diagnostic {
@@ -25,7 +26,7 @@ func validateYAML(t *testing.T, yamlData string) *[]protocol.Diagnostic {
 		uri.URI(""),
 		protocol.Position{},
 	)
-	assert.NoError(t, err, "invalid YAML data")
+	assert.Check(t, err, "invalid YAML data")
 
 	val := Validate{
 		APIs:        ValidateAPIs{DockerHubMock{}},
@@ -132,7 +133,7 @@ workflows:
 				break
 			}
 		}
-		assert.True(t, found, "expected diagnostic: %q\nAll diagnostics: %v", expected, msgs)
+		assert.Check(t, found, "expected diagnostic: %q\nAll diagnostics: %v", expected, msgs)
 	}
 }
 
@@ -165,7 +166,7 @@ workflows:
 			hasUnused = true
 		}
 	}
-	assert.True(t, hasUnused, "expected 'Job is unused' diagnostic for unused-job.\nAll diagnostics: %v", msgs)
+	assert.Check(t, hasUnused, "expected 'Job is unused' diagnostic for unused-job.\nAll diagnostics: %v", msgs)
 }
 
 func TestJobGroupUnusedInWorkflow(t *testing.T) {
@@ -197,7 +198,7 @@ workflows:
 			hasUnusedGroup = true
 		}
 	}
-	assert.True(t, hasUnusedGroup, "expected 'Job group is unused' diagnostic.\nAll diagnostics: %v", msgs)
+	assert.Check(t, hasUnusedGroup, "expected 'Job group is unused' diagnostic.\nAll diagnostics: %v", msgs)
 }
 
 func TestExecutorParam(t *testing.T) {
@@ -259,8 +260,8 @@ func TestExecutorParam(t *testing.T) {
 				uri.URI(""),
 				protocol.Position{},
 			)
-			assert.NoError(t, err, "invalid YAML data")
-			assert.Contains(t, doc.Jobs, "test")
+			assert.Check(t, err, "invalid YAML data")
+			assert.Check(t, cmp.Contains(doc.Jobs, "test"))
 
 			val := Validate{
 				Context:     ctx,
@@ -353,8 +354,8 @@ func TestResourceClass(t *testing.T) {
 				uri.URI(""),
 				protocol.Position{},
 			)
-			assert.NoError(t, err, "invalid YAML data")
-			assert.Contains(t, doc.Jobs, "test")
+			assert.Check(t, err, "invalid YAML data")
+			assert.Check(t, cmp.Contains(doc.Jobs, "test"))
 
 			val := Validate{
 				APIs:        ValidateAPIs{DockerHubMock{}},
@@ -447,8 +448,8 @@ func TestRetention(t *testing.T) {
 				uri.URI(""),
 				protocol.Position{},
 			)
-			assert.NoError(t, err, "invalid YAML data")
-			assert.Contains(t, doc.Jobs, "test")
+			assert.Check(t, err, "invalid YAML data")
+			assert.Check(t, cmp.Contains(doc.Jobs, "test"))
 
 			val := Validate{
 				APIs:        ValidateAPIs{DockerHubMock{}},
@@ -541,7 +542,7 @@ func TestJobTypeValidation(t *testing.T) {
 				uri.URI(""),
 				protocol.Position{},
 			)
-			assert.NoError(t, err, "invalid YAML data")
+			assert.Check(t, err, "invalid YAML data")
 
 			val := Validate{
 				APIs:        ValidateAPIs{DockerHubMock{}},

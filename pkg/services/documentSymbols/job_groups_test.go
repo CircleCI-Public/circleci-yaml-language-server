@@ -5,16 +5,17 @@ import (
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/testHelpers"
-	"github.com/stretchr/testify/assert"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
+	"gotest.tools/v3/assert"
+	"gotest.tools/v3/assert/cmp"
 )
 
 func parseDoc(t *testing.T, yaml string) parser.YamlDocument {
 	t.Helper()
 	context := testHelpers.GetDefaultLsContext()
 	doc, err := parser.ParseFromContent([]byte(yaml), context, uri.File("test.yml"), protocol.Position{})
-	assert.Nil(t, err)
+	assert.Check(t, err)
 	return doc
 }
 
@@ -42,23 +43,23 @@ job-groups:
 	doc := parseDoc(t, yaml)
 	symbols := resolveJobGroupsSymbols(&doc)
 
-	assert.Len(t, symbols, 1, "should return one top-level Job Groups symbol")
-	assert.Equal(t, "Job Groups", symbols[0].Name)
+	assert.Check(t, cmp.Len(symbols, 1), "should return one top-level Job Groups symbol")
+	assert.Check(t, cmp.Equal("Job Groups", symbols[0].Name))
 
 	children := symbols[0].Children
-	assert.Len(t, children, 1, "should have one job group")
-	assert.Equal(t, "deploy-group", children[0].Name)
+	assert.Check(t, cmp.Len(children, 1), "should have one job group")
+	assert.Check(t, cmp.Equal("deploy-group", children[0].Name))
 
 	jobsChildren := children[0].Children
-	assert.Len(t, jobsChildren, 1, "group should have a Jobs child")
-	assert.Equal(t, "Jobs", jobsChildren[0].Name)
+	assert.Check(t, cmp.Len(jobsChildren, 1), "group should have a Jobs child")
+	assert.Check(t, cmp.Equal("Jobs", jobsChildren[0].Name))
 
 	invocations := jobsChildren[0].Children
-	assert.Len(t, invocations, 2, "Jobs should list both job invocations")
+	assert.Check(t, cmp.Len(invocations, 2), "Jobs should list both job invocations")
 
 	names := []string{invocations[0].Name, invocations[1].Name}
-	assert.Contains(t, names, "build")
-	assert.Contains(t, names, "deploy")
+	assert.Check(t, cmp.Contains(names, "build"))
+	assert.Check(t, cmp.Contains(names, "deploy"))
 }
 
 func TestResolveJobGroupsSymbols_MultipleGroups(t *testing.T) {
@@ -85,12 +86,12 @@ job-groups:
 	doc := parseDoc(t, yaml)
 	symbols := resolveJobGroupsSymbols(&doc)
 
-	assert.Len(t, symbols, 1)
-	assert.Len(t, symbols[0].Children, 2, "should have two job groups")
+	assert.Check(t, cmp.Len(symbols, 1))
+	assert.Check(t, cmp.Len(symbols[0].Children, 2), "should have two job groups")
 
 	groupNames := []string{symbols[0].Children[0].Name, symbols[0].Children[1].Name}
-	assert.Contains(t, groupNames, "group-a")
-	assert.Contains(t, groupNames, "group-b")
+	assert.Check(t, cmp.Contains(groupNames, "group-a"))
+	assert.Check(t, cmp.Contains(groupNames, "group-b"))
 }
 
 func TestResolveJobGroupsSymbols_NoJobGroups(t *testing.T) {
@@ -105,5 +106,5 @@ jobs:
 	doc := parseDoc(t, yaml)
 	symbols := resolveJobGroupsSymbols(&doc)
 
-	assert.Nil(t, symbols, "should return nil when no job-groups exist")
+	assert.Check(t, cmp.Nil(symbols), "should return nil when no job-groups exist")
 }

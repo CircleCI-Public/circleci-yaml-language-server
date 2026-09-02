@@ -8,9 +8,10 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/testHelpers"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
-	"github.com/stretchr/testify/assert"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
+	"gotest.tools/v3/assert"
+	"gotest.tools/v3/assert/cmp"
 )
 
 type ValidateTestCase struct {
@@ -40,7 +41,7 @@ func CreateValidateFromYAML(yaml string) Validate {
 func CompareDiagnostics(t *testing.T, expected, actual *[]protocol.Diagnostic) {
 	sortDiagnostic(expected)
 	sortDiagnostic(actual)
-	assert.Equal(t, expected, actual)
+	assert.Check(t, cmp.DeepEqual(expected, actual))
 }
 
 func CheckYamlErrors(t *testing.T, testCases []ValidateTestCase) {
@@ -61,7 +62,7 @@ func CheckYamlErrors(t *testing.T, testCases []ValidateTestCase) {
 			}
 
 			if tt.Diagnostics == nil {
-				assert.Len(t, diags, 0)
+				assert.Check(t, cmp.Len(diags, 0))
 			} else {
 				CompareDiagnostics(t, &tt.Diagnostics, &diags)
 			}

@@ -8,9 +8,10 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser/validate"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/testHelpers"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
-	"github.com/stretchr/testify/assert"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
+	"gotest.tools/v3/assert"
+	"gotest.tools/v3/assert/cmp"
 )
 
 func TestLocalOrbJob(t *testing.T) {
@@ -30,27 +31,31 @@ orbs:
           - run: echo "Hello << parameter.name >>"`
 	doc := GetDocForTests(t, content, "localorb")
 	jobKey := "localjob"
-	assert.Contains(t, doc.Jobs, jobKey)
+	assert.Check(t, cmp.Contains(doc.Jobs, jobKey))
 	job := doc.Jobs[jobKey]
-	assert.EqualValues(t, job.Range.Start.Line, 5)
+	jobLine := job.Range.Start.Line
+	assert.Check(t, cmp.Equal(jobLine, uint32(5)))
 
 	// Test parameter
 	parameterKey := "name"
-	assert.Contains(t, job.Parameters, parameterKey)
+	assert.Check(t, cmp.Contains(job.Parameters, parameterKey))
 	parameter := job.Parameters[parameterKey]
-	assert.EqualValues(t, parameter.GetRange().Start.Line, 7)
+	parameterLine := parameter.GetRange().Start.Line
+	assert.Check(t, cmp.Equal(parameterLine, uint32(7)))
 
 	// Test docker
-	assert.EqualValues(t, job.Docker.Name, "docker")
-	assert.Len(t, job.Docker.Image, 1)
+	assert.Check(t, cmp.Equal(job.Docker.Name, "docker"))
+	assert.Check(t, cmp.Len(job.Docker.Image, 1))
 	image := job.Docker.Image[0]
-	assert.EqualValues(t, image.ImageRange.Start.Line, 11)
+	imageLine := image.ImageRange.Start.Line
+	assert.Check(t, cmp.Equal(imageLine, uint32(11)))
 
 	// Test step
-	assert.Len(t, job.Steps, 1)
+	assert.Check(t, cmp.Len(job.Steps, 1))
 	step := job.Steps[0]
-	assert.NotNil(t, step)
-	assert.EqualValues(t, step.GetRange().Start.Line, 13)
+	assert.Check(t, step != nil)
+	stepLine := step.GetRange().Start.Line
+	assert.Check(t, cmp.Equal(stepLine, uint32(13)))
 }
 
 func TestLocalOrbJobWithComment(t *testing.T) {
@@ -75,27 +80,31 @@ orbs:
           - run: echo "Hello << parameter.name >>"`
 	doc := GetDocForTests(t, content, "localorb")
 	jobKey := "localjob"
-	assert.Contains(t, doc.Jobs, jobKey)
+	assert.Check(t, cmp.Contains(doc.Jobs, jobKey))
 	job := doc.Jobs[jobKey]
-	assert.EqualValues(t, job.Range.Start.Line, 10)
+	jobLine := job.Range.Start.Line
+	assert.Check(t, cmp.Equal(jobLine, uint32(10)))
 
 	// Test parameter
 	parameterKey := "name"
-	assert.Contains(t, job.Parameters, parameterKey)
+	assert.Check(t, cmp.Contains(job.Parameters, parameterKey))
 	parameter := job.Parameters[parameterKey]
-	assert.EqualValues(t, parameter.GetRange().Start.Line, 12)
+	parameterLine := parameter.GetRange().Start.Line
+	assert.Check(t, cmp.Equal(parameterLine, uint32(12)))
 
 	// Test docker
-	assert.EqualValues(t, job.Docker.Name, "docker")
-	assert.Len(t, job.Docker.Image, 1)
+	assert.Check(t, cmp.Equal(job.Docker.Name, "docker"))
+	assert.Check(t, cmp.Len(job.Docker.Image, 1))
 	image := job.Docker.Image[0]
-	assert.EqualValues(t, image.ImageRange.Start.Line, 16)
+	imageLine := image.ImageRange.Start.Line
+	assert.Check(t, cmp.Equal(imageLine, uint32(16)))
 
 	// Test step
-	assert.Len(t, job.Steps, 1)
+	assert.Check(t, cmp.Len(job.Steps, 1))
 	step := job.Steps[0]
-	assert.NotNil(t, step)
-	assert.EqualValues(t, step.GetRange().Start.Line, 18)
+	assert.Check(t, step != nil)
+	stepLine := step.GetRange().Start.Line
+	assert.Check(t, cmp.Equal(stepLine, uint32(18)))
 }
 
 func TestLocalExecutor(t *testing.T) {
@@ -114,16 +123,18 @@ orbs:
                   type: string`
 	executorKey := "localexecutor"
 	doc := GetDocForTests(t, content, "localorb")
-	assert.Contains(t, doc.Executors, executorKey)
+	assert.Check(t, cmp.Contains(doc.Executors, executorKey))
 	executor := doc.Executors[executorKey]
-	assert.EqualValues(t, executor.GetRange().Start.Line, 5)
+	executorLine := executor.GetRange().Start.Line
+	assert.Check(t, cmp.Equal(executorLine, uint32(5)))
 
 	// Test parameters
 	parameterKey := "tag"
 	parameters := executor.GetParameters()
-	assert.Contains(t, parameters, parameterKey)
+	assert.Check(t, cmp.Contains(parameters, parameterKey))
 	parameter := parameters[parameterKey]
-	assert.EqualValues(t, parameter.GetRange().Start.Line, 9)
+	parameterLine := parameter.GetRange().Start.Line
+	assert.Check(t, cmp.Equal(parameterLine, uint32(9)))
 }
 
 func TestLocalCommand(t *testing.T) {
@@ -141,21 +152,24 @@ orbs:
           - run: echo "Hello << parameter.name >>"`
 	doc := GetDocForTests(t, content, "localorb")
 	commandKey := "localcommand"
-	assert.Contains(t, doc.Commands, commandKey)
+	assert.Check(t, cmp.Contains(doc.Commands, commandKey))
 	command := doc.Commands[commandKey]
-	assert.EqualValues(t, command.Range.Start.Line, 5)
+	commandLine := command.Range.Start.Line
+	assert.Check(t, cmp.Equal(commandLine, uint32(5)))
 
 	// Test parameter
 	parameterKey := "name"
-	assert.Contains(t, command.Parameters, parameterKey)
+	assert.Check(t, cmp.Contains(command.Parameters, parameterKey))
 	parameter := command.Parameters[parameterKey]
-	assert.EqualValues(t, parameter.GetRange().Start.Line, 7)
+	parameterLine := parameter.GetRange().Start.Line
+	assert.Check(t, cmp.Equal(parameterLine, uint32(7)))
 
 	// Test step
-	assert.Len(t, command.Steps, 1)
+	assert.Check(t, cmp.Len(command.Steps, 1))
 	step := command.Steps[0]
-	assert.NotNil(t, step)
-	assert.EqualValues(t, step.GetRange().Start.Line, 11)
+	assert.Check(t, step != nil)
+	stepLine := step.GetRange().Start.Line
+	assert.Check(t, cmp.Equal(stepLine, uint32(11)))
 }
 
 // func TestCompleteLocalOrbFile(t *testing.T) {
@@ -196,9 +210,9 @@ orbs:
 func GetDocForTests(t *testing.T, content string, orbKey string) parser.YamlDocument {
 	context := testHelpers.GetDefaultLsContext()
 	doc, err := parser.ParseFromContent([]byte(content), context, uri.File(""), protocol.Position{})
-	assert.Nil(t, err)
+	assert.Check(t, err)
 	orbInfo, err := doc.GetOrbInfoFromName(orbKey, utils.CreateCache())
-	assert.Nil(t, err)
+	assert.Check(t, err)
 	return doc.FromOrbParsedAttributesToYamlDocument(orbInfo.OrbParsedAttributes)
 }
 
@@ -238,8 +252,8 @@ workflows:
       - local/job`
 	context := testHelpers.GetDefaultLsContext()
 	doc, err := parser.ParseFromContent([]byte(content), context, uri.File(""), protocol.Position{})
-	assert.Nil(t, err)
-	assert.Len(t, *doc.Diagnostics, 0)
+	assert.Check(t, err)
+	assert.Check(t, cmp.Len(*doc.Diagnostics, 0))
 	val := validate.Validate{
 		APIs: validate.ValidateAPIs{
 			DockerHub: dockerhub.NewAPI(),
@@ -256,5 +270,5 @@ workflows:
 			errorDiagnostics = append(errorDiagnostics, d)
 		}
 	}
-	assert.Len(t, errorDiagnostics, 0)
+	assert.Check(t, cmp.Len(errorDiagnostics, 0))
 }

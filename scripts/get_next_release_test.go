@@ -3,7 +3,8 @@ package main
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"gotest.tools/v3/assert"
+	"gotest.tools/v3/assert/cmp"
 )
 
 func TestIncrementVersion(t *testing.T) {
@@ -38,7 +39,7 @@ func TestIncrementVersion(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			value := incrementVersion(tt.input)
-			assert.Equal(t, tt.expected, value)
+			assert.Check(t, cmp.Equal(tt.expected, value))
 		})
 	}
 }

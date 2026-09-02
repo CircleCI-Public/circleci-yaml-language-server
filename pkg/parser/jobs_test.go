@@ -5,7 +5,8 @@ import (
 	"testing"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
-	"github.com/stretchr/testify/assert"
+	"gotest.tools/v3/assert"
+	"gotest.tools/v3/assert/cmp"
 )
 
 type jobsArgs struct {
@@ -166,8 +167,8 @@ func TestYamlDocument_jobExecutors(t *testing.T) {
 		}
 		doc.parseJobs(node)
 
-		assert.Equal(t, "cimg/python:4.3.2", doc.Jobs["job-docker"].Docker.Image[0].Image.FullPath)
-		assert.Equal(t, "xlarge", doc.Jobs["job-docker"].ResourceClass)
+		assert.Check(t, cmp.Equal("cimg/python:4.3.2", doc.Jobs["job-docker"].Docker.Image[0].Image.FullPath))
+		assert.Check(t, cmp.Equal("xlarge", doc.Jobs["job-docker"].ResourceClass))
 	}
 
 	// Machine job executor
@@ -185,8 +186,8 @@ func TestYamlDocument_jobExecutors(t *testing.T) {
 		}
 		doc.parseJobs(node)
 
-		assert.Equal(t, "ubuntu-2204:edge", doc.Jobs["job-machine"].Machine.Image)
-		assert.Equal(t, "large", doc.Jobs["job-machine"].ResourceClass)
+		assert.Check(t, cmp.Equal("ubuntu-2204:edge", doc.Jobs["job-machine"].Machine.Image))
+		assert.Check(t, cmp.Equal("large", doc.Jobs["job-machine"].ResourceClass))
 	}
 
 	// MacOS job executor
@@ -204,7 +205,7 @@ func TestYamlDocument_jobExecutors(t *testing.T) {
 		}
 		doc.parseJobs(node)
 
-		assert.Equal(t, "26.5.0", doc.Jobs["job-macos"].MacOS.Xcode)
-		assert.Equal(t, "m4pro.large", doc.Jobs["job-macos"].ResourceClass)
+		assert.Check(t, cmp.Equal("26.5.0", doc.Jobs["job-macos"].MacOS.Xcode))
+		assert.Check(t, cmp.Equal("m4pro.large", doc.Jobs["job-macos"].ResourceClass))
 	}
 }

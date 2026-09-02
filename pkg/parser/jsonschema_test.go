@@ -7,10 +7,11 @@ import (
 	schema "github.com/CircleCI-Public/circleci-yaml-language-server"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/expect"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/testHelpers"
-	"github.com/stretchr/testify/assert"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 	"gopkg.in/yaml.v3"
+	"gotest.tools/v3/assert"
+	"gotest.tools/v3/assert/cmp"
 )
 
 func Test_HandleYAMLErrors_MappingKeyError(t *testing.T) {
@@ -39,7 +40,7 @@ testFinal:
 
 	actualDiagnostics, err := handleYAMLErrors(err.Error(), content, yamlDocument.RootNode)
 
-	assert.Nil(t, err)
+	assert.Check(t, err)
 
 	expectedDiagnostics := []protocol.Diagnostic{}
 
@@ -61,7 +62,7 @@ test:
 
 	diagnostics, err := handleYAMLErrors(err.Error(), content, yamlDocument.RootNode)
 
-	assert.Nil(t, err)
+	assert.Check(t, err)
 
 	expected := protocol.Diagnostic{
 		Range: protocol.Range{
@@ -312,7 +313,7 @@ jobs:
 					t.Logf("No diagnostics found")
 				}
 
-				assert.NotEmpty(t, diagnostics, "Expected validation errors but got none")
+				assert.Check(t, len(diagnostics) != 0, "Expected validation errors but got none")
 				if tc.expectErrorContains != "" {
 					found := false
 					for _, d := range diagnostics {
@@ -321,12 +322,13 @@ jobs:
 							break
 						}
 					}
-					assert.True(t, found, "Expected error message to contain '%s'", tc.expectErrorContains)
+					assert.Check(t, found, "Expected error message to contain '%s'", tc.expectErrorContains)
 				}
 			} else {
 				// For non-error cases, just check that parsing succeeded
-				diagnostics := yamlDocument.Diagnostics
-				assert.Empty(t, diagnostics, "Expected no errors but got: %v", diagnostics)
+				assert.Assert(t, yamlDocument.Diagnostics != nil)
+				diagnostics := *yamlDocument.Diagnostics
+				assert.Check(t, cmp.Len(diagnostics, 0), "Expected no errors but got: %v", diagnostics)
 			}
 		})
 	}

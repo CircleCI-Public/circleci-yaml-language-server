@@ -6,9 +6,9 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/expect"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
-	"github.com/stretchr/testify/assert"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
+	"gotest.tools/v3/assert"
 )
 
 type ExpDiagInfo struct {
@@ -82,7 +82,7 @@ func (exp ExpDiagTo) Include(context *utils.LsContext, expected protocol.Diagnos
 		context,
 	)
 
-	assert.Nil(exp.info.t, err)
+	assert.Check(exp.info.t, err)
 
 	expect.DiagnosticList(exp.info.t, diagnostics).To.Include(expected)
 }
@@ -97,7 +97,7 @@ func (exp ExpDiagToNot) Include(context *utils.LsContext, expected protocol.Diag
 		context,
 	)
 
-	assert.Nil(exp.info.t, err)
+	assert.Check(exp.info.t, err)
 
 	expect.DiagnosticList(exp.info.t, diagnostics).To.Not.Include(expected)
 }
@@ -108,7 +108,7 @@ func (exp ExpDiagTo) IncludeAll(context *utils.LsContext, expected []protocol.Di
 
 	diagnostics, err := DiagnosticYAML(exp.info.content, utils.CreateCache(), context)
 
-	assert.Nil(exp.info.t, err)
+	assert.Check(exp.info.t, err)
 
 	expect.DiagnosticList(exp.info.t, diagnostics).To.IncludeAll(expected)
 }
@@ -123,7 +123,7 @@ func (exp ExpDiagToNot) IncludeAll(context *utils.LsContext, expected []protocol
 		context,
 	)
 
-	assert.Nil(exp.info.t, err)
+	assert.Check(exp.info.t, err)
 
 	expect.DiagnosticList(exp.info.t, diagnostics).To.Not.IncludeAll(expected)
 }

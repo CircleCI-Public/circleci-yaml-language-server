@@ -5,7 +5,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"gotest.tools/v3/assert"
+	"gotest.tools/v3/assert/cmp"
 )
 
 func lsContextFor(url string) *LsContext {
@@ -64,21 +66,34 @@ func TestOfferingAccessors(t *testing.T) {
 	})
 	ctx := lsContextFor("")
 
-	assert.ElementsMatch(t, MachineImages(ctx, cache), []string{
+	// These accessors gather from maps, so the order they come back in is not
+	// meaningful and the comparison has to be order-insensitive.
+	anyOrder := cmpopts.SortSlices(func(a, b string) bool { return a < b })
+
+	images := MachineImages(ctx, cache)
+	assert.Check(t, cmp.DeepEqual(images, []string{
 		"ubuntu-2404:current", "windows-server-2022-gui:current", "linux-cuda-12:current",
-	})
-	assert.ElementsMatch(t, MachineResourceClasses(ctx, cache), []string{
+	}, anyOrder))
+
+	machineClasses := MachineResourceClasses(ctx, cache)
+	assert.Check(t, cmp.DeepEqual(machineClasses, []string{
 		"large", "medium", "medium.gen3", "gpu.nvidia.medium", "windows.medium",
-	})
-	assert.ElementsMatch(t, XcodeVersions(ctx, cache), []string{"16.4.0"})
-	assert.ElementsMatch(t, MacOSResourceClasses(ctx, cache), []string{"m4pro.medium"})
+	}, anyOrder))
+
+	xcodeVersions := XcodeVersions(ctx, cache)
+	assert.Check(t, cmp.DeepEqual(xcodeVersions, []string{"16.4.0"}, anyOrder))
+
+	macOSClasses := MacOSResourceClasses(ctx, cache)
+	assert.Check(t, cmp.DeepEqual(macOSClasses, []string{"m4pro.medium"}, anyOrder))
+
 	// Docker excludes machine-only .gen/.multi/gpu variants from offerings, and
 	// includes Docker-only sizes (small, medium+, and the .gen2 family).
-	assert.ElementsMatch(t, DockerResourceClasses(ctx, cache), []string{
+	dockerClasses := DockerResourceClasses(ctx, cache)
+	assert.Check(t, cmp.DeepEqual(dockerClasses, []string{
 		"large", "medium", "medium+", "small",
 		"small.gen2", "medium.gen2", "medium+.gen2", "large.gen2",
 		"xlarge.gen2", "2xlarge.gen2", "2xlarge+.gen2",
-	})
+	}, anyOrder))
 }
 
 func TestMachinePairs_NilWhenUnavailable(t *testing.T) {

@@ -11,9 +11,10 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/services/definition"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/testHelpers"
 	utils "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
-	"github.com/stretchr/testify/assert"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
+	"gotest.tools/v3/assert"
+	"gotest.tools/v3/assert/cmp"
 )
 
 func TestDefinition(t *testing.T) {
@@ -448,7 +449,7 @@ orbs:
 	context := testHelpers.GetDefaultLsContext()
 
 	doc, err := parser.ParseFromContent([]byte(yaml), context, fileURI, protocol.Position{})
-	assert.Nil(t, err)
+	assert.Check(t, err)
 
 	def := definition.DefinitionStruct{Cache: utils.CreateCache(), Params: protocol.DefinitionParams{
 		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
@@ -463,8 +464,8 @@ orbs:
 		},
 	}, Doc: doc}
 	locations, err := def.Definition()
-	assert.Nil(t, err)
-	assert.Equal(t, locations, []protocol.Location{
+	assert.Check(t, err)
+	assert.Check(t, cmp.DeepEqual(locations, []protocol.Location{
 		{
 			URI: fileURI,
 			Range: protocol.Range{
@@ -472,7 +473,7 @@ orbs:
 				End:   protocol.Position{Line: 7, Character: 45},
 			},
 		},
-	})
+	}))
 }
 
 func TestDefinitionForLocalOrbsExecutor(t *testing.T) {
@@ -493,7 +494,7 @@ orbs:
 	context := testHelpers.GetDefaultLsContext()
 
 	doc, err := parser.ParseFromContent([]byte(yaml), context, fileURI, protocol.Position{})
-	assert.Nil(t, err)
+	assert.Check(t, err)
 
 	def := definition.DefinitionStruct{Cache: utils.CreateCache(), Params: protocol.DefinitionParams{
 		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
@@ -508,8 +509,8 @@ orbs:
 		},
 	}, Doc: doc}
 	locations, err := def.Definition()
-	assert.Nil(t, err)
-	assert.Equal(t, locations, []protocol.Location{
+	assert.Check(t, err)
+	assert.Check(t, cmp.DeepEqual(locations, []protocol.Location{
 		{
 			URI: fileURI,
 			Range: protocol.Range{
@@ -517,7 +518,7 @@ orbs:
 				End:   protocol.Position{Line: 7, Character: 36},
 			},
 		},
-	})
+	}))
 }
 
 // Tests for goto-definition on job/job-group invocations in workflows and job-groups.
@@ -592,7 +593,7 @@ func parseJobGroupDefinitionFixture(t *testing.T) (parser.YamlDocument, protocol
 	fileURI := uri.File("some-uri")
 	context := testHelpers.GetDefaultLsContext()
 	doc, err := parser.ParseFromContent([]byte(jobGroupDefinitionFixture), context, fileURI, protocol.Position{})
-	assert.Nil(t, err)
+	assert.Check(t, err)
 	return doc, fileURI
 }
 
@@ -605,7 +606,7 @@ func definitionAt(t *testing.T, doc parser.YamlDocument, fileURI protocol.URI, l
 		},
 	}, Doc: doc}
 	locations, err := def.Definition()
-	assert.Nil(t, err)
+	assert.Check(t, err)
 	return locations
 }
 
@@ -615,16 +616,16 @@ func TestDefinition_WorkflowJobName_GoesToJobDef(t *testing.T) {
 	doc, fileURI := parseJobGroupDefinitionFixture(t)
 	// Goto def on "build" on line 26 in workflow
 	locations := definitionAt(t, doc, fileURI, 26, 8)
-	assert.NotEmpty(t, locations)
-	assert.Equal(t, uint32(3), locations[0].Range.Start.Line, "should jump to jobs.build definition")
+	assert.Check(t, len(locations) != 0)
+	assert.Check(t, cmp.Equal(uint32(3), locations[0].Range.Start.Line), "should jump to jobs.build definition")
 }
 
 func TestDefinition_JobGroupJobName_GoesToJobDef(t *testing.T) {
 	doc, fileURI := parseJobGroupDefinitionFixture(t)
 	// Goto def on "build" on line 17 in job-group
 	locations := definitionAt(t, doc, fileURI, 17, 8)
-	assert.NotEmpty(t, locations)
-	assert.Equal(t, uint32(3), locations[0].Range.Start.Line, "should jump to jobs.build definition")
+	assert.Check(t, len(locations) != 0)
+	assert.Check(t, cmp.Equal(uint32(3), locations[0].Range.Start.Line), "should jump to jobs.build definition")
 }
 
 // Pair 2: requires entry → jumps to job-invocation in same block
@@ -633,16 +634,16 @@ func TestDefinition_WorkflowRequires_GoesToJobInvocation(t *testing.T) {
 	doc, fileURI := parseJobGroupDefinitionFixture(t)
 	// Goto def on "build" in requires on line 29 in workflow
 	locations := definitionAt(t, doc, fileURI, 29, 14)
-	assert.NotEmpty(t, locations)
-	assert.Equal(t, uint32(26), locations[0].Range.Start.Line, "should jump to the 'build' job-invocation in the workflow")
+	assert.Check(t, len(locations) != 0)
+	assert.Check(t, cmp.Equal(uint32(26), locations[0].Range.Start.Line), "should jump to the 'build' job-invocation in the workflow")
 }
 
 func TestDefinition_JobGroupRequires_GoesToJobInvocation(t *testing.T) {
 	doc, fileURI := parseJobGroupDefinitionFixture(t)
 	// Goto def on "build" in requires on line 20 in job-group
 	locations := definitionAt(t, doc, fileURI, 20, 14)
-	assert.NotEmpty(t, locations)
-	assert.Equal(t, uint32(17), locations[0].Range.Start.Line, "should jump to the 'build' job-invocation in the job-group")
+	assert.Check(t, len(locations) != 0)
+	assert.Check(t, cmp.Equal(uint32(17), locations[0].Range.Start.Line), "should jump to the 'build' job-invocation in the job-group")
 }
 
 // Unique to job-groups: job-group name in a workflow → jumps to job-group definition
@@ -651,8 +652,8 @@ func TestDefinition_WorkflowJobGroupName_GoesToJobGroupDef(t *testing.T) {
 	doc, fileURI := parseJobGroupDefinitionFixture(t)
 	// Goto def on "my-group" on line 25 in workflow
 	locations := definitionAt(t, doc, fileURI, 25, 8)
-	assert.NotEmpty(t, locations)
-	assert.Equal(t, uint32(15), locations[0].Range.Start.Line, "should jump to job-groups.my-group definition")
+	assert.Check(t, len(locations) != 0)
+	assert.Check(t, cmp.Equal(uint32(15), locations[0].Range.Start.Line), "should jump to job-groups.my-group definition")
 }
 
 // Tests for goto-definition when a job invocation uses name: to rename itself.
@@ -710,10 +711,10 @@ func TestDefinition_WorkflowRequiresRenamedJob_GoesToJobInvocation(t *testing.T)
 	fileURI := uri.File("some-uri")
 	context := testHelpers.GetDefaultLsContext()
 	doc, err := parser.ParseFromContent([]byte(renamedJobDefinitionFixture), context, fileURI, protocol.Position{})
-	assert.Nil(t, err)
+	assert.Check(t, err)
 
 	// Goto def on "build-renamed" in requires on line 21
 	locations := definitionAt(t, doc, fileURI, 21, 14)
-	assert.NotEmpty(t, locations, "should resolve goto-def for renamed job in requires")
-	assert.Equal(t, uint32(17), locations[0].Range.Start.Line, "should jump to the 'build' job-invocation (which has name: build-renamed)")
+	assert.Check(t, len(locations) != 0, "should resolve goto-def for renamed job in requires")
+	assert.Check(t, cmp.Equal(uint32(17), locations[0].Range.Start.Line), "should jump to the 'build' job-invocation (which has name: build-renamed)")
 }
