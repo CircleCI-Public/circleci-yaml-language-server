@@ -372,7 +372,7 @@ jobs:
           name: Lint PR title
           command: gh pr view --json title --jq .title | npx commitlint
 
-  Prepare release:
+  Prepare next release PR:
     docker:
       - image: cimg/node:lts
     steps:
@@ -502,7 +502,7 @@ jobs:
           project: "${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}"
 
 workflows:
-  Release PR:
+  Build and prerelease:
     when: &release-conditions
       or:
         - equal:
@@ -511,14 +511,6 @@ workflows:
         - matches:
             value: << pipeline.git.branch >>
             pattern: ^hotfix.*$
-    jobs:
-      - Prepare release:
-          name: Create/update release PR
-          context:
-            - devex-release
-
-  Build and prerelease:
-    when: *release-conditions
     jobs:
       - Unit Tests
       - Security Scan release:
@@ -635,6 +627,12 @@ workflows:
       - Upload artifacts:
           requires:
             - Github Release
+          context:
+            - devex-release
+      - Prepare next release PR:
+          name: Create/update release PR
+          requires:
+            - Upload artifacts
           context:
             - devex-release
 
