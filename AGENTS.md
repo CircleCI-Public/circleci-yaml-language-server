@@ -1,6 +1,6 @@
 # YAML language server
 
-This repository contains an MCP implementation for CircleCI.
+This repository contains a Language Server Protocol (LSP) implementation for CircleCI's configuration YAML.
 
 # Testing
 
