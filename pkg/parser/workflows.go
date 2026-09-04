@@ -95,6 +95,11 @@ func (doc *YamlDocument) parseSingleWorkflow(workflowNode *sitter.Node) ast.Work
 		case "max_auto_reruns":
 			res.MaxAutoRerunsRange = doc.NodeToRange(valueNode)
 			rawText := doc.GetNodeText(valueNode)
+			// HasMaxAutoReruns means "present with a literal value", not merely
+			// "key present": it gates the 1-5 range check in validateSingleWorkflow.
+			// A parameter expression resolves at compile time, so leave it false to
+			// keep the range check from firing on the unresolved value. Undefined
+			// parameter names are still reported by CheckIfParamsExist.
 			if !utils.CheckIfOnlyParamUsed(rawText) {
 				res.HasMaxAutoReruns = true
 				if maxAutoReruns, err := strconv.Atoi(rawText); err == nil {

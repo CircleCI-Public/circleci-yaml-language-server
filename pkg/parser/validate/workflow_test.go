@@ -203,6 +203,40 @@ workflows:
 			OnlyErrors:  true,
 			Diagnostics: []protocol.Diagnostic{},
 		},
+		{
+			// Workflows have no job/command parameter scope, so a plain
+			// `<< parameters.x >>` here is exempted from the range check but still
+			// reported by CheckIfParamsExist -- the accurate error, rather than a
+			// misleading "Must be greater than or equal to 1".
+			Name: "max_auto_reruns with a job-scoped parameter expression reports the undefined parameter",
+			YamlContent: `version: 2.1
+
+jobs:
+  test-job:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "test"
+
+workflows:
+  test-workflow:
+    max_auto_reruns: << parameters.retries >>
+    jobs:
+      - test-job`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				{
+					Range: protocol.Range{
+						Start: protocol.Position{Line: 11, Character: 21},
+						End:   protocol.Position{Line: 11, Character: 45},
+					},
+					Severity: protocol.DiagnosticSeverityError,
+					Source:   "cci-language-server",
+					Message:  "Parameter retries is not defined",
+					Data:     []protocol.CodeAction{},
+				},
+			},
+		},
 	}
 
 	CheckYamlErrors(t, testCases)

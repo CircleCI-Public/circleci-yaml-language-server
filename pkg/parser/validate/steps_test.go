@@ -133,6 +133,106 @@ workflows:
 			OnlyErrors:  true,
 			Diagnostics: []protocol.Diagnostic{},
 		},
+		{
+			Name: "Invalid usage of max_auto_reruns with out-of-range integer",
+			YamlContent: `version: 2.1
+
+jobs:
+  test-job:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run:
+          name: "Task with too many reruns"
+          command: "echo test"
+          max_auto_reruns: 10
+
+workflows:
+  test-workflow:
+    jobs:
+      - test-job
+`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				{
+					Severity: protocol.DiagnosticSeverityError,
+					Range: protocol.Range{
+						Start: protocol.Position{Line: 7, Character: 8},
+						End:   protocol.Position{Line: 7, Character: 11},
+					},
+					Message: "max_auto_reruns must be between 1 and 5",
+				},
+			},
+		},
+		{
+			Name: "Invalid usage of max_auto_reruns with a non-numeric string",
+			YamlContent: `version: 2.1
+
+jobs:
+  test-job:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run:
+          name: "Task with garbage reruns"
+          command: "echo test"
+          max_auto_reruns: "garbage"
+
+workflows:
+  test-workflow:
+    jobs:
+      - test-job
+`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				{
+					Severity: protocol.DiagnosticSeverityError,
+					Range: protocol.Range{
+						Start: protocol.Position{Line: 7, Character: 8},
+						End:   protocol.Position{Line: 7, Character: 11},
+					},
+					Message: "max_auto_reruns must be between 1 and 5",
+				},
+			},
+		},
+		{
+			// Guards the CheckIfOnlyParamUsed exemption: a parameter expression
+			// embedded in a larger string is not deferred to compile time, so the
+			// range check must still fire.
+			Name: "Invalid usage of max_auto_reruns with a partial parameter expression",
+			YamlContent: `version: 2.1
+
+jobs:
+  test-job:
+    docker:
+      - image: cimg/base:stable
+    parameters:
+      retries:
+        type: integer
+        default: 3
+    steps:
+      - run:
+          name: "Task with a partially interpolated rerun count"
+          command: "echo test"
+          max_auto_reruns: "<< parameters.retries >> 7"
+
+workflows:
+  test-workflow:
+    jobs:
+      - test-job
+`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				{
+					Severity: protocol.DiagnosticSeverityError,
+					Range: protocol.Range{
+						Start: protocol.Position{Line: 11, Character: 8},
+						End:   protocol.Position{Line: 11, Character: 11},
+					},
+					Message: "max_auto_reruns must be between 1 and 5",
+				},
+			},
+		},
 	}
 
 	CheckYamlErrors(t, testCases)
