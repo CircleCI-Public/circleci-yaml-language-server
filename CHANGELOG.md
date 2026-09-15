@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [0.38.1](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.38.0...0.38.1) (2026-09-15)
+
+
+### Bug Fixes
+
+* skip orb upgrade diagnostics for partial pins (PIPE-9822) ([#467](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/467)) ([611b5a7](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/611b5a78c8df93255ec2569a482ee246665819d7))
+
 ## [0.38.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.37.1...0.38.0) (2026-09-02)
 
 
