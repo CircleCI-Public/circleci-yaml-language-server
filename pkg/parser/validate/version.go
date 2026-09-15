@@ -1,9 +1,28 @@
 package validate
 
 import (
+	"strings"
+
 	"go.lsp.dev/protocol"
 	"golang.org/x/mod/semver"
 )
+
+// isExactOrbVersionPin reports whether version is a fully specified
+// major.minor.patch pin (optional prerelease/build metadata allowed).
+// Partial pins such as "1" or "1.2" already track the latest compatible
+// release, so upgrade diagnostics must not treat them as 1.0.0 / 1.2.0.
+func isExactOrbVersionPin(version string) bool {
+	if !semver.IsValid("v" + version) {
+		return false
+	}
+
+	core := version
+	if i := strings.IndexAny(core, "-+"); i >= 0 {
+		core = core[:i]
+	}
+
+	return strings.Count(core, ".") == 2
+}
 
 type InfoVersions struct {
 	LatestVersion      string

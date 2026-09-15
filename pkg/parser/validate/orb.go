@@ -78,9 +78,10 @@ func (val Validate) validateSingleOrb(orb ast.Orb) {
 		return
 	}
 
-	// Only check for updates if the orb version
-	// is a valid semver
-	if semver.IsValid("v" + orb.Url.Version) {
+	// Only check for updates on exact major.minor.patch pins.
+	// @N and @N.M already track the latest compatible release; comparing
+	// the pin string to a full semver treats "0" as 0.0.0 (PIPE-9822).
+	if isExactOrbVersionPin(orb.Url.Version) {
 		message, severity := DiagnosticVersion(
 			orbVersion.RemoteInfo.Version,
 			InfoVersions{
@@ -111,6 +112,10 @@ type OrbVersionCodeActionCreator struct {
 }
 
 func (val Validate) createCodeActions(orb ast.Orb, cachedOrb ast.OrbInfo) []protocol.CodeAction {
+	if !isExactOrbVersionPin(orb.Url.Version) {
+		return []protocol.CodeAction{}
+	}
+
 	res := []protocol.CodeAction{}
 	versions := []OrbVersionCodeActionCreator{
 		{

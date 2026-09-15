@@ -83,8 +83,68 @@ workflows:
 		assert.Check(t, cmp.DeepEqual(messages, []string{}))
 	})
 
-	// This is the payoff from fixing orb version listing: before, the version
-	// list never arrived, so an out-of-date orb was never reported.
+	// @N and @N.M already mean "latest compatible in that range". Comparing
+	// the pin string to a published x.y.z treats "0" as 0.0.0 (PIPE-9822).
+	t.Run("does not warn that a major-only pin is out of date", func(t *testing.T) {
+		isolateOrbFSCache(t)
+
+		fake := fakes.NewCircleCI(t)
+		fake.AddNamespace("ns-acme", "acme")
+		fake.AddOrbPackage("orb-major", "ns-acme", "acme", "major-pin", false, true)
+		fake.AddOrbVersion("ver-major-1", "orb-major", "acme/major-pin", "0.1.11", orbSource, "")
+		fake.AddOrbVersion("ver-major-2", "orb-major", "acme/major-pin", "1.2.0", orbSource, "")
+
+		diagnostics := orbDiagnostics(t, fake, `version: 2.1
+
+orbs:
+  thing: acme/major-pin@0
+
+jobs:
+  build:
+    executor: thing/default
+    steps:
+      - thing/greet
+
+workflows:
+  main:
+    jobs:
+      - build
+`)
+
+		messages := diagnosticMessages(&diagnostics)
+		assert.Check(t, cmp.DeepEqual(messages, []string{}))
+	})
+
+	t.Run("does not warn that a major.minor pin is out of date", func(t *testing.T) {
+		isolateOrbFSCache(t)
+
+		fake := fakes.NewCircleCI(t)
+		fake.AddNamespace("ns-acme", "acme")
+		fake.AddOrbPackage("orb-minmax", "ns-acme", "acme", "minmax-pin", false, true)
+		fake.AddOrbVersion("ver-minmax-1", "orb-minmax", "acme/minmax-pin", "1.2.0", orbSource, "")
+		fake.AddOrbVersion("ver-minmax-2", "orb-minmax", "acme/minmax-pin", "1.2.3", orbSource, "")
+		fake.AddOrbVersion("ver-minmax-3", "orb-minmax", "acme/minmax-pin", "1.3.0", orbSource, "")
+
+		diagnostics := orbDiagnostics(t, fake, `version: 2.1
+
+orbs:
+  thing: acme/minmax-pin@1.2
+
+jobs:
+  build:
+    executor: thing/default
+    steps:
+      - thing/greet
+
+workflows:
+  main:
+    jobs:
+      - build
+`)
+
+		messages := diagnosticMessages(&diagnostics)
+		assert.Check(t, cmp.DeepEqual(messages, []string{}))
+	})
 	t.Run("reports a newer version of an out-of-date orb", func(t *testing.T) {
 		isolateOrbFSCache(t)
 
