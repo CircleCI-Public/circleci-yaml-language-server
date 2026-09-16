@@ -78,12 +78,12 @@ func (val Validate) validateSingleOrb(orb ast.Orb) {
 		return
 	}
 
-	// Only check for updates on exact major.minor.patch pins.
-	// @N and @N.M already track the latest compatible release; comparing
-	// the pin string to a full semver treats "0" as 0.0.0 (PIPE-9822).
-	if isExactOrbVersionPin(orb.Url.Version) {
+	// Compare the pin as written. Partial pins (@N, @N.M) are prefix
+	// ranges: DiagnosticVersion only flags components the pin specifies
+	// (PIPE-9822), so @5 is not treated as 5.0.0.
+	if semver.IsValid("v" + orb.Url.Version) {
 		message, severity := DiagnosticVersion(
-			orbVersion.RemoteInfo.Version,
+			orb.Url.Version,
 			InfoVersions{
 				LatestVersion:      orbVersion.RemoteInfo.LatestVersion,
 				LatestMinorVersion: orbVersion.RemoteInfo.LatestMinorVersion,
