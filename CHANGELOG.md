@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## [0.39.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.38.1...0.39.0) (2026-09-18)
+
+
+### Features
+
+* build arm64 Windows versions ([#471](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/471)) ([88dde1f](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/88dde1ff79e1d8774c0d1890f84ac0b41b4f0b49))
+
+
+### Bug Fixes
+
+* restore major/minor orb upgrade hints for partial pins (PIPE-9822) ([#469](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/469)) ([78e2d3d](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/78e2d3d511f78bd1fb09eb3685bad1289d7ab9b2))
+
 ## [0.38.1](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.38.0...0.38.1) (2026-09-15)
 
 
