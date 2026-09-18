@@ -49,8 +49,11 @@ export class LSP {
         }-lsp`;
 
       case "win32":
-        if (os.arch() == "x64") {
-          return "windows-amd64-lsp";
+        switch (os.arch()) {
+          case "x64":
+            return "windows-amd64-lsp";
+          case "arm64":
+            return "windows-arm64-lsp";
         }
     }
   }
