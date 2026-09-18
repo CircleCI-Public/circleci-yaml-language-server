@@ -83,16 +83,16 @@ workflows:
 		assert.Check(t, cmp.DeepEqual(messages, []string{}))
 	})
 
-	// @N and @N.M already mean "latest compatible in that range". Comparing
-	// the pin string to a published x.y.z treats "0" as 0.0.0 (PIPE-9822).
-	t.Run("does not warn that a major-only pin is out of date", func(t *testing.T) {
+	// @N and @N.M are prefix ranges. Comparing only as deep as the pin
+	// means @0 is not 0.0.0, but @6 still notices @7 (PIPE-9822).
+	t.Run("does not warn that a major-only pin is behind on patch or minor", func(t *testing.T) {
 		isolateOrbFSCache(t)
 
 		fake := fakes.NewCircleCI(t)
 		fake.AddNamespace("ns-acme", "acme")
 		fake.AddOrbPackage("orb-major", "ns-acme", "acme", "major-pin", false, true)
 		fake.AddOrbVersion("ver-major-1", "orb-major", "acme/major-pin", "0.1.11", orbSource, "")
-		fake.AddOrbVersion("ver-major-2", "orb-major", "acme/major-pin", "1.2.0", orbSource, "")
+		fake.AddOrbVersion("ver-major-2", "orb-major", "acme/major-pin", "0.2.0", orbSource, "")
 
 		diagnostics := orbDiagnostics(t, fake, `version: 2.1
 
@@ -115,20 +115,19 @@ workflows:
 		assert.Check(t, cmp.DeepEqual(messages, []string{}))
 	})
 
-	t.Run("does not warn that a major.minor pin is out of date", func(t *testing.T) {
+	t.Run("reports a newer major for a major-only pin", func(t *testing.T) {
 		isolateOrbFSCache(t)
 
 		fake := fakes.NewCircleCI(t)
 		fake.AddNamespace("ns-acme", "acme")
-		fake.AddOrbPackage("orb-minmax", "ns-acme", "acme", "minmax-pin", false, true)
-		fake.AddOrbVersion("ver-minmax-1", "orb-minmax", "acme/minmax-pin", "1.2.0", orbSource, "")
-		fake.AddOrbVersion("ver-minmax-2", "orb-minmax", "acme/minmax-pin", "1.2.3", orbSource, "")
-		fake.AddOrbVersion("ver-minmax-3", "orb-minmax", "acme/minmax-pin", "1.3.0", orbSource, "")
+		fake.AddOrbPackage("orb-stale-major", "ns-acme", "acme", "stale-major", false, true)
+		fake.AddOrbVersion("ver-stale-major-1", "orb-stale-major", "acme/stale-major", "1.9.0", orbSource, "")
+		fake.AddOrbVersion("ver-stale-major-2", "orb-stale-major", "acme/stale-major", "2.0.0", orbSource, "")
 
 		diagnostics := orbDiagnostics(t, fake, `version: 2.1
 
 orbs:
-  thing: acme/minmax-pin@1.2
+  thing: acme/stale-major@1
 
 jobs:
   build:
@@ -142,8 +141,43 @@ workflows:
       - build
 `)
 
-		messages := diagnosticMessages(&diagnostics)
-		assert.Check(t, cmp.DeepEqual(messages, []string{}))
+		assert.Assert(t, cmp.Len(diagnostics, 1))
+		assert.Check(t, cmp.Contains(diagnostics[0].Message, "newer major"))
+		assert.Check(t, cmp.Contains(diagnostics[0].Message, "2.0.0"))
+		assert.Check(t, cmp.Equal(diagnostics[0].Severity, protocol.DiagnosticSeverityInformation))
+	})
+
+	t.Run("reports a newer minor for a major.minor pin", func(t *testing.T) {
+		isolateOrbFSCache(t)
+
+		fake := fakes.NewCircleCI(t)
+		fake.AddNamespace("ns-acme", "acme")
+		fake.AddOrbPackage("orb-stale-minor", "ns-acme", "acme", "stale-minor", false, true)
+		fake.AddOrbVersion("ver-stale-minor-1", "orb-stale-minor", "acme/stale-minor", "1.2.0", orbSource, "")
+		fake.AddOrbVersion("ver-stale-minor-2", "orb-stale-minor", "acme/stale-minor", "1.2.3", orbSource, "")
+		fake.AddOrbVersion("ver-stale-minor-3", "orb-stale-minor", "acme/stale-minor", "1.3.0", orbSource, "")
+
+		diagnostics := orbDiagnostics(t, fake, `version: 2.1
+
+orbs:
+  thing: acme/stale-minor@1.2
+
+jobs:
+  build:
+    executor: thing/default
+    steps:
+      - thing/greet
+
+workflows:
+  main:
+    jobs:
+      - build
+`)
+
+		assert.Assert(t, cmp.Len(diagnostics, 1))
+		assert.Check(t, cmp.Contains(diagnostics[0].Message, "newer minor"))
+		assert.Check(t, cmp.Contains(diagnostics[0].Message, "1.3.0"))
+		assert.Check(t, cmp.Equal(diagnostics[0].Severity, protocol.DiagnosticSeverityInformation))
 	})
 	t.Run("reports a newer version of an out-of-date orb", func(t *testing.T) {
 		isolateOrbFSCache(t)

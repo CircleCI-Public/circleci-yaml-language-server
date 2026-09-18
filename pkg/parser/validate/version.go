@@ -7,21 +7,26 @@ import (
 	"golang.org/x/mod/semver"
 )
 
+// semverCore strips prerelease and build metadata so "1.2.3-rc.1+build"
+// compares as "1.2.3".
+func semverCore(version string) string {
+	core := version
+	if i := strings.IndexAny(core, "-+"); i >= 0 {
+		core = core[:i]
+	}
+	return core
+}
+
 // isExactOrbVersionPin reports whether version is a fully specified
 // major.minor.patch pin (optional prerelease/build metadata allowed).
 // Partial pins such as "1" or "1.2" already track the latest compatible
-// release, so upgrade diagnostics must not treat them as 1.0.0 / 1.2.0.
+// release; code actions must not rewrite them to an exact x.y.z.
 func isExactOrbVersionPin(version string) bool {
 	if !semver.IsValid("v" + version) {
 		return false
 	}
 
-	core := version
-	if i := strings.IndexAny(core, "-+"); i >= 0 {
-		core = core[:i]
-	}
-
-	return strings.Count(core, ".") == 2
+	return strings.Count(semverCore(version), ".") == 2
 }
 
 type InfoVersions struct {
@@ -30,9 +35,47 @@ type InfoVersions struct {
 	LatestPatchVersion string
 }
 
+// outdatedComponent reports whether latest is newer than pin in a component
+// the pin actually specifies.
+//
+// CircleCI orb pins are prefix ranges:
+//
+//	"1"     tracks any 1.y.z
+//	"1.2"   tracks any 1.2.z
+//	"1.2.3" is exact
+//
+// Comparison walks major → minor → patch, but only as deep as the pin.
+// Differences in unspecified components are in-range and return "".
+// A shorter pin that matches the corresponding prefix of latest is current.
+func outdatedComponent(pin, latest string) string {
+	pinV := "v" + semverCore(pin)
+	latestV := "v" + semverCore(latest)
+	if !semver.IsValid(pinV) || !semver.IsValid(latestV) {
+		return ""
+	}
+
+	levels := []struct {
+		name  string
+		trunc func(string) string
+	}{
+		{"major", semver.Major},
+		{"minor", semver.MajorMinor},
+		{"patch", func(v string) string { return v }},
+	}
+
+	depth := strings.Count(semverCore(pin), ".")
+	for i := 0; i <= depth && i < len(levels); i++ {
+		if semver.Compare(levels[i].trunc(pinV), levels[i].trunc(latestV)) < 0 {
+			return levels[i].name
+		}
+	}
+
+	return ""
+}
+
 /**
  * Calculate diagnostic information about a package version.
- *    version: Version of the package to diagnostic
+ *    version: Version of the package to diagnostic (the pin as written)
  *    infoVersions: Several information about the given package
  */
 func DiagnosticVersion(version string, infoVersions InfoVersions) (string, protocol.DiagnosticSeverity) {
@@ -44,7 +87,7 @@ func DiagnosticVersion(version string, infoVersions InfoVersions) (string, proto
 	}
 
 	// Displaying a warning if a patched version exists
-	if infoVersions.LatestPatchVersion != version {
+	if outdatedComponent(version, infoVersions.LatestPatchVersion) == "patch" {
 		text := "A newer patched version exists.\n"
 		text += "- Current: " + version + "\n"
 
@@ -62,7 +105,7 @@ func DiagnosticVersion(version string, infoVersions InfoVersions) (string, proto
 	}
 
 	// Displaying an info if a new minor exists
-	if infoVersions.LatestMinorVersion != version {
+	if outdatedComponent(version, infoVersions.LatestMinorVersion) == "minor" {
 		text := "A newer minor version exists.\n"
 		text += "- Current: " + version + "\n"
 		if infoVersions.LatestVersion != infoVersions.LatestMinorVersion {
@@ -74,7 +117,7 @@ func DiagnosticVersion(version string, infoVersions InfoVersions) (string, proto
 	}
 
 	// Displaying an info if a new major exists
-	if infoVersions.LatestVersion != version {
+	if outdatedComponent(version, infoVersions.LatestVersion) == "major" {
 		text := "A newer major version exists.\n"
 		text += "- Current: " + version + "\n"
 		text += "- Latest:  " + infoVersions.LatestVersion
