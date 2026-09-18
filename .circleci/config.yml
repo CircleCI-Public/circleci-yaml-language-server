@@ -277,6 +277,15 @@ jobs:
             - project/bin
 
   Build Windows:
+    parameters:
+      arch:
+        type: string
+        description: The GOARCH to build for
+      zig_target:
+        type: string
+        description: |
+          The zig cross-compilation target matching << parameters.arch >>, used
+          as the cgo compiler for the tree-sitter bindings.
     executor: go-executor
     steps:
       - attach_workspace:
@@ -289,11 +298,11 @@ jobs:
             export LDFLAGS=$(~/project/scripts/ldflags.sh)
             export CGO_ENABLED=1
             export GOOS=windows
-            export GOARCH=amd64
-            export CC='zig cc -target x86_64-windows'
-            export CXX='zig c++ -target x86_64-windows'
+            export GOARCH=<< parameters.arch >>
+            export CC='zig cc -target << parameters.zig_target >>'
+            export CXX='zig c++ -target << parameters.zig_target >>'
             export PATH="$(pwd)/zig-linux-x86_64-0.9.1:$PATH"
-            sh -c "go build $LDFLAGS -o ~/project/bin/windows-amd64-lsp.exe ./cmd/start_server/start_server.go"
+            sh -c "go build $LDFLAGS -o ~/project/bin/windows-<< parameters.arch >>-lsp.exe ./cmd/start_server/start_server.go"
       - store_artifacts:
           path: ~/project/bin
       - persist_to_workspace:
@@ -545,6 +554,15 @@ workflows:
           requires:
             - Create version file
       - Build Windows:
+          name: Build Windows x86_64
+          arch: amd64
+          zig_target: x86_64-windows
+          requires:
+            - Create version file
+      - Build Windows:
+          name: Build Windows arm64
+          arch: arm64
+          zig_target: aarch64-windows
           requires:
             - Create version file
       - Build VSIX:
@@ -553,7 +571,8 @@ workflows:
             - Build Linux arm64
             - Build macOS x86_64
             - Build macOS arm64
-            - Build Windows
+            - Build Windows x86_64
+            - Build Windows arm64
             - Copy JSON schema
       - Pre-Release:
           requires:
@@ -563,7 +582,8 @@ workflows:
             - Build Linux arm64
             - Build macOS x86_64
             - Build macOS arm64
-            - Build Windows
+            - Build Windows x86_64
+            - Build Windows arm64
             - Copy JSON schema
           context:
             - devex-release
@@ -602,6 +622,15 @@ workflows:
           requires:
             - Create version file
       - Build Windows:
+          name: Build Windows x86_64
+          arch: amd64
+          zig_target: x86_64-windows
+          requires:
+            - Create version file
+      - Build Windows:
+          name: Build Windows arm64
+          arch: arm64
+          zig_target: aarch64-windows
           requires:
             - Create version file
       - Build VSIX:
@@ -610,7 +639,8 @@ workflows:
             - Build Linux arm64
             - Build macOS x86_64
             - Build macOS arm64
-            - Build Windows
+            - Build Windows x86_64
+            - Build Windows arm64
             - Copy JSON schema
       - Github Release:
           requires:
@@ -620,7 +650,8 @@ workflows:
             - Build Linux arm64
             - Build macOS x86_64
             - Build macOS arm64
-            - Build Windows
+            - Build Windows x86_64
+            - Build Windows arm64
             - Copy JSON schema
           context:
             - devex-release
