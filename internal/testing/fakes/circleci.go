@@ -1,22 +1,20 @@
-// Package fakes provides a fake CircleCI V3 API server for testing.
+// Package fakes provides a fake CircleCI API server for testing.
 //
 // It is modeled on the fake in the circleci-cli repository
 // (internal/testing/fakes), which cannot be imported here because it lives
 // under that module's internal/ directory. The builder API deliberately mirrors
 // it — AddNamespace, AddOrbPackage, AddOrbVersion, URL — so the two read alike.
 //
-// It differs from that fake in three ways, each because this repository's code
-// depends on the behavior:
-//
-//   - filter[namespace_id] is read under its real bracketed name.
-//   - Collections paginate with real opaque page[cursor] values, so the
-//     cursor-following loop in utils.GetPaged is actually exercised.
-//   - An orb package carries every version it has, not just the latest, which
-//     is what the real API returns and what orb version resolution relies on.
+// This file holds the server, the route table for the whole API, the request
+// log and fault injection every route shares, and the rendering the handlers
+// answer through. One file per domain holds that domain's state, builders and
+// handlers: circleci_orbs.go, circleci_graphql.go, circleci_account.go,
+// circleci_projects.go, circleci_contexts.go, circleci_catalog.go and
+// circleci_runner.go.
 //
 // Requests are served anonymously by default because the language server
 // resolves public orbs for users who have not logged in. Call RequireToken to
-// turn on Bearer enforcement.
+// turn on token enforcement.
 package fakes
 
 import (
@@ -30,28 +28,29 @@ import (
 	"testing"
 )
 
-// CircleCI is a fake CircleCI V3 API server.
+// CircleCI is a fake CircleCI API server.
 type CircleCI struct {
 	server *httptest.Server
 
 	mu sync.RWMutex
 
-	namespacesByName map[string]string // name -> id
+	// Fault injection and the request log, shared by every route.
+	requiredToken   string               // when set, token auth is enforced
+	requests        []Request            // every request received, in order
+	statusOverrides map[string]int       // "METHOD /path" -> status to return
+	bodyOverrides   map[string]string    // "METHOD /path" -> raw body to return
+	pageLimits      map[string]int       // collection -> items served per page
+	failAfter       map[string]failAfter // "METHOD /path" -> deferred failure
 
-	orbPackages       map[string]Orb        // id -> package
-	orbPackagesByName map[string]string     // "ns/name" -> id
-	orbVersions       map[string]OrbVersion // id -> version
-	orbVersionsByOrb  map[string][]string   // orb id -> version ids, insertion order
-	sourceStatus      map[string]int        // version id -> status override for /source
-	requiredToken     string                // when set, Bearer auth is enforced
-	requests          []Request             // every request received, in order
-	statusOverrides   map[string]int        // "METHOD /path" -> status to return
-	bodyOverrides     map[string]string     // "METHOD /path" -> raw body to return
-	pageLimits        map[string]int        // path -> items served per page
-	namespaces        map[string]Namespace  // id -> namespace
-	failAfter         map[string]failAfter  // "METHOD /path" -> deferred failure
-	v3OrbRoutesGone   bool                  // when set, the V3 orb/namespace routes answer 404
-	namespaceHasMore  bool                  // when set, GraphQL reports another page of orbs
+	// One field per domain of the API. Each is guarded by the mutex above and
+	// is served by the handlers in the file named against it.
+	orbs     orbState      // circleci_orbs.go
+	graphql  graphqlState  // circleci_graphql.go
+	account  accountState  // circleci_account.go
+	projects projectsState // circleci_projects.go
+	contexts contextsState // circleci_contexts.go
+	catalog  catalogState  // circleci_catalog.go
+	runner   runnerState   // circleci_runner.go
 }
 
 // failAfter defers a failure until a route has been hit a number of times, so
@@ -61,67 +60,67 @@ type failAfter struct {
 	status int
 }
 
-// Namespace is a stored registry namespace.
-type Namespace struct {
-	ID   string
-	Name string
-}
-
-// Orb is a stored orb package.
-type Orb struct {
-	ID        string
-	Name      string // fully qualified "namespace/orb"
-	NsID      string
-	NsName    string
-	IsPrivate bool
-	IsListed  bool
-}
-
-// OrbVersion is a stored orb version.
-type OrbVersion struct {
-	ID        string
-	OrbID     string
-	OrbName   string // fully qualified "namespace/orb"
-	Version   string
-	Source    string
-	CreatedAt string
-}
-
 // Request is a request the fake received.
 type Request struct {
 	Method        string
 	Path          string
 	Query         map[string]string
 	Authorization string
+	CircleToken   string
 	UserID        string
 	UserAgent     string
 }
 
-// NewCircleCI starts a fake CircleCI V3 API server and closes it on cleanup.
+// NewCircleCI starts a fake CircleCI API server and closes it on cleanup.
 func NewCircleCI(t *testing.T) *CircleCI {
 	t.Helper()
 
 	fake := &CircleCI{
-		namespaces:        map[string]Namespace{},
-		namespacesByName:  map[string]string{},
-		orbPackages:       map[string]Orb{},
-		orbPackagesByName: map[string]string{},
-		orbVersions:       map[string]OrbVersion{},
-		orbVersionsByOrb:  map[string][]string{},
-		sourceStatus:      map[string]int{},
-		statusOverrides:   map[string]int{},
-		bodyOverrides:     map[string]string{},
-		pageLimits:        map[string]int{},
-		failAfter:         map[string]failAfter{},
+		statusOverrides: map[string]int{},
+		bodyOverrides:   map[string]string{},
+		pageLimits:      map[string]int{},
+		failAfter:       map[string]failAfter{},
+		orbs:            newOrbState(),
+		projects:        newProjectsState(),
+		contexts:        newContextsState(),
+		runner:          newRunnerState(),
 	}
 
+	// Every route the fake serves is registered here, so that the whole API
+	// surface reads in one place. Each group's handlers live in the file named
+	// against it.
 	mux := http.NewServeMux()
+
+	// The orb registry — circleci_orbs.go.
 	mux.HandleFunc("GET /api/v3/namespaces", fake.handleGetNamespace)
 	mux.HandleFunc("GET /api/v3/orb/packages", fake.handleListOrbPackages)
 	mux.HandleFunc("GET /api/v3/orb/versions", fake.handleListOrbVersions)
 	mux.HandleFunc("GET /api/v3/orb/versions/{id}", fake.handleGetOrbVersion)
 	mux.HandleFunc("GET /api/v3/orb/versions/{id}/source", fake.handleGetOrbVersionSource)
+
+	// The GraphQL fallback the registry uses on a host without the V3 orb
+	// routes — circleci_graphql.go.
 	mux.HandleFunc("POST /graphql-unstable", fake.handleGraphQL)
+
+	// The signed-in account — circleci_account.go.
+	mux.HandleFunc("GET /api/v2/me", fake.handleGetMe)
+
+	// Projects and their environment variables — circleci_projects.go. A
+	// project slug is three path segments ("gh/org/repo"), so it is matched
+	// segment by segment rather than with a trailing wildcard, which would also
+	// swallow the /envvar suffix.
+	mux.HandleFunc("GET /api/v2/project/{vcs}/{org}/{project}", fake.handleGetProject)
+	mux.HandleFunc("GET /api/v2/project/{vcs}/{org}/{project}/envvar", fake.handleGetProjectEnvVars)
+
+	// Contexts and their environment variables — circleci_contexts.go.
+	mux.HandleFunc("GET /api/v2/context", fake.handleListContexts)
+	mux.HandleFunc("GET /api/v2/context/{id}/environment-variable", fake.handleListContextEnvVars)
+
+	// The machine catalog — circleci_catalog.go.
+	mux.HandleFunc("GET /api/v3/catalog/offerings", fake.handleGetOfferings)
+
+	// Self-hosted runner resource classes — circleci_runner.go.
+	mux.HandleFunc("GET /api/v3/runner/resource", fake.handleListRunnerClasses)
 
 	fake.server = httptest.NewServer(fake.middleware(mux))
 	t.Cleanup(fake.server.Close)
@@ -134,58 +133,18 @@ func (f *CircleCI) URL() string {
 	return f.server.URL
 }
 
-// --- Builder API ---
-
-// AddNamespace registers a registry namespace.
-func (f *CircleCI) AddNamespace(id, name string) {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-
-	f.namespaces[id] = Namespace{ID: id, Name: name}
-	f.namespacesByName[name] = id
+// Close stops the fake before the end of the test, so that a caller sees a host
+// that has gone away rather than one answering an error. The cleanup closes it
+// again, which is harmless.
+func (f *CircleCI) Close() {
+	f.server.Close()
 }
 
-// AddOrbPackage registers an orb package. orbName is the bare name; the fully
-// qualified name is derived from nsName, matching how the API reports it.
-func (f *CircleCI) AddOrbPackage(id, nsID, nsName, orbName string, isPrivate, isListed bool) {
-	f.mu.Lock()
-	defer f.mu.Unlock()
+// --- Fault injection ---
 
-	fullName := nsName + "/" + orbName
-	f.orbPackages[id] = Orb{
-		ID:        id,
-		Name:      fullName,
-		NsID:      nsID,
-		NsName:    nsName,
-		IsPrivate: isPrivate,
-		IsListed:  isListed,
-	}
-	f.orbPackagesByName[fullName] = id
-}
-
-// AddOrbVersion registers a version of an orb package. createdAt may be empty,
-// in which case a fixed timestamp is used.
-func (f *CircleCI) AddOrbVersion(id, orbID, orbName, version, source, createdAt string) {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-
-	if createdAt == "" {
-		createdAt = "2026-01-15T10:30:00.000Z"
-	}
-
-	f.orbVersions[id] = OrbVersion{
-		ID:        id,
-		OrbID:     orbID,
-		OrbName:   orbName,
-		Version:   version,
-		Source:    source,
-		CreatedAt: createdAt,
-	}
-	f.orbVersionsByOrb[orbID] = append(f.orbVersionsByOrb[orbID], id)
-}
-
-// RequireToken turns on Bearer enforcement: every request must carry
-// Authorization: Bearer <token> or be rejected with 401.
+// RequireToken turns on token enforcement: every request must carry the token
+// in one of the three headers the real edge accepts — Authorization: Bearer
+// <token>, a raw Authorization, or Circle-Token — or be rejected with 401.
 func (f *CircleCI) RequireToken(token string) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -193,39 +152,16 @@ func (f *CircleCI) RequireToken(token string) {
 	f.requiredToken = token
 }
 
-// SeedGoOrb loads the circleci namespace and a circleci/go orb with a spread of
-// versions: several releases across two major versions, plus a development tag,
-// which the API resolves by reference but leaves out of a package's version
-// list. It is the shared fixture for orb resolution tests.
+// SetPageLimit makes a collection serve at most n items per page, so that a
+// caller's cursor-following can be exercised.
 //
-// The version ids are "ver-<version with dots and colons replaced by dashes>",
-// so circleci/go@1.7.1 is "ver-1-7-1" and dev:alpha is "ver-dev-alpha".
-func (f *CircleCI) SeedGoOrb() {
-	f.AddNamespace("ns-circleci", "circleci")
-	f.AddOrbPackage("orb-go", "ns-circleci", "circleci", "go", false, true)
-
-	for _, version := range []string{
-		"0.1.0",
-		"1.7.0",
-		"1.7.1",
-		"1.7.3",
-		"1.12.0",
-		"dev:alpha",
-		"4.0.0",
-	} {
-		id := "ver-" + strings.NewReplacer(".", "-", ":", "-").Replace(version)
-		f.AddOrbVersion(id, "orb-go", "circleci/go", version, "# source of "+version+"\n", "")
-	}
-}
-
-// SetPageLimit makes the collection at path serve at most n items per page, so
-// that a caller's cursor-following can be exercised. path is the route below
-// /api/v3, for example "orb/packages".
-func (f *CircleCI) SetPageLimit(path string, n int) {
+// collection names what to limit, and is one of "orb/packages",
+// "project/envvar", "context" or "context/environment-variable".
+func (f *CircleCI) SetPageLimit(collection string, n int) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
-	f.pageLimits[path] = n
+	f.pageLimits[collection] = n
 }
 
 // SetStatus makes every request to the given route answer with status. route is
@@ -245,15 +181,6 @@ func (f *CircleCI) SetBody(route, body string) {
 	f.bodyOverrides[route] = body
 }
 
-// SetSourceStatus makes the /source route for one orb version answer with
-// status instead of its YAML.
-func (f *CircleCI) SetSourceStatus(orbVersionID string, status int) {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-
-	f.sourceStatus[orbVersionID] = status
-}
-
 // FailAfter makes a route succeed for its first n requests and then answer with
 // status. Use it to fail a later page of a paginated read: a plain SetStatus
 // would fail the first page too, and a body override that always repeats the
@@ -265,24 +192,7 @@ func (f *CircleCI) FailAfter(route string, n, status int) {
 	f.failAfter[route] = failAfter{after: n, status: status}
 }
 
-// DisableV3OrbRoutes makes every V3 orb and namespace route answer 404, the way
-// a CircleCI Server instance does. GraphQL keeps working, so this is the switch
-// that exercises the fallback.
-func (f *CircleCI) DisableV3OrbRoutes() {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-
-	f.v3OrbRoutesGone = true
-}
-
-// SetNamespaceHasMoreOrbs makes the GraphQL namespace query report a further
-// page of orbs, which the query has no way to fetch.
-func (f *CircleCI) SetNamespaceHasMoreOrbs() {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-
-	f.namespaceHasMore = true
-}
+// --- Inspection ---
 
 // Requests returns every request the fake received, in order.
 func (f *CircleCI) Requests() []Request {
@@ -322,6 +232,7 @@ func (f *CircleCI) middleware(next http.Handler) http.Handler {
 			Path:          r.URL.Path,
 			Query:         query,
 			Authorization: r.Header.Get("Authorization"),
+			CircleToken:   r.Header.Get("Circle-Token"),
 			UserID:        r.Header.Get("user_id"),
 			UserAgent:     r.Header.Get("User-Agent"),
 		})
@@ -329,7 +240,7 @@ func (f *CircleCI) middleware(next http.Handler) http.Handler {
 		status := f.statusOverrides[route]
 		body, hasBody := f.bodyOverrides[route]
 		required := f.requiredToken
-		orbRoutesGone := f.v3OrbRoutesGone
+		orbRoutesGone := f.orbs.v3RoutesGone
 		if deferred, ok := f.failAfter[route]; ok {
 			hits := 0
 			for _, seen := range f.requests {
@@ -351,11 +262,13 @@ func (f *CircleCI) middleware(next http.Handler) http.Handler {
 			return
 		}
 
-		// The V3 client sends "Bearer <token>"; the GraphQL client sends the
-		// token raw. Both are accepted, as the real edge accepts both.
+		// The V3 client sends "Bearer <token>", the GraphQL client sends the
+		// token raw, and the V2 callers send Circle-Token. All three are
+		// accepted, as the real edge accepts all three.
 		authorization := r.Header.Get("Authorization")
-		if required != "" && authorization != "Bearer "+required && authorization != required {
-			writeError(w, http.StatusUnauthorized, "unauthorized", "Unauthorized", "")
+		circleToken := r.Header.Get("Circle-Token")
+		if required != "" && authorization != "Bearer "+required && authorization != required && circleToken != required {
+			writeStatus(w, r.URL.Path, http.StatusUnauthorized)
 
 			return
 		}
@@ -372,166 +285,13 @@ func (f *CircleCI) middleware(next http.Handler) http.Handler {
 		}
 
 		if status != 0 {
-			writeError(w, status, "", http.StatusText(status), "")
+			writeStatus(w, r.URL.Path, status)
 
 			return
 		}
 
 		next.ServeHTTP(w, r)
 	})
-}
-
-// --- Handlers ---
-
-// isV3OrbRoute reports whether a path is one of the V3 orb or namespace routes
-// that CircleCI Server does not serve.
-func isV3OrbRoute(path string) bool {
-	return path == "/api/v3/namespaces" || strings.HasPrefix(path, "/api/v3/orb/")
-}
-
-func (f *CircleCI) handleGetNamespace(w http.ResponseWriter, r *http.Request) {
-	name := r.URL.Query().Get("filter[name]")
-	if name == "" {
-		writeError(w, http.StatusBadRequest, "validation_error", "Bad Request.", "filter[name] is required")
-
-		return
-	}
-
-	f.mu.RLock()
-	id, ok := f.namespacesByName[name]
-	f.mu.RUnlock()
-
-	if !ok {
-		writeError(w, http.StatusNotFound, "", "Not Found.", "")
-
-		return
-	}
-
-	writeJSON(w, http.StatusOK, map[string]any{
-		"data": map[string]any{
-			"id":         id,
-			"attributes": map[string]any{"name": name},
-		},
-	})
-}
-
-func (f *CircleCI) handleListOrbPackages(w http.ResponseWriter, r *http.Request) {
-	nameFilter := r.URL.Query().Get("filter[name]")
-	nsFilter := r.URL.Query().Get("filter[namespace_id]")
-
-	f.mu.RLock()
-	matched := []Orb{}
-	for _, name := range f.sortedOrbNamesLocked() {
-		orb := f.orbPackages[f.orbPackagesByName[name]]
-		if nameFilter != "" && orb.Name != nameFilter {
-			continue
-		}
-		if nsFilter != "" && orb.NsID != nsFilter {
-			continue
-		}
-		matched = append(matched, orb)
-	}
-
-	entities := make([]any, 0, len(matched))
-	for _, orb := range matched {
-		entities = append(entities, f.orbEntityLocked(orb))
-	}
-	f.mu.RUnlock()
-
-	f.writePage(w, r, "orb/packages", entities)
-}
-
-func (f *CircleCI) handleListOrbVersions(w http.ResponseWriter, r *http.Request) {
-	ref := r.URL.Query().Get("filter[ref]")
-	orbID := r.URL.Query().Get("filter[orb_id]")
-	channel := r.URL.Query().Get("filter[channel]")
-
-	f.mu.RLock()
-	defer f.mu.RUnlock()
-
-	// filter[ref] resolves a reference the way the real API does: an exact
-	// version, a partial version ("1", "1.7"), "volatile", or a dev tag.
-	if ref != "" {
-		version, ok := f.resolveRefLocked(ref)
-		if !ok {
-			writeError(w, http.StatusNotFound, "", "Not Found.", "")
-
-			return
-		}
-		if orbID != "" && version.OrbID != orbID {
-			writeError(w, http.StatusNotFound, "", "Not Found.", "")
-
-			return
-		}
-
-		writeJSON(w, http.StatusOK, map[string]any{
-			"data": []any{orbVersionEntity(version, false)},
-			"page": map[string]any{"next": nil, "prev": nil},
-		})
-
-		return
-	}
-
-	entities := []any{}
-	for _, id := range f.orbVersionsByOrb[orbID] {
-		version := f.orbVersions[id]
-		isDev := strings.HasPrefix(version.Version, "dev:")
-		if channel == "stable" && isDev {
-			continue
-		}
-		if channel == "dev" && !isDev {
-			continue
-		}
-		entities = append(entities, orbVersionEntity(version, false))
-	}
-
-	writeJSON(w, http.StatusOK, map[string]any{
-		"data": entities,
-		"page": map[string]any{"next": nil, "prev": nil},
-	})
-}
-
-func (f *CircleCI) handleGetOrbVersion(w http.ResponseWriter, r *http.Request) {
-	f.mu.RLock()
-	version, ok := f.orbVersions[r.PathValue("id")]
-	f.mu.RUnlock()
-
-	if !ok {
-		writeError(w, http.StatusNotFound, "", "Not Found.", "")
-
-		return
-	}
-
-	// include is single-valued: only the exact value "source" adds the source,
-	// and anything else is ignored rather than rejected.
-	includeSource := r.URL.Query().Get("include") == "source"
-
-	writeJSON(w, http.StatusOK, map[string]any{"data": orbVersionEntity(version, includeSource)})
-}
-
-func (f *CircleCI) handleGetOrbVersionSource(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
-
-	f.mu.RLock()
-	version, ok := f.orbVersions[id]
-	status := f.sourceStatus[id]
-	f.mu.RUnlock()
-
-	if status != 0 {
-		writeError(w, status, "", http.StatusText(status), "")
-
-		return
-	}
-
-	if !ok {
-		writeError(w, http.StatusNotFound, "", "Not Found.", "")
-
-		return
-	}
-
-	w.Header().Set("Content-Type", "text/plain")
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte(version.Source))
 }
 
 // --- Rendering ---
@@ -589,131 +349,69 @@ func (f *CircleCI) writePage(w http.ResponseWriter, r *http.Request, path string
 	})
 }
 
-// orbEntityLocked renders an orb package with every version it has, newest
-// first, excluding dev tags. Callers must hold the read lock.
-func (f *CircleCI) orbEntityLocked(orb Orb) map[string]any {
-	versions := []any{}
-	ids := f.orbVersionsByOrb[orb.ID]
-	for i := len(ids) - 1; i >= 0; i-- {
-		version := f.orbVersions[ids[i]]
-		if strings.HasPrefix(version.Version, "dev:") {
-			continue
+// writeV2Page serves items as a V2 collection. V2 paginates with an opaque
+// page-token in the query string and reports the next one in the body, rather
+// than with V3's page[cursor] and page.next. The token is the index of the next
+// item, base64-encoded so that a caller can only feed back what it was given,
+// as with the real API.
+func (f *CircleCI) writeV2Page(w http.ResponseWriter, r *http.Request, key string, items []any) {
+	f.mu.RLock()
+	limit := f.pageLimits[key]
+	f.mu.RUnlock()
+
+	start := 0
+	if token := r.URL.Query().Get("page-token"); token != "" {
+		decoded, err := base64.RawURLEncoding.DecodeString(token)
+		if err != nil {
+			writeV2Error(w, http.StatusBadRequest, "Invalid page-token")
+
+			return
 		}
-		versions = append(versions, map[string]any{
-			"id": version.ID,
-			"attributes": map[string]any{
-				"version":    version.Version,
-				"created_at": version.CreatedAt,
-			},
-		})
-	}
+		start, err = strconv.Atoi(string(decoded))
+		if err != nil || start < 0 || start > len(items) {
+			writeV2Error(w, http.StatusBadRequest, "Invalid page-token")
 
-	references := map[string]any{
-		"namespace": map[string]any{"id": orb.NsID},
-	}
-	if len(versions) > 0 {
-		references["orb_versions"] = versions
-	}
-
-	return map[string]any{
-		"id": orb.ID,
-		"attributes": map[string]any{
-			"name":                       orb.Name,
-			"is_private":                 orb.IsPrivate,
-			"is_listed":                  orb.IsListed,
-			"last_30_days_build_count":   0,
-			"last_30_days_project_count": 0,
-			"last_30_days_org_count":     0,
-		},
-		"references": references,
-	}
-}
-
-func orbVersionEntity(version OrbVersion, includeSource bool) map[string]any {
-	attributes := map[string]any{
-		"version":    version.Version,
-		"created_at": version.CreatedAt,
-	}
-	if includeSource {
-		attributes["source"] = version.Source
-	}
-
-	return map[string]any{
-		"id":         version.ID,
-		"attributes": attributes,
-		"references": map[string]any{
-			"orb_package": map[string]any{"id": version.OrbID},
-		},
-	}
-}
-
-// resolveRefLocked resolves "ns/orb@something" the way the API does. Callers
-// must hold the read lock.
-func (f *CircleCI) resolveRefLocked(ref string) (OrbVersion, bool) {
-	name, wanted, found := strings.Cut(ref, "@")
-	if !found {
-		return OrbVersion{}, false
-	}
-
-	orbID, ok := f.orbPackagesByName[name]
-	if !ok {
-		return OrbVersion{}, false
-	}
-
-	// Newest first, so the first match wins for volatile and partial refs.
-	ids := f.orbVersionsByOrb[orbID]
-	candidates := make([]OrbVersion, 0, len(ids))
-	for i := len(ids) - 1; i >= 0; i-- {
-		candidates = append(candidates, f.orbVersions[ids[i]])
-	}
-
-	for _, candidate := range candidates {
-		if candidate.Version == wanted {
-			return candidate, true
+			return
 		}
 	}
 
-	if wanted == "volatile" {
-		for _, candidate := range candidates {
-			if !strings.HasPrefix(candidate.Version, "dev:") {
-				return candidate, true
-			}
-		}
-
-		return OrbVersion{}, false
+	end := len(items)
+	if limit > 0 && start+limit < end {
+		end = start + limit
 	}
 
-	// A partial version matches the newest release under that prefix.
-	for _, candidate := range candidates {
-		if strings.HasPrefix(candidate.Version, wanted+".") {
-			return candidate, true
-		}
+	var next any
+	if end < len(items) {
+		next = base64.RawURLEncoding.EncodeToString([]byte(strconv.Itoa(end)))
 	}
 
-	return OrbVersion{}, false
-}
-
-func (f *CircleCI) sortedOrbNamesLocked() []string {
-	names := make([]string, 0, len(f.orbPackagesByName))
-	for name := range f.orbPackagesByName {
-		names = append(names, name)
-	}
-
-	// Insertion order is not meaningful for a map, and the real API returns a
-	// stable ordering, so sort to keep pagination deterministic.
-	for i := 1; i < len(names); i++ {
-		for j := i; j > 0 && names[j] < names[j-1]; j-- {
-			names[j], names[j-1] = names[j-1], names[j]
-		}
-	}
-
-	return names
+	writeJSON(w, http.StatusOK, map[string]any{
+		"items":           items[start:end],
+		"next_page_token": next,
+	})
 }
 
 func writeJSON(w http.ResponseWriter, status int, body any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(body)
+}
+
+// writeStatus reports a bare status in whichever error shape the route uses:
+// V2 answers with {"message": ...}, everything else with V3's {"error": {...}}.
+func writeStatus(w http.ResponseWriter, path string, status int) {
+	if strings.HasPrefix(path, "/api/v2/") {
+		writeV2Error(w, status, http.StatusText(status))
+
+		return
+	}
+
+	writeError(w, status, "", http.StatusText(status), "")
+}
+
+// writeV2Error renders the {"message": ...} body the V2 API reports errors as.
+func writeV2Error(w http.ResponseWriter, status int, message string) {
+	writeJSON(w, status, map[string]any{"message": message})
 }
 
 func writeError(w http.ResponseWriter, status int, errType, title, detail string) {
@@ -729,144 +427,4 @@ func writeError(w http.ResponseWriter, status int, errType, title, detail string
 	}
 
 	writeJSON(w, status, map[string]any{"error": body})
-}
-
-// --- GraphQL ---
-
-// handleGraphQL serves the orb and namespace queries the language server sends
-// when a host has no V3 orb routes, from the same stored state the V3 handlers
-// use.
-//
-// It does not parse GraphQL. It matches on which root field a query selects,
-// which is enough for the fixed set of queries in pkg/utils/orbregistry.go, and
-// reproduces the behaviour that matters: a missing orb, version or namespace
-// comes back as a null member of data rather than as an error.
-func (f *CircleCI) handleGraphQL(w http.ResponseWriter, r *http.Request) {
-	var body struct {
-		Query     string         `json:"query"`
-		Variables map[string]any `json:"variables"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		writeJSON(w, http.StatusOK, map[string]any{
-			"errors": []any{map[string]any{"message": "could not decode request"}},
-		})
-
-		return
-	}
-
-	variable := func(name string) string {
-		value, _ := body.Variables[name].(string)
-
-		return value
-	}
-
-	f.mu.RLock()
-	defer f.mu.RUnlock()
-
-	// orbVersion is checked before orb: "orbVersion(" does not contain "orb(".
-	switch {
-	case strings.Contains(body.Query, "orbVersion("):
-		f.graphQLOrbVersionLocked(w, variable("orbVersionRef"))
-	case strings.Contains(body.Query, "registryNamespace("):
-		f.graphQLRegistryNamespaceLocked(w, variable("name"), strings.Contains(body.Query, "orbs("))
-	case strings.Contains(body.Query, "orb("):
-		f.graphQLOrbLocked(w, variable("orbName"))
-	default:
-		writeJSON(w, http.StatusOK, map[string]any{
-			"errors": []any{map[string]any{"message": "unrecognised query"}},
-		})
-	}
-}
-
-func (f *CircleCI) graphQLOrbLocked(w http.ResponseWriter, name string) {
-	id, ok := f.orbPackagesByName[name]
-	if !ok {
-		writeJSON(w, http.StatusOK, map[string]any{"data": map[string]any{"orb": nil}})
-
-		return
-	}
-
-	writeJSON(w, http.StatusOK, map[string]any{
-		"data": map[string]any{"orb": f.graphQLOrbNodeLocked(f.orbPackages[id])},
-	})
-}
-
-func (f *CircleCI) graphQLOrbVersionLocked(w http.ResponseWriter, ref string) {
-	version, ok := f.resolveRefLocked(ref)
-	if !ok {
-		writeJSON(w, http.StatusOK, map[string]any{"data": map[string]any{"orbVersion": nil}})
-
-		return
-	}
-
-	writeJSON(w, http.StatusOK, map[string]any{
-		"data": map[string]any{
-			"orbVersion": map[string]any{
-				"id":      version.ID,
-				"version": version.Version,
-				"source":  version.Source,
-				"orb":     f.graphQLOrbNodeLocked(f.orbPackages[version.OrbID]),
-			},
-		},
-	})
-}
-
-func (f *CircleCI) graphQLRegistryNamespaceLocked(w http.ResponseWriter, name string, withOrbs bool) {
-	id, ok := f.namespacesByName[name]
-	if !ok {
-		writeJSON(w, http.StatusOK, map[string]any{"data": map[string]any{"registryNamespace": nil}})
-
-		return
-	}
-
-	namespace := map[string]any{"id": id, "name": name}
-
-	if withOrbs {
-		edges := []any{}
-		for _, orbName := range f.sortedOrbNamesLocked() {
-			orb := f.orbPackages[f.orbPackagesByName[orbName]]
-			if orb.NsID != id {
-				continue
-			}
-			edges = append(edges, map[string]any{
-				"cursor": orb.ID,
-				"node":   f.graphQLOrbNodeLocked(orb),
-			})
-		}
-		// A namespace claiming another page has to report a totalCount beyond
-		// what it served, or the two contradict each other.
-		totalCount := len(edges)
-		if f.namespaceHasMore {
-			totalCount++
-		}
-		namespace["orbs"] = map[string]any{
-			"totalCount": totalCount,
-			"pageInfo":   map[string]any{"hasNextPage": f.namespaceHasMore},
-			"edges":      edges,
-		}
-	}
-
-	writeJSON(w, http.StatusOK, map[string]any{
-		"data": map[string]any{"registryNamespace": namespace},
-	})
-}
-
-// graphQLOrbNodeLocked renders an orb with its released versions, newest first
-// and excluding development tags, matching what versions(count:) returns.
-func (f *CircleCI) graphQLOrbNodeLocked(orb Orb) map[string]any {
-	versions := []any{}
-	ids := f.orbVersionsByOrb[orb.ID]
-	for i := len(ids) - 1; i >= 0; i-- {
-		version := f.orbVersions[ids[i]]
-		if strings.HasPrefix(version.Version, "dev:") {
-			continue
-		}
-		versions = append(versions, map[string]any{"version": version.Version})
-	}
-
-	return map[string]any{
-		"id":       orb.ID,
-		"name":     orb.Name,
-		"versions": versions,
-	}
 }
