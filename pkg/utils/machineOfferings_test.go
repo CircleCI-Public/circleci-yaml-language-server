@@ -2,50 +2,136 @@ package utils
 
 import (
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
+
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/fakes"
 )
 
-func lsContextFor(url string) *LsContext {
-	return &LsContext{Api: ApiContext{HostUrl: url}}
+// catalogRoute is the route the machine catalog is served on.
+const catalogRoute = "GET /api/v3/catalog/offerings"
+
+// offeringsFake builds a fake serving a small but representative catalog: a
+// couple of Linux classes, one Windows class, one macOS class, and a deprecated
+// entry for each executor.
+func offeringsFake(t *testing.T) *fakes.CircleCI {
+	t.Helper()
+
+	fake := fakes.NewCircleCI(t)
+	fake.SetMachineOfferings(fakes.MachineOfferings{
+		Linux: map[string][]string{
+			"medium": {"ubuntu-2404:current"},
+			"large":  {"ubuntu-2404:current"},
+		},
+		Windows: map[string][]string{
+			"windows.medium": {"windows-server-2022-gui:current"},
+		},
+		MacOS: map[string][]string{
+			"m4pro.medium": {"xcode:16.4.0"},
+		},
+		Deprecated: map[string][]string{
+			"linux":   {"ubuntu-2004:current"},
+			"windows": {"windows-server-2019:current"},
+			"macos":   {"xcode:14.0.0"},
+		},
+	})
+
+	return fake
 }
 
 func TestMachineOfferings(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/api/v3/catalog/offerings" {
-			t.Errorf("unexpected path %q", r.URL.Path)
-		}
-		_, _ = w.Write([]byte(`{"data":{"attributes":{"linux":{"medium":["ubuntu-2404:current"]},"windows":{},"macos":{}}}}`))
-	}))
-	defer server.Close()
+	t.Run("fetches the catalog once and caches it", func(t *testing.T) {
+		fake := offeringsFake(t)
+		cache := CreateCache()
 
-	o := machineOfferings(lsContextFor(server.URL), CreateCache())
-	if o == nil || len(o.Linux["medium"]) != 1 {
-		t.Fatalf("expected offerings to be cached, got %#v", o)
-	}
+		offerings := machineOfferings(lsContextFor(fake.URL()), cache)
+		assert.Assert(t, offerings != nil)
+		assert.Check(t, cmp.DeepEqual(offerings.Linux["medium"], []string{"ubuntu-2404:current"}))
+
+		// Every completion and validation pass asks for the catalog, so it has
+		// to be fetched once for the life of the cache.
+		machineOfferings(lsContextFor(fake.URL()), cache)
+
+		requestCount := fake.RequestCount(http.MethodGet, "/api/v3/catalog/offerings")
+		assert.Check(t, cmp.Equal(requestCount, 1))
+	})
+
+	t.Run("authenticates with Circle-Token", func(t *testing.T) {
+		fake := offeringsFake(t)
+
+		machineOfferings(lsContextFor(fake.URL()), CreateCache())
+
+		requests := fake.Requests()
+		assert.Assert(t, cmp.Len(requests, 1))
+		assert.Check(t, cmp.Equal(requests[0].CircleToken, testToken))
+	})
+
+	// A failed fetch has to leave the accessors reporting nothing, so that
+	// validation skips the check rather than flagging valid config — and it
+	// must not be retried on every keystroke either.
+	t.Run("reports nothing when the host fails, and does not retry", func(t *testing.T) {
+		fake := offeringsFake(t)
+		fake.SetStatus(catalogRoute, http.StatusInternalServerError)
+		cache := CreateCache()
+
+		offerings := machineOfferings(lsContextFor(fake.URL()), cache)
+		assert.Check(t, cmp.Nil(offerings))
+
+		machineOfferings(lsContextFor(fake.URL()), cache)
+
+		requestCount := fake.RequestCount(http.MethodGet, "/api/v3/catalog/offerings")
+		assert.Check(t, cmp.Equal(requestCount, 1))
+	})
+
+	t.Run("reports nothing when the host is unreachable", func(t *testing.T) {
+		fake := offeringsFake(t)
+		hostUrl := fake.URL()
+		fake.Close()
+
+		offerings := machineOfferings(lsContextFor(hostUrl), CreateCache())
+		assert.Check(t, cmp.Nil(offerings))
+	})
+
+	t.Run("reports nothing for a malformed body", func(t *testing.T) {
+		fake := offeringsFake(t)
+		fake.SetBody(catalogRoute, "{")
+
+		offerings := machineOfferings(lsContextFor(fake.URL()), CreateCache())
+		assert.Check(t, cmp.Nil(offerings))
+	})
+
+	// A well-formed response with no classes in it is as useless as a failure,
+	// and has to be treated the same way.
+	t.Run("reports nothing for an empty catalog", func(t *testing.T) {
+		fake := fakes.NewCircleCI(t)
+
+		offerings := machineOfferings(lsContextFor(fake.URL()), CreateCache())
+		assert.Check(t, cmp.Nil(offerings))
+	})
 }
 
-func TestMachineOfferings_FailureLeavesCacheEmpty(t *testing.T) {
-	calls := 0
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		calls++
-		w.WriteHeader(http.StatusInternalServerError)
-	}))
-	defer server.Close()
-
+// TestDeprecatedOfferings goes through the API rather than through a
+// pre-populated cache, because the deprecated groups are keyed by executor
+// rather than by resource class and that only shows up in the decoded body.
+func TestDeprecatedOfferings(t *testing.T) {
+	fake := offeringsFake(t)
+	lsContext := lsContextFor(fake.URL())
 	cache := CreateCache()
-	if machineOfferings(lsContextFor(server.URL), cache) != nil {
-		t.Fatal("expected nil offerings on failure")
-	}
-	machineOfferings(lsContextFor(server.URL), cache) // second call should not retry
 
-	if calls != 1 {
-		t.Fatalf("expected the API to be hit once, got %d", calls)
-	}
+	anyOrder := cmpopts.SortSlices(func(a, b string) bool { return a < b })
+
+	deprecatedImages := DeprecatedMachineImages(lsContext, cache)
+	assert.Check(t, cmp.DeepEqual(deprecatedImages, []string{
+		"ubuntu-2004:current", "windows-server-2019:current",
+	}, anyOrder))
+
+	// The config field is the bare version, so the "xcode:" prefix the API
+	// reports has to come off.
+	deprecatedXcode := DeprecatedXcodeVersions(lsContext, cache)
+	assert.Check(t, cmp.DeepEqual(deprecatedXcode, []string{"14.0.0"}, anyOrder))
 }
 
 func TestOfferingAccessors(t *testing.T) {
@@ -100,7 +186,6 @@ func TestMachinePairs_NilWhenUnavailable(t *testing.T) {
 	cache := CreateCache()
 	cache.MachineOfferingsCache.attempted = true // simulate a failed fetch
 
-	if pairs := MachinePairs(lsContextFor(""), cache); pairs != nil {
-		t.Fatalf("expected nil pairs when offerings unavailable, got %#v", pairs)
-	}
+	pairs := MachinePairs(lsContextFor(""), cache)
+	assert.Check(t, cmp.Nil(pairs))
 }

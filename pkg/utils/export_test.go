@@ -8,3 +8,8 @@ package utils
 // orb routes. Capability answers are cached for the life of the process, so a
 // test standing up a fresh fake on a fresh address has to clear them.
 var ResetOrbRegistryCapabilities = resetV3OrbRoutes
+
+// ResetUserIds forgets which account id every host and token resolved to.
+// Account ids are memoised for the life of the process, so a test asserting
+// how often /api/v2/me is asked has to clear them.
+var ResetUserIds = resetUserIds
