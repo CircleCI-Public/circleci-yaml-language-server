@@ -43,6 +43,8 @@ func (methods *Methods) updateProjectEnvVariables(file *utils.CachedFile) {
 	cachedFile.EnvVariables = []string{}
 	methods.Cache.FileCache.SetFile(*cachedFile)
 	if methods.LsContext.Api.Token != "" {
-		utils.GetAllProjectEnvVariables(methods.LsContext, methods.Cache, cachedFile)
+		if err := utils.GetAllProjectEnvVariables(methods.LsContext, methods.Cache, cachedFile); err != nil {
+			log.Printf("error getting project environment variables: %s", err)
+		}
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -122,13 +123,24 @@ func GetAllContextWithEnvVars(lsContext *LsContext, orgID string, cache *Cache) 
 }
 
 func getContext(lsContext *LsContext, orgID string, nextPageToken string, includeEnvVars bool) (*GetAllContextRes, error) {
-	url := fmt.Sprintf("%s/api/v2/context?owner-id=%s&page-token=%s", lsContext.Api.HostUrl, orgID, nextPageToken)
+	query := url.Values{}
+	query.Set("owner-id", orgID)
+
 	if includeEnvVars {
 		// Requires permission to read context environment variables; many users can list
 		// contexts but receive HTTP 403 when env vars are included (private contexts).
-		url = fmt.Sprintf("%s/api/v2/context?owner-id=%s&include-env-vars=true&page-token=%s", lsContext.Api.HostUrl, orgID, nextPageToken)
+		query.Set("include-env-vars", "true")
 	}
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+
+	// The first page is asked for without a page-token at all, rather than with
+	// an empty one, so that the request says what it means.
+	if nextPageToken != "" {
+		query.Set("page-token", nextPageToken)
+	}
+
+	requestUrl := fmt.Sprintf("%s/api/v2/context?%s", lsContext.Api.HostUrl, query.Encode())
+
+	req, err := http.NewRequest(http.MethodGet, requestUrl, nil)
 	if err != nil {
 		return nil, err
 	}
