@@ -6,10 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/httpcl"
@@ -174,9 +173,7 @@ func (cl *Client) RunWithContext(ctx context.Context, request *Request, resp int
 	}
 
 	if cl.Debug {
-		l := log.New(os.Stderr, "", 0)
-		l.Printf(">> variables: %v", request.Variables)
-		l.Printf(">> query: %s", request.Query)
+		slog.DebugContext(ctx, "graphql request", "query", request.Query, "variables", request.Variables)
 	}
 
 	wrappedResponse := &Response{
@@ -194,8 +191,7 @@ func (cl *Client) RunWithContext(ctx context.Context, request *Request, resp int
 	}
 
 	status, err := cl.httpClient.Call(ctx, httpcl.NewRequest(http.MethodPost, address, opts...))
-	var httpErr *httpcl.HTTPError
-	if errors.As(err, &httpErr) || (err == nil && status != http.StatusOK) {
+	if _, ok := errors.AsType[*httpcl.HTTPError](err); ok || (err == nil && status != http.StatusOK) {
 		return fmt.Errorf("failure calling GraphQL API: %d %s", status, http.StatusText(status))
 	}
 	if err != nil {

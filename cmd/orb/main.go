@@ -31,6 +31,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/logging"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/probe"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
@@ -66,6 +67,10 @@ func run() int {
 	token := os.Getenv("CIRCLE_TOKEN")
 	debug := os.Getenv("ORB_DEBUG") != ""
 	backend := os.Getenv("ORB_BACKEND")
+
+	// The probe's report goes to stdout; with ORB_DEBUG, every request and
+	// response is logged to stderr alongside it.
+	logging.Setup(debug)
 
 	var registry utils.OrbRegistry
 	switch backend {

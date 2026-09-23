@@ -36,7 +36,7 @@ orbs:
 executors:
   go-executor:
     docker:
-      - image: cimg/go:1.25.0
+      - image: cimg/go:1.27.1
 
 commands:
   install-zig:

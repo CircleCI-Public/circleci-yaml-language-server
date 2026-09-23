@@ -223,8 +223,7 @@ func (cl *V3Client) get(ctx context.Context, path string, query url.Values) ([]b
 	opts = append(opts, httpcl.BytesDecoder(&body))
 
 	_, err = cl.httpClient.Call(ctx, httpcl.NewRequest(http.MethodGet, address, opts...))
-	var httpErr *httpcl.HTTPError
-	if errors.As(err, &httpErr) {
+	if httpErr, ok := errors.AsType[*httpcl.HTTPError](err); ok {
 		return nil, parseAPIError(httpErr)
 	}
 	if err != nil {

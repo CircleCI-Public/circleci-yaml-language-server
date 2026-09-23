@@ -195,8 +195,8 @@ func TestClient_Call(t *testing.T) {
 				assert.Check(t, cmp.Equal(status, tt.status))
 				assert.Check(t, cmp.Nil(body))
 				assert.Check(t, httpcl.HasStatusCode(err, tt.status))
-				var httpError *httpcl.HTTPError
-				assert.Assert(t, errors.As(err, &httpError))
+				httpError, ok := errors.AsType[*httpcl.HTTPError](err)
+				assert.Assert(t, ok)
 				assert.Check(t, cmp.Equal(httpError.StatusCode, tt.status))
 				assert.Check(t, cmp.Equal(string(httpError.Body), tt.expectBody))
 			})

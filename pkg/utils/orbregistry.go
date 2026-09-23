@@ -2,9 +2,8 @@ package utils
 
 import (
 	"context"
-	"fmt"
+	"log/slog"
 	"net/url"
-	"os"
 	"sync"
 )
 
@@ -295,13 +294,12 @@ func (registry v3OrbRegistry) ResolveVersion(ctx context.Context, ref string) (*
 	}
 
 	// The version list only drives upgrade hints, so failing to fetch it costs
-	// those hints rather than the whole orb. Say so on stderr: an empty list is
-	// otherwise indistinguishable from an orb that has never released.
+	// those hints rather than the whole orb. Say so in the log: an empty list
+	// is otherwise indistinguishable from an orb that has never released.
 	switch {
 	case packageErr != nil:
-		fmt.Fprintf(os.Stderr,
-			"listing versions of %s for upgrade hints: %s\n",
-			OrbPackageName(ref), packageErr,
+		slog.Warn("listing orb versions for upgrade hints",
+			"orb", OrbPackageName(ref), "err", packageErr,
 		)
 	case orbPackage != nil:
 		version.Versions = orbPackage.Versions
@@ -529,11 +527,10 @@ func (registry graphqlOrbRegistry) ListNamespaceOrbs(ctx context.Context, name s
 	// orbs(first:) has no cursor-following here: the largest namespace on
 	// circleci.com holds 79 orbs against a ceiling of 1000. A namespace that
 	// outgrows it still autocompletes from the page that was read, but say so
-	// on stderr rather than truncating in silence.
+	// in the log rather than truncating in silence.
 	if namespace.Orbs.PageInfo.HasNextPage {
-		fmt.Fprintf(os.Stderr,
-			"namespace %s holds %d orbs; only the first %d were read\n",
-			name, namespace.Orbs.TotalCount, len(namespace.Orbs.Edges),
+		slog.Warn("namespace holds more orbs than were read",
+			"namespace", name, "total", namespace.Orbs.TotalCount, "read", len(namespace.Orbs.Edges),
 		)
 	}
 

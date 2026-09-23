@@ -3,9 +3,8 @@ package utils
 import (
 	"bytes"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
-	"os"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/httpcl"
 )
@@ -37,20 +36,18 @@ func newV2Client(apiContext ApiContext) *httpcl.Client {
 	})
 }
 
-// debugTransport writes each request and its response to stderr, which is
-// what the Debug flag on the V3 and GraphQL clients has always done.
+// debugTransport logs each response body, which is what the Debug flag on the
+// V3 and GraphQL clients adds. httpcl already logs every request's method,
+// address, status and duration at debug level, so this logs only the rest.
 type debugTransport struct {
-	next   http.RoundTripper
-	logger *log.Logger
+	next http.RoundTripper
 }
 
 func newDebugTransport(next http.RoundTripper) *debugTransport {
-	return &debugTransport{next: next, logger: log.New(os.Stderr, "", 0)}
+	return &debugTransport{next: next}
 }
 
 func (d *debugTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	d.logger.Printf(">> %s %s", req.Method, req.URL)
-
 	res, err := d.next.RoundTrip(req)
 	if err != nil {
 		return nil, err
@@ -65,8 +62,12 @@ func (d *debugTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	// what was just logged.
 	res.Body = io.NopCloser(bytes.NewReader(body))
 
-	d.logger.Printf("<< request id: %s", res.Header.Get("X-Request-Id"))
-	d.logger.Printf("<< %s: %s", res.Status, string(body))
+	slog.DebugContext(req.Context(), "response body",
+		"url.full", req.URL.String(),
+		"http.response.status_code", res.StatusCode,
+		"request_id", res.Header.Get("X-Request-Id"),
+		"body", string(body),
+	)
 
 	return res, nil
 }

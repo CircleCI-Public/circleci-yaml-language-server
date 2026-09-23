@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log/slog"
 	"net"
 	"os"
 	"time"
@@ -26,7 +27,7 @@ type JSONRPCServer struct {
 }
 
 func (server JSONRPCServer) commandHandler(_ context.Context, reply jsonrpc2.Replier, req jsonrpc2.Request) error {
-	fmt.Fprintln(os.Stderr, "Called method: "+req.Method())
+	slog.Debug("called method", "method", req.Method())
 
 	defer func() {
 		err := recover()
@@ -89,7 +90,7 @@ func (server JSONRPCServer) commandHandler(_ context.Context, reply jsonrpc2.Rep
 
 func (server JSONRPCServer) ServeStream(_ context.Context, conn jsonrpc2.Conn) error {
 	defer rollbar.Close()
-	fmt.Fprintln(os.Stderr, "New client connection")
+	slog.Info("new client connection")
 
 	server.conn = conn
 	server.cache = utils.CreateCache()
@@ -126,7 +127,8 @@ func StartServer(port int, host string, schemaLocation string) {
 
 	port = ln.Addr().(*net.TCPAddr).Port
 
-	// The LSP client waits that the server prints "Server started" on stdout to connect. The best
+	// The LSP client waits that the server prints "Server started" on stdout to connect, which is why
+	// these lines are printed rather than logged: they are a handshake, not a log. The best
 	// solution would be to make this the "express way" and give a callback to ListenAndServe that
 	// would print the "Server started" but it seems that doesn't exist in go
 	// https://stackoverflow.com/questions/34312615/log-when-server-is-started
