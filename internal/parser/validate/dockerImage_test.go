@@ -357,14 +357,15 @@ executors:
 		})
 
 		t.Run("is not cached", func(t *testing.T) {
-			assert.Check(t, cmp.Nil(val.Cache.DockerCache.Get("namespace/image:tag")))
+			_, known := val.Cache.DockerCache.Get("namespace", "image")
+			assert.Check(t, !known, "the image must not be recorded as checked")
 		})
 	})
 
 	t.Run("a tag it cannot confirm", func(t *testing.T) {
 		val := CreateValidateFromYAML(config)
 		// The image is known to exist, so validation goes on to the tag.
-		val.Cache.DockerCache.Add("namespace/image:tag", true)
+		val.Cache.DockerCache.Add("namespace", "image", true)
 		val.APIs = ValidateAPIs{DockerHub: DockerHubMock{Err: errRateLimited}}
 
 		val.Validate()
@@ -375,10 +376,9 @@ executors:
 
 		t.Run("is not cached", func(t *testing.T) {
 			// Listing the tags succeeded; only the check of this one did not.
-			tagInfo := val.Cache.DockerTagsCache.Get("namespace", "image")
-			assert.Assert(t, tagInfo != nil)
-			_, checked := tagInfo.CheckedTags["tag"]
-			assert.Check(t, !checked, "the tag must not be recorded as checked")
+			assert.Check(t, val.Cache.DockerTagsCache.Get("namespace", "image") != nil)
+			_, known := val.Cache.DockerTagsCache.Checked("namespace", "image", "tag")
+			assert.Check(t, !known, "the tag must not be recorded as checked")
 		})
 	})
 }

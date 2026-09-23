@@ -22,25 +22,21 @@ func isValidDockerDigest(digest string) bool {
 }
 
 func DoesDockerImageExists(img *ast.DockerImage, cache *cache.DockerImages, api dockerhub.API) bool {
-	cachedDockerImage := cache.Get(img.Image.FullPath)
-
 	if !isDockerImageCheckable(img) {
 		// When a Docker image can't be checked, return true (consider it valid)
 		return true
 	}
 
-	if cachedDockerImage == nil {
-		exists, err := api.DoesImageExist(img.Image.Namespace, img.Image.Name)
-		if err != nil {
-			// Docker Hub could not say, which is no reason to flag the image.
-			// Nor is it an answer to keep: the next validation asks again.
-			return true
-		}
-
-		cachedDockerImage = cache.Add(img.Image.FullPath, exists)
+	exists, err := cache.Exists(img.Image.Namespace, img.Image.Name, func() (bool, error) {
+		return api.DoesImageExist(img.Image.Namespace, img.Image.Name)
+	})
+	if err != nil {
+		// Docker Hub could not say, which is no reason to flag the image.
+		// Nor is it an answer to keep: the next validation asks again.
+		return true
 	}
 
-	return cachedDockerImage.Exists
+	return exists
 }
 
 /*
@@ -64,17 +60,16 @@ func DoesTagExist(img *ast.DockerImage, searchedTag string, cache *cache.DockerT
 		return true
 	}
 
-	tagExists, ok := tagInfo.CheckedTags[searchedTag]
-	if !ok {
-		exists, err := api.ImageHasTag(img.Image.Namespace, img.Image.Name, searchedTag)
-		if err != nil {
-			// As for the image: no answer is neither a diagnostic nor cached.
-			return true
-		}
+	if tagInfo.CheckedTags[searchedTag] {
+		return true
+	}
 
-		tagExists = exists
-		tagInfo.CheckedTags[searchedTag] = tagExists
-		cache.Add(img.Image.Namespace, img.Image.Name, *tagInfo)
+	tagExists, err := cache.HasTag(img.Image.Namespace, img.Image.Name, searchedTag, func() (bool, error) {
+		return api.ImageHasTag(img.Image.Namespace, img.Image.Name, searchedTag)
+	})
+	if err != nil {
+		// As for the image: no answer is neither a diagnostic nor cached.
+		return true
 	}
 
 	return tagExists
@@ -115,29 +110,27 @@ func GetImageTagActions(doc *parser.YamlDocument, img *ast.DockerImage, cache *c
 
 // Get the image tag info and fill the image info if it is not present in the cache
 func GetImageTagInfo(img *ast.DockerImage, c *cache.DockerTags, api dockerhub.API) *cache.ImageTags {
-	tagInfo := c.Get(img.Image.Namespace, img.Image.Name)
+	tagInfo, err := c.Load(img.Image.Namespace, img.Image.Name, func() (cache.ImageTags, error) {
+		tags, err := api.GetImageTags(img.Image.Namespace, img.Image.Name)
+		if err != nil {
+			return cache.ImageTags{}, err
+		}
 
-	if tagInfo != nil {
-		return tagInfo
-	}
-	tags, err := api.GetImageTags(img.Image.Namespace, img.Image.Name)
+		tagsForCache := make(map[string]bool, len(tags))
+		for _, tag := range tags {
+			tagsForCache[tag] = true
+		}
+
+		return cache.ImageTags{
+			CheckedTags: tagsForCache,
+			Recommended: chooseTagToRecommend(tags),
+		}, nil
+	})
 	if err != nil {
 		return nil
 	}
 
-	tagsForCache := make(map[string]bool, len(tags))
-	for _, tag := range tags {
-		tagsForCache[tag] = true
-	}
-
-	recommended := chooseTagToRecommend(tags)
-
-	tagInfo = &cache.ImageTags{
-		CheckedTags: tagsForCache,
-		Recommended: recommended,
-	}
-	c.Add(img.Image.Namespace, img.Image.Name, *tagInfo)
-	return tagInfo
+	return &tagInfo
 }
 
 func chooseTagToRecommend(allTags []string) string {

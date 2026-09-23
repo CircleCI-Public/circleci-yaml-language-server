@@ -308,17 +308,22 @@ func (val Validate) checkIfValidResourceClass(
 }
 
 func (val Validate) validateExecutorNamespace(resourceClass string, resourceClassRange protocol.Range) {
-	registry := val.Context.OrbRegistry()
-
-	_, err := registry.FetchNamespace(context.Background(), resourceClass)
-	if err == nil {
-		return
-	}
+	exists, err := val.Cache.NamespaceCache.Exists(resourceClass, func() (bool, error) {
+		_, err := val.Context.OrbRegistry().FetchNamespace(context.Background(), resourceClass)
+		switch {
+		case err == nil:
+			return true, nil
+		case circleci.IsNotFound(err):
+			return false, nil
+		default:
+			return false, err
+		}
+	})
 
 	// Only a definitive "no such namespace" earns a diagnostic. A request that
 	// simply failed is not evidence the namespace is missing, and reporting one
 	// would mean flagging valid configs whenever the API is unreachable.
-	if circleci.IsNotFound(err) {
+	if err == nil && !exists {
 		val.addDiagnostic(diagnostic.Error(
 			resourceClassRange,
 			fmt.Sprintf("Namespace \"%s\" does not exist", resourceClass),
