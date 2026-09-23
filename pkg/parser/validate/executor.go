@@ -6,15 +6,19 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/codeaction"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/paramref"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
 )
 
 func (val Validate) ValidateExecutors() {
-	if len(val.Doc.Executors) == 0 && !utils.IsDefaultRange(val.Doc.ExecutorsRange) {
+	if len(val.Doc.Executors) == 0 && !position.IsDefaultRange(val.Doc.ExecutorsRange) {
 		val.addDiagnostic(
-			utils.CreateEmptyAssignationWarning(val.Doc.ExecutorsRange),
+			diagnostic.EmptyAssignationWarning(val.Doc.ExecutorsRange),
 		)
 
 		return
@@ -35,7 +39,7 @@ func (val Validate) ValidateExecutors() {
 // MacOSExecutor
 
 func (val Validate) validateMacOSExecutor(executor ast.MacOSExecutor) {
-	xcodeVersions := utils.XcodeVersions(val.Context, val.Cache)
+	xcodeVersions := val.Cache.Offerings(val.Context.Api).XcodeVersions()
 	if xcodeVersions == nil {
 		return
 	}
@@ -43,17 +47,17 @@ func (val Validate) validateMacOSExecutor(executor ast.MacOSExecutor) {
 	if slices.Contains(xcodeVersions, executor.Xcode) {
 		val.checkIfValidResourceClass(
 			executor.ResourceClass,
-			utils.MacOSResourceClasses(val.Context, val.Cache),
+			val.Cache.Offerings(val.Context.Api).MacOSResourceClasses(),
 			executor.ResourceClassRange,
 			fmt.Sprintf("Xcode version \"%s\"", executor.Xcode),
 		)
-	} else if slices.Contains(utils.DeprecatedXcodeVersions(val.Context, val.Cache), executor.Xcode) {
-		val.addDiagnostic(utils.CreateDeprecatedDiagnosticFromRange(
+	} else if slices.Contains(val.Cache.Offerings(val.Context.Api).DeprecatedXcodeVersions(), executor.Xcode) {
+		val.addDiagnostic(diagnostic.Deprecated(
 			executor.XcodeRange,
 			fmt.Sprintf("Xcode version \"%s\" is deprecated", executor.Xcode),
 		))
 	} else {
-		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
+		val.addDiagnostic(diagnostic.Error(
 			executor.XcodeRange,
 			fmt.Sprintf("Unknown Xcode version \"%s\"", executor.Xcode),
 		))
@@ -67,21 +71,21 @@ func (val Validate) validateMachineExecutor(executor ast.MachineExecutor) {
 		return
 	}
 
-	pairs := utils.MachinePairs(val.Context, val.Cache)
+	pairs := val.Cache.Offerings(val.Context.Api).MachinePairs()
 	if pairs == nil {
 		return
 	}
 
-	rcParam := utils.ContainsParam(executor.ResourceClass)
-	imgParam := utils.ContainsParam(executor.Image)
+	rcParam := paramref.Contains(executor.ResourceClass)
+	imgParam := paramref.Contains(executor.Image)
 
 	if executor.Image == "" {
 		if executor.ResourceClass != "" &&
-			!utils.IsSelfHostedRunner(executor.ResourceClass) &&
+			!circleci.IsSelfHostedRunner(executor.ResourceClass) &&
 			!rcParam &&
-			!slices.Contains(utils.MachineResourceClasses(val.Context, val.Cache), executor.ResourceClass) {
+			!slices.Contains(val.Cache.Offerings(val.Context.Api).MachineResourceClasses(), executor.ResourceClass) {
 
-			val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
+			val.addDiagnostic(diagnostic.Error(
 				executor.ResourceClassRange,
 				fmt.Sprintf("Unknown resource class \"%s\"", executor.ResourceClass),
 			))
@@ -89,8 +93,8 @@ func (val Validate) validateMachineExecutor(executor ast.MachineExecutor) {
 		return
 	}
 
-	if utils.IsSelfHostedRunner(executor.ResourceClass) {
-		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
+	if circleci.IsSelfHostedRunner(executor.ResourceClass) {
+		val.addDiagnostic(diagnostic.Error(
 			executor.Range,
 			fmt.Sprintf(
 				"Extraneous image \"%s\" for self-hosted runner \"%s\"",
@@ -122,7 +126,7 @@ func (val Validate) validateMachineExecutor(executor ast.MachineExecutor) {
 	}
 
 	if !validResourceClass {
-		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
+		val.addDiagnostic(diagnostic.Error(
 			executor.ResourceClassRange,
 			fmt.Sprintf(
 				"Unknown resource class \"%s\"",
@@ -132,8 +136,8 @@ func (val Validate) validateMachineExecutor(executor ast.MachineExecutor) {
 	}
 
 	if !validImage {
-		if slices.Contains(utils.DeprecatedMachineImages(val.Context, val.Cache), executor.Image) {
-			val.addDiagnostic(utils.CreateDeprecatedDiagnosticFromRange(
+		if slices.Contains(val.Cache.Offerings(val.Context.Api).DeprecatedMachineImages(), executor.Image) {
+			val.addDiagnostic(diagnostic.Deprecated(
 				executor.ImageRange,
 				fmt.Sprintf(
 					"Machine image \"%s\" is deprecated",
@@ -141,7 +145,7 @@ func (val Validate) validateMachineExecutor(executor ast.MachineExecutor) {
 				),
 			))
 		} else {
-			val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
+			val.addDiagnostic(diagnostic.Error(
 				executor.ImageRange,
 				fmt.Sprintf(
 					"Unknown machine image \"%s\"",
@@ -153,7 +157,7 @@ func (val Validate) validateMachineExecutor(executor ast.MachineExecutor) {
 
 	if validResourceClass && validImage {
 		// rc and img exist, but do not form a valid pair
-		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
+		val.addDiagnostic(diagnostic.Error(
 			executor.Range,
 			fmt.Sprintf(
 				"Machine image \"%s\" is not available for resource class \"%s\"",
@@ -167,7 +171,7 @@ func (val Validate) validateMachineExecutor(executor ast.MachineExecutor) {
 // DockerExecutor
 
 func (val Validate) validateDockerExecutor(executor ast.DockerExecutor) {
-	if dockerResourceClasses := utils.DockerResourceClasses(val.Context, val.Cache); dockerResourceClasses != nil {
+	if dockerResourceClasses := val.Cache.Offerings(val.Context.Api).DockerResourceClasses(); dockerResourceClasses != nil {
 		val.checkIfValidResourceClass(
 			executor.ResourceClass,
 			dockerResourceClasses,
@@ -186,7 +190,7 @@ func (val Validate) validateDockerExecutor(executor ast.DockerExecutor) {
 		imageExists := DoesDockerImageExists(&img, &val.Cache.DockerCache, val.APIs.DockerHub)
 		if !imageExists {
 			val.addDiagnostic(
-				utils.CreateErrorDiagnosticFromRange(
+				diagnostic.Error(
 					img.ImageRange,
 					fmt.Sprintf(
 						"Docker image not found \"%s\"",
@@ -198,7 +202,7 @@ func (val Validate) validateDockerExecutor(executor ast.DockerExecutor) {
 			// Validate digest format if present
 			if img.Image.Digest != "" && !isValidDockerDigest(img.Image.Digest) {
 				val.addDiagnostic(
-					utils.CreateErrorDiagnosticFromRange(
+					diagnostic.Error(
 						img.ImageRange,
 						fmt.Sprintf(
 							"Invalid Docker image digest format \"%s\". Expected format: sha256:<64 hex characters>",
@@ -223,7 +227,7 @@ func (val Validate) validateDockerExecutor(executor ast.DockerExecutor) {
 				if !tagExists {
 					actions := GetImageTagActions(&val.Doc, &img, &val.Cache.DockerTagsCache, val.APIs.DockerHub)
 					val.addDiagnostic(
-						utils.CreateDiagnosticFromRange(
+						diagnostic.New(
 							img.ImageRange,
 							protocol.DiagnosticSeverityError,
 							fmt.Sprintf("Docker image \"%s\" has no tag \"%s\"", img.Image.FullPath, imgTag),
@@ -235,7 +239,7 @@ func (val Validate) validateDockerExecutor(executor ast.DockerExecutor) {
 				if tagExists && img.Image.Tag == "" {
 					actions := GetImageTagActions(&val.Doc, &img, &val.Cache.DockerTagsCache, val.APIs.DockerHub)
 					val.addDiagnostic(
-						utils.CreateDiagnosticFromRange(
+						diagnostic.New(
 							img.ImageRange,
 							protocol.DiagnosticSeverityHint,
 							"It is recommended to set explicit tags",
@@ -248,12 +252,12 @@ func (val Validate) validateDockerExecutor(executor ast.DockerExecutor) {
 
 		if img.Image.Namespace == "circleci" {
 			val.addDiagnostic(
-				utils.CreateDiagnosticFromRange(
+				diagnostic.New(
 					img.ImageRange,
 					protocol.DiagnosticSeverityWarning,
 					"Docker images from `circleci` namespace are deprecated. Please use its `cimg` namespace's alternative.",
 					[]protocol.CodeAction{
-						utils.CreateCodeActionTextEdit(
+						codeaction.TextEdit(
 							"Use `cimg` namespace's alternative",
 							val.Doc.URI, []protocol.TextEdit{
 								{
@@ -275,10 +279,10 @@ func (val Validate) checkIfValidResourceClass(
 	resourceClassRange protocol.Range,
 	context string,
 ) {
-	if !utils.CheckIfOnlyParamUsed(resourceClass) &&
+	if !paramref.IsOnlyParameter(resourceClass) &&
 		resourceClass != "" &&
 		!slices.Contains(validResourceClasses, resourceClass) &&
-		!utils.IsSelfHostedRunner(resourceClass) {
+		!circleci.IsSelfHostedRunner(resourceClass) {
 
 		var message string
 		if context == "" {
@@ -290,20 +294,20 @@ func (val Validate) checkIfValidResourceClass(
 				context,
 			)
 		}
-		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
+		val.addDiagnostic(diagnostic.Error(
 			resourceClassRange,
 			message,
 		))
 	}
 
-	if utils.IsSelfHostedRunner(resourceClass) {
+	if circleci.IsSelfHostedRunner(resourceClass) {
 		namespace := strings.Split(resourceClass, "/")[0]
 		val.validateExecutorNamespace(namespace, resourceClassRange)
 	}
 }
 
 func (val Validate) validateExecutorNamespace(resourceClass string, resourceClassRange protocol.Range) {
-	registry := utils.NewOrbRegistryFromContext(val.Context)
+	registry := val.Context.OrbRegistry()
 
 	_, err := registry.FetchNamespace(context.Background(), resourceClass)
 	if err == nil {
@@ -313,8 +317,8 @@ func (val Validate) validateExecutorNamespace(resourceClass string, resourceClas
 	// Only a definitive "no such namespace" earns a diagnostic. A request that
 	// simply failed is not evidence the namespace is missing, and reporting one
 	// would mean flagging valid configs whenever the API is unreachable.
-	if utils.IsNotFound(err) {
-		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
+	if circleci.IsNotFound(err) {
+		val.addDiagnostic(diagnostic.Error(
 			resourceClassRange,
 			fmt.Sprintf("Namespace \"%s\" does not exist", resourceClass),
 		))

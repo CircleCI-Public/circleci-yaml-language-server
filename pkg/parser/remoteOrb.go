@@ -7,8 +7,10 @@ import (
 	"log/slog"
 	"os"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/session"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 	"golang.org/x/mod/semver"
@@ -34,7 +36,7 @@ type OrbQuery struct {
 	Source string
 }
 
-func GetOrbInfo(orbVersionCode string, cache *utils.Cache, context *utils.LsContext) (*ast.OrbInfo, error) {
+func GetOrbInfo(orbVersionCode string, cache *cache.Cache, context *session.Settings) (*ast.OrbInfo, error) {
 	// Returning cache if exists
 	if !cache.OrbCache.HasOrb(orbVersionCode) {
 
@@ -48,12 +50,12 @@ func GetOrbInfo(orbVersionCode string, cache *utils.Cache, context *utils.LsCont
 // GetOrbByName looks an orb up by its fully qualified "namespace/orb" name,
 // ignoring versions. It reports an error when the orb does not exist, is
 // private to an org the token cannot see, or could not be looked up.
-func GetOrbByName(orbName string, lsContext *utils.LsContext) (OrbGQLData, error) {
-	registry := utils.NewOrbRegistryFromContext(lsContext)
+func GetOrbByName(orbName string, lsContext *session.Settings) (OrbGQLData, error) {
+	registry := lsContext.OrbRegistry()
 
 	orb, err := registry.FetchOrb(context.Background(), orbName)
 	if err != nil {
-		if utils.IsNotFound(err) {
+		if circleci.IsNotFound(err) {
 			return OrbGQLData{}, fmt.Errorf("orb %s does not exist", orbName)
 		}
 
@@ -63,7 +65,7 @@ func GetOrbByName(orbName string, lsContext *utils.LsContext) (OrbGQLData, error
 	return OrbGQLData{ID: orb.ID, Name: orb.Name}, nil
 }
 
-func ParseRemoteOrbs(orbs map[string]ast.Orb, cache *utils.Cache, context *utils.LsContext) {
+func ParseRemoteOrbs(orbs map[string]ast.Orb, cache *cache.Cache, context *session.Settings) {
 	for _, orb := range orbs {
 		if orb.Url.IsLocal {
 			continue
@@ -83,7 +85,7 @@ func ParseRemoteOrbs(orbs map[string]ast.Orb, cache *utils.Cache, context *utils
 	}
 }
 
-func fetchOrbInfo(orbVersionCode string, cache *utils.Cache, context *utils.LsContext) (*ast.OrbInfo, error) {
+func fetchOrbInfo(orbVersionCode string, cache *cache.Cache, context *session.Settings) (*ast.OrbInfo, error) {
 	orbQuery, err := GetRemoteOrb(orbVersionCode, context.Api.Token, context.Api.HostUrl, context.UserIdForTelemetry)
 
 	if err != nil {
@@ -186,11 +188,11 @@ func GetVersionInfo(
 // Exact versions, partial versions ("circleci/go@1.7"), "volatile" and
 // development tags all resolve.
 func GetRemoteOrb(orbId string, token string, hostUrl, userId string) (OrbQuery, error) {
-	registry := utils.NewOrbRegistry(hostUrl, token, userId, false)
+	registry := circleci.NewOrbRegistry(hostUrl, token, userId, false)
 
 	resolved, err := registry.ResolveVersion(context.Background(), orbId)
 	if err != nil {
-		if utils.IsNotFound(err) {
+		if circleci.IsNotFound(err) {
 			// validateSingleOrb keys off this prefix to report an unknown
 			// version rather than an unknown orb.
 			return OrbQuery{}, fmt.Errorf("could not find orb %s", orbId)
@@ -213,11 +215,11 @@ func GetRemoteOrb(orbId string, token string, hostUrl, userId string) (OrbQuery,
 // GetOrbVersions returns every version published by the orb an reference
 // names, ignoring the version in the reference itself.
 func GetOrbVersions(orbId string, token string, hostUrl, userId string) ([]struct{ Version string }, error) {
-	registry := utils.NewOrbRegistry(hostUrl, token, userId, false)
+	registry := circleci.NewOrbRegistry(hostUrl, token, userId, false)
 
-	orbPackage, err := registry.FetchOrb(context.Background(), utils.OrbPackageName(orbId))
+	orbPackage, err := registry.FetchOrb(context.Background(), circleci.OrbPackageName(orbId))
 	if err != nil {
-		if utils.IsNotFound(err) {
+		if circleci.IsNotFound(err) {
 			return []struct{ Version string }{}, fmt.Errorf("could not find orb %s", orbId)
 		}
 
@@ -228,7 +230,7 @@ func GetOrbVersions(orbId string, token string, hostUrl, userId string) ([]struc
 }
 
 // toVersionList adapts the API's versions to the shape GetVersionInfo takes.
-func toVersionList(versions []utils.OrbPackageVersion) []struct{ Version string } {
+func toVersionList(versions []circleci.OrbPackageVersion) []struct{ Version string } {
 	list := make([]struct{ Version string }, 0, len(versions))
 	for _, version := range versions {
 		list = append(list, struct{ Version string }{Version: version.Version})
@@ -238,7 +240,7 @@ func toVersionList(versions []utils.OrbPackageVersion) []struct{ Version string 
 }
 
 func writeRemoteOrbSourceInFSCache(orbYaml string, source string) (string, error) {
-	filePath := utils.GetOrbCacheFSPath(orbYaml)
+	filePath := cache.OrbSourcePath(orbYaml)
 	_, err := os.Stat(filePath)
 
 	if errors.Is(err, os.ErrNotExist) {
@@ -252,19 +254,19 @@ func writeRemoteOrbSourceInFSCache(orbYaml string, source string) (string, error
 }
 
 func checkIfRemoteOrbAlreadyExistsInFSCache(orbYaml string) bool {
-	filePath := utils.GetOrbCacheFSPath(orbYaml)
+	filePath := cache.OrbSourcePath(orbYaml)
 
 	// Err == nil means the file exists
 	_, err := os.Stat(filePath)
 	return err == nil
 }
 
-func addAlreadyExistingRemoteOrbsToFSCache(orb ast.Orb, cache *utils.Cache, context *utils.LsContext) error {
-	filePath := utils.GetOrbCacheFSPath(orb.Url.GetOrbID())
+func addAlreadyExistingRemoteOrbsToFSCache(orb ast.Orb, c *cache.Cache, context *session.Settings) error {
+	filePath := cache.OrbSourcePath(orb.Url.GetOrbID())
 
 	content, err := os.ReadFile(filePath)
 
-	AddOrbToCacheWithContent(orb, uri.File(filePath), content, context, cache)
+	AddOrbToCacheWithContent(orb, uri.File(filePath), content, context, c)
 
 	if err != nil {
 		return err
@@ -273,7 +275,7 @@ func addAlreadyExistingRemoteOrbsToFSCache(orb ast.Orb, cache *utils.Cache, cont
 	return nil
 }
 
-func AddOrbToCacheWithContent(orb ast.Orb, uri protocol.URI, content []byte, context *utils.LsContext, cache *utils.Cache) error {
+func AddOrbToCacheWithContent(orb ast.Orb, uri protocol.URI, content []byte, context *session.Settings, cache *cache.Cache) error {
 	parsedOrbSource, err := ParseFromContent(content, context, uri, protocol.Position{})
 
 	if err != nil {

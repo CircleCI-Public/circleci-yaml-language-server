@@ -1,8 +1,8 @@
 package definition
 
 import (
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
 )
 
@@ -12,7 +12,7 @@ func (def DefinitionStruct) searchForJobs() []protocol.Location {
 			return res
 		}
 
-		if utils.PosInRange(job.NameRange, def.Params.Position) {
+		if position.InRange(job.NameRange, def.Params.Position) {
 			return []protocol.Location{
 				{
 					URI:   def.Params.TextDocument.URI,
@@ -21,7 +21,7 @@ func (def DefinitionStruct) searchForJobs() []protocol.Location {
 			}
 		}
 
-		if utils.PosInRange(job.ExecutorRange, def.Params.Position) {
+		if position.InRange(job.ExecutorRange, def.Params.Position) {
 			return []protocol.Location{
 				{
 					URI:   def.Params.TextDocument.URI,
@@ -42,7 +42,7 @@ func (def DefinitionStruct) getStepDefinition(steps []ast.Step) []protocol.Locat
 	for _, commandStep := range steps {
 		switch step := commandStep.(type) {
 		case ast.NamedStep:
-			if utils.PosInRange(step.Range, def.Params.Position) {
+			if position.InRange(step.Range, def.Params.Position) {
 				if loc, err := def.getCommandOrJobLocation(step.Name, true); err == nil {
 					return loc
 				}

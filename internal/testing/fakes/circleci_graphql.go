@@ -31,7 +31,7 @@ func (f *CircleCI) SetNamespaceHasMoreOrbs() {
 // use.
 //
 // It does not parse GraphQL. It matches on which root field a query selects,
-// which is enough for the fixed set of queries in pkg/utils/orbregistry.go, and
+// which is enough for the fixed set of queries in internal/client/circleci/orbregistry.go, and
 // reproduces the behaviour that matters: a missing orb, version or namespace
 // comes back as a null member of data rather than as an error.
 func (f *CircleCI) handleGraphQL(w http.ResponseWriter, r *http.Request) {

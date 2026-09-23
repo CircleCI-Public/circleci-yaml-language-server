@@ -15,7 +15,7 @@ func (methods *Methods) SemanticTokens(reply jsonrpc2.Replier, req jsonrpc2.Requ
 		return reply(methods.Ctx, nil, fmt.Errorf("%s: %w", jsonrpc2.ErrParse, err))
 	}
 
-	res := lsp.SemanticTokens(params, methods.Cache, methods.LsContext)
+	res := lsp.SemanticTokens(params, methods.Cache, methods.Settings)
 
 	return reply(methods.Ctx, res, nil)
 }

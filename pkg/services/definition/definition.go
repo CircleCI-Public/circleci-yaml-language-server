@@ -3,14 +3,15 @@ package definition
 import (
 	"log/slog"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
 )
 
 type DefinitionStruct struct {
-	Cache  *utils.Cache
+	Cache  *cache.Cache
 	Params protocol.DefinitionParams
 	Doc    yamlparser.YamlDocument
 }
@@ -30,30 +31,30 @@ func (def DefinitionStruct) Definition() ([]protocol.Location, error) {
 
 	switch true {
 	// Job Groups
-	case utils.PosInRange(def.Doc.JobGroupsRange, def.Params.Position):
+	case position.InRange(def.Doc.JobGroupsRange, def.Params.Position):
 		res = def.searchForJobGroups()
 
 	// Workflows
-	case utils.PosInRange(def.Doc.WorkflowRange, def.Params.Position):
+	case position.InRange(def.Doc.WorkflowRange, def.Params.Position):
 		res = def.searchForWorkflows()
 
 	// Jobs
-	case utils.PosInRange(def.Doc.JobsRange, def.Params.Position):
+	case position.InRange(def.Doc.JobsRange, def.Params.Position):
 		res = def.searchForJobs()
 
 	// Commands
-	case utils.PosInRange(def.Doc.CommandsRange, def.Params.Position):
+	case position.InRange(def.Doc.CommandsRange, def.Params.Position):
 		res = def.searchForCommands()
 
 	// Orbs
-	case utils.PosInRange(def.Doc.OrbsRange, def.Params.Position):
+	case position.InRange(def.Doc.OrbsRange, def.Params.Position):
 		res, err = def.getOrbDefinition()
 
 	// Pipeline's parameters
-	case utils.PosInRange(def.Doc.PipelineParametersRange, def.Params.Position):
+	case position.InRange(def.Doc.PipelineParametersRange, def.Params.Position):
 		res, err = def.searchForParamDefinition(def.Doc.PipelineParameters), nil
 
-	case utils.PosInRange(def.Doc.ExecutorsRange, def.Params.Position):
+	case position.InRange(def.Doc.ExecutorsRange, def.Params.Position):
 		res, err = def.getExecutorDefinition()
 	}
 

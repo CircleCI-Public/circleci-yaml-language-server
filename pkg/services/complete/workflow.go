@@ -3,9 +3,9 @@ package complete
 import (
 	"fmt"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
 )
 
@@ -38,7 +38,7 @@ func (ch *CompletionHandler) completeWorkflows() {
 
 func findWorkflow(pos protocol.Position, doc yamlparser.YamlDocument) (ast.Workflow, error) {
 	for _, wf := range doc.Workflows {
-		if utils.PosInRange(wf.Range, pos) {
+		if position.InRange(wf.Range, pos) {
 			return wf, nil
 		}
 	}

@@ -5,8 +5,9 @@ import (
 	"slices"
 	"strconv"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/yamlbool"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	sitter "github.com/smacker/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
@@ -158,7 +159,7 @@ func (doc *YamlDocument) parseBooleanParameter(paramName string, paramNode *sitt
 		switch keyName {
 		case "default":
 			boolParam.DefaultRange = doc.getDefaultParameterRange(child)
-			boolParam.Default = utils.GetYAMLBooleanValue(doc.GetNodeText(valueNode))
+			boolParam.Default = yamlbool.Value(doc.GetNodeText(valueNode))
 			boolParam.HasDefault = true
 		case "description":
 			boolParam.Description = doc.GetNodeText(valueNode)
@@ -212,7 +213,7 @@ func (doc *YamlDocument) parseEnumParameter(paramName string, paramNode *sitter.
 	})
 
 	if enumParam.HasDefault && !slices.Contains(enumParam.Enum, enumParam.Default) {
-		doc.addDiagnostic(utils.CreateErrorDiagnosticFromRange(enumParam.DefaultRange, "Default value is not in enum"))
+		doc.addDiagnostic(diagnostic.Error(enumParam.DefaultRange, "Default value is not in enum"))
 	}
 
 	return enumParam
@@ -258,7 +259,7 @@ func (doc *YamlDocument) parseStepsParameter(paramName string, paramNode *sitter
 			stepsParam.HasDefault = true
 			for _, step := range stepsParam.Default.Value.([]ast.ParameterValue) {
 				if step.Type != "steps" {
-					doc.addDiagnostic(utils.CreateErrorDiagnosticFromRange(step.Range, "Not a valid step"))
+					doc.addDiagnostic(diagnostic.Error(step.Range, "Not a valid step"))
 				}
 			}
 		case "description":
@@ -308,7 +309,7 @@ func (doc *YamlDocument) parseParameterValue(child *sitter.Node) (ast.ParameterV
 	}
 
 	if valueNode == nil {
-		diag := utils.CreateWarningDiagnosticFromNode(
+		diag := diagnostic.WarningFromNode(
 			keyNode,
 			"No value defined for the parameter",
 		)
@@ -490,7 +491,7 @@ func (doc *YamlDocument) parseSimpleParameterValue(paramName string, simpleParam
 
 	case "boolean_scalar":
 		return ast.ParameterValue{
-			Value:      utils.GetYAMLBooleanValue(doc.GetNodeText(simpleParamNode)),
+			Value:      yamlbool.Value(doc.GetNodeText(simpleParamNode)),
 			ValueRange: doc.NodeToRange(simpleParamNode),
 			Name:       paramName,
 			Type:       "boolean",

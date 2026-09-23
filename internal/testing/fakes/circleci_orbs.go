@@ -9,7 +9,7 @@ package fakes
 //
 //   - filter[namespace_id] is read under its real bracketed name.
 //   - Collections paginate with real opaque page[cursor] values, so the
-//     cursor-following loop in utils.GetPaged is actually exercised.
+//     cursor-following loop in circleci.GetPaged is actually exercised.
 //   - An orb package carries every version it has, not just the latest, which
 //     is what the real API returns and what orb version resolution relies on.
 

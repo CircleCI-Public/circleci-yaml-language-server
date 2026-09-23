@@ -1,13 +1,13 @@
 package definition
 
 import (
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 	"go.lsp.dev/protocol"
 )
 
 func (def DefinitionStruct) getExecutorDefinition() ([]protocol.Location, error) {
 	for _, executor := range def.Doc.Executors {
-		if utils.PosInRange(executor.GetNameRange(), def.Params.Position) {
+		if position.InRange(executor.GetNameRange(), def.Params.Position) {
 			return []protocol.Location{
 				{
 					URI:   def.Params.TextDocument.URI,

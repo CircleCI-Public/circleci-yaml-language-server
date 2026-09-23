@@ -1,7 +1,7 @@
 package methods
 
 import (
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/version"
 	"go.lsp.dev/protocol"
 )
 
@@ -25,6 +25,6 @@ func (methods *Methods) SendTelemetryEvent(event TelemetryEvent) {
 	if event.TriggerType == "" {
 		event.TriggerType = "frontend_interaction"
 	}
-	event.Properties["lspVersion"] = utils.ServerVersion
+	event.Properties["lspVersion"] = version.Server
 	methods.Conn.Notify(methods.Ctx, protocol.MethodTelemetryEvent, event)
 }

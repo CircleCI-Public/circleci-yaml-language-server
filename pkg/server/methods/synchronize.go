@@ -7,8 +7,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"github.com/bep/debounce"
 	"github.com/segmentio/encoding/json"
 	"go.lsp.dev/jsonrpc2"
@@ -19,7 +20,7 @@ func (methods *Methods) setChangeInFileCache(textDocument protocol.TextDocumentI
 	if cachedFile := methods.Cache.FileCache.GetFile(textDocument.URI); cachedFile != nil {
 		methods.Cache.FileCache.UpdateTextDocument(textDocument.URI, textDocument)
 	} else {
-		methods.Cache.FileCache.SetFile(utils.CachedFile{
+		methods.Cache.FileCache.SetFile(cache.File{
 			TextDocument: textDocument,
 		})
 	}
@@ -110,7 +111,7 @@ func (methods *Methods) DidClose(reply jsonrpc2.Replier, req jsonrpc2.Request) e
 
 func (methods *Methods) notificationMethods(textDocument protocol.TextDocumentItem) {
 	isOrb, _ := methods.isOrb(textDocument.URI)
-	if methods.LsContext.Api.Token != "" && !isOrb {
+	if methods.Settings.Api.Token != "" && !isOrb {
 		methods.getAllEnvVariables(textDocument)
 	}
 
@@ -140,13 +141,13 @@ func (methods *Methods) notificationMethods(textDocument protocol.TextDocumentIt
 }
 
 func (methods *Methods) parsingMethods(textDocument protocol.TextDocumentItem) {
-	parsedFile, err := parser.ParseFromUriWithCache(textDocument.URI, methods.Cache, methods.LsContext)
+	parsedFile, err := parser.ParseFromUriWithCache(textDocument.URI, methods.Cache, methods.Settings)
 
 	if err != nil {
 		return
 	}
 
-	parser.ParseRemoteOrbs(parsedFile.Orbs, methods.Cache, methods.LsContext)
+	parser.ParseRemoteOrbs(parsedFile.Orbs, methods.Cache, methods.Settings)
 }
 
 func (methods *Methods) applyIncrementalChanges(uri protocol.URI, changes []protocol.TextDocumentContentChangeEvent) string {
@@ -154,7 +155,7 @@ func (methods *Methods) applyIncrementalChanges(uri protocol.URI, changes []prot
 	content := []byte(file.TextDocument.Text)
 
 	for _, change := range changes {
-		start, end := utils.PosToIndex(change.Range.Start, content), utils.PosToIndex(change.Range.End, content)
+		start, end := position.ToIndex(change.Range.Start, content), position.ToIndex(change.Range.End, content)
 
 		var buf bytes.Buffer
 		buf.Write(content[:start])
@@ -169,7 +170,7 @@ func (methods *Methods) applyIncrementalChanges(uri protocol.URI, changes []prot
 func (methods *Methods) updateOrbFile(content []byte, uri protocol.URI) {
 	isOrb, orbId := methods.isOrb(uri)
 	if isOrb {
-		parsedOrbSource, err := parser.ParseFromContent([]byte(content), methods.LsContext, uri, protocol.Position{})
+		parsedOrbSource, err := parser.ParseFromContent([]byte(content), methods.Settings, uri, protocol.Position{})
 		if err == nil {
 			methods.Cache.OrbCache.UpdateOrbParsedAttributes(orbId, parsedOrbSource.ToOrbParsedAttributes())
 		}

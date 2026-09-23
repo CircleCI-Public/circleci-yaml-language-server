@@ -3,14 +3,14 @@ package documentSymbols
 import (
 	"fmt"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
 )
 
 func resolveWorkflowsSymbols(document *parser.YamlDocument) []protocol.DocumentSymbol {
-	if utils.IsDefaultRange(document.WorkflowRange) {
+	if position.IsDefaultRange(document.WorkflowRange) {
 		return nil
 	}
 
@@ -105,11 +105,11 @@ func workflowTriggersSymbols(triggers []ast.WorkflowTrigger) []protocol.Document
 		name := ""
 		children := []protocol.DocumentSymbol{}
 
-		if !utils.IsDefaultRange(trigger.Schedule.Range) {
+		if !position.IsDefaultRange(trigger.Schedule.Range) {
 			name = "schedule"
 			detail = trigger.Schedule.Cron
 
-			if !utils.IsDefaultRange(trigger.Schedule.Filters.Range) {
+			if !position.IsDefaultRange(trigger.Schedule.Filters.Range) {
 				children = append(children, filterSymbols(trigger.Schedule.Filters))
 			}
 		}
@@ -133,7 +133,7 @@ func workflowTriggersSymbols(triggers []ast.WorkflowTrigger) []protocol.Document
 func filterSymbols(filter ast.WorkflowFilters) protocol.DocumentSymbol {
 	children := []protocol.DocumentSymbol{}
 
-	if !utils.IsDefaultRange(filter.Branches.Range) {
+	if !position.IsDefaultRange(filter.Branches.Range) {
 		children = append(children, branchesFiltersSymbols(filter.Branches))
 	}
 

@@ -2,8 +2,8 @@ package parser
 
 import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/paramref"
 	sitter "github.com/smacker/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
@@ -117,7 +117,7 @@ func (doc *YamlDocument) parseStep(blockMapping *sitter.Node) []ast.Step {
 		return doc.parseWhenUnlessStep(valueNode)
 	case "steps":
 		stepName := doc.GetNodeText(valueNode)
-		_, stepName = utils.ExtractParameterName(stepName)
+		_, stepName = paramref.ExtractName(stepName)
 		return []ast.Step{ast.Steps{Name: stepName, Range: doc.NodeToRange(valueNode)}}
 	case "<<":
 		return doc.parseAnchorStep(valueNode)

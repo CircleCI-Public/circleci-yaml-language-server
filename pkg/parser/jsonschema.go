@@ -5,7 +5,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/paramref"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 	sitter "github.com/smacker/go-tree-sitter"
 	"github.com/xeipuuv/gojsonschema"
 	"go.lsp.dev/protocol"
@@ -59,12 +61,12 @@ func handleYAMLErrors(err string, content []byte, rootNode *sitter.Node) ([]prot
 
 		for _, match := range res {
 			rng := protocol.Range{
-				Start: utils.IndexToPos(match[0], content),
-				End:   utils.IndexToPos(match[1], content),
+				Start: position.FromIndex(match[0], content),
+				End:   position.FromIndex(match[1], content),
 			}
-			node, _, _ := utils.NodeAtPos(rootNode, rng.Start)
+			node, _, _ := position.NodeAt(rootNode, rng.Start)
 			if node.Type() == "alias_name" {
-				diagnostics = append(diagnostics, utils.CreateErrorDiagnosticFromRange(rng, err))
+				diagnostics = append(diagnostics, diagnostic.Error(rng, err))
 			}
 		}
 		return diagnostics, nil
@@ -83,23 +85,23 @@ func handleYAMLErrors(err string, content []byte, rootNode *sitter.Node) ([]prot
 
 		// If, for some reason, the Atoi fail, we return the original error
 		if error != nil {
-			return []protocol.Diagnostic{utils.CreateErrorDiagnosticFromNode(rootNode, err)}, nil
+			return []protocol.Diagnostic{diagnostic.ErrorFromNode(rootNode, err)}, nil
 		}
 
-		lineRange := utils.AllLineContentRange([]int{lineNumber}, content)[0]
+		lineRange := position.AllLineContentRange([]int{lineNumber}, content)[0]
 
-		diagnostic := utils.CreateErrorDiagnosticFromRange(
+		diag := diagnostic.Error(
 			lineRange,
-			utils.ToDiagnosticMessage(lineError),
+			diagnostic.Message(lineError),
 		)
 
-		return []protocol.Diagnostic{diagnostic}, nil
+		return []protocol.Diagnostic{diag}, nil
 	}
 
 	reMultilineError, _ := regexp.Compile(`(?s)^yaml:\s(?P<Error>[\w\d\s]+):\n(?P<Lines>\s+line \d+:.+\n?)+`)
 
 	if !reMultilineError.MatchString(err) {
-		return []protocol.Diagnostic{utils.CreateErrorDiagnosticFromNode(rootNode, err)}, nil
+		return []protocol.Diagnostic{diagnostic.ErrorFromNode(rootNode, err)}, nil
 	}
 
 	// For errors providing line numbers, we add a diagnostic on the
@@ -120,14 +122,14 @@ func handleYAMLErrors(err string, content []byte, rootNode *sitter.Node) ([]prot
 
 		// If, for some reason, the Atoi fail, we return the original error
 		if error != nil {
-			return []protocol.Diagnostic{utils.CreateErrorDiagnosticFromNode(rootNode, err)}, nil
+			return []protocol.Diagnostic{diagnostic.ErrorFromNode(rootNode, err)}, nil
 		}
 
 		lineIndexes = append(lineIndexes, lineNumber-1)
 		lineErrors = append(lineErrors, lineError)
 	}
 
-	lineContentRanges := utils.AllLineContentRange(lineIndexes, content)
+	lineContentRanges := position.AllLineContentRange(lineIndexes, content)
 
 	for i, lineContentRange := range lineContentRanges {
 		lineError := lineErrors[i]
@@ -136,12 +138,12 @@ func handleYAMLErrors(err string, content []byte, rootNode *sitter.Node) ([]prot
 			continue
 		}
 
-		diagnostic := utils.CreateErrorDiagnosticFromRange(
+		diag := diagnostic.Error(
 			lineContentRange,
 			lineError,
 		)
 
-		diagnostics = append(diagnostics, diagnostic)
+		diagnostics = append(diagnostics, diag)
 	}
 
 	return diagnostics, nil
@@ -165,7 +167,7 @@ func (validator *JSONSchemaValidator) ValidateWithJSONSchema(rootNode *sitter.No
 	result, err := validator.schema.Validate(yamlLoader)
 	if err != nil {
 		// Should never happen
-		return []protocol.Diagnostic{utils.CreateErrorDiagnosticFromNode(rootNode, err.Error())}
+		return []protocol.Diagnostic{diagnostic.ErrorFromNode(rootNode, err.Error())}
 	}
 
 	jsonSchemaDiags := []protocol.Diagnostic{}
@@ -174,8 +176,8 @@ func (validator *JSONSchemaValidator) ValidateWithJSONSchema(rootNode *sitter.No
 		for _, resErr := range result.Errors() {
 			fields := strings.Split(resErr.Field(), ".")
 			if len(fields) == 1 && fields[0] == "(root)" {
-				diagnostic := utils.CreateErrorDiagnosticFromNode(rootNode, resErr.Description())
-				jsonSchemaDiags = append(jsonSchemaDiags, diagnostic)
+				diag := diagnostic.ErrorFromNode(rootNode, resErr.Description())
+				jsonSchemaDiags = append(jsonSchemaDiags, diag)
 			} else {
 				node, err := FindDeepestNode(rootNode, content, fields)
 				if err != nil {
@@ -186,8 +188,8 @@ func (validator *JSONSchemaValidator) ValidateWithJSONSchema(rootNode *sitter.No
 					continue
 				}
 
-				diagnostic := utils.CreateErrorDiagnosticFromNode(node, resErr.Description())
-				jsonSchemaDiags = append(jsonSchemaDiags, diagnostic)
+				diag := diagnostic.ErrorFromNode(node, resErr.Description())
+				jsonSchemaDiags = append(jsonSchemaDiags, diag)
 			}
 		}
 	}
@@ -216,7 +218,7 @@ func (validator *JSONSchemaValidator) doesNodeUseParameter(node *sitter.Node) bo
 		key := validator.Doc.GetNodeText(keyNode)
 		value := validator.Doc.GetNodeText(valueNode)
 
-		if key == "when" && utils.CheckIfOnlyParamUsed(value) {
+		if key == "when" && paramref.IsOnlyParameter(value) {
 			return true
 		}
 	}
@@ -231,7 +233,7 @@ func removeUselessMustValidateError(diags []protocol.Diagnostic) []protocol.Diag
 			if hasAnotherDiagInsideRange(diags, diag.Range) {
 				continue
 			}
-			resDiags = append(resDiags, utils.CreateDiagnosticFromRange(
+			resDiags = append(resDiags, diagnostic.New(
 				diag.Range,
 				diag.Severity,
 				"Invalid structure",
@@ -247,7 +249,7 @@ func removeUselessMustValidateError(diags []protocol.Diagnostic) []protocol.Diag
 
 func hasAnotherDiagInsideRange(diags []protocol.Diagnostic, rangeToCheck protocol.Range) bool {
 	for _, diag := range diags {
-		if utils.PosInRange(rangeToCheck, diag.Range.Start) {
+		if position.InRange(rangeToCheck, diag.Range.Start) {
 			return true
 		}
 	}

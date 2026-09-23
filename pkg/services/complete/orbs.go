@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	sitter "github.com/smacker/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
@@ -18,7 +18,7 @@ func (ch *CompletionHandler) completeOrbs() {
 	}
 
 	for _, orb := range ch.Doc.Orbs {
-		if orb.ValueNode == nil || !utils.PosInRange(orb.ValueRange, ch.Params.Position) || orb.ValueNode.Type() != "flow_node" {
+		if orb.ValueNode == nil || !position.InRange(orb.ValueRange, ch.Params.Position) || orb.ValueNode.Type() != "flow_node" {
 			continue
 		}
 
@@ -47,11 +47,11 @@ func (ch *CompletionHandler) completeOrb(node *sitter.Node) {
 func (ch *CompletionHandler) wantOrbVersionCompletion(node *sitter.Node) bool {
 	def := ch.Doc.GetOrbURLDefinition(node)
 
-	orbHasVersion := !utils.IsDefaultRange(def.Version.Range)
+	orbHasVersion := !position.IsDefaultRange(def.Version.Range)
 	if !orbHasVersion {
 		return false
 	}
-	cursorIsOnVersion := utils.PosInRange(def.Version.Range, ch.Params.Position)
+	cursorIsOnVersion := position.InRange(def.Version.Range, ch.Params.Position)
 
 	return cursorIsOnVersion
 }

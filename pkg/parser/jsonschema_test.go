@@ -4,14 +4,15 @@ import (
 	"strings"
 	"testing"
 
-	schema "github.com/CircleCI-Public/circleci-yaml-language-server"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/expect"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/testHelpers"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 	"gopkg.in/yaml.v3"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
+
+	schema "github.com/CircleCI-Public/circleci-yaml-language-server"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/expect"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/testHelpers"
 )
 
 func Test_HandleYAMLErrors_MappingKeyError(t *testing.T) {
@@ -35,7 +36,7 @@ testFinal:
 
 	err := yaml.Unmarshal(content, m)
 
-	context := testHelpers.GetDefaultLsContext()
+	context := testHelpers.DefaultSettings()
 	yamlDocument, _ := ParseFromContent(content, context, uri.File(""), protocol.Position{})
 
 	actualDiagnostics, err := handleYAMLErrors(err.Error(), content, yamlDocument.RootNode)
@@ -57,7 +58,7 @@ test:
 
 	err := yaml.Unmarshal(content, m)
 
-	context := testHelpers.GetDefaultLsContext()
+	context := testHelpers.DefaultSettings()
 	yamlDocument, _ := ParseFromContent(content, context, uri.File(""), protocol.Position{})
 
 	diagnostics, err := handleYAMLErrors(err.Error(), content, yamlDocument.RootNode)
@@ -286,7 +287,7 @@ jobs:
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			context := testHelpers.GetDefaultLsContext()
+			context := testHelpers.DefaultSettings()
 			yamlDocument, _ := ParseFromContent([]byte(tc.yaml), context, uri.File(""), protocol.Position{})
 
 			if tc.expectError {

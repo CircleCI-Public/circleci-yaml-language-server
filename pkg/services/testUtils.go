@@ -3,12 +3,14 @@ package languageservice
 import (
 	"testing"
 
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/expect"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 	"gotest.tools/v3/assert"
+
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/session"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/expect"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
 )
 
 type ExpDiagInfo struct {
@@ -54,14 +56,14 @@ func ExpectDiagnostic(t *testing.T) ExpDiag {
 }
 
 // ExpectDiagnostic.File
-func (root ExpDiag) File(context *utils.LsContext, uri protocol.URI) ExpDiagStruct {
+func (root ExpDiag) File(context *session.Settings, uri protocol.URI) ExpDiagStruct {
 	yamlDocument, err := parser.ParseFromURI(uri, context)
 
 	return buildExDiag(root.t, yamlDocument, err)
 }
 
 // ExpectDiagnostic.String
-func (root ExpDiag) String(context *utils.LsContext, content string) ExpDiagStruct {
+func (root ExpDiag) String(context *session.Settings, content string) ExpDiagStruct {
 	yamlDocument, err := parser.ParseFromContent([]byte(content), context, uri.File(""), protocol.Position{})
 
 	return buildExDiag(root.t, yamlDocument, err)
@@ -73,12 +75,12 @@ func (root ExpDiag) Yaml(yamlDocument parser.YamlDocument) ExpDiagStruct {
 }
 
 // ExpectDiagnostic.<type>.To.Include
-func (exp ExpDiagTo) Include(context *utils.LsContext, expected protocol.Diagnostic) {
+func (exp ExpDiagTo) Include(context *session.Settings, expected protocol.Diagnostic) {
 	exp.info.ensureNoError()
 
 	diagnostics, err := DiagnosticYAML(
 		exp.info.content,
-		utils.CreateCache(),
+		cache.New(),
 		context,
 	)
 
@@ -88,12 +90,12 @@ func (exp ExpDiagTo) Include(context *utils.LsContext, expected protocol.Diagnos
 }
 
 // ExpectDiagnostic.<type>.To.Not.Include
-func (exp ExpDiagToNot) Include(context *utils.LsContext, expected protocol.Diagnostic) {
+func (exp ExpDiagToNot) Include(context *session.Settings, expected protocol.Diagnostic) {
 	exp.info.ensureNoError()
 
 	diagnostics, err := DiagnosticYAML(
 		exp.info.content,
-		utils.CreateCache(),
+		cache.New(),
 		context,
 	)
 
@@ -103,10 +105,10 @@ func (exp ExpDiagToNot) Include(context *utils.LsContext, expected protocol.Diag
 }
 
 // ExpectDiagnostic.<type>.To.IncludeAll
-func (exp ExpDiagTo) IncludeAll(context *utils.LsContext, expected []protocol.Diagnostic) {
+func (exp ExpDiagTo) IncludeAll(context *session.Settings, expected []protocol.Diagnostic) {
 	exp.info.ensureNoError()
 
-	diagnostics, err := DiagnosticYAML(exp.info.content, utils.CreateCache(), context)
+	diagnostics, err := DiagnosticYAML(exp.info.content, cache.New(), context)
 
 	assert.Check(exp.info.t, err)
 
@@ -114,12 +116,12 @@ func (exp ExpDiagTo) IncludeAll(context *utils.LsContext, expected []protocol.Di
 }
 
 // ExpectDiagnostic.<type>.To.Not.IncludeAll
-func (exp ExpDiagToNot) IncludeAll(context *utils.LsContext, expected []protocol.Diagnostic) {
+func (exp ExpDiagToNot) IncludeAll(context *session.Settings, expected []protocol.Diagnostic) {
 	exp.info.ensureNoError()
 
 	diagnostics, err := DiagnosticYAML(
 		exp.info.content,
-		utils.CreateCache(),
+		cache.New(),
 		context,
 	)
 

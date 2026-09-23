@@ -1,7 +1,7 @@
 package definition
 
 import (
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 	"go.lsp.dev/protocol"
 )
 
@@ -17,7 +17,7 @@ func (def DefinitionStruct) searchAliasDefinition() []protocol.Location {
 
 	for _, anchor := range def.Doc.YamlAnchors {
 		for _, aliasRange := range *anchor.References {
-			if !utils.PosInRange(aliasRange, pos) {
+			if !position.InRange(aliasRange, pos) {
 				continue
 			}
 

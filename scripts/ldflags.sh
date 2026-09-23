@@ -8,12 +8,12 @@ then
 	exit 1
 fi
 
-PACKAGE="github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
+PACKAGE="github.com/CircleCI-Public/circleci-yaml-language-server/internal/version"
 
 VERSION=$(cat ~/version)
 
 LDFLAGS=(
-  "-X '${PACKAGE}.ServerVersion=${VERSION}'"
+  "-X '${PACKAGE}.Server=${VERSION}'"
 )
 
 echo -n "-ldflags=\"${LDFLAGS[*]} $SUFFIX\""

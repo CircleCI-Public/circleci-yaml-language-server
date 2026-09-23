@@ -3,15 +3,16 @@ package parser_test
 import (
 	"testing"
 
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/dockerhub"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser/validate"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/testHelpers"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
+
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/dockerhub"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/testHelpers"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser/validate"
 )
 
 func TestLocalOrbJob(t *testing.T) {
@@ -208,10 +209,10 @@ orbs:
 // }
 
 func GetDocForTests(t *testing.T, content string, orbKey string) parser.YamlDocument {
-	context := testHelpers.GetDefaultLsContext()
+	context := testHelpers.DefaultSettings()
 	doc, err := parser.ParseFromContent([]byte(content), context, uri.File(""), protocol.Position{})
 	assert.Check(t, err)
-	orbInfo, err := doc.GetOrbInfoFromName(orbKey, utils.CreateCache())
+	orbInfo, err := doc.GetOrbInfoFromName(orbKey, cache.New())
 	assert.Check(t, err)
 	return doc.FromOrbParsedAttributesToYamlDocument(orbInfo.OrbParsedAttributes)
 }
@@ -250,7 +251,7 @@ workflows:
     jobs:
       - do
       - local/job`
-	context := testHelpers.GetDefaultLsContext()
+	context := testHelpers.DefaultSettings()
 	doc, err := parser.ParseFromContent([]byte(content), context, uri.File(""), protocol.Position{})
 	assert.Check(t, err)
 	assert.Check(t, cmp.Len(*doc.Diagnostics, 0))
@@ -259,7 +260,7 @@ workflows:
 			DockerHub: dockerhub.NewAPI(),
 		},
 		Diagnostics: &[]protocol.Diagnostic{},
-		Cache:       utils.CreateCache(),
+		Cache:       cache.New(),
 		Doc:         doc,
 		Context:     context,
 	}

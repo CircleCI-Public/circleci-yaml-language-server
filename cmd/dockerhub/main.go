@@ -24,8 +24,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/dockerhub"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/probe"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/dockerhub"
 )
 
 // The defaults are a namespace and a repository large enough to page: cimg has

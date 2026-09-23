@@ -7,8 +7,10 @@ import (
 
 	"go.lsp.dev/protocol"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/codeaction"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/paramref"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
 // InvocationKind distinguishes where a job invocation appears.
@@ -50,7 +52,7 @@ func (val Validate) validateJobInvocationParameters(jobInvocation ast.JobInvocat
 
 		if !okMatrix && !okParams && !definedParam.IsOptional() {
 			val.addDiagnostic(
-				utils.CreateErrorDiagnosticFromRange(
+				diagnostic.Error(
 					jobRange,
 					fmt.Sprintf("Parameter %s is required for %s", definedParam.GetName(), jobName),
 				),
@@ -65,7 +67,7 @@ func (val Validate) validateJobInvocationParameters(jobInvocation ast.JobInvocat
 						val.checkParamSimpleType(value, jobName, definedParam)
 					}
 				} else if param.Type != "alias" {
-					val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
+					val.addDiagnostic(diagnostic.Error(
 						param.Range,
 						fmt.Sprintf("Parameter %s is not an enum of values", param.Name)),
 					)
@@ -78,7 +80,7 @@ func (val Validate) validateJobInvocationParameters(jobInvocation ast.JobInvocat
 
 	for _, param := range jobInvocation.Parameters {
 		if definedParams[param.Name] == nil {
-			val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
+			val.addDiagnostic(diagnostic.Error(
 				param.Range,
 				fmt.Sprintf("Parameter %s is not defined in %s", param.Name, jobName)),
 			)
@@ -123,12 +125,12 @@ func (val Validate) validateDuplicateJobGroupInvocations(jobInvocations []ast.Jo
 		namesSeen := map[string]bool{}
 		for _, e := range entries {
 			if !e.isRenamed {
-				val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
+				val.addDiagnostic(diagnostic.Error(
 					e.invocation.JobNameRange,
 					fmt.Sprintf("Job group \"%s\" is invoked multiple times without a \"name\" attribute. Each invocation must have a unique name", groupName),
 				))
 			} else if namesSeen[e.name] {
-				val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
+				val.addDiagnostic(diagnostic.Error(
 					e.invocation.StepNameRange,
 					fmt.Sprintf("Job group \"%s\" is already invoked with the name \"%s\"", groupName, e.name),
 				))
@@ -155,23 +157,23 @@ func (val Validate) validateInvocations(jobInvocations []ast.JobInvocation, ctx 
 		// Common features between invoking a job and a job-group
 
 		for _, require := range jobInvocation.Requires {
-			if !val.doesJobInvocationExist(jobInvocations, require.Name) && !utils.CheckIfMatrixParamIsPartiallyReferenced(require.Name) {
+			if !val.doesJobInvocationExist(jobInvocations, require.Name) && !paramref.IsMatrixPartiallyReferenced(require.Name) {
 				// Check if the require references a job inside a job-group
 				if ownerGroup, found := val.Doc.FindJobGroupContainingJob(require.Name); found {
 					if ctx.Kind == InWorkflow {
-						val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
+						val.addDiagnostic(diagnostic.Error(
 							require.Range,
 							fmt.Sprintf("\"%s\" is defined inside job group \"%s\", not directly in this workflow", require.Name, ownerGroup)))
 						continue
 					} else if ctx.Kind == InJobGroup && ownerGroup != ctx.JobGroupName {
-						val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
+						val.addDiagnostic(diagnostic.Error(
 							require.Range,
 							fmt.Sprintf("\"%s\" is not a member of this job group", require.Name)))
 						continue
 					}
 				}
 
-				val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
+				val.addDiagnostic(diagnostic.Error(
 					require.Range,
 					fmt.Sprintf("Cannot find declaration for job invocation \"%s\"", require.Name)))
 			}
@@ -196,7 +198,7 @@ func (val Validate) validateInvocations(jobInvocations []ast.JobInvocation, ctx 
 				if require.StatusRange.Start.Line != require.StatusRange.End.Line {
 					newText = " terminal"
 				}
-				codeAction := utils.CreateCodeActionTextEdit(
+				codeAction := codeaction.TextEdit(
 					"Simplify these statuses to 'terminal'",
 					val.Doc.URI,
 					[]protocol.TextEdit{
@@ -222,14 +224,14 @@ func (val Validate) validateInvocations(jobInvocations []ast.JobInvocation, ctx 
 
 func (val Validate) validateSingleJobInvocation(jobInvocation ast.JobInvocation, ctx InvocationContext) {
 	if ctx.Kind == InJobGroup && jobInvocation.SerialGroup != "" {
-		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(jobInvocation.SerialGroupRange, "Use of `serial-group` on job invocations inside a job-group is not supported. Please consider using `serial-group` on the job-group instead."))
+		val.addDiagnostic(diagnostic.Error(jobInvocation.SerialGroupRange, "Use of `serial-group` on job invocations inside a job-group is not supported. Please consider using `serial-group` on the job-group instead."))
 	}
 
 	// Users can define a job via `type: approval` within a workflow/job-group job invocation
 	// https://circleci.com/docs/reference/configuration-reference/#type
 	// This is an old artifact that we don't want to expand on anymore.
 	if jobInvocation.Type != "" && jobInvocation.Type != "approval" {
-		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(jobInvocation.TypeRange, fmt.Sprintf("Only jobs with `type: approval` can be defined inline under the `workflows:`/`job-groups:` section. For `type: %s`, define the job in the `jobs:` section instead.", jobInvocation.Type)))
+		val.addDiagnostic(diagnostic.Error(jobInvocation.TypeRange, fmt.Sprintf("Only jobs with `type: approval` can be defined inline under the `workflows:`/`job-groups:` section. For `type: %s`, define the job in the `jobs:` section instead.", jobInvocation.Type)))
 		return
 	}
 
@@ -241,7 +243,7 @@ func (val Validate) validateSingleJobInvocation(jobInvocation ast.JobInvocation,
 	if jobInvocation.Type != "approval" && // Special case: if the job is defined inline via `type: approval`, then it must exist
 		!val.Doc.DoesJobExist(jobInvocation.JobName) &&
 		!(val.Doc.IsOrbReference(jobInvocation.JobName) && (val.Doc.IsOrbCommand(jobInvocation.JobName, val.Cache) || val.Doc.IsOrbJob(jobInvocation.JobName, val.Cache))) {
-		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
+		val.addDiagnostic(diagnostic.Error(
 			jobInvocation.JobInvocationRange,
 			fmt.Sprintf("Cannot find declaration for job \"%s\"", jobInvocation.JobName)))
 		return
@@ -260,7 +262,7 @@ func (val Validate) validateSingleJobInvocation(jobInvocation ast.JobInvocation,
 				cachedFile.Project.OrganizationSlug,
 				context.Text,
 			) == nil {
-				val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
+				val.addDiagnostic(diagnostic.Error(
 					context.Range,
 					fmt.Sprintf("Context %s does not exist", context.Text)))
 			}
@@ -273,20 +275,20 @@ func (val Validate) validateSingleJobInvocation(jobInvocation ast.JobInvocation,
 // does not have all of the same features as a single job invocation.
 func (val Validate) validateJobGroupInvocation(jobInvocation ast.JobInvocation, ctx InvocationContext) {
 	if ctx.Kind == InJobGroup {
-		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(jobInvocation.JobNameRange,
+		val.addDiagnostic(diagnostic.Error(jobInvocation.JobNameRange,
 			fmt.Sprintf("Job group \"%s\" cannot reference job group \"%s\" -- nesting is not supported", ctx.JobGroupName, jobInvocation.JobName)))
 		return // exit early
 	}
 
 	// Keys not allowed in job group invocations
 	if jobInvocation.HasMatrix {
-		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(jobInvocation.MatrixRange, "Job group invocations do not support `matrix`"))
+		val.addDiagnostic(diagnostic.Error(jobInvocation.MatrixRange, "Job group invocations do not support `matrix`"))
 	}
 	if jobInvocation.OverrideWith != "" {
-		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(jobInvocation.OverrideWithRange, "Job group invocations do not support use of `override-with`"))
+		val.addDiagnostic(diagnostic.Error(jobInvocation.OverrideWithRange, "Job group invocations do not support use of `override-with`"))
 	}
 	if jobInvocation.Type != "" {
-		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(jobInvocation.TypeRange, "Job group invocations do not support use of `type`"))
+		val.addDiagnostic(diagnostic.Error(jobInvocation.TypeRange, "Job group invocations do not support use of `type`"))
 	}
 	if len(jobInvocation.Parameters) > 0 {
 		paramNames := make([]string, 0, len(jobInvocation.Parameters))
@@ -294,17 +296,17 @@ func (val Validate) validateJobGroupInvocation(jobInvocation ast.JobInvocation, 
 			paramNames = append(paramNames, fmt.Sprintf("`%s`", name))
 		}
 		sort.Strings(paramNames) // Since map iteration is not guaranteed to be in order, sort the paramNames
-		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(jobInvocation.JobInvocationRange,
+		val.addDiagnostic(diagnostic.Error(jobInvocation.JobInvocationRange,
 			fmt.Sprintf("Job group invocations do not support custom parameters, but found: %s", strings.Join(paramNames, ", "))))
 	}
 	if len(jobInvocation.Context) > 0 {
-		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(jobInvocation.JobInvocationRange, "Job group invocations do not support use of `context`"))
+		val.addDiagnostic(diagnostic.Error(jobInvocation.JobInvocationRange, "Job group invocations do not support use of `context`"))
 	}
 	if len(jobInvocation.PreSteps) > 0 {
-		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(jobInvocation.PreStepsRange, "Job group invocations do not support use of `pre-steps`"))
+		val.addDiagnostic(diagnostic.Error(jobInvocation.PreStepsRange, "Job group invocations do not support use of `pre-steps`"))
 	}
 	if len(jobInvocation.PostSteps) > 0 {
-		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(jobInvocation.PostStepsRange, "Job group invocations do not support use of `post-steps`"))
+		val.addDiagnostic(diagnostic.Error(jobInvocation.PostStepsRange, "Job group invocations do not support use of `post-steps`"))
 	}
 }
 
@@ -314,7 +316,7 @@ func (val Validate) validateDAG(invocations []ast.JobInvocation, dag map[string]
 	for _, node := range nodesInCycle {
 		for _, invocation := range invocations {
 			if invocation.JobName == node {
-				val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
+				val.addDiagnostic(diagnostic.Error(
 					invocation.JobNameRange,
 					fmt.Sprintf("The job `%s` is part of a cycle", node)))
 			}

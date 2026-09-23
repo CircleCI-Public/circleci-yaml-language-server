@@ -3,15 +3,16 @@ package complete
 import (
 	"strings"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/paramref"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	sitter "github.com/smacker/go-tree-sitter"
 )
 
 func (ch *CompletionHandler) addParametersDefinitionCompletion(parameters map[string]ast.Parameter) {
 	for _, param := range parameters {
-		if utils.PosInRange(param.GetRange(), ch.Params.Position) {
-			if utils.PosInRange(param.GetTypeRange(), ch.Params.Position) {
+		if position.InRange(param.GetRange(), ch.Params.Position) {
+			if position.InRange(param.GetTypeRange(), ch.Params.Position) {
 				ch.addCompletionItem("string")
 				ch.addCompletionItem("boolean")
 				ch.addCompletionItem("integer")
@@ -21,7 +22,7 @@ func (ch *CompletionHandler) addParametersDefinitionCompletion(parameters map[st
 				ch.addCompletionItem("env_var_name")
 				return
 			}
-			if param.GetType() == "enum" && utils.PosInRange(param.GetDefaultRange(), ch.Params.Position) {
+			if param.GetType() == "enum" && position.InRange(param.GetDefaultRange(), ch.Params.Position) {
 				param := param.(ast.EnumParameter)
 				for _, value := range param.Enum {
 					ch.addCompletionItem(value)
@@ -30,7 +31,7 @@ func (ch *CompletionHandler) addParametersDefinitionCompletion(parameters map[st
 			}
 
 			if param.GetType() == "boolean" {
-				if utils.PosInRange(param.GetDefaultRange(), ch.Params.Position) {
+				if position.InRange(param.GetDefaultRange(), ch.Params.Position) {
 					ch.addCompletionItem("true")
 					ch.addCompletionItem("false")
 					return
@@ -38,7 +39,7 @@ func (ch *CompletionHandler) addParametersDefinitionCompletion(parameters map[st
 			}
 
 			if param.GetType() == "executor" {
-				if utils.PosInRange(param.GetDefaultRange(), ch.Params.Position) {
+				if position.InRange(param.GetDefaultRange(), ch.Params.Position) {
 					ch.addExecutorsCompletion()
 					return
 				}
@@ -61,7 +62,7 @@ func (ch *CompletionHandler) addParametersDefinitionCompletion(parameters map[st
 
 func (ch *CompletionHandler) addParameterReferenceCompletion(node *sitter.Node) {
 	if node.Type() == "string_scalar" {
-		isParamBeingWritten, isPipelineParam := utils.CheckIfParamIsPartiallyReferenced(ch.Doc.GetNodeText(node))
+		isParamBeingWritten, isPipelineParam := paramref.IsPartiallyReferenced(ch.Doc.GetNodeText(node))
 		if isParamBeingWritten {
 			if isPipelineParam {
 				ch.addPipelineParametersReferenceCompletion()
@@ -95,7 +96,7 @@ func (ch *CompletionHandler) addParametersReferenceCompletion() {
 }
 
 func (ch *CompletionHandler) shouldAddParamsClosingBrackets() bool {
-	idx := utils.PosToIndex(ch.Params.Position, ch.Doc.Content)
+	idx := position.ToIndex(ch.Params.Position, ch.Doc.Content)
 
 	if strings.HasPrefix(string(ch.Doc.Content[idx:]), " >>") ||
 		strings.HasPrefix(string(ch.Doc.Content[idx:]), ">>") {

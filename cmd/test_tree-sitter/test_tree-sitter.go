@@ -4,14 +4,15 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/session"
 	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
 func main() {
 	content, _ := os.ReadFile("examples/config1.yml")
-	context := &utils.LsContext{
-		Api: utils.ApiContext{
+	context := &session.Settings{
+		Api: circleci.Config{
 			Token:   "XXXXXXXXXXXX",
 			HostUrl: "https://circleci.com",
 		},

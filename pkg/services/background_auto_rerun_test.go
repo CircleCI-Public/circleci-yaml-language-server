@@ -3,15 +3,17 @@ package languageservice
 import (
 	"testing"
 
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/testHelpers"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
+
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/testHelpers"
 )
 
 func TestBackgroundAutoRerunValidation(t *testing.T) {
-	cache := utils.CreateCache()
-	context := testHelpers.GetDefaultLsContext()
+	c := cache.New()
+	context := testHelpers.DefaultSettings()
 	context.Api.Token = ""
 
 	testCases := []struct {
@@ -527,16 +529,16 @@ workflows:
 		t.Run(tc.name, func(t *testing.T) {
 			// Create a temporary file for the test
 			testUri := uri.File("test.yml")
-			cache.FileCache.SetFile(utils.CachedFile{
+			c.FileCache.SetFile(cache.File{
 				TextDocument: protocol.TextDocumentItem{
 					URI:  testUri,
 					Text: tc.yamlContent,
 				},
-				Project:      utils.Project{},
+				Project:      circleci.Project{},
 				EnvVariables: make([]string, 0),
 			})
 
-			diagnostics, err := DiagnosticFile(testUri, cache, context, "")
+			diagnostics, err := DiagnosticFile(testUri, c, context, "")
 			if err != nil {
 				t.Errorf("DiagnosticFile failed: %v", err)
 				return

@@ -130,7 +130,7 @@ func NewCircleCI(t *testing.T) *CircleCI {
 	return fake
 }
 
-// URL is the base URL of the fake, suitable for an ApiContext HostUrl.
+// URL is the base URL of the fake, suitable for a circleci.Config HostUrl.
 func (f *CircleCI) URL() string {
 	return f.server.URL
 }

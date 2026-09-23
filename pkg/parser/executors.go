@@ -3,8 +3,11 @@ package parser
 import (
 	"strings"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/codeaction"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/yamlbool"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	sitter "github.com/smacker/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
@@ -135,7 +138,7 @@ func (doc *YamlDocument) parseSingleExecutorMachine(nameNode *sitter.Node, value
 			)
 
 			if machineBoolValueNode != nil {
-				res.Machine = utils.GetYAMLBooleanValue(doc.GetNodeText(machineBoolValueNode))
+				res.Machine = yamlbool.Value(doc.GetNodeText(machineBoolValueNode))
 			}
 		}
 
@@ -336,15 +339,15 @@ func (doc *YamlDocument) addedMachineTrueDeprecatedDiag(child *sitter.Node, reso
 
 	value := doc.GetNodeText(valueNode)
 
-	if !utils.IsValidYAMLBooleanValue(value) || !utils.GetYAMLBooleanValue(value) {
+	if !yamlbool.IsValid(value) || !yamlbool.Value(value) {
 		return false
 	}
 
-	if !doc.Context.Api.UseDefaultInstance() || utils.IsSelfHostedRunner(resourceClass) {
+	if !doc.Context.Api.UseDefaultInstance() || circleci.IsSelfHostedRunner(resourceClass) {
 		return false
 	}
 
-	if utils.IsSelfHostedRunner(resourceClass) {
+	if circleci.IsSelfHostedRunner(resourceClass) {
 		return false
 	}
 	machineRange := doc.NodeToRange(child)
@@ -354,25 +357,25 @@ func (doc *YamlDocument) addedMachineTrueDeprecatedDiag(child *sitter.Node, reso
 }
 
 func (doc *YamlDocument) machineTrueFix(machineRange protocol.Range) {
-	diagnostic := utils.CreateDiagnosticFromRange(
+	diag := diagnostic.New(
 		machineRange,
 		protocol.DiagnosticSeverityWarning,
-		utils.GetMachineTrueMessage(utils.CurrentLinuxImage),
+		MachineTrueMessage(circleci.CurrentLinuxImage),
 		[]protocol.CodeAction{
-			utils.CreateCodeActionTextEdit("Replace with current Ubuntu image", doc.URI,
+			codeaction.TextEdit("Replace with current Ubuntu image", doc.URI,
 				[]protocol.TextEdit{
 					{
 						Range: machineRange,
 						NewText: "machine:\n" +
 							strings.Repeat(" ", int(machineRange.Start.Character)) +
 							"  image: " +
-							utils.CurrentLinuxImage,
+							circleci.CurrentLinuxImage,
 					},
 				}, false),
 		},
 	)
-	diagnostic.Tags = []protocol.DiagnosticTag{
+	diag.Tags = []protocol.DiagnosticTag{
 		protocol.DiagnosticTagDeprecated,
 	}
-	doc.addDiagnostic(diagnostic)
+	doc.addDiagnostic(diag)
 }

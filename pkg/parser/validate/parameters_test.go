@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"go.lsp.dev/protocol"
 )
 
@@ -39,7 +39,7 @@ func TestJobParameterType(t *testing.T) {
 			Name:        "Parameter usage should error when param usage is different from param definition",
 			YamlContent: string(wrongParamFileContent),
 			Diagnostics: []protocol.Diagnostic{
-				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+				diagnostic.Error(protocol.Range{
 					Start: protocol.Position{Line: 24, Character: 9},
 					End:   protocol.Position{Line: 24, Character: 54},
 				}, "Parameter skip for build must be a string"),
@@ -49,7 +49,7 @@ func TestJobParameterType(t *testing.T) {
 			Name:        "Parameter usage should error when param usage is different from param definition",
 			YamlContent: string(wrongParamIntegerFileContent),
 			Diagnostics: []protocol.Diagnostic{
-				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+				diagnostic.Error(protocol.Range{
 					Start: protocol.Position{Line: 24, Character: 9},
 					End:   protocol.Position{Line: 24, Character: 54},
 				}, "Parameter skip for build must be a boolean"),
@@ -59,7 +59,7 @@ func TestJobParameterType(t *testing.T) {
 			Name:        "Parameter usage should error when param usage is different from param definition",
 			YamlContent: string(wrongParamBooleanFileContent),
 			Diagnostics: []protocol.Diagnostic{
-				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+				diagnostic.Error(protocol.Range{
 					Start: protocol.Position{Line: 24, Character: 9},
 					End:   protocol.Position{Line: 24, Character: 54},
 				}, "Parameter skip for build must be a boolean"),
@@ -93,7 +93,7 @@ workflows:
       - morejob`,
 			OnlyErrors: true,
 			Diagnostics: []protocol.Diagnostic{
-				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+				diagnostic.Error(protocol.Range{
 					Start: protocol.Position{Line: 16, Character: 6},
 					End:   protocol.Position{Line: 16, Character: 15},
 				}, "Parameter go_version is required for morejob"),
@@ -164,7 +164,7 @@ workflows:
       - my-deploy`,
 			OnlyErrors: true,
 			Diagnostics: []protocol.Diagnostic{
-				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+				diagnostic.Error(protocol.Range{
 					Start: protocol.Position{Line: 18, Character: 6},
 					End:   protocol.Position{Line: 18, Character: 17},
 				}, "Parameter env is required for my-deploy"),
@@ -199,7 +199,7 @@ workflows:
           bogus_param: hello`,
 			OnlyErrors: true,
 			Diagnostics: []protocol.Diagnostic{
-				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+				diagnostic.Error(protocol.Range{
 					Start: protocol.Position{Line: 17, Character: 10},
 					End:   protocol.Position{Line: 17, Character: 28},
 				}, "Parameter bogus_param is not defined in my-deploy"),
@@ -223,7 +223,7 @@ workflows:
           some_param: value`,
 			OnlyErrors: true,
 			Diagnostics: []protocol.Diagnostic{
-				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+				diagnostic.Error(protocol.Range{
 					Start: protocol.Position{Line: 13, Character: 10},
 					End:   protocol.Position{Line: 13, Character: 27},
 				}, "Parameter some_param is not defined in my-build"),

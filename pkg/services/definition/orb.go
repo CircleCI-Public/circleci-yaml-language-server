@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 )
@@ -13,8 +13,8 @@ import (
 func (def DefinitionStruct) getOrbDefinition() ([]protocol.Location, error) {
 	var orb ast.Orb
 	for _, currentOrb := range def.Doc.Orbs {
-		if utils.PosInRange(currentOrb.NameRange, def.Params.Position) ||
-			utils.PosInRange(currentOrb.Range, def.Params.Position) {
+		if position.InRange(currentOrb.NameRange, def.Params.Position) ||
+			position.InRange(currentOrb.Range, def.Params.Position) {
 			orb = currentOrb
 		}
 	}

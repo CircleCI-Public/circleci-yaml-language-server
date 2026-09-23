@@ -31,9 +31,9 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/logging"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/probe"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
 // pagedNamespace holds more orbs than the page limit below, so that following
@@ -59,7 +59,7 @@ func run() int {
 		ref = os.Args[1]
 	}
 
-	host := utils.CIRCLE_CI_APP_HOST_URL
+	host := circleci.DefaultHostURL
 	if fromEnv := os.Getenv("CIRCLECI_HOST"); fromEnv != "" {
 		host = fromEnv
 	}
@@ -72,13 +72,13 @@ func run() int {
 	// response is logged to stderr alongside it.
 	logging.Setup(debug)
 
-	var registry utils.OrbRegistry
+	var registry circleci.OrbRegistry
 	switch backend {
 	case "graphql":
-		registry = utils.NewGraphQLOrbRegistry(host, token, "", debug)
+		registry = circleci.NewGraphQLOrbRegistry(host, token, "", debug)
 	default:
 		backend = "v3 where it answers, graphql where it does not"
-		registry = utils.NewOrbRegistry(host, token, "", debug)
+		registry = circleci.NewOrbRegistry(host, token, "", debug)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), probeTimeout)
@@ -90,15 +90,15 @@ func run() int {
 	orbProbe.Note("token:   %s", describeToken(token))
 	orbProbe.Note("ref:     %s", ref)
 
-	var orb *utils.OrbPackage
+	var orb *circleci.OrbPackage
 
 	// The first read is where an unreachable host or a rejected token shows
 	// up, so it is the one that can report the probe unavailable.
 	orbProbe.Check("an orb package reports an id, a name and a namespace", func() error {
-		fetched, err := registry.FetchOrb(ctx, utils.OrbPackageName(ref))
+		fetched, err := registry.FetchOrb(ctx, circleci.OrbPackageName(ref))
 		if err != nil {
-			if errors.Is(err, utils.ErrNotFound) {
-				return fmt.Errorf("%s is not visible: %w", utils.OrbPackageName(ref), err)
+			if errors.Is(err, circleci.ErrNotFound) {
+				return fmt.Errorf("%s is not visible: %w", circleci.OrbPackageName(ref), err)
 			}
 
 			return probe.Unavailable(err)
@@ -128,9 +128,9 @@ func run() int {
 
 		orbProbe.Note("versions: %d published, latest %s", len(orb.Versions), orb.Versions[0].Version)
 
-		sorted := make([]utils.OrbPackageVersion, len(orb.Versions))
+		sorted := make([]circleci.OrbPackageVersion, len(orb.Versions))
 		copy(sorted, orb.Versions)
-		utils.SortOrbVersionsDesc(sorted)
+		circleci.SortOrbVersionsDesc(sorted)
 
 		if sorted[0].Version != orb.Versions[0].Version {
 			return fmt.Errorf("the newest release is %s but the list starts at %s",
@@ -179,9 +179,9 @@ func run() int {
 // cursors the API hands out can be followed — which is the fake's main claim
 // about this API.
 func checkPaging(ctx context.Context, host, token string, debug bool, orbProbe *probe.Probe) error {
-	client := utils.NewV3Client(host, token, "", debug)
+	client := circleci.NewV3Client(host, token, "", debug)
 
-	namespace, err := utils.FetchNamespace(ctx, client, pagedNamespace)
+	namespace, err := circleci.FetchNamespace(ctx, client, pagedNamespace)
 	if err != nil {
 		return fmt.Errorf("reading the %s namespace: %w", pagedNamespace, err)
 	}
@@ -190,7 +190,7 @@ func checkPaging(ctx context.Context, host, token string, debug bool, orbProbe *
 	query.Set("filter[namespace_id]", namespace.ID)
 	query.Set("page[limit]", strconv.Itoa(pageLimit))
 
-	orbs, err := utils.GetPaged[struct {
+	orbs, err := circleci.GetPaged[struct {
 		ID string `json:"id"`
 	}](ctx, client, "orb/packages", query)
 	if err != nil {

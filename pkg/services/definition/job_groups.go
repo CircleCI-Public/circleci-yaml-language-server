@@ -1,14 +1,14 @@
 package definition
 
 import (
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 	"go.lsp.dev/protocol"
 )
 
 func (def DefinitionStruct) searchForJobGroups() []protocol.Location {
 	for _, jobGroup := range def.Doc.JobGroups {
 		for _, jobInvocation := range jobGroup.JobInvocations {
-			if utils.PosInRange(jobInvocation.JobNameRange, def.Params.Position) {
+			if position.InRange(jobInvocation.JobNameRange, def.Params.Position) {
 				loc, err := def.getCommandOrJobLocation(jobInvocation.JobName, false)
 				if err != nil {
 					continue

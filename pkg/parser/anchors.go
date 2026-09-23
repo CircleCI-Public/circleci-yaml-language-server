@@ -1,7 +1,7 @@
 package parser
 
 import (
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 	sitter "github.com/smacker/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
@@ -51,7 +51,7 @@ func ParseYamlAnchors(doc *YamlDocument) map[string]YamlAnchor {
 func (doc *YamlDocument) IsYamlAliasPosition(pos protocol.Position) bool {
 	for _, anchor := range doc.YamlAnchors {
 		for _, aliasRange := range *anchor.References {
-			if utils.PosInRange(aliasRange, pos) {
+			if position.InRange(aliasRange, pos) {
 				return true
 			}
 		}
@@ -62,7 +62,7 @@ func (doc *YamlDocument) IsYamlAliasPosition(pos protocol.Position) bool {
 
 func (doc *YamlDocument) GetYamlAnchorAtPosition(pos protocol.Position) (YamlAnchor, bool) {
 	for _, anchor := range doc.YamlAnchors {
-		if utils.PosInRange(anchor.DefinitionRange, pos) {
+		if position.InRange(anchor.DefinitionRange, pos) {
 			return anchor, true
 		}
 	}

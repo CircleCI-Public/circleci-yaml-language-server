@@ -8,7 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"go.lsp.dev/protocol"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
@@ -51,7 +52,7 @@ executors:
       xcode: 26.5.0
     resource_class: large`,
 			Diagnostics: []protocol.Diagnostic{
-				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+				diagnostic.Error(protocol.Range{
 					Start: protocol.Position{Line: 6, Character: 4},
 					End:   protocol.Position{Line: 6, Character: 0x19},
 				}, "Invalid resource class \"large\" for Xcode version \"26.5.0\""),
@@ -83,9 +84,9 @@ func yamlForMachine(resourceClass, image string) string {
 
 // testMachineOfferings is a minimal offerings set: separate linux, windows, and macOS
 // classes, so a linux class paired with a windows image is an invalid pair.
-func testMachineOfferings() *utils.Offerings {
-	return &utils.Offerings{
-		Linux:   map[string][]string{"medium": {utils.CurrentLinuxImage}},
+func testMachineOfferings() *circleci.Offerings {
+	return &circleci.Offerings{
+		Linux:   map[string][]string{"medium": {circleci.CurrentLinuxImage}},
 		Windows: map[string][]string{"windows.medium": {"windows-server-2022-gui:current"}},
 		MacOS: map[string][]string{
 			"m4pro.medium": {"xcode:26.5.0"},
@@ -200,7 +201,7 @@ func TestMachineExecutor(t *testing.T) {
 		},
 		{
 			name:        "rc:self-hosted img:current",
-			yamlContent: yamlForMachine("myorg/myrunner", utils.CurrentLinuxImage),
+			yamlContent: yamlForMachine("myorg/myrunner", circleci.CurrentLinuxImage),
 			errRegex:    "Extraneous image",
 		},
 		{
@@ -213,7 +214,7 @@ func TestMachineExecutor(t *testing.T) {
 		},
 		{
 			name:        "rc:undefined img:linux",
-			yamlContent: yamlForMachine("", utils.CurrentLinuxImage),
+			yamlContent: yamlForMachine("", circleci.CurrentLinuxImage),
 		},
 		{
 			name:        "rc:windows img:windows",

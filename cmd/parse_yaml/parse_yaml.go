@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/session"
 	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
 	languageservice "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/services"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 )
@@ -33,8 +35,8 @@ func main() {
 		fmt.Printf("Unable to read file \"%s\"", filepath)
 		panic(err)
 	}
-	context := &utils.LsContext{
-		Api: utils.ApiContext{
+	context := &session.Settings{
+		Api: circleci.Config{
 			Token:   "XXXXXXXXXXXX",
 			HostUrl: "https://circleci.com",
 		},
@@ -42,18 +44,18 @@ func main() {
 
 	yamlparser.ParseFile(content, context)
 
-	cache := utils.CreateCache()
-	cache.FileCache.SetFile(utils.CachedFile{
+	c := cache.New()
+	c.FileCache.SetFile(cache.File{
 		TextDocument: protocol.TextDocumentItem{
 			URI:  uri.File(filepath),
 			Text: string(content),
 		},
-		Project:      utils.Project{},
+		Project:      circleci.Project{},
 		EnvVariables: make([]string, 0),
 	})
 
 	fileURI := uri.File(filepath)
-	languageservice.DiagnosticFile(fileURI, cache, context, schema)
+	languageservice.DiagnosticFile(fileURI, c, context, schema)
 
 	// fmt.Printf("S-expression:\n%v\n\n", node.RootNode)
 }

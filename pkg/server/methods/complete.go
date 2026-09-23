@@ -19,7 +19,7 @@ func (methods *Methods) Complete(reply jsonrpc2.Replier, req jsonrpc2.Request) e
 		return reply(methods.Ctx, nil, fmt.Errorf("%s: %w", jsonrpc2.ErrParse, err))
 	}
 
-	res, err := languageservice.Complete(params, methods.Cache, methods.LsContext)
+	res, err := languageservice.Complete(params, methods.Cache, methods.Settings)
 	go (func() {
 		methods.SendTelemetryEvent(TelemetryEvent{
 			Action: "autocompleted",

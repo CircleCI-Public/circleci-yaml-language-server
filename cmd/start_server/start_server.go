@@ -9,8 +9,8 @@ import (
 	"strconv"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/logging"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/version"
 	lsp "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/server"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
 func main() {
@@ -23,9 +23,8 @@ func main() {
 	flag.Parse()
 
 	// Parameter: version
-	version := *versionRef
-	if version {
-		fmt.Println(utils.ServerVersion)
+	if *versionRef {
+		fmt.Println(version.Server)
 		return
 	}
 

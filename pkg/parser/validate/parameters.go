@@ -5,17 +5,19 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/paramref"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	sitter "github.com/smacker/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
 
 func (val Validate) ValidatePipelineParameters() {
-	if len(val.Doc.PipelineParameters) == 0 && !utils.IsDefaultRange(val.Doc.PipelineParametersRange) {
+	if len(val.Doc.PipelineParameters) == 0 && !position.IsDefaultRange(val.Doc.PipelineParametersRange) {
 		val.addDiagnostic(
-			utils.CreateEmptyAssignationWarning(val.Doc.PipelineParametersRange),
+			diagnostic.EmptyAssignationWarning(val.Doc.PipelineParametersRange),
 		)
 	}
 }
@@ -26,7 +28,7 @@ func (val Validate) checkIfParamAssigned(params map[string]ast.ParameterValue, d
 	_, assigned := params[definedParam.GetName()]
 
 	if !assigned && !definedParam.IsOptional() {
-		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
+		val.addDiagnostic(diagnostic.Error(
 			stepRange,
 			fmt.Sprintf("Parameter %s is required for %s", definedParam.GetName(), stepName)))
 		return false
@@ -47,7 +49,7 @@ func (val Validate) checkParamSimpleType(param ast.ParameterValue, stepName stri
 
 		value := param.Value.(string)
 		if !slices.Contains(definedParam.(ast.EnumParameter).Enum, value) {
-			val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
+			val.addDiagnostic(diagnostic.Error(
 				param.Range,
 				fmt.Sprintf("Parameter %s is not a valid value for %s", value, definedParam.GetName()),
 			))
@@ -69,7 +71,7 @@ func (val Validate) checkParamSimpleType(param ast.ParameterValue, stepName stri
 
 				if !commandExists {
 					val.addDiagnostic(
-						utils.CreateErrorDiagnosticFromRange(
+						diagnostic.Error(
 							value.Range,
 							fmt.Sprintf("Cannot find a definition for command named %s", commandName),
 						),
@@ -90,7 +92,7 @@ func (val Validate) checkParamSimpleType(param ast.ParameterValue, stepName stri
 }
 
 func checkParamType(paramType string, val Validate, param ast.ParameterValue, stepName string, definedParam ast.Parameter) {
-	paramName, _ := utils.GetParamNameUsedAtPos(val.Doc.Content, param.Range.End)
+	paramName, _ := paramref.NameUsedAtPos(val.Doc.Content, param.Range.End)
 	if paramName != "" {
 		pipelineParam, ok := val.Doc.PipelineParameters[paramName]
 		if ok && pipelineParam.GetType() != paramType {
@@ -102,7 +104,7 @@ func checkParamType(paramType string, val Validate, param ast.ParameterValue, st
 }
 
 func (val Validate) checkParamUsedWithParam(param ast.ParameterValue, stepName string, definedParam ast.Parameter, parameters map[string]ast.Parameter) {
-	paramName, isPipelineParam := utils.GetParamNameUsedAtPos(val.Doc.Content, param.Range.End)
+	paramName, isPipelineParam := paramref.NameUsedAtPos(val.Doc.Content, param.Range.End)
 
 	var paramUsedAsValue ast.Parameter
 	var ok bool
@@ -128,7 +130,7 @@ func (val Validate) CheckIfParamsExist() {
 		for _, capture := range match.Captures {
 			node := capture.Node
 			content := val.Doc.GetRawNodeText(node)
-			params, err := utils.GetParamsInString(content)
+			params, err := paramref.InString(content)
 			if err != nil {
 				return
 			}
@@ -177,7 +179,7 @@ func (val Validate) CheckIfParamsExist() {
 					errorMessage = fmt.Sprintf("Parameter %s is not defined", param.Name)
 				}
 
-				val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
+				val.addDiagnostic(diagnostic.Error(
 					diagnosticRange,
 					errorMessage,
 				))
@@ -205,7 +207,7 @@ func (val Validate) validateParametersValue(paramsValue map[string]ast.Parameter
 		}
 
 		param := paramsValue[calledEntityDefinedParam.GetName()]
-		if param.Type == "string" && utils.CheckIfOnlyParamUsed(param.Value.(string)) {
+		if param.Type == "string" && paramref.IsOnlyParameter(param.Value.(string)) {
 			val.checkParamUsedWithParam(param, calledEntity, calledEntityDefinedParam, usableParams)
 		} else {
 			val.checkParamSimpleType(param, calledEntity, calledEntityDefinedParam)
@@ -215,7 +217,7 @@ func (val Validate) validateParametersValue(paramsValue map[string]ast.Parameter
 	for _, param := range paramsValue {
 		if _, ok := calledEntityDefinedParams[param.Name]; !ok {
 			val.addDiagnostic(
-				utils.CreateErrorDiagnosticFromRange(
+				diagnostic.Error(
 					param.Range,
 					fmt.Sprintf("Parameter %s is not defined for %s", param.Name, calledEntity),
 				),
@@ -233,7 +235,7 @@ func (val Validate) checkExecutorParamValue(param ast.ParameterValue) {
 
 		if !ok || nameParam.Type != "string" {
 			val.addDiagnostic(
-				utils.CreateErrorDiagnosticFromRange(
+				diagnostic.Error(
 					param.Range,
 					"Missing executor name",
 				),

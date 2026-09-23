@@ -9,10 +9,10 @@ import (
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/fakes"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/testHelpers"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/testHelpers"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
 // isolateOrbFSCache points the on-disk orb source cache at a temporary
@@ -31,7 +31,7 @@ func isolateOrbFSCache(t *testing.T) {
 func orbDiagnostics(t *testing.T, fake *fakes.CircleCI, yamlContent string) []protocol.Diagnostic {
 	t.Helper()
 
-	lsContext := testHelpers.GetLsContextForHost(fake.URL())
+	lsContext := testHelpers.SettingsForHost(fake.URL())
 	doc, err := parser.ParseFromContent([]byte(yamlContent), lsContext, uri.File("config.yml"), protocol.Position{})
 	assert.NilError(t, err)
 
@@ -39,7 +39,7 @@ func orbDiagnostics(t *testing.T, fake *fakes.CircleCI, yamlContent string) []pr
 	val := Validate{
 		APIs:        ValidateAPIs{DockerHub: DockerHubMock{}},
 		Diagnostics: &diagnostics,
-		Cache:       utils.CreateCache(),
+		Cache:       cache.New(),
 		Doc:         doc,
 		Context:     lsContext,
 	}
@@ -305,7 +305,7 @@ workflows:
 		fake.AddOrbPackage("orb-anon", "ns-acme", "acme", "anon", false, true)
 		fake.AddOrbVersion("ver-anon-1", "orb-anon", "acme/anon", "1.0.0", orbSource, "")
 
-		lsContext := testHelpers.GetLsContextForHost(fake.URL())
+		lsContext := testHelpers.SettingsForHost(fake.URL())
 		lsContext.Api.Token = ""
 
 		yamlContent := `version: 2.1
@@ -332,7 +332,7 @@ workflows:
 		val := Validate{
 			APIs:        ValidateAPIs{DockerHub: DockerHubMock{}},
 			Diagnostics: &diagnostics,
-			Cache:       utils.CreateCache(),
+			Cache:       cache.New(),
 			Doc:         doc,
 			Context:     lsContext,
 		}
