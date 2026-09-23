@@ -6,6 +6,8 @@ import (
 
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
+
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/httpcl"
 )
 
 func TestDoesImageExist(t *testing.T) {
@@ -13,7 +15,8 @@ func TestDoesImageExist(t *testing.T) {
 		fake := cimgFake(t)
 		api := apiFor(fake)
 
-		exists := api.DoesImageExist("cimg", "node")
+		exists, err := api.DoesImageExist("cimg", "node")
+		assert.NilError(t, err)
 		assert.Check(t, exists)
 
 		requestCount := fake.RequestCount(http.MethodGet, cimgNodePath)
@@ -24,7 +27,8 @@ func TestDoesImageExist(t *testing.T) {
 		fake := cimgFake(t)
 		api := apiFor(fake)
 
-		exists := api.DoesImageExist("cimg", "nope")
+		exists, err := api.DoesImageExist("cimg", "nope")
+		assert.NilError(t, err)
 		assert.Check(t, !exists)
 	})
 
@@ -37,7 +41,8 @@ func TestDoesImageExist(t *testing.T) {
 		cursor := api.Search("cimg/node")
 		assert.Assert(t, cursor.HasNext(), "the fixture has a cimg/node repository")
 
-		exists := api.DoesImageExist("cimg", "node")
+		exists, err := api.DoesImageExist("cimg", "node")
+		assert.NilError(t, err)
 		assert.Check(t, exists)
 
 		requestCount := fake.RequestCount(http.MethodGet, cimgNodePath)
@@ -53,41 +58,43 @@ func TestDoesImageExist(t *testing.T) {
 
 		assert.Assert(t, api.Search("cimg/node").HasNext())
 
-		exists := api.DoesImageExist("circleci", "node")
+		exists, err := api.DoesImageExist("circleci", "node")
+		assert.NilError(t, err)
 		assert.Check(t, exists)
 
 		requestCount := fake.RequestCount(http.MethodGet, "/v2/namespaces/circleci/repositories/node")
 		assert.Check(t, cmp.Equal(requestCount, 1))
 	})
 
-	// An unreachable Docker Hub reads as "no such image", which the caller
-	// turns into a valid image rather than a diagnostic.
-	t.Run("denies when Docker Hub is unreachable", func(t *testing.T) {
+	// Only a 404 is a no. Anything else means Docker Hub did not say, which
+	// a caller must be able to tell apart from an image that is not there.
+	t.Run("reports an unreachable Docker Hub", func(t *testing.T) {
 		fake := cimgFake(t)
 		api := apiFor(fake)
 		fake.Close()
 
-		exists := api.DoesImageExist("cimg", "node")
+		exists, err := api.DoesImageExist("cimg", "node")
 		assert.Check(t, !exists)
+		assert.Check(t, err != nil, "a host that is not answering must be reported")
 	})
 
-	t.Run("denies when Docker Hub fails", func(t *testing.T) {
+	t.Run("reports a Docker Hub failure", func(t *testing.T) {
 		fake := cimgFake(t)
 		fake.SetStatus(cimgNodeRoute, http.StatusInternalServerError)
 		api := apiFor(fake)
 
-		exists := api.DoesImageExist("cimg", "node")
+		exists, err := api.DoesImageExist("cimg", "node")
 		assert.Check(t, !exists)
+		assert.Check(t, httpcl.HasStatusCode(err, http.StatusInternalServerError), "got %v", err)
 	})
 
-	// A rate limit is indistinguishable from a missing image here, so an
-	// editor that has been busy starts reporting images as unknown.
-	t.Run("denies when Docker Hub rate limits", func(t *testing.T) {
+	t.Run("reports a rate limit", func(t *testing.T) {
 		fake := cimgFake(t)
 		fake.SetStatus(cimgNodeRoute, http.StatusTooManyRequests)
 		api := apiFor(fake)
 
-		exists := api.DoesImageExist("cimg", "node")
+		exists, err := api.DoesImageExist("cimg", "node")
 		assert.Check(t, !exists)
+		assert.Check(t, httpcl.HasStatusCode(err, http.StatusTooManyRequests), "got %v", err)
 	})
 }

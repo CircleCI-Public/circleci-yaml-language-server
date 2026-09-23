@@ -2,7 +2,6 @@ package dockerhub
 
 import (
 	"fmt"
-	"net/http"
 )
 
 type TagResponse struct {
@@ -56,30 +55,35 @@ func (me *dockerHubAPI) GetImageTags(namespace, image string) ([]string, error) 
 		fmt.Sprintf("namespaces/%s/repositories/%s/tags", namespace, image),
 	)
 
+	// One page is all this reads, so it asks for the largest Docker Hub
+	// serves rather than its default of ten: a recommendation is only as good
+	// as the tags it is chosen from.
+	q := url.Query()
+	q.Set("page_size", "100")
+	url.RawQuery = q.Encode()
+
 	body := TagResponse{}
 	if _, err := me.get(url.String(), &body); err != nil {
 		return nil, err
 	}
 
-	tags := make([]string, len(body.Results))
-	for i, tag := range body.Results {
+	tags := make([]string, 0, len(body.Results))
+	for _, tag := range body.Results {
 		// Although there is no documentation about this field in the doc, all tags I came across were
 		// tagged as "active" so it feels like it should be verified
 		// https://docs.docker.com/docker-hub/api/latest/#tag/repositories/paths/~1v2~1namespaces~1%7Bnamespace%7D~1repositories~1%7Brepository%7D~1tags/get
 		if tag.TagStatus == "active" {
-			tags[i] = tag.Name
+			tags = append(tags, tag.Name)
 		}
 	}
 
 	return tags, nil
 }
 
-func (me *dockerHubAPI) ImageHasTag(namespace, image, tag string) bool {
+func (me *dockerHubAPI) ImageHasTag(namespace, image, tag string) (bool, error) {
 	url := me.baseURL.JoinPath(
 		fmt.Sprintf("namespaces/%s/repositories/%s/tags/%s", namespace, image, tag),
 	)
 
-	status, err := me.get(url.String(), nil)
-
-	return err == nil && status == http.StatusOK
+	return me.exists(url.String())
 }

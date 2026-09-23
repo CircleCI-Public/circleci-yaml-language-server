@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
@@ -109,7 +110,11 @@ func run() int {
 	})
 
 	hubProbe.Check("a repository that exists is confirmed", func() error {
-		if !api.DoesImageExist(namespace, repository) {
+		exists, err := api.DoesImageExist(namespace, repository)
+		if err != nil {
+			return probe.Unavailable(err)
+		}
+		if !exists {
 			return fmt.Errorf("%s/%s was not found", namespace, repository)
 		}
 
@@ -117,7 +122,11 @@ func run() int {
 	})
 
 	hubProbe.Check("a repository that does not exist is denied", func() error {
-		if api.DoesImageExist(namespace, absentRepository) {
+		exists, err := api.DoesImageExist(namespace, absentRepository)
+		if err != nil {
+			return probe.Unavailable(err)
+		}
+		if exists {
 			return fmt.Errorf("%s/%s was reported to exist", namespace, absentRepository)
 		}
 
@@ -130,27 +139,27 @@ func run() int {
 			return probe.Unavailable(err)
 		}
 
-		// An empty name is this repository's own bug, not drift: an inactive
-		// tag is dropped by name but not by position. Worth reporting, since
-		// completion offers whatever is in this list.
-		empty := 0
-		for _, tag := range tags {
-			if tag == "" {
-				empty++
-			}
-		}
-
-		hubProbe.Note("tags: %d on the first page, %d of them inactive and unnamed", len(tags), empty)
+		hubProbe.Note("tags: %d active on the first page", len(tags))
 
 		if len(tags) == 0 {
 			return errors.New("no tags")
+		}
+
+		// Completion offers whatever is in this list, so a tag without a
+		// name is drift in what Docker Hub reports.
+		if slices.Contains(tags, "") {
+			return errors.New("a tag has no name")
 		}
 
 		return nil
 	})
 
 	hubProbe.Check("a tag that exists is confirmed", func() error {
-		if !api.ImageHasTag(namespace, repository, knownTag) {
+		hasTag, err := api.ImageHasTag(namespace, repository, knownTag)
+		if err != nil {
+			return probe.Unavailable(err)
+		}
+		if !hasTag {
 			return fmt.Errorf("%s/%s:%s was not found", namespace, repository, knownTag)
 		}
 
@@ -158,7 +167,11 @@ func run() int {
 	})
 
 	hubProbe.Check("a tag that does not exist is denied", func() error {
-		if api.ImageHasTag(namespace, repository, absentTag) {
+		hasTag, err := api.ImageHasTag(namespace, repository, absentTag)
+		if err != nil {
+			return probe.Unavailable(err)
+		}
+		if hasTag {
 			return fmt.Errorf("%s/%s:%s was reported to exist", namespace, repository, absentTag)
 		}
 

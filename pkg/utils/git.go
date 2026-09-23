@@ -44,14 +44,18 @@ func fromUrlToProjectSlug(projectUrl string) string {
 		if err != nil {
 			return ""
 		}
-		parsedUrl.Path = "/" + strings.TrimSuffix(parsedUrl.Path, ".git")
 	}
 
-	switch parsedUrl.Host {
+	// Every form of remote can end in .git — it is what `git clone` leaves in
+	// origin, over https as much as over ssh — and no project slug does. The
+	// scp form's path has no leading slash, and the others' do.
+	path := "/" + strings.TrimPrefix(strings.TrimSuffix(parsedUrl.Path, ".git"), "/")
+
+	switch parsedUrl.Hostname() {
 	case "github.com":
-		return "gh" + parsedUrl.Path
+		return "gh" + path
 	case "bitbucket.org":
-		return "bb" + parsedUrl.Path
+		return "bb" + path
 	}
 
 	return ""

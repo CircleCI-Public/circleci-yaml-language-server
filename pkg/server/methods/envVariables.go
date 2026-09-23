@@ -42,6 +42,11 @@ func (methods *Methods) updateProjectEnvVariables(file *utils.CachedFile) {
 	cachedFile := methods.Cache.FileCache.GetFile(file.TextDocument.URI)
 	cachedFile.EnvVariables = []string{}
 	methods.Cache.FileCache.SetFile(*cachedFile)
+	// A file whose project is not resolved yet has no variables to read;
+	// getAllEnvVariables reads them once it has resolved it.
+	if cachedFile.Project.Slug == "" {
+		return
+	}
 	if methods.LsContext.Api.Token != "" {
 		if err := utils.GetAllProjectEnvVariables(methods.LsContext, methods.Cache, cachedFile); err != nil {
 			log.Printf("error getting project environment variables: %s", err)

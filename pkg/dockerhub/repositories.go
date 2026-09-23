@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"sync"
 )
 
 type BaseHUBResponse struct {
@@ -35,6 +36,12 @@ type HubResponse struct {
 type HubNamespace struct {
 	api       *dockerHubAPI
 	namespace string
+
+	// mutex guards everything below. Completion searches a namespace from
+	// several goroutines at once, so a search holds it for as long as it
+	// walks, loads included: a second search waits for the first to finish
+	// reading a page rather than asking Docker Hub for the same one.
+	mutex     sync.Mutex
 	nextURL   string
 	hasLoaded bool // True if the namespace has been fetched at least once
 
@@ -63,6 +70,22 @@ func (h *HubNamespace) createSearchCursor(search string) DockerResultsCursor {
 	}
 }
 
+// hasRepository reports whether a repository of that name has already been
+// read, without asking Docker Hub.
+func (h *HubNamespace) hasRepository(name string) bool {
+	h.mutex.Lock()
+	defer h.mutex.Unlock()
+
+	if !h.hasLoaded {
+		return false
+	}
+
+	repo, _ := findFirstByName(&h.allRepositories, name)
+
+	return repo != nil
+}
+
+// loadNext reads the next page of the namespace. The caller holds h.mutex.
 func (h *HubNamespace) loadNext() ([]Repository, error) {
 	hubResponse := HubResponse{}
 	queryURL := h.nextURL

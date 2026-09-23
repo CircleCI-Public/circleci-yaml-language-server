@@ -35,6 +35,34 @@ func Test_fromUrlToProjectSlug(t *testing.T) {
 			want: "gh/CircleCI-Public/circleci-yaml-language-server",
 		},
 		{
+			name: "github with .git",
+			args: args{
+				projectUrl: "https://github.com/CircleCI-Public/circleci-yaml-language-server.git",
+			},
+			want: "gh/CircleCI-Public/circleci-yaml-language-server",
+		},
+		{
+			name: "ssh url github",
+			args: args{
+				projectUrl: "ssh://git@github.com/CircleCI-Public/circleci-yaml-language-server.git",
+			},
+			want: "gh/CircleCI-Public/circleci-yaml-language-server",
+		},
+		{
+			name: "ssh url github with a port",
+			args: args{
+				projectUrl: "ssh://git@github.com:22/CircleCI-Public/circleci-yaml-language-server.git",
+			},
+			want: "gh/CircleCI-Public/circleci-yaml-language-server",
+		},
+		{
+			name: "bitbucket with .git",
+			args: args{
+				projectUrl: "https://bitbucket.org/CircleCI-Public/circleci-yaml-language-server.git",
+			},
+			want: "bb/CircleCI-Public/circleci-yaml-language-server",
+		},
+		{
 			name: "bitbucket",
 			args: args{
 				projectUrl: "https://bitbucket.org/CircleCI-Public/circleci-yaml-language-server",

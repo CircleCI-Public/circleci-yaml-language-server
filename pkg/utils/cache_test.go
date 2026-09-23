@@ -1,6 +1,12 @@
 package utils
 
-import "testing"
+import (
+	"testing"
+
+	"go.lsp.dev/protocol"
+	"gotest.tools/v3/assert"
+	"gotest.tools/v3/assert/cmp"
+)
 
 func testContext(name string) *Context {
 	return &Context{Name: name}
@@ -97,4 +103,22 @@ func TestContextCache_listLoadedTracking(t *testing.T) {
 	if !cache.ContextCache.IsOrganizationContextListLoaded(orgID) {
 		t.Fatal("expected list loaded after mark")
 	}
+}
+
+// The project a file resolved to belongs to the host it was resolved on, so a
+// change of host has to forget it along with the rest of that host's data.
+func TestCache_ClearHostData_forgetsResolvedProjects(t *testing.T) {
+	const uri = protocol.URI("file:///workspace/.circleci/config.yml")
+
+	cache := CreateCache()
+	cache.FileCache.SetFile(CachedFile{TextDocument: protocol.TextDocumentItem{URI: uri}})
+	cache.FileCache.AddProjectSlugToFile(uri, Project{Slug: "gh/acme/rocket", OrganizationId: "org-acme"})
+	cache.FileCache.AddEnvVariableToProjectLinkedToFile(uri, "AWS_REGION")
+
+	cache.ClearHostData()
+
+	file := cache.FileCache.GetFile(uri)
+	assert.Assert(t, file != nil, "the file itself is still open")
+	assert.Check(t, cmp.DeepEqual(file.Project, Project{}))
+	assert.Check(t, cmp.Len(file.EnvVariables, 0))
 }

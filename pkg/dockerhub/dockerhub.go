@@ -4,15 +4,22 @@ import (
 	"context"
 	"net/http"
 	"net/url"
+	"sync"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/httpcl"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
+// DockerHubAPI is what validation asks Docker Hub.
+//
+// DoesImageExist and ImageHasTag answer false only when Docker Hub says the
+// image or tag is not there. When it cannot say — a rate limit, an outage, a
+// host that is not answering — they return an error instead, which a caller
+// must not turn into "absent".
 type DockerHubAPI interface {
-	DoesImageExist(namespace, image string) bool
+	DoesImageExist(namespace, image string) (bool, error)
 	GetImageTags(namespace, image string) ([]string, error)
-	ImageHasTag(namespace, image, tag string) bool
+	ImageHasTag(namespace, image, tag string) (bool, error)
 }
 
 // Config configures an API. It exists so that a test can point this package at
@@ -36,8 +43,11 @@ type dockerHubAPI struct {
 
 	// namespaces caches the repositories read for a namespace. It used to be a
 	// package-level map, which every test in the binary shared and none could
-	// point at a fake.
-	namespaces map[string]*HubNamespace
+	// point at a fake. Completion requests are served on goroutines of their
+	// own, all sharing one API, so it is only reached through namespace and
+	// knownNamespace, which hold namespacesMutex.
+	namespacesMutex sync.Mutex
+	namespaces      map[string]*HubNamespace
 }
 
 // defaultAPI backs the package-level Search and SearchTags, which the
@@ -73,6 +83,44 @@ func newAPI(cfg Config) *dockerHubAPI {
 	api.namespaces["library"] = &HubNamespace{namespace: "library", api: api}
 
 	return api
+}
+
+// namespace returns the cache for a namespace, creating it on first use.
+func (me *dockerHubAPI) namespace(name string) *HubNamespace {
+	me.namespacesMutex.Lock()
+	defer me.namespacesMutex.Unlock()
+
+	ns := me.namespaces[name]
+	if ns == nil {
+		ns = &HubNamespace{api: me, namespace: name}
+		me.namespaces[name] = ns
+	}
+
+	return ns
+}
+
+// knownNamespace returns the cache for a namespace, or nil when nothing has
+// asked for it yet.
+func (me *dockerHubAPI) knownNamespace(name string) *HubNamespace {
+	me.namespacesMutex.Lock()
+	defer me.namespacesMutex.Unlock()
+
+	return me.namespaces[name]
+}
+
+// exists asks whether an absolute URL names something Docker Hub has: a 2xx
+// is yes, a 404 is no, and anything else is an error, because Docker Hub did
+// not say.
+func (me *dockerHubAPI) exists(address string) (bool, error) {
+	_, err := me.get(address, nil)
+	switch {
+	case err == nil:
+		return true, nil
+	case httpcl.HasStatusCode(err, http.StatusNotFound):
+		return false, nil
+	default:
+		return false, err
+	}
 }
 
 // get requests an absolute URL, decoding a 2xx body into out when out is not

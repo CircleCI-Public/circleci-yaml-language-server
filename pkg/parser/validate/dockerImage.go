@@ -27,12 +27,14 @@ func DoesDockerImageExists(img *ast.DockerImage, cache *utils.DockerCache, api d
 	}
 
 	if cachedDockerImage == nil {
-		cache.Add(
-			img.Image.FullPath,
-			api.DoesImageExist(img.Image.Namespace, img.Image.Name),
-		)
+		exists, err := api.DoesImageExist(img.Image.Namespace, img.Image.Name)
+		if err != nil {
+			// Docker Hub could not say, which is no reason to flag the image.
+			// Nor is it an answer to keep: the next validation asks again.
+			return true
+		}
 
-		cachedDockerImage = cache.Get(img.Image.FullPath)
+		cachedDockerImage = cache.Add(img.Image.FullPath, exists)
 	}
 
 	return cachedDockerImage.Exists
@@ -61,7 +63,13 @@ func DoesTagExist(img *ast.DockerImage, searchedTag string, cache *utils.DockerT
 
 	tagExists, ok := tagInfo.CheckedTags[searchedTag]
 	if !ok {
-		tagExists = api.ImageHasTag(img.Image.Namespace, img.Image.Name, searchedTag)
+		exists, err := api.ImageHasTag(img.Image.Namespace, img.Image.Name, searchedTag)
+		if err != nil {
+			// As for the image: no answer is neither a diagnostic nor cached.
+			return true
+		}
+
+		tagExists = exists
 		tagInfo.CheckedTags[searchedTag] = tagExists
 		cache.Add(img.Image.Namespace, img.Image.Name, *tagInfo)
 	}
