@@ -1,11 +1,11 @@
 package utils
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
-	"io"
 	"net/http"
-	"net/url"
+
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/httpcl"
 )
 
 type ProjectEnvVariableRes struct {
@@ -62,41 +62,18 @@ func fetchAllProjectEnvVariables(lsContext *LsContext, projectSlug string) ([]st
 }
 
 func getProjectEnvVariables(lsContext *LsContext, projectSlug string, nextPageToken string) (*ProjectEnvVariableRes, error) {
-	requestUrl := fmt.Sprintf("%s/api/v2/project/%s/envvar", lsContext.Api.HostUrl, projectSlug)
-
-	if nextPageToken != "" {
-		// The route carries no other query parameter, so a later page is asked
-		// for with "?" and not "&": with "&" the token became part of the path
-		// and the request 404ed, which used to look like the end of the list.
-		requestUrl += "?page-token=" + url.QueryEscape(nextPageToken)
-	}
-
-	req, err := http.NewRequest(http.MethodGet, requestUrl, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Circle-Token", lsContext.Api.Token)
-	req.Header.Set("User-Agent", UserAgent)
-
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-
-	defer res.Body.Close()
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	if res.StatusCode < 200 || res.StatusCode >= 300 {
-		return nil, fmt.Errorf("list env vars of project %q: HTTP %d: %s", projectSlug, res.StatusCode, string(body))
-	}
-
 	var projectRes ProjectEnvVariableRes
-	if err := json.Unmarshal(body, &projectRes); err != nil {
-		return nil, err
+
+	// The slug is joined onto the route as it is: its slashes are path
+	// separators, which httpcl.RouteParams would escape.
+	_, err := newV2Client(lsContext.Api).Call(context.Background(), httpcl.NewRequest(
+		http.MethodGet, "/project/"+projectSlug+"/envvar",
+		// The first page is asked for without a page-token at all.
+		httpcl.OptionalQueryParam("page-token", nextPageToken),
+		httpcl.JSONDecoder(&projectRes),
+	))
+	if err != nil {
+		return nil, fmt.Errorf("list env vars of project %q: %w", projectSlug, err)
 	}
 
 	return &projectRes, nil

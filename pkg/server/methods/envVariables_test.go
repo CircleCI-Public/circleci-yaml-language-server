@@ -131,7 +131,7 @@ func Test_updateProjectEnvVariables(t *testing.T) {
 		assert.Check(t, cmp.Len(file.EnvVariables, 0))
 
 		assert.Check(t, cmp.Contains(logged.String(), "error getting project environment variables"))
-		assert.Check(t, cmp.Contains(logged.String(), "HTTP 500"))
+		assert.Check(t, cmp.Contains(logged.String(), "500 Internal Server Error"))
 	})
 
 	// Completion is better off with the names it did read than with none.
@@ -148,6 +148,6 @@ func Test_updateProjectEnvVariables(t *testing.T) {
 		assert.Assert(t, file != nil)
 		assert.Check(t, cmp.DeepEqual(file.EnvVariables, []string{"AWS_REGION", "DEPLOY_KEY"}))
 
-		assert.Check(t, cmp.Contains(logged.String(), "HTTP 500"))
+		assert.Check(t, cmp.Contains(logged.String(), "500 Internal Server Error"))
 	})
 }

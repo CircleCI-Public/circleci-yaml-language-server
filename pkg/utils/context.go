@@ -1,12 +1,12 @@
 package utils
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
-	"io"
 	"net/http"
-	"net/url"
 	"time"
+
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/httpcl"
 )
 
 type Context struct {
@@ -123,49 +123,25 @@ func GetAllContextWithEnvVars(lsContext *LsContext, orgID string, cache *Cache) 
 }
 
 func getContext(lsContext *LsContext, orgID string, nextPageToken string, includeEnvVars bool) (*GetAllContextRes, error) {
-	query := url.Values{}
-	query.Set("owner-id", orgID)
+	opts := []func(*httpcl.Request){
+		httpcl.QueryParam("owner-id", orgID),
+		// The first page is asked for without a page-token at all, rather than
+		// with an empty one, so that the request says what it means.
+		httpcl.OptionalQueryParam("page-token", nextPageToken),
+	}
 
 	if includeEnvVars {
 		// Requires permission to read context environment variables; many users can list
 		// contexts but receive HTTP 403 when env vars are included (private contexts).
-		query.Set("include-env-vars", "true")
-	}
-
-	// The first page is asked for without a page-token at all, rather than with
-	// an empty one, so that the request says what it means.
-	if nextPageToken != "" {
-		query.Set("page-token", nextPageToken)
-	}
-
-	requestUrl := fmt.Sprintf("%s/api/v2/context?%s", lsContext.Api.HostUrl, query.Encode())
-
-	req, err := http.NewRequest(http.MethodGet, requestUrl, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Circle-Token", lsContext.Api.Token)
-	req.Header.Set("User-Agent", UserAgent)
-
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
-
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	if res.StatusCode < 200 || res.StatusCode >= 300 {
-		return nil, fmt.Errorf("list contexts (owner-id=%s): HTTP %d: %s", orgID, res.StatusCode, string(body))
+		opts = append(opts, httpcl.QueryParam("include-env-vars", "true"))
 	}
 
 	var resp GetAllContextRes
-	if err = json.Unmarshal(body, &resp); err != nil {
-		return nil, err
+	opts = append(opts, httpcl.JSONDecoder(&resp))
+
+	_, err := newV2Client(lsContext.Api).Call(context.Background(), httpcl.NewRequest(http.MethodGet, "/context", opts...))
+	if err != nil {
+		return nil, fmt.Errorf("list contexts (owner-id=%s): %w", orgID, err)
 	}
 
 	return &resp, nil

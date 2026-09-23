@@ -1,0 +1,271 @@
+// Copyright (c) 2026 Circle Internet Services, Inc.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+//
+// SPDX-License-Identifier: MIT
+
+package httpcl_test
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"strconv"
+	"testing"
+
+	"gotest.tools/v3/assert"
+	"gotest.tools/v3/assert/cmp"
+
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/httpcl"
+)
+
+// writeJSON answers with v as JSON, the way the CLI's tests use chi's render.
+func writeJSON(w http.ResponseWriter, status int, v any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(v)
+}
+
+func TestClient_Call(t *testing.T) {
+	r := http.NewServeMux()
+	r.HandleFunc("GET /hello/{id}/{childID}", func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, http.StatusOK, map[string]any{
+			"message":  "hello",
+			"id":       r.PathValue("id"),
+			"child-id": r.PathValue("childID"),
+			"query":    r.URL.Query().Encode(),
+			"header":   r.Header.Get("X-Header"),
+		})
+	})
+	r.HandleFunc("GET /jsonl", func(w http.ResponseWriter, r *http.Request) {
+		// Newline-delimited JSON, including a blank line and trailing newline
+		// to exercise the decoder's whitespace tolerance.
+		_, _ = w.Write([]byte(`{"name":"a","ok":true}` + "\n" +
+			`{"name":"b","ok":false}` + "\n\n" +
+			`{"name":"c","ok":true}` + "\n"))
+	})
+	r.HandleFunc("GET /jsonl-empty", func(w http.ResponseWriter, r *http.Request) {})
+	r.HandleFunc("GET /jsonl-bad", func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"name":"a","ok":true}` + "\n" + `{not json}` + "\n"))
+	})
+	r.HandleFunc("GET /status/{status}", func(w http.ResponseWriter, r *http.Request) {
+		status, err := strconv.Atoi(r.PathValue("status"))
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		writeJSON(w, status, map[string]any{
+			"message": fmt.Sprintf("status %d", status),
+		})
+	})
+
+	srv := httptest.NewServer(r)
+	t.Cleanup(srv.Close)
+
+	c := httpcl.New(httpcl.Config{
+		BaseURL: srv.URL,
+	})
+
+	ctx := context.Background()
+
+	t.Run("parameters", func(t *testing.T) {
+		var body map[string]any
+		status, err := c.Call(ctx, httpcl.NewRequest(http.MethodGet, "/hello/%s/%d",
+			httpcl.RouteParams("abc", 123),
+			httpcl.QueryParam("q1", "first"),
+			httpcl.QueryParam("q1", "second"),
+			httpcl.QueryParam("q2", "other"),
+			httpcl.Header("X-Header", "the-value"),
+			httpcl.JSONDecoder(&body),
+		))
+		assert.NilError(t, err)
+		assert.Check(t, cmp.Equal(status, http.StatusOK))
+		assert.Check(t, cmp.DeepEqual(body, map[string]any{
+			"id":       "abc",
+			"header":   "the-value",
+			"child-id": "123",
+			"message":  "hello",
+			"query":    "q1=first&q1=second&q2=other",
+		}))
+	})
+
+	t.Run("jsonl", func(t *testing.T) {
+		type record struct {
+			Name string `json:"name"`
+			OK   bool   `json:"ok"`
+		}
+
+		t.Run("invokes the callback once per record", func(t *testing.T) {
+			var records []record
+			status, err := c.Call(ctx, httpcl.NewRequest(http.MethodGet, "/jsonl",
+				httpcl.JSONLDecoder(func(rec record) {
+					records = append(records, rec)
+				}),
+			))
+			assert.NilError(t, err)
+			assert.Check(t, cmp.Equal(status, http.StatusOK))
+			assert.Check(t, cmp.DeepEqual(records, []record{
+				{Name: "a", OK: true},
+				{Name: "b", OK: false},
+				{Name: "c", OK: true},
+			}))
+		})
+
+		t.Run("empty body never calls the callback", func(t *testing.T) {
+			calls := 0
+			status, err := c.Call(ctx, httpcl.NewRequest(http.MethodGet, "/jsonl-empty",
+				httpcl.JSONLDecoder(func(record) {
+					calls++
+				}),
+			))
+			assert.NilError(t, err)
+			assert.Check(t, cmp.Equal(status, http.StatusOK))
+			assert.Check(t, cmp.Equal(calls, 0))
+		})
+
+		t.Run("malformed line returns the decode error after earlier records", func(t *testing.T) {
+			var seen []string
+			_, err := c.Call(ctx, httpcl.NewRequest(http.MethodGet, "/jsonl-bad",
+				httpcl.JSONLDecoder(func(rec record) {
+					seen = append(seen, rec.Name)
+				}),
+			))
+			assert.Check(t, err != nil)
+			// The well-formed record before the bad line was still delivered.
+			assert.Check(t, cmp.DeepEqual(seen, []string{"a"}))
+		})
+	})
+
+	t.Run("errors", func(t *testing.T) {
+		tests := []struct {
+			status      int
+			expectError string
+			expectBody  string
+		}{
+			{
+				status:      http.StatusBadRequest,
+				expectError: "GET /status/400: 400 Bad Request",
+				expectBody:  `{"message":"status 400"}` + "\n",
+			},
+			{
+				status:      http.StatusNotFound,
+				expectError: "GET /status/404: 404 Not Found",
+				expectBody:  `{"message":"status 404"}` + "\n",
+			},
+			{
+				status:      http.StatusInternalServerError,
+				expectError: "GET /status/500: 500 Internal Server Error",
+				expectBody:  `{"message":"status 500"}` + "\n",
+			},
+			{
+				status:      http.StatusBadGateway,
+				expectError: "GET /status/502: 502 Bad Gateway",
+				expectBody:  `{"message":"status 502"}` + "\n",
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(fmt.Sprintf("status %d", tt.status), func(t *testing.T) {
+				var body map[string]any
+				status, err := c.Call(ctx, httpcl.NewRequest(http.MethodGet, "/status/%d",
+					httpcl.RouteParams(tt.status),
+					httpcl.JSONDecoder(&body),
+				))
+				assert.Check(t, cmp.Error(err, tt.expectError))
+				assert.Check(t, cmp.Equal(status, tt.status))
+				assert.Check(t, cmp.Nil(body))
+				assert.Check(t, httpcl.HasStatusCode(err, tt.status))
+				var httpError *httpcl.HTTPError
+				assert.Assert(t, errors.As(err, &httpError))
+				assert.Check(t, cmp.Equal(httpError.StatusCode, tt.status))
+				assert.Check(t, cmp.Equal(string(httpError.Body), tt.expectBody))
+			})
+		}
+	})
+
+}
+
+func TestDeprecationWarning_SunsetHeader(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Deprecation", "true")
+		w.Header().Set("Sunset", "Sat, 01 Jan 2028 00:00:00 GMT")
+		w.WriteHeader(http.StatusOK)
+	}))
+	t.Cleanup(srv.Close)
+
+	var msgs []string
+	c := httpcl.New(httpcl.Config{BaseURL: srv.URL, OnWarn: func(msg string) { msgs = append(msgs, msg) }})
+
+	ctx := context.Background()
+	_, err := c.Call(ctx, httpcl.NewRequest(http.MethodGet, "/"))
+	assert.NilError(t, err)
+	assert.Check(t, cmp.Equal(len(msgs), 1), "expected one warning, got %v", msgs)
+	assert.Check(t, cmp.Contains(msgs[0], "deprecated"))
+	assert.Check(t, cmp.Contains(msgs[0], "days"))
+}
+
+func TestDeprecationWarning_DeprecationOnly(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Deprecation", "true")
+		w.WriteHeader(http.StatusOK)
+	}))
+	t.Cleanup(srv.Close)
+
+	var msgs []string
+	c := httpcl.New(httpcl.Config{BaseURL: srv.URL, OnWarn: func(msg string) { msgs = append(msgs, msg) }})
+
+	ctx := context.Background()
+	_, err := c.Call(ctx, httpcl.NewRequest(http.MethodGet, "/"))
+	assert.NilError(t, err)
+	assert.Check(t, cmp.Equal(len(msgs), 1), "expected one warning, got %v", msgs)
+	assert.Check(t, cmp.Contains(msgs[0], "deprecated"))
+}
+
+func TestDeprecationWarning_NoCallback(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Deprecation", "true")
+		w.Header().Set("Sunset", "Sat, 01 Jan 2027 00:00:00 GMT")
+		w.WriteHeader(http.StatusOK)
+	}))
+	t.Cleanup(srv.Close)
+
+	// no OnWarn — must not panic
+	c := httpcl.New(httpcl.Config{BaseURL: srv.URL})
+	ctx := context.Background()
+	_, err := c.Call(ctx, httpcl.NewRequest(http.MethodGet, "/"))
+	assert.NilError(t, err)
+}
+
+func TestDeprecationWarning_NoHeadersNoCallback(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	t.Cleanup(srv.Close)
+
+	called := false
+	c := httpcl.New(httpcl.Config{BaseURL: srv.URL, OnWarn: func(string) { called = true }})
+	ctx := context.Background()
+	_, err := c.Call(ctx, httpcl.NewRequest(http.MethodGet, "/"))
+	assert.NilError(t, err)
+	assert.Check(t, cmp.Equal(called, false), "OnWarn should not fire without deprecation headers")
+}

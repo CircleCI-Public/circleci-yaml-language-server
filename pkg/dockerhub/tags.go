@@ -1,12 +1,8 @@
 package dockerhub
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
-
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
 type TagResponse struct {
@@ -48,26 +44,8 @@ func (me *dockerHubAPI) fetchTags(namespace, repo, name string) (TagResponse, er
 
 func (me *dockerHubAPI) fetchTagsByURL(queryURL string) (TagResponse, error) {
 	tagResponse := TagResponse{}
-	req, err := http.NewRequest("GET", queryURL, nil)
-	if err != nil {
-		return tagResponse, fmt.Errorf("Failed to load next")
-	}
-
-	req.Header.Set("User-Agent", utils.UserAgent)
-
-	res, err := me.httpClient.Do(req)
-	if err != nil {
-		return tagResponse, fmt.Errorf("Failed to load next")
-	}
-
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return tagResponse, fmt.Errorf("Failed to load next")
-	}
-
-	err = json.Unmarshal(body, &tagResponse)
-	if err != nil {
-		return tagResponse, err
+	if _, err := me.get(queryURL, &tagResponse); err != nil {
+		return TagResponse{}, fmt.Errorf("fetching tags: %w", err)
 	}
 
 	return tagResponse, nil
@@ -78,23 +56,8 @@ func (me *dockerHubAPI) GetImageTags(namespace, image string) ([]string, error) 
 		fmt.Sprintf("namespaces/%s/repositories/%s/tags", namespace, image),
 	)
 
-	req, err := http.NewRequest("GET", url.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("User-Agent", utils.UserAgent)
-
-	res, err := me.httpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-
-	decoder := json.NewDecoder(res.Body)
 	body := TagResponse{}
-
-	err = decoder.Decode(&body)
-	if err != nil {
+	if _, err := me.get(url.String(), &body); err != nil {
 		return nil, err
 	}
 
@@ -116,16 +79,7 @@ func (me *dockerHubAPI) ImageHasTag(namespace, image, tag string) bool {
 		fmt.Sprintf("namespaces/%s/repositories/%s/tags/%s", namespace, image, tag),
 	)
 
-	req, err := http.NewRequest("GET", url.String(), nil)
-	if err != nil {
-		return false
-	}
-	req.Header.Set("User-Agent", utils.UserAgent)
+	status, err := me.get(url.String(), nil)
 
-	res, err := me.httpClient.Do(req)
-	if err != nil {
-		return false
-	}
-
-	return res.StatusCode == 200
+	return err == nil && status == http.StatusOK
 }

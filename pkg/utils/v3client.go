@@ -6,13 +6,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
-	"log"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
-	"time"
+
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/httpcl"
 )
 
 // V3Client is an HTTP client for the CircleCI V3 REST API
@@ -36,17 +34,32 @@ type V3Client struct {
 	UserId string
 	Debug  bool
 
-	httpClient *http.Client
+	httpClient *httpcl.Client
 }
 
 // NewV3Client returns a client for the V3 API on the given host.
 func NewV3Client(host, token, userId string, debug bool) *V3Client {
+	var transport http.RoundTripper
+	if debug {
+		transport = newDebugTransport(http.DefaultTransport)
+	}
+
 	return &V3Client{
-		Host:       host,
-		Token:      token,
-		UserId:     userId,
-		Debug:      debug,
-		httpClient: GetHTTPClient(),
+		Host:   host,
+		Token:  token,
+		UserId: userId,
+		Debug:  debug,
+		// The host is joined onto each route rather than set as the base URL,
+		// so that a missing or relative host is reported by the request that
+		// needs it, as it was before this client moved onto httpcl.
+		//
+		// An empty token means "anonymous": httpcl sends no Authorization
+		// header at all, which is served for public orbs, where "Bearer " with
+		// nothing after it would be rejected.
+		httpClient: NewHTTPClient(httpcl.Config{
+			AuthToken: token,
+			Transport: transport,
+		}),
 	}
 }
 
@@ -59,19 +72,6 @@ func NewV3ClientFromContext(lsContext *LsContext) *V3Client {
 		lsContext.UserIdForTelemetry,
 		false,
 	)
-}
-
-// GetHTTPClient returns the HTTP client both API clients use.
-func GetHTTPClient() *http.Client {
-	return &http.Client{
-		Timeout: 30 * time.Second,
-		Transport: &http.Transport{
-			ExpectContinueTimeout: 1 * time.Second,
-			IdleConnTimeout:       90 * time.Second,
-			MaxIdleConns:          10,
-			TLSHandshakeTimeout:   10 * time.Second,
-		},
-	}
 }
 
 // ErrNotFound reports that the API answered 404. Callers that turn "absent"
@@ -90,6 +90,10 @@ type APIError struct {
 	ID     string
 	Title  string
 	Detail string
+
+	// response is the error httpcl reported, kept so that
+	// httpcl.HasStatusCode works on an APIError too.
+	response *httpcl.HTTPError
 }
 
 func (err *APIError) Error() string {
@@ -111,6 +115,14 @@ func (err *APIError) Error() string {
 // branch on absence without unwrapping the concrete type.
 func (err *APIError) Is(target error) bool {
 	return target == ErrNotFound && err.Status == http.StatusNotFound
+}
+
+func (err *APIError) Unwrap() error {
+	if err.response == nil {
+		return nil
+	}
+
+	return err.response
 }
 
 // page is the cursor pagination envelope shared by every V3 collection.
@@ -190,60 +202,39 @@ func GetPaged[T any](ctx context.Context, cl *V3Client, path string, query url.V
 }
 
 func (cl *V3Client) get(ctx context.Context, path string, query url.Values) ([]byte, error) {
-	address, err := cl.address(path, query)
+	address, err := cl.address(path)
 	if err != nil {
 		return nil, err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, address, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("User-Agent", UserAgent)
-	req.Header.Set("Accept", "application/json")
-	// An empty token means "anonymous": sending "Bearer " with nothing after it
-	// is rejected, while sending no header at all is served for public orbs.
-	if cl.Token != "" {
-		req.Header.Set("Authorization", "Bearer "+cl.Token)
-	}
+	opts := []func(*httpcl.Request){}
 	if cl.UserId != "" {
-		req.Header.Set("user_id", cl.UserId)
+		opts = append(opts, httpcl.Header("user_id", cl.UserId))
+	}
+	for key, values := range query {
+		for _, value := range values {
+			// url.Values.Encode percent-encodes the brackets in filter[name]
+			// and page[cursor], which the API accepts.
+			opts = append(opts, httpcl.QueryParam(key, value))
+		}
 	}
 
-	logger := log.New(os.Stderr, "", 0)
-	if cl.Debug {
-		logger.Printf(">> GET %s", address)
-	}
+	var body []byte
+	opts = append(opts, httpcl.BytesDecoder(&body))
 
-	res, err := cl.httpClient.Do(req)
+	_, err = cl.httpClient.Call(ctx, httpcl.NewRequest(http.MethodGet, address, opts...))
+	var httpErr *httpcl.HTTPError
+	if errors.As(err, &httpErr) {
+		return nil, parseAPIError(httpErr)
+	}
 	if err != nil {
 		return nil, err
-	}
-	defer func() {
-		if closeErr := res.Body.Close(); closeErr != nil {
-			logger.Printf("%s", closeErr.Error())
-		}
-	}()
-
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		return nil, fmt.Errorf("reading response from %s: %w", path, err)
-	}
-
-	if cl.Debug {
-		logger.Printf("<< request id: %s", res.Header.Get("X-Request-Id"))
-		logger.Printf("<< %s: %s", res.Status, string(body))
-	}
-
-	if res.StatusCode < 200 || res.StatusCode > 299 {
-		return nil, parseAPIError(res.StatusCode, body)
 	}
 
 	return body, nil
 }
 
-func (cl *V3Client) address(path string, query url.Values) (string, error) {
+func (cl *V3Client) address(path string) (string, error) {
 	if cl.Host == "" {
 		return "", ErrHostNotDefined
 	}
@@ -256,18 +247,11 @@ func (cl *V3Client) address(path string, query url.Values) (string, error) {
 		return "", fmt.Errorf("host (%s) must be an absolute URL, including scheme", cl.Host)
 	}
 
-	address := strings.TrimSuffix(host.String(), "/") + "/api/v3/" + strings.TrimPrefix(path, "/")
-	if len(query) > 0 {
-		// url.Values.Encode percent-encodes the brackets in filter[name] and
-		// page[cursor], which the API accepts.
-		address += "?" + query.Encode()
-	}
-
-	return address, nil
+	return strings.TrimSuffix(host.String(), "/") + "/api/v3/" + strings.TrimPrefix(path, "/"), nil
 }
 
-func parseAPIError(status int, body []byte) error {
-	apiErr := &APIError{Status: status}
+func parseAPIError(httpErr *httpcl.HTTPError) error {
+	apiErr := &APIError{Status: httpErr.StatusCode, response: httpErr}
 
 	var envelope struct {
 		Error struct {
@@ -281,7 +265,7 @@ func parseAPIError(status int, body []byte) error {
 		Message string `json:"message"`
 	}
 
-	if err := json.Unmarshal(bytes.TrimSpace(body), &envelope); err == nil {
+	if err := json.Unmarshal(bytes.TrimSpace(httpErr.Body), &envelope); err == nil {
 		apiErr.Type = envelope.Error.Type
 		apiErr.ID = envelope.Error.ID
 		apiErr.Title = envelope.Error.Title

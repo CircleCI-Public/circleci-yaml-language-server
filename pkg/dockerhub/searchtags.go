@@ -45,11 +45,14 @@ func (t *TagsSearchCursor) HasNext() bool {
 		nextPage, err := t.lastResponse.loadNext(t.api)
 
 		if err != nil {
-			return false
+			// The walk ends at the page that failed, rather than the cursor
+			// with it: tags already read are still offered, and forgetting the
+			// failed page stops the next call asking for it again.
+			t.lastResponse.Next = ""
+		} else {
+			t.results = append(t.results, nextPage.Results...)
+			t.lastResponse = nextPage
 		}
-
-		t.results = append(t.results, nextPage.Results...)
-		t.lastResponse = nextPage
 	}
 
 	return t.index < len(t.results)

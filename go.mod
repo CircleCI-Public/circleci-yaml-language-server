@@ -6,7 +6,7 @@ require (
 	github.com/Masterminds/semver v1.5.0
 	github.com/go-git/go-git/v5 v5.13.0
 	github.com/google/go-cmp v0.7.0
-	github.com/pkg/errors v0.9.1
+	github.com/hashicorp/go-retryablehttp v0.7.8
 	github.com/rollbar/rollbar-go v1.4.5
 	github.com/segmentio/encoding v0.4.0
 	github.com/smacker/go-tree-sitter v0.0.0-20230720070738-0d0a9f78d8f8
@@ -120,6 +120,7 @@ require (
 	github.com/gostaticanalysis/comment v1.5.0 // indirect
 	github.com/gostaticanalysis/forcetypeassert v0.2.0 // indirect
 	github.com/gostaticanalysis/nilerr v0.1.2 // indirect
+	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-immutable-radix/v2 v2.1.0 // indirect
 	github.com/hashicorp/go-version v1.8.0 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect

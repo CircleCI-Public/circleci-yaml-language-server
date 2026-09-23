@@ -6,6 +6,8 @@ import (
 
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
+
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/httpcl"
 )
 
 func TestGetImageTags(t *testing.T) {
@@ -43,26 +45,25 @@ func TestGetImageTags(t *testing.T) {
 		assert.Check(t, !asksForASize, "no page size is requested")
 	})
 
-	// The status is never read, so an error body decodes into a response with
-	// no results and a repository nobody has reads as one with no tags.
-	t.Run("reports a repository Docker Hub does not have as having no tags", func(t *testing.T) {
+	t.Run("reports a repository Docker Hub does not have", func(t *testing.T) {
 		fake := cimgFake(t)
 		api := apiFor(fake)
 
 		tags, err := api.GetImageTags("cimg", "nope")
-		assert.Check(t, cmp.Nil(err), "a 404 is not reported as an error")
-		assert.Check(t, cmp.Len(tags, 0))
+		assert.Check(t, cmp.Nil(tags))
+		assert.Check(t, httpcl.HasStatusCode(err, http.StatusNotFound), "got %v", err)
 	})
 
-	// Same for a rate limit, which is the failure a busy editor actually hits.
-	t.Run("reports a rate limit as having no tags", func(t *testing.T) {
+	// A rate limit is the failure a busy editor actually hits, and it must not
+	// read as a repository with no tags.
+	t.Run("reports a rate limit", func(t *testing.T) {
 		fake := cimgFake(t)
 		fake.SetStatus(cimgNodeTagsRoute, http.StatusTooManyRequests)
 		api := apiFor(fake)
 
 		tags, err := api.GetImageTags("cimg", "node")
-		assert.Check(t, cmp.Nil(err), "a 429 is not reported as an error")
-		assert.Check(t, cmp.Len(tags, 0))
+		assert.Check(t, cmp.Nil(tags))
+		assert.Check(t, httpcl.HasStatusCode(err, http.StatusTooManyRequests), "got %v", err)
 	})
 
 	// A body that is not JSON at all is reported, because decoding it fails.

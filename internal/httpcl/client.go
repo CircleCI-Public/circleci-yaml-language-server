@@ -1,0 +1,254 @@
+// Copyright (c) 2026 Circle Internet Services, Inc.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+//
+// SPDX-License-Identifier: MIT
+
+// Package httpcl provides a minimal HTTP client with JSON defaults and retries.
+// Copied from github.com/CircleCI-Public/circleci-cli/internal/httpcl, which
+// was itself copied from github.com/CircleCI-Public/chunk-cli/internal/httpcl.
+// The differences are that debug logging goes through log/slog rather than
+// the CLI's iostream, and the CLI's User-Agent helper is left behind.
+// TODO: extract to a shared module.
+package httpcl
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"log/slog"
+	"net/http"
+	"net/url"
+	"time"
+
+	"github.com/hashicorp/go-retryablehttp"
+)
+
+const jsonContentType = "application/json; charset=utf-8"
+
+// Config configures a Client.
+type Config struct {
+	// BaseURL is prepended to every request route.
+	BaseURL string
+	// AuthToken is sent as a Bearer token unless AuthHeader is set.
+	AuthToken string
+	// AuthHeader overrides the header name for AuthToken (e.g. "Circle-Token", "x-api-key").
+	// When set, the token is sent as the raw header value (not "Bearer ...").
+	AuthHeader string
+	// UserAgent sets the User-Agent header on every request.
+	UserAgent string
+	// Timeout is the per-request timeout. Defaults to 30s.
+	Timeout time.Duration
+	// DisableRetries disables automatic retries. By default requests are
+	// retried up to 3 times with exponential backoff.
+	DisableRetries bool
+	// Transport overrides the HTTP transport (useful for testing).
+	Transport http.RoundTripper
+	// OnWarn, when non-nil, is called with a plain-text warning message when the
+	// server signals endpoint removal via Deprecation or Sunset response headers.
+	// The caller controls formatting (prefix, newline, colour).
+	OnWarn func(msg string)
+}
+
+// Client is a simple HTTP client with JSON defaults and automatic retries.
+type Client struct {
+	baseURL    string
+	authToken  string
+	authHeader string
+	userAgent  string
+	timeout    time.Duration
+	onWarn     func(string)
+	http       *retryablehttp.Client
+}
+
+// New creates a Client from the given config.
+func New(cfg Config) *Client {
+	timeout := cfg.Timeout
+	if timeout == 0 {
+		timeout = 30 * time.Second
+	}
+
+	rc := retryablehttp.NewClient()
+	rc.RetryMax = 3
+	rc.ErrorHandler = retryablehttp.PassthroughErrorHandler
+	if cfg.DisableRetries {
+		rc.RetryMax = 0
+	}
+	rc.RetryWaitMin = 50 * time.Millisecond
+	rc.RetryWaitMax = 2 * time.Second
+	rc.Logger = nil // suppress default log output
+
+	if cfg.Transport != nil {
+		rc.HTTPClient.Transport = cfg.Transport
+	}
+
+	return &Client{
+		baseURL:    cfg.BaseURL,
+		authToken:  cfg.AuthToken,
+		authHeader: cfg.AuthHeader,
+		userAgent:  cfg.UserAgent,
+		timeout:    timeout,
+		onWarn:     cfg.OnWarn,
+		http:       rc,
+	}
+}
+
+// Call executes the request and returns the HTTP status code.
+// Non-2xx responses return an *HTTPError. If a decoder is set and the
+// response is 2xx, the response body is decoded.
+func (c *Client) Call(ctx context.Context, r Request) (status int, err error) {
+	start := time.Now()
+
+	path := r.route
+	if len(r.routeParams) > 0 {
+		params := make([]any, len(r.routeParams))
+		for i, value := range r.routeParams {
+			switch value.(type) {
+			case int, int8, int16, int32, int64, float32, float64:
+				params[i] = value
+			default:
+				params[i] = url.PathEscape(fmt.Sprint(value))
+			}
+		}
+		path = fmt.Sprintf(r.route, params...)
+	}
+
+	u, err := url.Parse(c.baseURL + path)
+	if err != nil {
+		return 0, fmt.Errorf("httpcl: bad url: %w", err)
+	}
+	if len(r.query) > 0 {
+		u.RawQuery = r.query.Encode()
+	}
+	defer func() {
+		duration := time.Since(start)
+		slog.DebugContext(ctx, r.method+" "+r.route,
+			"http.request.method", r.method,
+			"http.response.status_code", status,
+			"duration", duration,
+			"url.full", u.String(),
+			"kind", "client",
+		)
+	}()
+
+	var bodyReader io.Reader
+	contentType := jsonContentType
+	switch {
+	case r.rawBody != nil:
+		bodyReader = bytes.NewReader(r.rawBody)
+		contentType = r.contentType
+	case r.body != nil:
+		b, err := json.Marshal(r.body)
+		if err != nil {
+			return 0, fmt.Errorf("httpcl: marshal body: %w", err)
+		}
+		bodyReader = bytes.NewReader(b)
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, c.timeout)
+	defer cancel()
+
+	req, err := retryablehttp.NewRequestWithContext(ctx, r.method, u.String(), bodyReader)
+	if err != nil {
+		return 0, fmt.Errorf("httpcl: new request: %w", err)
+	}
+
+	if bodyReader != nil {
+		req.Header.Set("Content-Type", contentType)
+	}
+	req.Header.Set("Accept", "application/json")
+
+	if c.authToken != "" {
+		if c.authHeader != "" {
+			req.Header.Set(c.authHeader, c.authToken)
+		} else {
+			req.Header.Set("Authorization", "Bearer "+c.authToken)
+		}
+	}
+	if c.userAgent != "" {
+		req.Header.Set("User-Agent", c.userAgent)
+	}
+
+	for k, vals := range r.headers {
+		for _, v := range vals {
+			req.Header.Add(k, v)
+		}
+	}
+
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return 0, err
+	}
+	defer func() {
+		_, _ = io.Copy(io.Discard, resp.Body)
+		_ = resp.Body.Close()
+	}()
+
+	status = resp.StatusCode
+
+	if status >= 200 && status < 300 {
+		if c.onWarn != nil {
+			checkDeprecation(c.onWarn, resp.Header)
+		}
+		if r.respHeader != nil {
+			*r.respHeader = resp.Header
+		}
+		if r.decoder != nil {
+			if err := r.decoder(resp.Body); err != nil {
+				return status, fmt.Errorf("httpcl: decode response: %w", err)
+			}
+		}
+		return status, nil
+	}
+
+	body, _ := io.ReadAll(resp.Body)
+	return status, &HTTPError{
+		Method:     r.method,
+		Route:      path,
+		StatusCode: status,
+		Body:       body,
+	}
+}
+
+// checkDeprecation calls onWarn when the response carries Deprecation or Sunset
+// headers signalling that the endpoint will be removed. The message is plain
+// text — no prefix or newline — so the caller controls formatting.
+func checkDeprecation(onWarn func(string), h http.Header) {
+	dep := h.Get("Deprecation")
+	sunset := h.Get("Sunset")
+	if dep == "" && sunset == "" {
+		return
+	}
+	if sunset != "" {
+		if t, err := http.ParseTime(sunset); err == nil {
+			days := int(time.Until(t).Hours() / 24)
+			if days > 0 {
+				onWarn(fmt.Sprintf("this API endpoint is deprecated and will be removed in %d days — upgrade the CircleCI YAML language server", days))
+			} else {
+				onWarn("this API endpoint is deprecated and removal is imminent — upgrade the CircleCI YAML language server")
+			}
+		} else {
+			onWarn(fmt.Sprintf("this API endpoint is deprecated and will be removed on %s — upgrade the CircleCI YAML language server", sunset))
+		}
+	} else {
+		onWarn("this API endpoint is deprecated and will be removed — upgrade the CircleCI YAML language server")
+	}
+}

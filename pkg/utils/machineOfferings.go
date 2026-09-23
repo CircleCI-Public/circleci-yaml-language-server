@@ -2,14 +2,14 @@ package utils
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"maps"
 	"net/http"
 	"slices"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/httpcl"
 )
 
 const CurrentLinuxImage = "ubuntu-2404:current"
@@ -59,30 +59,22 @@ func fetchOfferings(lsContext *LsContext) *Offerings {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	url := fmt.Sprintf("%s/api/v3/catalog/offerings", lsContext.Api.HostUrl)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-	if err != nil {
-		return nil
-	}
-	req.Header.Set("User-Agent", UserAgent)
-	req.Header.Add("Circle-Token", lsContext.Api.Token)
-
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil
-	}
-	defer res.Body.Close()
-	if res.StatusCode != http.StatusOK {
-		return nil
-	}
-
 	// The V3 response wraps the catalog in a data entity: {"data": {"attributes": {...}}}.
 	var body struct {
 		Data struct {
 			Attributes Offerings `json:"attributes"`
 		} `json:"data"`
 	}
-	if err := json.NewDecoder(res.Body).Decode(&body); err != nil {
+
+	// This is a V3 route, but it authenticates with Circle-Token as the V2
+	// routes do, rather than with the bearer token V3Client sends.
+	client := NewHTTPClient(httpcl.Config{
+		BaseURL:    lsContext.Api.HostUrl + "/api/v3",
+		AuthToken:  lsContext.Api.Token,
+		AuthHeader: "Circle-Token",
+	})
+	status, err := client.Call(ctx, httpcl.NewRequest(http.MethodGet, "/catalog/offerings", httpcl.JSONDecoder(&body)))
+	if err != nil || status != http.StatusOK {
 		return nil
 	}
 

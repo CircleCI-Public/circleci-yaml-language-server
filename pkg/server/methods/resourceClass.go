@@ -1,12 +1,11 @@
 package methods
 
 import (
-	"fmt"
-	"io/ioutil"
+	"context"
 	"net/http"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/httpcl"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
-	"github.com/segmentio/encoding/json"
 	"go.lsp.dev/protocol"
 )
 
@@ -32,7 +31,7 @@ func (methods *Methods) SetResourceClassOfFile(params protocol.DidOpenTextDocume
 // The /api/v3/runner/... paths are not the CircleCI V3 API. They are the runner
 // service's own versioning, addressed here on a runner. subdomain of the API
 // host, and they answer with a plain {"items": [...]} rather than the V3
-// {"data": ..., "page": ...} envelope — which is why this is a hand-rolled
+// {"data": ..., "page": ...} envelope — which is why this makes its own
 // request instead of a call through pkg/utils/v3client.go.
 //
 // The intent is to move onto the standard API. The CLI already reaches this
@@ -40,7 +39,7 @@ func (methods *Methods) SetResourceClassOfFile(params protocol.DidOpenTextDocume
 // /api/v3/runner/resource-classes endpoint answers with the real V3 envelope,
 // filters and all. Until this moves, the host is overridable; see
 // utils.ApiContext.RunnerHostUrl.
-func getResourceClassOfOrg(textDocumentUri protocol.URI, context *utils.LsContext) []string {
+func getResourceClassOfOrg(textDocumentUri protocol.URI, lsContext *utils.LsContext) []string {
 	projectSlug := utils.GetProjectSlug(textDocumentUri.Filename())
 	org := utils.GetProjectOrg(projectSlug)
 
@@ -48,34 +47,23 @@ func getResourceClassOfOrg(textDocumentUri protocol.URI, context *utils.LsContex
 		return []string{}
 	}
 
-	runnerHost, err := context.Api.RunnerHostUrl()
+	runnerHost, err := lsContext.Api.RunnerHostUrl()
 	if err != nil {
 		return []string{}
 	}
-	url := fmt.Sprintf("%s/api/v3/runner/resource?namespace=%s", runnerHost, org)
-
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return []string{}
-	}
-
-	req.Header.Add("Circle-Token", context.Api.Token)
-	req.Header.Set("User-Agent", utils.UserAgent)
-
-	res, err := http.DefaultClient.Do(req)
-
-	if err != nil || res.StatusCode != 200 {
-		return []string{}
-	}
+	client := utils.NewHTTPClient(httpcl.Config{
+		BaseURL:    runnerHost,
+		AuthToken:  lsContext.Api.Token,
+		AuthHeader: "Circle-Token",
+	})
 
 	var resourceClassResponse ResourceClassResponse
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return []string{}
-	}
-
-	err = json.Unmarshal(body, &resourceClassResponse)
-	if err != nil {
+	status, err := client.Call(context.Background(), httpcl.NewRequest(
+		http.MethodGet, "/api/v3/runner/resource",
+		httpcl.QueryParam("namespace", org),
+		httpcl.JSONDecoder(&resourceClassResponse),
+	))
+	if err != nil || status != http.StatusOK {
 		return []string{}
 	}
 
