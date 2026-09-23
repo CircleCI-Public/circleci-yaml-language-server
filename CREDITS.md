@@ -40,6 +40,7 @@ Developer Experience team of CircleCI
 | github.com/lucasb-eyer/go-colorful                           | MIT          | https://github.com/lucasb-eyer/go-colorful/blob/HEAD/LICENSE                |
 | github.com/mattn/go-pointer                                  | MIT          | https://github.com/mattn/go-pointer/blob/HEAD/LICENSE                       |
 | github.com/mattn/go-runewidth                                | MIT          | https://github.com/mattn/go-runewidth/blob/HEAD/LICENSE                     |
+| github.com/maypok86/otter/v2                                 | Apache-2.0   | https://github.com/maypok86/otter/blob/HEAD/LICENSE                         |
 | github.com/muesli/cancelreader                               | MIT          | https://github.com/muesli/cancelreader/blob/HEAD/LICENSE                    |
 | github.com/pjbgf/sha1cd                                      | Apache-2.0   | https://github.com/pjbgf/sha1cd/blob/HEAD/LICENSE                           |
 | github.com/rivo/uniseg                                       | MIT          | https://github.com/rivo/uniseg/blob/HEAD/LICENSE.txt                        |

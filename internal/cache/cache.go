@@ -1,12 +1,12 @@
 package cache
 
 import (
-	"fmt"
 	"os"
 	"path"
 	"slices"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/adrg/xdg"
 	"go.lsp.dev/protocol"
@@ -23,29 +23,32 @@ type Cache struct {
 	ResourceClassCache    ResourceClasses
 	ContextCache          Contexts
 	MachineOfferingsCache MachineOfferings
+	NamespaceCache        Namespaces
 }
 
+// DockerImages remembers whether each Docker Hub repository exists, for
+// foundLifetime or notFoundLifetime. The answer is kept per repository rather
+// than per image reference: every tag of an image shares it.
 type DockerImages struct {
-	cacheMutex  *sync.Mutex
-	dockerCache map[string]*DockerImage
-}
-
-type DockerImage struct {
-	Checked bool
-	Exists  bool
+	images *memo[bool]
 }
 
 type ImageTags struct {
 	// A tag to recommended for untagged images
 	Recommended string
 
-	// The key of the map are the tag checked and the value is whether this tag exists or not
+	// The tags the listing found, each mapped to true. A tag missing here may
+	// still exist beyond the page that was read; DockerTags.HasTag asks.
+	// Shared between callers, so never written once cached.
 	CheckedTags map[string]bool
 }
 
+// DockerTags remembers the tags listed for each Docker Hub repository, for
+// foundLifetime, and the answer for each tag asked about on its own, for
+// foundLifetime or notFoundLifetime.
 type DockerTags struct {
-	cacheMutex *sync.Mutex
-	tagsCache  map[string]ImageTags
+	lists  *memo[ImageTags]
+	checks *memo[bool]
 }
 
 type File struct {
@@ -83,11 +86,10 @@ func (c *Cache) init() {
 	c.OrbCache.orbsCache = make(map[string]*ast.OrbInfo)
 	c.OrbCache.cacheMutex = &sync.Mutex{}
 
-	c.DockerCache.cacheMutex = &sync.Mutex{}
-	c.DockerCache.dockerCache = make(map[string]*DockerImage)
-
-	c.DockerTagsCache.cacheMutex = &sync.Mutex{}
-	c.DockerTagsCache.tagsCache = make(map[string]ImageTags)
+	c.DockerCache.images = newMemo(existenceLifetime, nil)
+	c.DockerTagsCache.lists = newMemo(func(ImageTags) time.Duration { return foundLifetime }, nil)
+	c.DockerTagsCache.checks = newMemo(existenceLifetime, nil)
+	c.NamespaceCache.namespaces = newMemo(existenceLifetime, nil)
 
 	c.ContextCache.cacheMutex = &sync.Mutex{}
 	c.ContextCache.contextCache = make(map[string]map[string]*Context)
@@ -227,50 +229,55 @@ func (c *Cache) RemoveOrbFiles() {
 
 // Docker images cache
 
-func (c *DockerImages) Add(name string, exists bool) *DockerImage {
-	c.cacheMutex.Lock()
-	defer c.cacheMutex.Unlock()
-
-	c.dockerCache[name] = &DockerImage{
-		Checked: true,
-		Exists:  exists,
-	}
-
-	return c.dockerCache[name]
+func imageKey(namespace, image string) string {
+	return namespace + "/" + image
 }
 
-func (c *DockerImages) Get(name string) *DockerImage {
-	c.cacheMutex.Lock()
-	defer c.cacheMutex.Unlock()
-
-	return c.dockerCache[name]
+// Exists reports whether an image exists, calling check only when no answer
+// is remembered. An error from check is returned but not remembered.
+func (c *DockerImages) Exists(namespace, image string, check func() (bool, error)) (bool, error) {
+	return c.images.get(imageKey(namespace, image), check)
 }
 
-func (c *DockerImages) Remove(name string) {
-	c.cacheMutex.Lock()
-	defer c.cacheMutex.Unlock()
+func (c *DockerImages) Add(namespace, image string, exists bool) {
+	c.images.put(imageKey(namespace, image), exists)
+}
 
-	delete(c.dockerCache, name)
+// Get returns whether an image exists, and whether that is known at all.
+func (c *DockerImages) Get(namespace, image string) (exists, known bool) {
+	return c.images.peek(imageKey(namespace, image))
 }
 
 // Docker tags cache
 
-func (c *DockerTags) Add(namespace, image string, value ImageTags) {
-	c.cacheMutex.Lock()
-	defer c.cacheMutex.Unlock()
+// Load returns the tags of an image, calling list only when none are
+// remembered. An error from list is returned but not remembered.
+func (c *DockerTags) Load(namespace, image string, list func() (ImageTags, error)) (ImageTags, error) {
+	return c.lists.get(imageKey(namespace, image), list)
+}
 
-	c.tagsCache[fmt.Sprintf("%s/%s", namespace, image)] = value
+func (c *DockerTags) Add(namespace, image string, value ImageTags) {
+	c.lists.put(imageKey(namespace, image), value)
 }
 
 func (c *DockerTags) Get(namespace, image string) *ImageTags {
-	c.cacheMutex.Lock()
-	defer c.cacheMutex.Unlock()
-
-	tags, ok := c.tagsCache[fmt.Sprintf("%s/%s", namespace, image)]
+	tags, ok := c.lists.peek(imageKey(namespace, image))
 	if !ok {
 		return nil
 	}
 	return &tags
+}
+
+// HasTag reports whether an image has a tag, calling check only when no
+// answer is remembered. An error from check is returned but not remembered.
+func (c *DockerTags) HasTag(namespace, image, tag string, check func() (bool, error)) (bool, error) {
+	return c.checks.get(imageKey(namespace, image)+":"+tag, check)
+}
+
+// Checked returns whether an image has a tag, and whether that was asked
+// about and answered on its own.
+func (c *DockerTags) Checked(namespace, image, tag string) (exists, known bool) {
+	return c.checks.peek(imageKey(namespace, image) + ":" + tag)
 }
 
 // Cache
@@ -298,6 +305,7 @@ func (cache *Cache) ClearHostData() {
 	cache.RemoveOrbFiles()
 	cache.OrbCache.RemoveOrbs()
 	cache.clearContextCache()
+	cache.NamespaceCache.namespaces.clear()
 	cache.FileCache.forgetProjects()
 }
 

@@ -8,6 +8,15 @@ When a dependency is added, removed, or changes license, regenerate `CREDITS.md`
 (see the instructions at the bottom of that file). A plain version bump doesn't
 need this — license locations there point at `HEAD`, not a pinned version.
 
+# Verifying changes
+
+Before calling a change done, run both:
+
+- `task test` — unit and acceptance tests, with `-race`
+- `task check` — every static check: formatting, lint, and `go mod tidy`
+
+To fix static issues, run `task fix`.
+
 # Testing
 
 Avoid coupling test comparisons with internal data structures. Prefer

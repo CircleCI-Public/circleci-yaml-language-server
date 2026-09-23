@@ -72,6 +72,47 @@ func TestValidateExecutorNamespace(t *testing.T) {
 		}
 	})
 
+	t.Run("asks about a namespace once", func(t *testing.T) {
+		fake := fakes.NewCircleCI(t)
+		fake.AddNamespace("ns-acme", "acme")
+		val := Validate{
+			Diagnostics: &[]protocol.Diagnostic{},
+			Cache:       cache.New(),
+			Context:     testHelpers.SettingsForHost(fake.URL()),
+		}
+
+		t.Run("validate the same namespace twice, and one that does not exist twice", func(t *testing.T) {
+			val.validateExecutorNamespace("acme", protocol.Range{})
+			val.validateExecutorNamespace("acme", protocol.Range{})
+			val.validateExecutorNamespace("nope", protocol.Range{})
+			val.validateExecutorNamespace("nope", protocol.Range{})
+		})
+
+		t.Run("check each was requested once", func(t *testing.T) {
+			assert.Check(t, cmp.Equal(fake.RequestCount(http.MethodGet, "/api/v3/namespaces"), 2))
+		})
+
+		t.Run("check the missing one is still flagged each time", func(t *testing.T) {
+			assert.Check(t, cmp.Len(*val.Diagnostics, 2))
+		})
+	})
+
+	t.Run("asks again after a request failed", func(t *testing.T) {
+		fake := fakes.NewCircleCI(t)
+		fake.AddNamespace("ns-acme", "acme")
+		fake.SetStatus("GET /api/v3/namespaces", http.StatusInternalServerError)
+		val := Validate{
+			Diagnostics: &[]protocol.Diagnostic{},
+			Cache:       cache.New(),
+			Context:     testHelpers.SettingsForHost(fake.URL()),
+		}
+
+		val.validateExecutorNamespace("acme", protocol.Range{})
+		val.validateExecutorNamespace("acme", protocol.Range{})
+
+		assert.Check(t, cmp.Equal(fake.RequestCount(http.MethodGet, "/api/v3/namespaces"), 2))
+	})
+
 	t.Run("stays silent when no host is configured", func(t *testing.T) {
 		diagnostics := []protocol.Diagnostic{}
 		val := Validate{
