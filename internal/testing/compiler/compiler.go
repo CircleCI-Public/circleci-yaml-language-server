@@ -30,7 +30,7 @@ type Work struct {
 	Name string
 	// Target is the directory to compile from, relative to the test, e.g. "..".
 	Target string
-	// Source is the Go package to compile, e.g. "./cmd/start_server".
+	// Source is the Go package to compile, e.g. "./cmd/server".
 	Source string
 	// Tags are extra build tags.
 	Tags string

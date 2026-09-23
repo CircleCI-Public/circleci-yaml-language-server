@@ -10,13 +10,6 @@ tasks:
     cmds:
       - task: build:server
 
-  build:all:
-    desc: Build all binaries
-    cmds:
-      - task: build:parser
-      - task: build:server
-      - task: build:test-tree-sitter
-
   build:do:
     internal: true
     cmds:
@@ -24,52 +17,20 @@ tasks:
     vars:
       BUILD_FLAGS: '{{default "" .BUILD_FLAGS}}'
 
-  build:parser:
-    cmds:
-      - task: build:do
-        vars:
-          BIN_PATH: bin/parser
-          GO_FILE: cmd/parse_yaml/parse_yaml.go
-
   build:server:
     desc: Build server binary
     cmds:
       - task: build:do
         vars:
           BIN_PATH: bin/start_server
-          GO_FILE: cmd/start_server/start_server.go
-
-  build:server:debug:
-    desc: Build server binary without optimizations
-    cmds:
-      - task: build:do
-        vars:
-          BIN_PATH: bin/start_server
-          BUILD_FLAGS: -gcflags='all=-N -l'
-          GO_FILE: cmd/start_server/start_server.go
-
-  build:test-tree-sitter:
-    cmds:
-      - task: build:do
-        vars:
-          BIN_PATH: bin/test-tree-sitter
-          GO_FILE: cmd/test_tree-sitter/test_tree-sitter.go
+          GO_FILE: ./cmd/server
 
   run:
     cmds:
-      - go run cmd/start_server/start_server.go
-
-  start:
-    cmds:
-      - ./bin/start_server
-    env:
-      PORT: "{{.PORT | default 10001}}"
-
-  init:
-    - go mod download
+      - go run ./cmd/server
 
   licenses:
-    - go-licenses csv ./cmd/start_server >licenses.csv 2>licenses.errors
+    - go-licenses csv ./cmd/server >licenses.csv 2>licenses.errors
 
   lint:
     desc: Run golangci-lint
@@ -141,15 +102,6 @@ tasks:
     desc: Probe the Docker Hub API (pass a repository with -- cimg/go)
     cmds:
       - go run ./cmd/dockerhub {{.CLI_ARGS}}
-
-  validate:
-    desc: Run all necessary task to build, lint and test the project
-    deps:
-      - prepare:vscode
-    cmds:
-      - task: lint
-      - task: build:all
-      - task: test
 
   # CI tasks
 

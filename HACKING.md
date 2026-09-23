@@ -65,7 +65,7 @@ $ task test
 The tests run against fakes of the CircleCI and Docker Hub APIs
 (`internal/testing/fakes`). Fakes drift: the service changes, or our reading of
 it was wrong to begin with, and the tests keep passing either way. The probes
-in `cmd/orb` and `cmd/dockerhub` are how that drift is caught — they make the
+in `cmd/dev/orb` and `cmd/dev/dockerhub` are how that drift is caught — they make the
 same calls against the real APIs and check that what comes back still has the
 shape the fakes reproduce.
 
@@ -90,10 +90,10 @@ Each probe exits with one of three codes:
 The distinction between 1 and 2 is the point: on a schedule, drift is worth
 raising and an outage is not.
 
-Neither probe needs a token; both read public data. `cmd/orb` uses
+Neither probe needs a token; both read public data. `cmd/dev/orb` uses
 `CIRCLE_TOKEN` when it is set, and takes `CIRCLECI_HOST` and `ORB_BACKEND`
 (`graphql` forces the fallback path) — see the comment at the top of
-`cmd/orb/main.go`.
+`cmd/dev/orb`.
 
 Probes talk to the internet, so they should never run on a pull request: a
 service having a bad day is not a reason to block a merge. Nothing in CI runs
@@ -235,7 +235,7 @@ flag or the `SCHEMA_LOCATION` environment variable for development purposes.
 
 - **Go Tests**: Tests use the embedded schema by default. The file-based schema
   can still be loaded explicitly for comparison tests.
-  - Location: `pkg/services/diagnostics_test.go`
+  - Location: `internal/services`
 
 - **GitHub Releases**: `schema.json` is included in every release for reference
   and for tools that consume it directly.

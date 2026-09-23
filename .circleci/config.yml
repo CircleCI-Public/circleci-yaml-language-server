@@ -181,7 +181,7 @@ jobs:
   Create version file:
     executor: go-executor
     description: |
-      Create a version to be used by the /scripts/ldflags.sh when building the binaries
+      Create a version to be used by the /cmd/ci/get_next_release/ldflags.sh when building the binaries
     parameters:
       is-prerelease:
         type: boolean
@@ -196,7 +196,7 @@ jobs:
             - run:
                 name: Write the pre-release version in the version file
                 command: |
-                  go run ~/project/scripts/get_next_release.go > ~/version
+                  go run ~/project/cmd/ci/get_next_release/get_next_release.go > ~/version
       - when:
           condition:
             not: << parameters.is-prerelease >>
@@ -237,7 +237,7 @@ jobs:
       - checkout
       - run:
           name: Build
-          command: sh -c "go build `~/project/scripts/ldflags.sh` -o ~/project/bin/linux-<< parameters.arch >>-lsp ./cmd/start_server/start_server.go"
+          command: sh -c "go build `~/project/cmd/ci/get_next_release/ldflags.sh` -o ~/project/bin/linux-<< parameters.arch >>-lsp ./cmd/server/main.go"
       - store_artifacts:
           path: ~/project/bin
       - persist_to_workspace:
@@ -261,11 +261,11 @@ jobs:
       - run:
           name: Build
           command: |
-            export LDFLAGS=$(SUFFIX='-s -w' ~/project/scripts/ldflags.sh)
+            export LDFLAGS=$(SUFFIX='-s -w' ~/project/cmd/ci/get_next_release/ldflags.sh)
             export CGO_ENABLED=1
             export GOOS=darwin
             export GOARCH=<< parameters.arch >>
-            sh -c "go build $LDFLAGS -o ~/project/bin/darwin-<< parameters.arch >>-lsp ./cmd/start_server/start_server.go"
+            sh -c "go build $LDFLAGS -o ~/project/bin/darwin-<< parameters.arch >>-lsp ./cmd/server/main.go"
       - store_artifacts:
           path: ~/project/bin
       - persist_to_workspace:
@@ -292,14 +292,14 @@ jobs:
       - run:
           name: Build for Windows
           command: |
-            export LDFLAGS=$(~/project/scripts/ldflags.sh)
+            export LDFLAGS=$(~/project/cmd/ci/get_next_release/ldflags.sh)
             export CGO_ENABLED=1
             export GOOS=windows
             export GOARCH=<< parameters.arch >>
             export CC='zig cc -target << parameters.zig_target >>'
             export CXX='zig c++ -target << parameters.zig_target >>'
             export PATH="$(pwd)/zig-linux-x86_64-0.9.1:$PATH"
-            sh -c "go build $LDFLAGS -o ~/project/bin/windows-<< parameters.arch >>-lsp.exe ./cmd/start_server/start_server.go"
+            sh -c "go build $LDFLAGS -o ~/project/bin/windows-<< parameters.arch >>-lsp.exe ./cmd/server/main.go"
       - store_artifacts:
           path: ~/project/bin
       - persist_to_workspace:
@@ -435,7 +435,7 @@ jobs:
             set -ex
             cd /tmp/to-deploy
             cp ~/project/schema.json ~/project/bin
-            export TAG=$(cd ~/project && go run ~/project/scripts/get_next_release.go)
+            export TAG=$(cd ~/project && go run ~/project/cmd/ci/get_next_release/get_next_release.go)
             ghr -name v$TAG -prerelease -delete -replace -c `git rev-parse HEAD` $TAG ~/project/bin/
 
   Upload artifacts:

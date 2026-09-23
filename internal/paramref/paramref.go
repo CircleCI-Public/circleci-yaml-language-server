@@ -6,9 +6,10 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	"go.lsp.dev/protocol"
+
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 )
 
 var paramRegex = regexp.MustCompile(`<<\s*(parameters|pipeline.parameters)\.([A-Za-z0-9-_]*)\s*>>`)
