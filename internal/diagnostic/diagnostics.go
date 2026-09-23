@@ -3,7 +3,8 @@ package diagnostic
 import (
 	"strings"
 
-	sitter "github.com/smacker/go-tree-sitter"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
+	sitter "github.com/tree-sitter/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
 
@@ -80,21 +81,13 @@ func New(
 }
 
 func WarningFromNode(node *sitter.Node, msg string) protocol.Diagnostic {
-	start, end := node.StartPoint(), node.EndPoint()
-	rng := protocol.Range{
-		Start: protocol.Position{Line: start.Row, Character: start.Column},
-		End:   protocol.Position{Line: end.Row, Character: end.Column},
-	}
+	rng := protocol.Range{Start: position.Start(node), End: position.End(node)}
 
 	return Warning(rng, msg)
 }
 
 func ErrorFromNode(node *sitter.Node, msg string) protocol.Diagnostic {
-	start, end := node.StartPoint(), node.EndPoint()
-	rng := protocol.Range{
-		Start: protocol.Position{Line: start.Row, Character: start.Column},
-		End:   protocol.Position{Line: end.Row, Character: end.Column},
-	}
+	rng := protocol.Range{Start: position.Start(node), End: position.End(node)}
 
 	return Error(rng, msg)
 }

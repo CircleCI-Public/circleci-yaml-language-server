@@ -7,7 +7,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
-	sitter "github.com/smacker/go-tree-sitter"
+	sitter "github.com/tree-sitter/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
 
@@ -189,7 +189,7 @@ func (ch *CompletionHandler) addDockerImageCompletion(node *sitter.Node, namespa
 	}
 
 	// Special case
-	if node.Parent().Type() == "double_quote_scalar" {
+	if node.Parent().Kind() == "double_quote_scalar" {
 		node = node.Parent()
 	}
 
@@ -224,16 +224,16 @@ func (ch *CompletionHandler) addDockerImageCompletion(node *sitter.Node, namespa
 		TextEdit: &protocol.TextEdit{
 			Range: protocol.Range{
 				Start: protocol.Position{
-					Line:      node.StartPoint().Row,
-					Character: node.StartPoint().Column,
+					Line:      position.Start(node).Line,
+					Character: position.Start(node).Character,
 				},
 				End: protocol.Position{
-					Line: node.EndPoint().Row,
+					Line: position.End(node).Line,
 
 					// Important to use the text length
 					// because the node could come from an altered document
 					// which would extand it's total range (& Endpoint)
-					Character: node.StartPoint().Column + uint32(len(ogText)),
+					Character: position.Start(node).Character + uint32(len(ogText)),
 				},
 			},
 			NewText: fullImageName,

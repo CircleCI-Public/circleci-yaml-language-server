@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
-	sitter "github.com/smacker/go-tree-sitter"
+	sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
 func TestYamlDocument_parseJobGroups(t *testing.T) {
@@ -50,7 +50,7 @@ func TestYamlDocument_parseJobGroups(t *testing.T) {
 		{
 			name:      "Single group with requires",
 			fields:    fields{Content: []byte(singleGroup), JobGroups: make(map[string]ast.JobGroup)},
-			args:      args{jobGroupsNode: getFirstChildOfType(GetRootNode([]byte(singleGroup)), "block_node")},
+			args:      args{jobGroupsNode: getFirstChildOfType(rootNodeOf(t, []byte(singleGroup)), "block_node")},
 			wantNames: []string{"deploy-and-release"},
 			wantJobCounts: map[string]int{
 				"deploy-and-release": 2,
@@ -64,7 +64,7 @@ func TestYamlDocument_parseJobGroups(t *testing.T) {
 		{
 			name:      "Multiple groups",
 			fields:    fields{Content: []byte(multipleGroups), JobGroups: make(map[string]ast.JobGroup)},
-			args:      args{jobGroupsNode: getFirstChildOfType(GetRootNode([]byte(multipleGroups)), "block_node")},
+			args:      args{jobGroupsNode: getFirstChildOfType(rootNodeOf(t, []byte(multipleGroups)), "block_node")},
 			wantNames: []string{"build-group", "deploy-group"},
 			wantJobCounts: map[string]int{
 				"build-group":  1,
@@ -74,7 +74,7 @@ func TestYamlDocument_parseJobGroups(t *testing.T) {
 		{
 			name:      "Empty group (no jobs listed)",
 			fields:    fields{Content: []byte(emptyGroup), JobGroups: make(map[string]ast.JobGroup)},
-			args:      args{jobGroupsNode: getFirstChildOfType(GetRootNode([]byte(emptyGroup)), "block_node")},
+			args:      args{jobGroupsNode: getFirstChildOfType(rootNodeOf(t, []byte(emptyGroup)), "block_node")},
 			wantNames: []string{"empty-group"},
 			wantJobCounts: map[string]int{
 				"empty-group": 0,
@@ -83,7 +83,7 @@ func TestYamlDocument_parseJobGroups(t *testing.T) {
 		{
 			name:      "Group without jobs key",
 			fields:    fields{Content: []byte(groupNoJobsKey), JobGroups: make(map[string]ast.JobGroup)},
-			args:      args{jobGroupsNode: getFirstChildOfType(GetRootNode([]byte(groupNoJobsKey)), "block_node")},
+			args:      args{jobGroupsNode: getFirstChildOfType(rootNodeOf(t, []byte(groupNoJobsKey)), "block_node")},
 			wantNames: []string{"bare-group"},
 			wantJobCounts: map[string]int{
 				"bare-group": 0,
@@ -168,7 +168,7 @@ func TestYamlDocument_parseSingleJobGroup(t *testing.T) {
 			fields: fields{Content: []byte(group1)},
 			args: args{
 				jobGroupNode: getFirstChildOfType(
-					getFirstChildOfType(GetRootNode([]byte(group1)), "block_node"),
+					getFirstChildOfType(rootNodeOf(t, []byte(group1)), "block_node"),
 					"block_mapping_pair",
 				),
 			},

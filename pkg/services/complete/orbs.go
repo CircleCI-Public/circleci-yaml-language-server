@@ -6,7 +6,7 @@ import (
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
-	sitter "github.com/smacker/go-tree-sitter"
+	sitter "github.com/tree-sitter/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
 
@@ -18,7 +18,7 @@ func (ch *CompletionHandler) completeOrbs() {
 	}
 
 	for _, orb := range ch.Doc.Orbs {
-		if orb.ValueNode == nil || !position.InRange(orb.ValueRange, ch.Params.Position) || orb.ValueNode.Type() != "flow_node" {
+		if orb.ValueNode == nil || !position.InRange(orb.ValueRange, ch.Params.Position) || orb.ValueNode.Kind() != "flow_node" {
 			continue
 		}
 

@@ -6,7 +6,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
-	sitter "github.com/smacker/go-tree-sitter"
+	sitter "github.com/tree-sitter/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
 
@@ -22,7 +22,7 @@ func (ch *CompletionHandler) completeCommands() {
 		return
 	case position.InRange(command.StepsRange, ch.Params.Position):
 		nodeToComplete, _, _ := position.NodeAt(ch.Doc.RootNode, ch.Params.Position)
-		if nodeToComplete.Type() == ":" {
+		if nodeToComplete.Kind() == ":" {
 			nodeToComplete = nodeToComplete.PrevSibling()
 		}
 		ch.completeSteps(command.Name, false, true, nodeToComplete)

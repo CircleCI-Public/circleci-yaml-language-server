@@ -4,7 +4,7 @@ import (
 	"regexp"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
-	sitter "github.com/smacker/go-tree-sitter"
+	sitter "github.com/tree-sitter/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
 
@@ -41,7 +41,7 @@ func ParseSuppressionComments(doc *YamlDocument) *SuppressionInfo {
 	// fetch all comments via tree-sitter and build up the suppression info
 	ExecQuery(rootNode, "(comment) @comment", func(match *sitter.QueryMatch) {
 		for _, capture := range match.Captures {
-			node := capture.Node
+			node := &capture.Node
 			commentText := doc.GetNodeText(node)
 
 			// cci-ignore-file

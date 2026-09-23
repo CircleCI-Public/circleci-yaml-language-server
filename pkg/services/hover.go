@@ -7,7 +7,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/session"
 	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
-	sitter "github.com/smacker/go-tree-sitter"
+	sitter "github.com/tree-sitter/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
 
@@ -16,6 +16,7 @@ func Hover(params protocol.HoverParams, cache *cache.Cache, context *session.Set
 	if err != nil {
 		return protocol.Hover{}, nil
 	}
+	defer doc.Close()
 
 	if position.InRange(doc.VersionRange, params.Position) && doc.Version < 2.1 {
 		return protocol.Hover{
@@ -36,7 +37,7 @@ func GetPathFromVisitedNodes(visitedNodes []*sitter.Node, doc yamlparser.YamlDoc
 	}
 
 	for _, node := range visitedNodes[1:] {
-		switch node.Type() {
+		switch node.Kind() {
 		case "block_mapping_pair":
 			key := node.ChildByFieldName("key")
 			name := string(doc.Content[key.StartByte():key.EndByte()])

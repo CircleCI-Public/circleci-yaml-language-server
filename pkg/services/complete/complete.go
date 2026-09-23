@@ -8,7 +8,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/session"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
-	sitter "github.com/smacker/go-tree-sitter"
+	sitter "github.com/tree-sitter/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
 
@@ -34,6 +34,15 @@ func (ch *CompletionHandler) GetCompletionItems() {
 	}
 
 	modifiedDocs := ch.Doc.ModifyTextForAutocomplete(ch.Params.Position)
+	// The variants are this handler's to close; the original belongs to
+	// whoever parsed it.
+	defer func() {
+		for _, doc := range modifiedDocs {
+			if doc.Tag != "original" {
+				doc.Document.Close()
+			}
+		}
+	}()
 
 	for _, doc := range modifiedDocs {
 		ch.Doc = doc.Document
@@ -82,12 +91,12 @@ func (ch *CompletionHandler) addReplaceTextCompletionItem(node *sitter.Node, new
 		TextEdit: &protocol.TextEdit{
 			Range: protocol.Range{
 				Start: protocol.Position{
-					Line:      node.StartPoint().Row,
-					Character: node.StartPoint().Column,
+					Line:      position.Start(node).Line,
+					Character: position.Start(node).Character,
 				},
 				End: protocol.Position{
-					Line:      node.EndPoint().Row,
-					Character: node.EndPoint().Column,
+					Line:      position.End(node).Line,
+					Character: position.End(node).Character,
 				},
 			},
 			NewText: newText,

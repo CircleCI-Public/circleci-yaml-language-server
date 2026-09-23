@@ -2,7 +2,7 @@ package parser
 
 import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
-	sitter "github.com/smacker/go-tree-sitter"
+	sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
 func (doc *YamlDocument) parseRetention(retentionNode *sitter.Node) ast.RetentionSettings {
@@ -16,7 +16,7 @@ func (doc *YamlDocument) parseRetention(retentionNode *sitter.Node) ast.Retentio
 	}
 
 	doc.iterateOnBlockMapping(blockMapping, func(child *sitter.Node) {
-		if child.Type() == "block_mapping_pair" || child.Type() == "flow_pair" {
+		if child.Kind() == "block_mapping_pair" || child.Kind() == "flow_pair" {
 			keyNode, valueNode := doc.GetKeyValueNodes(child)
 			if keyNode == nil || valueNode == nil {
 				return

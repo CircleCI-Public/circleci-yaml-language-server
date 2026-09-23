@@ -42,7 +42,8 @@ func main() {
 		},
 	}
 
-	yamlparser.ParseFile(content, context)
+	doc := yamlparser.ParseFile(content, context)
+	doc.Close()
 
 	c := cache.New()
 	c.FileCache.SetFile(cache.File{

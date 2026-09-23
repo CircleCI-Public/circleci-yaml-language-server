@@ -6,7 +6,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/codeaction"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
-	sitter "github.com/smacker/go-tree-sitter"
+	sitter "github.com/tree-sitter/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
 
@@ -110,13 +110,13 @@ func (doc *YamlDocument) parseSingleWorkflow(workflowNode *sitter.Node) ast.Work
 func (doc *YamlDocument) parseWorkflowTriggers(triggersNode *sitter.Node) []ast.WorkflowTrigger {
 	triggers := []ast.WorkflowTrigger{}
 
-	if triggersNode == nil || triggersNode.Type() != "block_node" {
+	if triggersNode == nil || triggersNode.Kind() != "block_node" {
 		return triggers
 	}
 
 	sequence := triggersNode.Child(0)
 
-	if sequence == nil || sequence.Type() != "block_sequence" {
+	if sequence == nil || sequence.Kind() != "block_sequence" {
 		return triggers
 	}
 
@@ -128,7 +128,7 @@ func (doc *YamlDocument) parseWorkflowTriggers(triggersNode *sitter.Node) []ast.
 			return
 		}
 
-		if blockNode.Type() == "-" {
+		if blockNode.Kind() == "-" {
 			blockNode = blockNode.NextSibling()
 		}
 
@@ -143,7 +143,7 @@ func (doc *YamlDocument) parseWorkflowTriggers(triggersNode *sitter.Node) []ast.
 }
 
 func (doc *YamlDocument) parseSingleWorkflowTrigger(node *sitter.Node) *ast.WorkflowTrigger {
-	if node == nil || node.Type() != "block_node" {
+	if node == nil || node.Kind() != "block_node" {
 		return nil
 	}
 
@@ -153,17 +153,17 @@ func (doc *YamlDocument) parseSingleWorkflowTrigger(node *sitter.Node) *ast.Work
 		return nil
 	}
 
-	if child.Type() == "-" {
+	if child.Kind() == "-" {
 		child = child.NextSibling()
 	}
 
-	if child == nil || child.Type() != "block_mapping" {
+	if child == nil || child.Kind() != "block_mapping" {
 		return nil
 	}
 
 	child = child.Child(0)
 
-	if child == nil || child.Type() != "block_mapping_pair" {
+	if child == nil || child.Kind() != "block_mapping_pair" {
 		return nil
 	}
 
@@ -186,13 +186,13 @@ func (doc *YamlDocument) parseSingleWorkflowTrigger(node *sitter.Node) *ast.Work
 }
 
 func (doc *YamlDocument) parseSingleScheduleTrigger(node *sitter.Node) *ast.ScheduleTrigger {
-	if node == nil || node.Type() != "block_node" {
+	if node == nil || node.Kind() != "block_node" {
 		return nil
 	}
 
 	blockMapping := node.Child(0)
 
-	if blockMapping.Type() != "block_mapping" {
+	if blockMapping.Kind() != "block_mapping" {
 		return nil
 	}
 
@@ -227,13 +227,13 @@ func (doc *YamlDocument) parseSingleScheduleTrigger(node *sitter.Node) *ast.Sche
 }
 
 func (doc *YamlDocument) parseFilters(node *sitter.Node) *ast.WorkflowFilters {
-	if node == nil || node.Type() != "block_node" {
+	if node == nil || node.Kind() != "block_node" {
 		return nil
 	}
 
 	blockMapping := node.Child(0)
 
-	if blockMapping.Type() != "block_mapping" {
+	if blockMapping.Kind() != "block_mapping" {
 		return nil
 	}
 
@@ -258,13 +258,13 @@ func (doc *YamlDocument) parseFilters(node *sitter.Node) *ast.WorkflowFilters {
 }
 
 func (doc *YamlDocument) parseBranchFilter(node *sitter.Node) *ast.BranchesFilter {
-	if node == nil || node.Type() != "block_node" {
+	if node == nil || node.Kind() != "block_node" {
 		return nil
 	}
 
 	blockMapping := node.Child(0)
 
-	if blockMapping.Type() != "block_mapping" {
+	if blockMapping.Kind() != "block_mapping" {
 		return nil
 	}
 
@@ -301,20 +301,20 @@ func (doc *YamlDocument) parseBranchFilter(node *sitter.Node) *ast.BranchesFilte
 func (doc *YamlDocument) sequenceToStrings(node *sitter.Node) []string {
 	strs := []string{}
 
-	if node == nil || (node.Type() != "block_sequence" && node.Type() != "flow_sequence") {
+	if node == nil || (node.Kind() != "block_sequence" && node.Kind() != "flow_sequence") {
 		return strs
 	}
 
-	for i := 0; i < int(node.ChildCount()); i++ {
+	for i := uint(0); i < node.ChildCount(); i++ {
 		child := node.Child(i)
 
-		if child.Type() == "block_sequence_item" {
+		if child.Kind() == "block_sequence_item" {
 			child = child.Child(0)
 
-			if child.Type() == "-" {
+			if child.Kind() == "-" {
 				child = child.NextSibling()
 			}
-		} else if child.Type() != "flow_node" {
+		} else if child.Kind() != "flow_node" {
 			continue
 		}
 

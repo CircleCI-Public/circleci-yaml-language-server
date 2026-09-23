@@ -5,7 +5,7 @@ import (
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
-	sitter "github.com/smacker/go-tree-sitter"
+	sitter "github.com/tree-sitter/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
 
@@ -96,7 +96,7 @@ func (doc *YamlDocument) parseSingleOrb(orbNode *sitter.Node) (*ast.Orb, *LocalO
 		return nil, nil
 	}
 
-	switch orbContent.Type() {
+	switch orbContent.Kind() {
 	case "flow_node":
 		orbUrl := doc.getOrbURL(doc.GetNodeText(orbContent))
 		orb := ast.Orb{

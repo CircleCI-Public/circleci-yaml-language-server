@@ -9,9 +9,10 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/session"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/yamltree"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
-	sitter "github.com/smacker/go-tree-sitter"
+	sitter "github.com/tree-sitter/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
 
@@ -36,6 +37,7 @@ func SemanticTokens(params protocol.SemanticTokensParams, cache *cache.Cache, co
 	if err != nil {
 		return protocol.SemanticTokens{}
 	}
+	defer doc.Close()
 
 	semanticTokens := SemanticTokenStruct{
 		prev:            &[]uint32{0, 0},
@@ -44,9 +46,8 @@ func SemanticTokens(params protocol.SemanticTokensParams, cache *cache.Cache, co
 		doc:             doc,
 	}
 
-	iter := sitter.NewIterator(doc.RootNode, sitter.DFSMode)
-	iter.ForEach(func(node *sitter.Node) error {
-		if node.Type() == "block_mapping_pair" {
+	for node := range yamltree.Walk(doc.RootNode) {
+		if node.Kind() == "block_mapping_pair" {
 			keyNode, valueNode := doc.GetKeyValueNodes(node)
 
 			if keyNode != nil {
@@ -61,16 +62,14 @@ func SemanticTokens(params protocol.SemanticTokensParams, cache *cache.Cache, co
 			}
 		}
 
-		if node.Type() == "block_sequence_item" {
+		if node.Kind() == "block_sequence_item" {
 			if child := parser.GetChildOfType(node, "flow_node"); child != nil {
 				semanticTokens.highlightCacheKeys(child)
 				semanticTokens.highlightOrbs(child)
 				semanticTokens.highlightParameters(child)
 			}
 		}
-
-		return nil
-	})
+	}
 
 	for _, command := range doc.Commands {
 		semanticTokens.highlightSteps(command.Steps)
@@ -98,9 +97,9 @@ var ROOT_KEYWORDS = []string{
 }
 
 func (sem SemanticTokenStruct) highlightBuiltInKeywords(keyNode *sitter.Node) {
-	if keyName := sem.doc.GetNodeText(keyNode); keyNode.Type() == "flow_node" && slices.Contains(KEYWORDS, keyName) {
-		length := keyNode.EndPoint().Column - keyNode.StartPoint().Column
-		sem.addToken(protocol.Position{Line: keyNode.StartPoint().Row, Character: keyNode.StartPoint().Column}, length, 0, 0)
+	if keyName := sem.doc.GetNodeText(keyNode); keyNode.Kind() == "flow_node" && slices.Contains(KEYWORDS, keyName) {
+		length := position.End(keyNode).Character - position.Start(keyNode).Character
+		sem.addToken(protocol.Position{Line: position.Start(keyNode).Line, Character: position.Start(keyNode).Character}, length, 0, 0)
 	}
 
 	// Needed in order to make sure we are at the top level of the YAML file
@@ -121,9 +120,9 @@ func (sem SemanticTokenStruct) highlightBuiltInKeywords(keyNode *sitter.Node) {
 		return
 	}
 
-	if keyName := sem.doc.GetNodeText(keyNode); document.Type() == "document" && keyNode.Type() == "flow_node" && slices.Contains(ROOT_KEYWORDS, keyName) {
-		length := keyNode.EndPoint().Column - keyNode.StartPoint().Column
-		sem.addToken(protocol.Position{Line: keyNode.StartPoint().Row, Character: keyNode.StartPoint().Column}, length, 0, 0)
+	if keyName := sem.doc.GetNodeText(keyNode); document.Kind() == "document" && keyNode.Kind() == "flow_node" && slices.Contains(ROOT_KEYWORDS, keyName) {
+		length := position.End(keyNode).Character - position.Start(keyNode).Character
+		sem.addToken(protocol.Position{Line: position.Start(keyNode).Line, Character: position.Start(keyNode).Character}, length, 0, 0)
 	}
 }
 
@@ -141,7 +140,7 @@ func (sem SemanticTokenStruct) highlightCacheKeys(valueNode *sitter.Node) {
 }
 
 func (sem SemanticTokenStruct) highlightOrbs(valueNode *sitter.Node) {
-	if valueNode.Type() == "flow_node" {
+	if valueNode.Kind() == "flow_node" {
 		content := sem.doc.GetRawNodeText(valueNode)
 		if sem.doc.IsOrbReference(content) {
 			// Orb method
@@ -151,14 +150,14 @@ func (sem SemanticTokenStruct) highlightOrbs(valueNode *sitter.Node) {
 				return
 			}
 
-			orbMethodLength := valueNode.EndPoint().Column - valueNode.StartPoint().Column - uint32(slashIdx) - 1
+			orbMethodLength := position.End(valueNode).Character - position.Start(valueNode).Character - uint32(slashIdx) - 1
 			orbNameLength := uint32(slashIdx) + 1 // +1 for the slash
 
 			// Highlight orb name
-			sem.addToken(protocol.Position{Line: valueNode.StartPoint().Row, Character: valueNode.StartPoint().Column}, orbNameLength, 1, 0)
+			sem.addToken(protocol.Position{Line: position.Start(valueNode).Line, Character: position.Start(valueNode).Character}, orbNameLength, 1, 0)
 
 			// Highlight orb method
-			sem.addToken(protocol.Position{Line: valueNode.StartPoint().Row, Character: valueNode.StartPoint().Column + orbNameLength}, orbMethodLength, 0, 0)
+			sem.addToken(protocol.Position{Line: position.Start(valueNode).Line, Character: position.Start(valueNode).Character + orbNameLength}, orbMethodLength, 0, 0)
 		} else if _, ok := sem.doc.Orbs[content]; ok && position.InRange(sem.doc.OrbsRange, sem.doc.NodeToRange(valueNode).Start) {
 			// Orb definition in the orbs section
 			rng := sem.doc.NodeToRange(valueNode)
@@ -169,8 +168,8 @@ func (sem SemanticTokenStruct) highlightOrbs(valueNode *sitter.Node) {
 
 func (sem SemanticTokenStruct) highlightWithRegex(valueNode *sitter.Node, regex *regexp.Regexp) {
 	child := parser.GetFirstChild(valueNode)
-	isFlowNode := valueNode.Type() == "flow_node"
-	isBlockScalar := valueNode.Type() == "block_node" && child != nil && child.Type() == "block_scalar"
+	isFlowNode := valueNode.Kind() == "flow_node"
+	isBlockScalar := valueNode.Kind() == "block_node" && child != nil && child.Kind() == "block_scalar"
 
 	if !isFlowNode && !isBlockScalar {
 		return
@@ -187,10 +186,10 @@ func (sem SemanticTokenStruct) highlightWithRegex(valueNode *sitter.Node, regex 
 		}
 
 		startPos := position.FromIndex(param[0], []byte(content))
-		startPos.Line += valueNode.StartPoint().Row
+		startPos.Line += position.Start(valueNode).Line
 
 		if isFlowNode {
-			startPos.Character += valueNode.StartPoint().Column
+			startPos.Character += position.Start(valueNode).Character
 		}
 
 		sem.addToken(startPos, uint32(length), 0, 0)

@@ -8,7 +8,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/paramref"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
-	sitter "github.com/smacker/go-tree-sitter"
+	sitter "github.com/tree-sitter/go-tree-sitter"
 	"github.com/xeipuuv/gojsonschema"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
@@ -65,7 +65,7 @@ func handleYAMLErrors(err string, content []byte, rootNode *sitter.Node) ([]prot
 				End:   position.FromIndex(match[1], content),
 			}
 			node, _, _ := position.NodeAt(rootNode, rng.Start)
-			if node.Type() == "alias_name" {
+			if node.Kind() == "alias_name" {
 				diagnostics = append(diagnostics, diagnostic.Error(rng, err))
 			}
 		}
@@ -210,7 +210,7 @@ func (validator *JSONSchemaValidator) ValidateWithJSONSchema(rootNode *sitter.No
 //	But in the JSON Schema, the `when` key is defined as an object, so the validation
 //	will fail if we don't ignore it.
 func (validator *JSONSchemaValidator) doesNodeUseParameter(node *sitter.Node) bool {
-	if node.Type() == "block_mapping_pair" {
+	if node.Kind() == "block_mapping_pair" {
 		keyNode, valueNode := validator.Doc.GetKeyValueNodes(node)
 		if keyNode == nil || valueNode == nil {
 			return false

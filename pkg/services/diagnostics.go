@@ -38,6 +38,7 @@ func DiagnosticFile(uri protocol.URI, cache *cache.Cache, context *session.Setti
 	if err != nil {
 		return []protocol.Diagnostic{}, err
 	}
+	defer yamlDocument.Close()
 
 	return DiagnosticYAML(yamlDocument, cache, context)
 }
@@ -49,6 +50,7 @@ func DiagnosticString(content string, cache *cache.Cache, context *session.Setti
 	if err != nil {
 		return []protocol.Diagnostic{}, err
 	}
+	defer yamlDocument.Close()
 
 	return DiagnosticYAML(yamlDocument, cache, context)
 }

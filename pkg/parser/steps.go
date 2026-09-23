@@ -1,10 +1,11 @@
 package parser
 
 import (
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/paramref"
-	sitter "github.com/smacker/go-tree-sitter"
+	sitter "github.com/tree-sitter/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
 
@@ -14,7 +15,7 @@ func (doc *YamlDocument) parseSteps(stepsNode *sitter.Node) []ast.Step {
 
 	blockSequenceNode := GetChildSequence(stepsNode)
 	iterateOnBlockSequence(blockSequenceNode, func(child *sitter.Node) {
-		if child.Type() == "block_sequence_item" {
+		if child.Kind() == "block_sequence_item" {
 			steps = append(steps, doc.parseSingleStep(child)...)
 		}
 	})
@@ -24,7 +25,7 @@ func (doc *YamlDocument) parseSteps(stepsNode *sitter.Node) []ast.Step {
 
 func (doc *YamlDocument) parseSingleStep(stepNode *sitter.Node) []ast.Step {
 	// stepNode is a block_sequence_item
-	if stepNode == nil || stepNode.Type() != "block_sequence_item" {
+	if stepNode == nil || stepNode.Kind() != "block_sequence_item" {
 		// stepNode should be a block_sequence_item with 2 children: `-` and another node
 		return []ast.Step{}
 	}
@@ -34,12 +35,12 @@ func (doc *YamlDocument) parseSingleStep(stepNode *sitter.Node) []ast.Step {
 			Name: "",
 			Range: protocol.Range{
 				Start: protocol.Position{
-					Line:      stepNode.StartPoint().Row,
-					Character: stepNode.StartPoint().Column + 1,
+					Line:      position.Start(stepNode).Line,
+					Character: position.Start(stepNode).Character + 1,
 				},
 				End: protocol.Position{
-					Line:      stepNode.StartPoint().Row,
-					Character: stepNode.StartPoint().Column + 2,
+					Line:      position.Start(stepNode).Line,
+					Character: position.Start(stepNode).Character + 2,
 				},
 			},
 		}}
@@ -52,9 +53,9 @@ func (doc *YamlDocument) parseSingleStep(stepNode *sitter.Node) []ast.Step {
 		return nil
 	}
 
-	switch child.Type() {
+	switch child.Kind() {
 	case "flow_node":
-		if GetFirstChild(child).Type() != "alias" {
+		if GetFirstChild(child).Kind() != "alias" {
 			return []ast.Step{ast.NamedStep{Name: doc.GetNodeText(child), Range: doc.NodeToRange(child)}}
 		}
 		step := doc.YamlAnchors[doc.GetNodeText(child)[1:]].ValueNode
@@ -168,7 +169,7 @@ func (doc *YamlDocument) parseNamedStepWithParameters(stepName string, namedStep
 		return ast.NamedStep{}
 	}
 	hasFlowMapping := GetChildOfType(namedStepWithParams, "flow_mapping") != nil
-	if namedStepWithParams.Type() == "flow_node" && !hasFlowMapping {
+	if namedStepWithParams.Kind() == "flow_node" && !hasFlowMapping {
 		stepNameNode, _ := doc.GetKeyValueNodes(namedStepWithParams.Parent())
 		rng := doc.NodeToRange(stepNameNode)
 		return ast.NamedStep{Name: stepName, Range: rng}
@@ -215,7 +216,7 @@ func (doc *YamlDocument) parseDeployStep(blockNode *sitter.Node) ast.Run {
 
 func (doc *YamlDocument) parseRunStep(runNode *sitter.Node) ast.Run {
 	// runNode is either flow_node or block_node
-	if runNode.Type() == "flow_node" {
+	if runNode.Kind() == "flow_node" {
 		commandString := doc.GetNodeText(runNode)
 		return ast.Run{
 			Name:         "run",
@@ -289,7 +290,7 @@ func (doc *YamlDocument) parseRunStep(runNode *sitter.Node) ast.Run {
 func (doc *YamlDocument) parseCheckoutStep(checkoutNode *sitter.Node) ast.Checkout {
 	// checkoutNode is either flow_node or block_node
 	res := ast.Checkout{Path: ".", Range: doc.NodeToRange(checkoutNode.Parent().ChildByFieldName("key"))}
-	if checkoutNode.Type() == "flow_node" {
+	if checkoutNode.Kind() == "flow_node" {
 		return res
 	} else { // block_node
 		blockMappingNode := GetChildMapping(checkoutNode)
@@ -316,7 +317,7 @@ func (doc *YamlDocument) parseCheckoutStep(checkoutNode *sitter.Node) ast.Checko
 func (doc *YamlDocument) parseSetupRemoteDockerStep(setupRemoteDockerNode *sitter.Node) ast.SetupRemoteDocker {
 	// setupRemoteDockerNode is either flow_node or block_node
 	res := ast.SetupRemoteDocker{DockerLayerCaching: false, Range: doc.NodeToRange(setupRemoteDockerNode.Parent().ChildByFieldName("key"))}
-	if setupRemoteDockerNode.Type() == "flow_node" {
+	if setupRemoteDockerNode.Kind() == "flow_node" {
 		return res
 	} else { // block_node
 		blockMappingNode := GetChildMapping(setupRemoteDockerNode)

@@ -56,6 +56,7 @@ func (methods *Methods) ExecuteCommand(reply jsonrpc2.Replier, req jsonrpc2.Requ
 		if err != nil {
 			return reply(methods.Ctx, nil, jsonrpc2.NewError(jsonrpc2.InternalError, "unable to parse file"))
 		}
+		defer parsedFile.Close()
 
 		workflows := parsedFile.GetWorkflows()
 

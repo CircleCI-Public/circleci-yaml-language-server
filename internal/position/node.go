@@ -3,30 +3,19 @@ package position
 import (
 	"fmt"
 
-	sitter "github.com/smacker/go-tree-sitter"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/yamltree"
+	sitter "github.com/tree-sitter/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
 
 func NodeAt(rootNode *sitter.Node, pos protocol.Position) (*sitter.Node, []*sitter.Node, error) {
-	iterator := sitter.NewIterator(rootNode, sitter.DFSMode)
 	listOfCandidates := make([]*sitter.Node, 0)
 
-	iterator.ForEach(func(node *sitter.Node) error {
-		rng := protocol.Range{
-			Start: protocol.Position{
-				Line:      node.StartPoint().Row,
-				Character: node.StartPoint().Column,
-			},
-			End: protocol.Position{
-				Line:      node.EndPoint().Row,
-				Character: node.EndPoint().Column,
-			},
-		}
-		if InRange(rng, pos) {
+	for node := range yamltree.Walk(rootNode) {
+		if InRange(protocol.Range{Start: Start(node), End: End(node)}, pos) {
 			listOfCandidates = append(listOfCandidates, node)
 		}
-		return nil
-	})
+	}
 
 	if len(listOfCandidates) == 0 {
 		return nil, listOfCandidates, fmt.Errorf("no node found")
@@ -39,4 +28,16 @@ func InRange(rng protocol.Range, pos protocol.Position) bool {
 		return rng.Start.Character <= pos.Character && pos.Character <= rng.End.Character
 	}
 	return rng.Start.Line <= pos.Line && pos.Line <= rng.End.Line
+}
+
+// Start is where node begins, as a protocol position.
+func Start(node *sitter.Node) protocol.Position {
+	point := node.StartPosition()
+	return protocol.Position{Line: uint32(point.Row), Character: uint32(point.Column)}
+}
+
+// End is where node ends, as a protocol position.
+func End(node *sitter.Node) protocol.Position {
+	point := node.EndPosition()
+	return protocol.Position{Line: uint32(point.Row), Character: uint32(point.Column)}
 }

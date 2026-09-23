@@ -24,7 +24,7 @@ func (ch *CompletionHandler) completeJobs() {
 		return
 	case position.InRange(job.StepsRange, ch.Params.Position):
 		nodeToComplete, _, _ := position.NodeAt(ch.Doc.RootNode, ch.Params.Position)
-		if nodeToComplete.Type() == ":" {
+		if nodeToComplete.Kind() == ":" {
 			nodeToComplete = nodeToComplete.PrevSibling()
 		}
 

@@ -8,7 +8,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/yamlbool"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
-	sitter "github.com/smacker/go-tree-sitter"
+	sitter "github.com/tree-sitter/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
 
@@ -322,7 +322,7 @@ func (doc *YamlDocument) parseParameterValue(child *sitter.Node) (ast.ParameterV
 		return ast.ParameterValue{}, fmt.Errorf("error while parsing parameter value")
 	}
 	rng := doc.NodeToRange(child)
-	switch flowNodeChild.Type() {
+	switch flowNodeChild.Kind() {
 	case "plain_scalar":
 		return doc.parseSimpleParameterValue(paramName, flowNodeChild, rng)
 	case "block_scalar":
@@ -395,7 +395,7 @@ func (doc *YamlDocument) parseArrayParameterValue(paramName string, arrayParamNo
 	// arrayParamNode is a flow_sequence or a block sequence
 	values := make([]ast.ParameterValue, 0)
 	iterateOnBlockSequence(arrayParamNode, func(child *sitter.Node) {
-		if child.Type() == "block_sequence_item" || child.Type() == "flow_node" {
+		if child.Kind() == "block_sequence_item" || child.Kind() == "flow_node" {
 			if isStep(doc, child) || forceSteps {
 				steps := doc.parseSingleStep(child)
 				values = append(values, ast.ParameterValue{
@@ -425,10 +425,10 @@ func (doc *YamlDocument) parseArrayParameterValue(paramName string, arrayParamNo
 }
 
 func parseEnumParamValue(child *sitter.Node, doc *YamlDocument, paramName string, rng protocol.Range) (ast.ParameterValue, error) {
-	if child.Type() == "block_sequence_item" {
+	if child.Kind() == "block_sequence_item" {
 		child = GetChildOfType(child, "flow_node")
 	}
-	if child != nil && child.Type() == "flow_node" {
+	if child != nil && child.Kind() == "flow_node" {
 		param, err := doc.parseSimpleParameterValue(paramName, child, rng)
 		if err != nil {
 			return ast.ParameterValue{}, err
@@ -457,11 +457,11 @@ func (doc *YamlDocument) parseSimpleParameterValue(paramName string, simpleParam
 	// This is needed if a parameter is written such as :
 	//     param: >
 	//       value
-	if simpleParamNodeChild.Type() == ">" || simpleParamNodeChild.Type() == "|" {
+	if simpleParamNodeChild.Kind() == ">" || simpleParamNodeChild.Kind() == "|" {
 		simpleParamNodeChild = simpleParamNode
 	}
 
-	switch simpleParamNodeChild.Type() {
+	switch simpleParamNodeChild.Kind() {
 	case "double_quote_scalar":
 		return ast.ParameterValue{
 			Value:      doc.GetNodeText(simpleParamNode),

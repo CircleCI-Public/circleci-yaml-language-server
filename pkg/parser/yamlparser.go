@@ -13,18 +13,22 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/paramref"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/session"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/yamltree"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
-	sitter "github.com/smacker/go-tree-sitter"
+	sitter "github.com/tree-sitter/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
 
+// ParseFile parses a config. The document owns the tree its nodes belong to:
+// close it once nothing reads RootNode, or anything found under it, any more.
 func ParseFile(content []byte, context *session.Settings) YamlDocument {
-	rootNode := GetRootNode(content)
+	tree := yamltree.Parse(content)
 
 	doc := YamlDocument{
 		Content:            content,
 		Context:            context,
-		RootNode:           rootNode,
+		tree:               tree,
+		RootNode:           tree.Root(),
 		Commands:           make(map[string]ast.Command),
 		Orbs:               make(map[string]ast.Orb),
 		Jobs:               make(map[string]ast.Job),
@@ -141,7 +145,7 @@ func (doc *YamlDocument) ValidateYAML() {
 
 	ExecQuery(rootNode, "(ERROR) @flows", func(match *sitter.QueryMatch) {
 		for _, capture := range match.Captures {
-			node := capture.Node
+			node := &capture.Node
 			diag := diagnostic.ErrorFromNode(node, "Error! Please fix your yaml file")
 			doc.addDiagnostic(diag)
 		}
@@ -197,7 +201,10 @@ type YamlAnchor struct {
 }
 
 type YamlDocument struct {
-	Content        []byte
+	Content []byte
+	// tree owns RootNode and every node under it. Copies of a document share
+	// it, and it is freed by Close.
+	tree           *yamltree.Tree
 	RootNode       *sitter.Node
 	Version        float32
 	Description    string
@@ -419,6 +426,13 @@ func (doc *YamlDocument) addDiagnostic(diag protocol.Diagnostic) {
 	*doc.Diagnostics = append(*doc.Diagnostics, diag)
 }
 
+// Close frees the document's syntax tree. RootNode, and every node found under
+// it, must not be read afterwards. Closing a copy closes the tree they share,
+// and closing again does nothing.
+func (doc *YamlDocument) Close() {
+	doc.tree.Close()
+}
+
 func (doc *YamlDocument) InsertText(pos protocol.Position, text string) (YamlDocument, error) {
 	content := doc.Content
 	posIdx := position.ToIndex(pos, content)
@@ -458,7 +472,7 @@ func (doc *YamlDocument) ModifyTextForAutocomplete(pos protocol.Position) []Modi
 
 	res := []ModifiedYamlDocument{}
 
-	if node.Parent().Type() == "double_quote_scalar" {
+	if node.Parent().Kind() == "double_quote_scalar" {
 		// Fixes a crash, investigate later
 		// Autocompletion still works fine.
 		return []ModifiedYamlDocument{
@@ -471,30 +485,33 @@ func (doc *YamlDocument) ModifyTextForAutocomplete(pos protocol.Position) []Modi
 
 	text := doc.GetNodeText(node)
 
-	test1, err := doc.InsertText(pos, "- a: 1")
-	if err == nil && len(*test1.Diagnostics) == 0 && strings.TrimSpace(text)[0] != '-' {
-		res = append(res, ModifiedYamlDocument{
-			Document: test1,
-			Tag:      "edit-item",
-			Diff:     "- a: 1",
-		})
+	// Each candidate is a document of its own. The ones kept belong to the
+	// caller; the ones that do not parse cleanly are closed here, as nothing
+	// else will ever see them.
+	candidates := []struct {
+		diff string
+		tag  string
+		// keep decides whether a candidate that parsed cleanly is offered.
+		keep bool
+	}{
+		{"- a: 1", "edit-item", strings.TrimSpace(text)[0] != '-'},
+		{"a: 1", "edit-key", true},
+		{"a", "edit-value", true},
 	}
 
-	test2, err := doc.InsertText(pos, "a: 1")
-	if err == nil && len(*test2.Diagnostics) == 0 {
+	for _, candidate := range candidates {
+		edited, err := doc.InsertText(pos, candidate.diff)
+		if err != nil {
+			continue
+		}
+		if !candidate.keep || len(*edited.Diagnostics) != 0 {
+			edited.Close()
+			continue
+		}
 		res = append(res, ModifiedYamlDocument{
-			Document: test2,
-			Tag:      "edit-key",
-			Diff:     "a: 1",
-		})
-	}
-
-	test3, err := doc.InsertText(pos, "a")
-	if err == nil && len(*test3.Diagnostics) == 0 {
-		res = append(res, ModifiedYamlDocument{
-			Document: test3,
-			Tag:      "edit-value",
-			Diff:     "a",
+			Document: edited,
+			Tag:      candidate.tag,
+			Diff:     candidate.diff,
 		})
 	}
 
