@@ -12,23 +12,24 @@ type DockerResultsCursor interface {
 	Prev() *Repository
 }
 
-var hubNamespaces = map[string]*HubNamespace{
-	"library": {
-		namespace: "library",
-	},
+// Search reads through the process-wide default API; a caller with an API of
+// its own searches through that.
+func Search(query string) DockerResultsCursor {
+	return defaultAPI.Search(query)
 }
 
-func Search(query string) DockerResultsCursor {
+func (me *dockerHubAPI) Search(query string) DockerResultsCursor {
 	namespace := getQueryNamespace(query)
 	imageName := getQueryImageName(query)
 
-	if hubNamespaces[namespace] == nil {
-		hubNamespaces[namespace] = &HubNamespace{
+	if me.namespaces[namespace] == nil {
+		me.namespaces[namespace] = &HubNamespace{
+			api:       me,
 			namespace: namespace,
 		}
 	}
 
-	ns := hubNamespaces[namespace]
+	ns := me.namespaces[namespace]
 
 	return ns.createSearchCursor(imageName)
 }

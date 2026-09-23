@@ -9,7 +9,7 @@ import (
 
 func (me *dockerHubAPI) DoesImageExist(namespace, image string) bool {
 	// A quick win is to check locally first, just in case we already found the image
-	ns := hubNamespaces[namespace]
+	ns := me.namespaces[namespace]
 
 	if ns != nil && ns.hasLoaded {
 		repo, _ := findFirstByName(&ns.allRepositories, image)
@@ -30,7 +30,7 @@ func (me *dockerHubAPI) DoesImageExist(namespace, image string) bool {
 		return false
 	}
 
-	res, err := http.DefaultClient.Do(req)
+	res, err := me.httpClient.Do(req)
 	if err != nil {
 		return false
 	}

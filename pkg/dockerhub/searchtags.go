@@ -1,6 +1,7 @@
 package dockerhub
 
 type TagsSearchCursor struct {
+	api          *dockerHubAPI
 	query        string
 	index        int
 	results      []RepoTag
@@ -13,14 +14,21 @@ type TagsResultsCursor interface {
 	Prev() *RepoTag
 }
 
+// SearchTags reads through the process-wide default API; a caller with an API
+// of its own searches through that.
 func SearchTags(namespace, repo string, query string) (TagsResultsCursor, error) {
-	results, err := fetchTags(namespace, repo, query)
+	return defaultAPI.SearchTags(namespace, repo, query)
+}
+
+func (me *dockerHubAPI) SearchTags(namespace, repo string, query string) (TagsResultsCursor, error) {
+	results, err := me.fetchTags(namespace, repo, query)
 
 	if err != nil {
 		return nil, err
 	}
 
 	return &TagsSearchCursor{
+		api:          me,
 		query:        query,
 		index:        0,
 		results:      results.Results,
@@ -34,7 +42,7 @@ func SearchTags(namespace, repo string, query string) (TagsResultsCursor, error)
 
 func (t *TagsSearchCursor) HasNext() bool {
 	if t.index >= len(t.results)-1 && t.lastResponse.Next != "" {
-		nextPage, err := t.lastResponse.loadNext()
+		nextPage, err := t.lastResponse.loadNext(t.api)
 
 		if err != nil {
 			return false
