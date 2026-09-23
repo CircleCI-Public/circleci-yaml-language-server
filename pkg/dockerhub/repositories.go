@@ -38,6 +38,7 @@ type HubResponse struct {
 // --
 
 type HubNamespace struct {
+	api       *dockerHubAPI
 	namespace string
 	nextURL   string
 	hasLoaded bool // True if the namespace has been fetched at least once
@@ -72,7 +73,7 @@ func (h *HubNamespace) loadNext() ([]Repository, error) {
 	queryURL := h.nextURL
 
 	if !h.hasLoaded {
-		queryURL = baseURL.JoinPath(
+		queryURL = h.api.baseURL.JoinPath(
 			fmt.Sprintf("/namespaces/%s/repositories", h.namespace),
 		).String()
 	} else if h.hasLoaded && h.nextURL == "" {
@@ -86,7 +87,7 @@ func (h *HubNamespace) loadNext() ([]Repository, error) {
 
 	req.Header.Set("User-Agent", utils.UserAgent)
 
-	res, err := http.DefaultClient.Do(req)
+	res, err := h.api.httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to load next")
 	}

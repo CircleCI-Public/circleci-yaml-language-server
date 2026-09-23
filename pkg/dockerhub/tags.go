@@ -19,16 +19,16 @@ type RepoTag struct {
 	Name      string `json:"name"`
 }
 
-func (t *TagResponse) loadNext() (TagResponse, error) {
+func (t *TagResponse) loadNext(api *dockerHubAPI) (TagResponse, error) {
 	if t.Next == "" {
 		return TagResponse{}, fmt.Errorf("Failed to fetch more tags: nothing to fetch")
 	}
 
-	return fetchTagsByURL(t.Next)
+	return api.fetchTagsByURL(t.Next)
 }
 
-func fetchTags(namespace, repo, name string) (TagResponse, error) {
-	url := baseURL.JoinPath(
+func (me *dockerHubAPI) fetchTags(namespace, repo, name string) (TagResponse, error) {
+	url := me.baseURL.JoinPath(
 		fmt.Sprintf("/namespaces/%s/repositories/%s/tags", namespace, repo),
 	)
 
@@ -43,10 +43,10 @@ func fetchTags(namespace, repo, name string) (TagResponse, error) {
 
 	queryURL := url.String()
 
-	return fetchTagsByURL(queryURL)
+	return me.fetchTagsByURL(queryURL)
 }
 
-func fetchTagsByURL(queryURL string) (TagResponse, error) {
+func (me *dockerHubAPI) fetchTagsByURL(queryURL string) (TagResponse, error) {
 	tagResponse := TagResponse{}
 	req, err := http.NewRequest("GET", queryURL, nil)
 	if err != nil {
@@ -55,7 +55,7 @@ func fetchTagsByURL(queryURL string) (TagResponse, error) {
 
 	req.Header.Set("User-Agent", utils.UserAgent)
 
-	res, err := http.DefaultClient.Do(req)
+	res, err := me.httpClient.Do(req)
 	if err != nil {
 		return tagResponse, fmt.Errorf("Failed to load next")
 	}
@@ -85,7 +85,7 @@ func (me *dockerHubAPI) GetImageTags(namespace, image string) ([]string, error) 
 
 	req.Header.Set("User-Agent", utils.UserAgent)
 
-	res, err := http.DefaultClient.Do(req)
+	res, err := me.httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +122,7 @@ func (me *dockerHubAPI) ImageHasTag(namespace, image, tag string) bool {
 	}
 	req.Header.Set("User-Agent", utils.UserAgent)
 
-	res, err := http.DefaultClient.Do(req)
+	res, err := me.httpClient.Do(req)
 	if err != nil {
 		return false
 	}
