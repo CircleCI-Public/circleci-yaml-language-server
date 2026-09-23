@@ -22,16 +22,7 @@ func (me *dockerHubAPI) Search(query string) DockerResultsCursor {
 	namespace := getQueryNamespace(query)
 	imageName := getQueryImageName(query)
 
-	if me.namespaces[namespace] == nil {
-		me.namespaces[namespace] = &HubNamespace{
-			api:       me,
-			namespace: namespace,
-		}
-	}
-
-	ns := me.namespaces[namespace]
-
-	return ns.createSearchCursor(imageName)
+	return me.namespace(namespace).createSearchCursor(imageName)
 }
 
 // --
@@ -39,34 +30,37 @@ func (me *dockerHubAPI) Search(query string) DockerResultsCursor {
 // --
 
 func (s *SearchCursor) HasNext() bool {
+	s.hub.mutex.Lock()
+	defer s.hub.mutex.Unlock()
+
 	start := s.index + 1
-	searchItems := s.hub.allRepositories[start:]
-	_, index := findFirstMatch(&searchItems, s.query)
 
-	if index >= 0 {
-		return true
-	}
+	for {
+		searchItems := s.hub.allRepositories[start:]
+		if _, index := findFirstMatch(&searchItems, s.query); index >= 0 {
+			return true
+		}
 
-	for s.hub.nextURL != "" || !s.hub.hasLoaded {
+		if s.hub.hasLoaded && s.hub.nextURL == "" {
+			return false
+		}
+
 		// A failed load sets neither nextURL nor hasLoaded, so going round
 		// again would ask for the same page for ever.
 		if _, err := s.hub.loadNext(); err != nil {
-			break
+			return false
 		}
-		searchItems := s.hub.allRepositories[start:]
-
-		_, index = findFirstMatch(
-			&searchItems,
-			s.query,
-		)
 	}
-
-	return index >= 0
 }
 
 func (s *SearchCursor) Next() *Repository {
+	s.hub.mutex.Lock()
+	defer s.hub.mutex.Unlock()
+
+	// index is -1 or the position of the last match, so start is never past
+	// the end.
 	start := s.index + 1
-	searchDomain := s.hub.allRepositories[start:] // TODO: Check Bounds
+	searchDomain := s.hub.allRepositories[start:]
 	repo, index := findFirstMatch(&searchDomain, s.query)
 
 	if index >= 0 {
@@ -77,7 +71,16 @@ func (s *SearchCursor) Next() *Repository {
 }
 
 func (s *SearchCursor) Prev() *Repository {
-	searchDomain := s.hub.allRepositories[:s.index] // TODO: Check bounds
+	s.hub.mutex.Lock()
+	defer s.hub.mutex.Unlock()
+
+	// Before the first Next there is nothing behind the cursor, and index is
+	// -1, which is no bound to slice to.
+	if s.index <= 0 {
+		return nil
+	}
+
+	searchDomain := s.hub.allRepositories[:s.index]
 	repo, index := findFirstMatch(&searchDomain, s.query)
 
 	if index >= 0 {

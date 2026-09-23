@@ -11,6 +11,7 @@ package dockerhub
 
 import (
 	"net/http"
+	"sync"
 	"testing"
 
 	"gotest.tools/v3/assert"
@@ -66,7 +67,8 @@ func TestNewAPIWithConfig(t *testing.T) {
 
 	var api DockerHubAPI = NewAPIWithConfig(Config{BaseURL: fake.URL()})
 
-	exists := api.DoesImageExist("cimg", "node")
+	exists, err := api.DoesImageExist("cimg", "node")
+	assert.NilError(t, err)
 	assert.Check(t, exists)
 
 	t.Run("identifies the language server", func(t *testing.T) {
@@ -82,10 +84,49 @@ func TestNewAPIWithConfig(t *testing.T) {
 		searched.Search("cimg/node").HasNext()
 
 		fresh := apiFor(fake)
-		exists := fresh.DoesImageExist("cimg", "node")
+		exists, err := fresh.DoesImageExist("cimg", "node")
+		assert.NilError(t, err)
 		assert.Check(t, exists)
 
 		requestCount := fake.RequestCount(http.MethodGet, cimgNodePath)
 		assert.Check(t, cmp.Equal(requestCount, 2))
+	})
+}
+
+// Completion requests are served on goroutines of their own, all searching
+// through one API. This proves nothing without the race detector, which is
+// where it earns its place: run with -race, it fails if the namespace cache is
+// read and written unguarded.
+func TestConcurrentUse(t *testing.T) {
+	fake := cimgFake(t)
+	fake.SetPageLimit(1)
+	api := apiFor(fake)
+
+	var wg sync.WaitGroup
+	for _, repository := range []string{"base", "go", "node", "python", "nope"} {
+		wg.Add(2)
+
+		go func() {
+			defer wg.Done()
+
+			cursor := api.Search("cimg/" + repository)
+			for cursor.HasNext() {
+				cursor.Next()
+			}
+		}()
+
+		go func() {
+			defer wg.Done()
+
+			_, _ = api.DoesImageExist("cimg", repository)
+			_, _ = api.DoesImageExist("other", repository)
+		}()
+	}
+	wg.Wait()
+
+	t.Run("still finds every repository", func(t *testing.T) {
+		for _, repository := range []string{"base", "go", "node", "python"} {
+			assert.Check(t, api.Search("cimg/"+repository).HasNext(), "cimg/%s", repository)
+		}
 	})
 }

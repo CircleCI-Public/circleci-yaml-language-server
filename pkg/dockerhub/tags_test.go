@@ -11,22 +11,20 @@ import (
 )
 
 func TestGetImageTags(t *testing.T) {
-	// An inactive tag is dropped by name but not by position: the list is
-	// sized to every tag and written only at the active ones, so an inactive
-	// tag leaves an empty name behind. Recorded as it stands — the callers
-	// offer this list in completion and recommend a tag from it.
-	t.Run("leaves an empty name where an inactive tag was", func(t *testing.T) {
+	// The callers offer this list in completion and recommend a tag from it,
+	// so an inactive tag is left out altogether rather than leaving a gap.
+	t.Run("leaves out an inactive tag", func(t *testing.T) {
 		fake := cimgFake(t)
 		api := apiFor(fake)
 
 		tags, err := api.GetImageTags("cimg", "node")
 		assert.NilError(t, err)
-		assert.Check(t, cmp.DeepEqual(tags, []string{"20.11", "22.1", "latest", ""}))
+		assert.Check(t, cmp.DeepEqual(tags, []string{"20.11", "22.1", "latest"}))
 	})
 
-	// One request, and no page size: Docker Hub's default page is small, so
-	// this reports the first handful of tags of a repository that has many.
-	t.Run("reads one page, at whatever size Docker Hub defaults to", func(t *testing.T) {
+	// One request, at the largest page Docker Hub serves, so that the
+	// recommendation is chosen from more than the default handful.
+	t.Run("reads one page, of a hundred tags", func(t *testing.T) {
 		fake := cimgFake(t)
 		fake.SetPageLimit(2)
 		api := apiFor(fake)
@@ -41,8 +39,7 @@ func TestGetImageTags(t *testing.T) {
 		requests := fake.Requests()
 		assert.Assert(t, cmp.Len(requests, 1))
 
-		_, asksForASize := requests[0].Query["page_size"]
-		assert.Check(t, !asksForASize, "no page size is requested")
+		assert.Check(t, cmp.Equal(requests[0].Query["page_size"], "100"))
 	})
 
 	t.Run("reports a repository Docker Hub does not have", func(t *testing.T) {
@@ -93,7 +90,8 @@ func TestImageHasTag(t *testing.T) {
 		fake := cimgFake(t)
 		api := apiFor(fake)
 
-		hasTag := api.ImageHasTag("cimg", "node", "22.1")
+		hasTag, err := api.ImageHasTag("cimg", "node", "22.1")
+		assert.NilError(t, err)
 		assert.Check(t, hasTag)
 	})
 
@@ -101,7 +99,8 @@ func TestImageHasTag(t *testing.T) {
 		fake := cimgFake(t)
 		api := apiFor(fake)
 
-		hasTag := api.ImageHasTag("cimg", "node", "99.9")
+		hasTag, err := api.ImageHasTag("cimg", "node", "99.9")
+		assert.NilError(t, err)
 		assert.Check(t, !hasTag)
 	})
 
@@ -112,26 +111,29 @@ func TestImageHasTag(t *testing.T) {
 		fake := cimgFake(t)
 		api := apiFor(fake)
 
-		hasTag := api.ImageHasTag("cimg", "node", "18.0")
+		hasTag, err := api.ImageHasTag("cimg", "node", "18.0")
+		assert.NilError(t, err)
 		assert.Check(t, hasTag)
 	})
 
-	t.Run("denies when Docker Hub is unreachable", func(t *testing.T) {
+	// As for DoesImageExist, only a 404 is a no.
+	t.Run("reports an unreachable Docker Hub", func(t *testing.T) {
 		fake := cimgFake(t)
 		api := apiFor(fake)
 		fake.Close()
 
-		hasTag := api.ImageHasTag("cimg", "node", "22.1")
+		hasTag, err := api.ImageHasTag("cimg", "node", "22.1")
 		assert.Check(t, !hasTag)
+		assert.Check(t, err != nil, "a host that is not answering must be reported")
 	})
 
-	// Any non-200 is a no, a rate limit included.
-	t.Run("denies when Docker Hub rate limits", func(t *testing.T) {
+	t.Run("reports a rate limit", func(t *testing.T) {
 		fake := cimgFake(t)
 		fake.SetStatus("GET /v2/namespaces/cimg/repositories/node/tags/22.1", http.StatusTooManyRequests)
 		api := apiFor(fake)
 
-		hasTag := api.ImageHasTag("cimg", "node", "22.1")
+		hasTag, err := api.ImageHasTag("cimg", "node", "22.1")
 		assert.Check(t, !hasTag)
+		assert.Check(t, httpcl.HasStatusCode(err, http.StatusTooManyRequests), "got %v", err)
 	})
 }

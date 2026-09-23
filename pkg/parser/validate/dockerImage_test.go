@@ -1,6 +1,7 @@
 package validate
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
@@ -26,10 +27,16 @@ type DockerHubMock struct {
 	NoLatest bool
 	NoTag    bool
 	Tags     []string
+	// Err, when set, is Docker Hub failing to answer: every existence check
+	// reports it rather than a yes or a no.
+	Err error
 }
 
-func (me DockerHubMock) DoesImageExist(namespace, image string) bool {
-	return !me.NoExist
+func (me DockerHubMock) DoesImageExist(namespace, image string) (bool, error) {
+	if me.Err != nil {
+		return false, me.Err
+	}
+	return !me.NoExist, nil
 }
 
 func (me DockerHubMock) GetImageTags(namespace, image string) ([]string, error) {
@@ -39,12 +46,18 @@ func (me DockerHubMock) GetImageTags(namespace, image string) ([]string, error) 
 	return me.Tags, nil
 }
 
-func (me DockerHubMock) ImageHasTag(namespace, image, tag string) bool {
-	if tag == "latest" {
-		return !me.NoLatest
+func (me DockerHubMock) ImageHasTag(namespace, image, tag string) (bool, error) {
+	if me.Err != nil {
+		return false, me.Err
 	}
-	return !me.NoTag
+	if tag == "latest" {
+		return !me.NoLatest, nil
+	}
+	return !me.NoTag, nil
 }
+
+// errRateLimited stands in for Docker Hub refusing an anonymous caller.
+var errRateLimited = errors.New("429 Too Many Requests")
 
 func TestValidateDockerImage(t *testing.T) {
 	testCases := []struct {
@@ -320,6 +333,53 @@ executors:
 			compareDiagnostics(t, tt.Diagnostics, diags)
 		})
 	}
+}
+
+// A Docker Hub that cannot answer says nothing about the config, so it must not
+// be reported as a missing image or tag, nor remembered as one.
+func TestValidateDockerImageWhenDockerHubCannotAnswer(t *testing.T) {
+	const config = `version: 2.1
+
+executors:
+  some-executor:
+    docker:
+      - image: namespace/image:tag`
+
+	t.Run("an image it cannot confirm", func(t *testing.T) {
+		val := CreateValidateFromYAML(config)
+		val.APIs = ValidateAPIs{DockerHub: DockerHubMock{Err: errRateLimited}}
+
+		val.Validate()
+
+		t.Run("is not a diagnostic", func(t *testing.T) {
+			compareDiagnostics(t, []ComparableDiagnostic{}, *val.Diagnostics)
+		})
+
+		t.Run("is not cached", func(t *testing.T) {
+			assert.Check(t, cmp.Nil(val.Cache.DockerCache.Get("namespace/image:tag")))
+		})
+	})
+
+	t.Run("a tag it cannot confirm", func(t *testing.T) {
+		val := CreateValidateFromYAML(config)
+		// The image is known to exist, so validation goes on to the tag.
+		val.Cache.DockerCache.Add("namespace/image:tag", true)
+		val.APIs = ValidateAPIs{DockerHub: DockerHubMock{Err: errRateLimited}}
+
+		val.Validate()
+
+		t.Run("is not a diagnostic", func(t *testing.T) {
+			compareDiagnostics(t, []ComparableDiagnostic{}, *val.Diagnostics)
+		})
+
+		t.Run("is not cached", func(t *testing.T) {
+			// Listing the tags succeeded; only the check of this one did not.
+			tagInfo := val.Cache.DockerTagsCache.Get("namespace", "image")
+			assert.Assert(t, tagInfo != nil)
+			_, checked := tagInfo.CheckedTags["tag"]
+			assert.Check(t, !checked, "the tag must not be recorded as checked")
+		})
+	})
 }
 
 func TestChooseTagToRecommend(t *testing.T) {

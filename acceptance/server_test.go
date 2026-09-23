@@ -103,6 +103,14 @@ workflows:
 func linkedProjectFake(t *testing.T) *fakes.CircleCI {
 	t.Helper()
 
+	return linkedProjectFakeIn(t, orgID)
+}
+
+// linkedProjectFakeIn is linkedProjectFake with the project in an organization
+// of its own, for a case that needs two hosts to disagree about it.
+func linkedProjectFakeIn(t *testing.T, orgID string) *fakes.CircleCI {
+	t.Helper()
+
 	fake := fakes.NewCircleCI(t)
 
 	fake.SetUser("user-jane", "jane", "Jane Doe")
@@ -136,7 +144,14 @@ type session struct {
 func start(t *testing.T, fake *fakes.CircleCI, config, token string) *session {
 	t.Helper()
 
-	project := workspace.New(t, config)
+	return startIn(t, fake, workspace.New(t, config), token)
+}
+
+// startIn is start in a workspace a test has made itself, for a case about
+// the repository the config lives in.
+func startIn(t *testing.T, fake *fakes.CircleCI, project *workspace.Workspace, token string) *session {
+	t.Helper()
+
 	server := runner.StartStdio(t, serverBinary, "CIRCLECI_RUNNER_HOST="+fake.URL())
 	client := lspclient.New(t, context.Background(), server.Stream())
 
@@ -241,6 +256,22 @@ func TestOpenLinkedProject(t *testing.T) {
 	})
 }
 
+// `git clone https://…` leaves a remote ending in .git, which has to resolve to
+// the same project as one without it.
+func TestOpenProjectClonedOverHttps(t *testing.T) {
+	fake := linkedProjectFake(t)
+	project := workspace.NewWithRemote(t, validConfig, workspace.DefaultRemote+".git")
+	session := startIn(t, fake, project, testToken)
+
+	session.open(t, validConfig)
+
+	t.Run("resolves the project, its contexts and its variables", func(t *testing.T) {
+		assert.Check(t, cmp.Equal(fake.RequestCount(http.MethodGet, projectPath), 1))
+		assert.Check(t, fake.RequestCount(http.MethodGet, contextPath) > 0, "contexts must be read")
+		assert.Check(t, cmp.Equal(fake.RequestCount(http.MethodGet, envVarPath), 1))
+	})
+}
+
 func TestUnknownContextIsADiagnostic(t *testing.T) {
 	fake := linkedProjectFake(t)
 	session := start(t, fake, unknownContextConfig, testToken)
@@ -277,8 +308,12 @@ func TestSetToken(t *testing.T) {
 }
 
 func TestSetSelfHostedUrl(t *testing.T) {
+	// The same project lives in a different organization on each host, which
+	// is what a self-hosted install of a cloud project looks like.
+	const secondOrgID = "org-acme-server"
+
 	first := linkedProjectFake(t)
-	second := linkedProjectFake(t)
+	second := linkedProjectFakeIn(t, secondOrgID)
 
 	session := start(t, first, validConfig, testToken)
 	session.open(t, validConfig)
@@ -310,17 +345,16 @@ func TestSetSelfHostedUrl(t *testing.T) {
 			"nothing more should be read from the host that was replaced")
 	})
 
-	// Recorded as it stands, and it looks wrong: the project resolved on the
-	// old host survives the switch, because a cached file keeps its slug and
-	// the re-read only happens when there is none. So the contexts of the new
-	// host are looked up under the organization id of the old one.
-	t.Run("does not re-resolve the project on the new host", func(t *testing.T) {
-		assert.Check(t, cmp.Equal(second.RequestCount(http.MethodGet, projectPath), 0))
+	// The project resolved on the old host is forgotten with the rest of its
+	// data, so the new host's contexts are looked up under the organization
+	// the new host reports.
+	t.Run("re-resolves the project on the new host", func(t *testing.T) {
+		assert.Check(t, second.RequestCount(http.MethodGet, projectPath) > 0, "the project must be read again")
 
 		for _, request := range second.Requests() {
 			if request.Path == contextPath {
-				assert.Check(t, cmp.Equal(request.Query["owner-id"], orgID),
-					"the organization id comes from the host that was replaced")
+				assert.Check(t, cmp.Equal(request.Query["owner-id"], secondOrgID),
+					"the organization id comes from the new host")
 			}
 		}
 	})

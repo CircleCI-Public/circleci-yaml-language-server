@@ -144,6 +144,18 @@ func (c *FileCache) AddProjectSlugToFile(uri protocol.URI, project Project) {
 	c.fileCache[uri] = file
 }
 
+// forgetProjects drops the project resolved for every file, and the variables
+// read for it, so that each is resolved again on next use.
+func (c *FileCache) forgetProjects() {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+
+	for _, file := range c.fileCache {
+		file.Project = Project{}
+		file.EnvVariables = nil
+	}
+}
+
 func (c *FileCache) UpdateTextDocument(uri protocol.URI, textDocument protocol.TextDocumentItem) {
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()
@@ -277,10 +289,14 @@ func GetOrbCacheFSPath(orbYaml string) string {
 	return filePath
 }
 
+// ClearHostData forgets everything read from the API host, for when the host
+// or the token changes. A file's project is among it: it was resolved against
+// the old host, and its organization id is what contexts are looked up by.
 func (cache *Cache) ClearHostData() {
 	cache.RemoveOrbFiles()
 	cache.OrbCache.RemoveOrbs()
 	cache.clearContextCache()
+	cache.FileCache.forgetProjects()
 }
 
 func (cache *Cache) clearContextCache() {

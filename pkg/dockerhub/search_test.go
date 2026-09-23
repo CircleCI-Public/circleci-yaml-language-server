@@ -40,10 +40,9 @@ func TestSearch(t *testing.T) {
 		assert.Check(t, cmp.Equal(repository.Name, "python"))
 	})
 
-	// Asking whether anything matches reads the namespace to the end, even
-	// once the answer is known: the first repository is on the first page, and
-	// the other three pages are read anyway.
-	t.Run("reads every page before answering", func(t *testing.T) {
+	// Asking whether anything matches reads only as far as the answer: the
+	// repository is on the first of four pages, so the other three are left.
+	t.Run("stops reading at the first match", func(t *testing.T) {
 		fake := cimgFake(t)
 		fake.SetPageLimit(1)
 		api := apiFor(fake)
@@ -51,7 +50,7 @@ func TestSearch(t *testing.T) {
 		assert.Assert(t, api.Search("cimg/base").HasNext())
 
 		requestCount := fake.RequestCount(http.MethodGet, cimgReposPath)
-		assert.Check(t, cmp.Equal(requestCount, 4))
+		assert.Check(t, cmp.Equal(requestCount, 1))
 	})
 
 	// Having read it to the end, the next keystroke costs nothing.
@@ -166,6 +165,11 @@ func TestSearchCursorPrev(t *testing.T) {
 	assert.Assert(t, cursor.HasNext())
 	assert.Assert(t, cursor.Next() != nil) // base
 	assert.Assert(t, cursor.Next() != nil) // go
+
+	t.Run("reports nothing before the first match", func(t *testing.T) {
+		fresh := api.Search("cimg/")
+		assert.Check(t, cmp.Nil(fresh.Prev()))
+	})
 
 	// Prev does not step back one: it re-matches from the start of what has
 	// been walked, so it reports the first match rather than the previous one.

@@ -19,11 +19,7 @@ import (
 )
 
 // DefaultRemote is the origin remote a workspace is created with. It resolves
-// to the project slug "gh/acme/rocket".
-//
-// It deliberately has no ".git" suffix: an https remote that ends in .git
-// resolves to a slug that ends in .git, which matches no project. Only the
-// scp-style form has the suffix trimmed (utils.fromUrlToProjectSlug).
+// to the project slug "gh/acme/rocket", as it would with a ".git" suffix.
 const DefaultRemote = "https://github.com/acme/rocket"
 
 // DefaultSlug is the project slug DefaultRemote resolves to, which is what a
