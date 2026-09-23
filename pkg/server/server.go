@@ -174,6 +174,11 @@ func getJsonRpcServer(ctx context.Context, schemaLocation string) JSONRPCServer 
 			Api: utils.ApiContext{
 				HostUrl: utils.CIRCLE_CI_APP_HOST_URL,
 				Token:   "",
+				// A self-hosted install can serve the runner API somewhere
+				// other than runner.<host>. The host and token are set later
+				// over the protocol; this one has no command, so it is read
+				// from the environment.
+				RunnerHost: os.Getenv("CIRCLECI_RUNNER_HOST"),
 			},
 			IsCciExtension: false,
 		},

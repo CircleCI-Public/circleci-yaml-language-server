@@ -119,7 +119,9 @@ func NewCircleCI(t *testing.T) *CircleCI {
 	// The machine catalog — circleci_catalog.go.
 	mux.HandleFunc("GET /api/v3/catalog/offerings", fake.handleGetOfferings)
 
-	// Self-hosted runner resource classes — circleci_runner.go.
+	// Self-hosted runner resource classes — circleci_runner.go. The /api/v3
+	// here is the runner service's own versioning, not the CircleCI V3 API
+	// above it; the two share a prefix and nothing else.
 	mux.HandleFunc("GET /api/v3/runner/resource", fake.handleListRunnerClasses)
 
 	fake.server = httptest.NewServer(fake.middleware(mux))

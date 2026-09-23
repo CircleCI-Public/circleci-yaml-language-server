@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"github.com/segmentio/encoding/json"
@@ -27,6 +26,20 @@ func (methods *Methods) SetResourceClassOfFile(params protocol.DidOpenTextDocume
 	methods.Cache.ResourceClassCache.SetResourceClassForFile(params.TextDocument.URI, &resourceClasses)
 }
 
+// getResourceClassOfOrg lists the self-hosted runner resource classes of the
+// organization a config belongs to.
+//
+// The /api/v3/runner/... paths are not the CircleCI V3 API. They are the runner
+// service's own versioning, addressed here on a runner. subdomain of the API
+// host, and they answer with a plain {"items": [...]} rather than the V3
+// {"data": ..., "page": ...} envelope — which is why this is a hand-rolled
+// request instead of a call through pkg/utils/v3client.go.
+//
+// The intent is to move onto the standard API. The CLI already reaches this
+// same path on the main host rather than on a runner. subdomain, and the newer
+// /api/v3/runner/resource-classes endpoint answers with the real V3 envelope,
+// filters and all. Until this moves, the host is overridable; see
+// utils.ApiContext.RunnerHostUrl.
 func getResourceClassOfOrg(textDocumentUri protocol.URI, context *utils.LsContext) []string {
 	projectSlug := utils.GetProjectSlug(textDocumentUri.Filename())
 	org := utils.GetProjectOrg(projectSlug)
@@ -35,14 +48,16 @@ func getResourceClassOfOrg(textDocumentUri protocol.URI, context *utils.LsContex
 		return []string{}
 	}
 
-	hostUrl, err := url.Parse(context.Api.HostUrl)
+	runnerHost, err := context.Api.RunnerHostUrl()
 	if err != nil {
 		return []string{}
 	}
-	hostUrl.Host = "runner." + hostUrl.Host
-	url := fmt.Sprintf("%s/api/v3/runner/resource?namespace=%s", hostUrl, org)
+	url := fmt.Sprintf("%s/api/v3/runner/resource?namespace=%s", runnerHost, org)
 
-	req, _ := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return []string{}
+	}
 
 	req.Header.Add("Circle-Token", context.Api.Token)
 	req.Header.Set("User-Agent", utils.UserAgent)

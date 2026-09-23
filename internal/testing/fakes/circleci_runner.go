@@ -2,9 +2,15 @@ package fakes
 
 // This file serves self-hosted runner resource classes.
 //
-// The real route is served by runner.<host> rather than by the API host, so
-// reaching it means pointing the caller's runner host at this fake — which
-// pkg/server/methods cannot do yet.
+// Its route says /api/v3, but this is not the CircleCI V3 API: it is the runner
+// service's own versioning, which is why it answers with a plain
+// {"items": [...]} and not the {"data": ..., "page": ...} envelope the orb and
+// catalog routes use. It is served from this fake because a caller reaches it
+// with the same token and the same client, and because the language server
+// addresses it as runner.<api host>, which a test overrides to point here.
+//
+// When that call moves onto the standard API — the CLI already calls this path
+// on the API host itself — this route moves with it, envelope and all.
 
 import (
 	"net/http"
