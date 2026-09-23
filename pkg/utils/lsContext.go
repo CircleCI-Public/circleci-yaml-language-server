@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"sync"
 )
 
@@ -17,6 +18,34 @@ type LsContext struct {
 type ApiContext struct {
 	Token   string
 	HostUrl string
+	// RunnerHost is where self-hosted runner requests go. Empty means the API
+	// host with "runner." prefixed to it, which is how this repository has
+	// always addressed the runner service — a service with versioning of its
+	// own, not the CircleCI V3 API, as methods.getResourceClassOfOrg explains.
+	// A self-hosted install serving it elsewhere, or a test pointing it at a
+	// fake, says so here.
+	RunnerHost string
+}
+
+// RunnerHostUrl resolves the host self-hosted runner requests are made
+// against.
+//
+// The "runner." prefix is the non-standard part: the CLI calls the same paths
+// on the API host itself. This exists so that the prefix can be overridden
+// rather than assumed, and it should become unnecessary once those calls move
+// onto the standard API.
+func (apiContext ApiContext) RunnerHostUrl() (string, error) {
+	if apiContext.RunnerHost != "" {
+		return apiContext.RunnerHost, nil
+	}
+
+	hostUrl, err := url.Parse(apiContext.HostUrl)
+	if err != nil {
+		return "", err
+	}
+	hostUrl.Host = "runner." + hostUrl.Host
+
+	return hostUrl.String(), nil
 }
 
 func (apiContext ApiContext) UseDefaultInstance() bool {
