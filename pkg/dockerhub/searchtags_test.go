@@ -6,6 +6,8 @@ import (
 
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
+
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/httpcl"
 )
 
 func TestSearchTags(t *testing.T) {
@@ -69,21 +71,17 @@ func TestSearchTags(t *testing.T) {
 		assert.Check(t, cmp.Equal(requestCount, 4))
 	})
 
-	// A request that reached Docker Hub is never checked for its status, so an
-	// error body decodes into a page with no tags on it: a rate-limited search
-	// is an empty cursor rather than a failure. Recorded as it stands.
-	t.Run("hands back an empty cursor when Docker Hub rate limits", func(t *testing.T) {
+	t.Run("reports a rate limit", func(t *testing.T) {
 		fake := cimgFake(t)
 		fake.SetStatus(cimgNodeTagsRoute, http.StatusTooManyRequests)
 		api := apiFor(fake)
 
 		cursor, err := api.SearchTags("cimg", "node", "")
-		assert.NilError(t, err, "a 429 is not reported as an error")
-		assert.Assert(t, cursor != nil)
-		assert.Check(t, !cursor.HasNext())
+		assert.Check(t, cmp.Nil(cursor))
+		assert.Check(t, httpcl.HasStatusCode(err, http.StatusTooManyRequests), "got %v", err)
 	})
 
-	// Same for a later page: the walk ends where the failure was, as though
+	// A later page that fails ends the walk where the failure was, as though
 	// the tags had run out.
 	t.Run("treats a failing later page as the end of the tags", func(t *testing.T) {
 		fake := cimgFake(t)
@@ -103,10 +101,9 @@ func TestSearchTags(t *testing.T) {
 		assert.Check(t, cmp.Equal(count, 1), "the tag from the page that loaded is still walked")
 	})
 
-	// A request that could not be made at all is a real error, and there the
-	// cursor drops the page it is holding: it answers no while the tag it read
-	// is still unwalked. Recorded as it stands.
-	t.Run("abandons the tag it read when Docker Hub goes away", func(t *testing.T) {
+	// A request that could not be made at all ends the walk the same way,
+	// keeping the tag already read.
+	t.Run("keeps the tag it read when Docker Hub goes away", func(t *testing.T) {
 		fake := cimgFake(t)
 		fake.SetPageLimit(1)
 		api := apiFor(fake)
@@ -116,8 +113,13 @@ func TestSearchTags(t *testing.T) {
 
 		fake.Close()
 
-		hasNext := cursor.HasNext()
-		assert.Check(t, !hasNext, "the tag from the page that loaded is not offered")
+		count := 0
+		for cursor.HasNext() {
+			assert.Assert(t, cursor.Next() != nil)
+			count++
+		}
+
+		assert.Check(t, cmp.Equal(count, 1), "the tag from the page that loaded is still walked")
 	})
 
 	t.Run("reports an unreachable Docker Hub", func(t *testing.T) {

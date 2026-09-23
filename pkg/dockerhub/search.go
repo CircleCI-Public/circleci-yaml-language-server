@@ -48,7 +48,11 @@ func (s *SearchCursor) HasNext() bool {
 	}
 
 	for s.hub.nextURL != "" || !s.hub.hasLoaded {
-		s.hub.loadNext()
+		// A failed load sets neither nextURL nor hasLoaded, so going round
+		// again would ask for the same page for ever.
+		if _, err := s.hub.loadNext(); err != nil {
+			break
+		}
 		searchItems := s.hub.allRepositories[start:]
 
 		_, index = findFirstMatch(

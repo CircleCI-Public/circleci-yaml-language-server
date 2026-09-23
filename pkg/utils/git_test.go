@@ -7,6 +7,7 @@ import (
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/httpcl"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/fakes"
 )
 
@@ -129,7 +130,7 @@ func TestGetProjectId(t *testing.T) {
 		fake := projectFake(t)
 
 		project, err := GetProjectId("gh/acme/unknown", lsContextFor(fake.URL()))
-		assert.Check(t, cmp.ErrorContains(err, "HTTP 404"))
+		assert.Check(t, httpcl.HasStatusCode(err, 404), "got %v", err)
 		assert.Check(t, cmp.DeepEqual(project, Project{}))
 	})
 
@@ -138,7 +139,7 @@ func TestGetProjectId(t *testing.T) {
 		fake.SetStatus("GET /api/v2/project/"+slug, http.StatusInternalServerError)
 
 		project, err := GetProjectId(slug, lsContextFor(fake.URL()))
-		assert.Check(t, cmp.ErrorContains(err, "HTTP 500"))
+		assert.Check(t, httpcl.HasStatusCode(err, 500), "got %v", err)
 		assert.Check(t, cmp.DeepEqual(project, Project{}))
 	})
 
@@ -147,7 +148,7 @@ func TestGetProjectId(t *testing.T) {
 		fake.SetBody("GET /api/v2/project/"+slug, "{")
 
 		project, err := GetProjectId(slug, lsContextFor(fake.URL()))
-		assert.Check(t, cmp.ErrorContains(err, "unexpected end of JSON input"))
+		assert.Check(t, cmp.ErrorContains(err, "decode response"))
 		assert.Check(t, cmp.DeepEqual(project, Project{}))
 	})
 

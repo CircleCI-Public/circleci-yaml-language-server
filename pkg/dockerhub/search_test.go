@@ -3,9 +3,12 @@ package dockerhub
 import (
 	"net/http"
 	"testing"
+	"time"
 
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
+
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/fakes"
 )
 
 func TestSearch(t *testing.T) {
@@ -96,6 +99,44 @@ func TestSearch(t *testing.T) {
 
 		cursor := api.Search("nobody/anything")
 		assert.Check(t, !cursor.HasNext())
+	})
+
+	// A page that fails to load used to leave the search asking for it again
+	// in a tight loop, so each case gives up after a deadline rather than
+	// hanging the test binary.
+	t.Run("ends the search when a page will not load", func(t *testing.T) {
+		failures := []struct {
+			name string
+			fail func(fake *fakes.DockerHub)
+		}{
+			{"rate limited", func(fake *fakes.DockerHub) {
+				fake.SetStatus(cimgReposRoute, http.StatusTooManyRequests)
+			}},
+			{"a body that is not JSON", func(fake *fakes.DockerHub) {
+				fake.SetBody(cimgReposRoute, "<html>502 Bad Gateway</html>")
+			}},
+			{"unreachable", func(fake *fakes.DockerHub) {
+				fake.Close()
+			}},
+		}
+
+		for _, failure := range failures {
+			t.Run(failure.name, func(t *testing.T) {
+				fake := cimgFake(t)
+				api := apiFor(fake)
+				failure.fail(fake)
+
+				hasNext := make(chan bool, 1)
+				go func() { hasNext <- api.Search("cimg/node").HasNext() }()
+
+				select {
+				case got := <-hasNext:
+					assert.Check(t, !got)
+				case <-time.After(5 * time.Second):
+					t.Fatal("the search is still loading after 5s")
+				}
+			})
+		}
 	})
 
 	// An unqualified name is a library image, which is the namespace the API

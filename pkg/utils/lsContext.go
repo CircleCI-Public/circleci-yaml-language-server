@@ -1,12 +1,12 @@
 package utils
 
 import (
-	"encoding/json"
-	"fmt"
-	"io"
+	"context"
 	"net/http"
 	"net/url"
 	"sync"
+
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/httpcl"
 )
 
 type LsContext struct {
@@ -113,34 +113,14 @@ func (apiContext ApiContext) GetUserId() string {
 		return userId
 	}
 
-	url := fmt.Sprintf("%s/api/v2/me", apiContext.HostUrl)
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return ""
-	}
-
-	req.Header.Add("Circle-Token", apiContext.Token)
-	req.Header.Set("User-Agent", UserAgent)
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return ""
-	}
-
-	defer res.Body.Close()
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		return ""
-	}
-
-	// The status has to be checked rather than inferred from the decoded body:
-	// an error body carrying an id of its own — a rate limit reports one —
-	// would otherwise be memoised as the account's.
-	if res.StatusCode < 200 || res.StatusCode >= 300 {
-		return ""
-	}
-
+	// httpcl decodes only a 2xx body, which matters here: an error body
+	// carrying an id of its own — a rate limit reports one — would otherwise
+	// be memoised as the account's.
 	var userRes MeRes
-	err = json.Unmarshal(body, &userRes)
+	_, err := newV2Client(apiContext).Call(context.Background(), httpcl.NewRequest(
+		http.MethodGet, "/me",
+		httpcl.JSONDecoder(&userRes),
+	))
 	if err != nil {
 		return ""
 	}

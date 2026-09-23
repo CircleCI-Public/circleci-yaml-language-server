@@ -8,6 +8,7 @@ import (
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/httpcl"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/fakes"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/testHelpers"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
@@ -117,7 +118,7 @@ func TestGetAllProjectEnvVariables(t *testing.T) {
 		cachedFile := openRocketConfig(t, cache)
 
 		err := utils.GetAllProjectEnvVariables(testHelpers.GetLsContextForHost(fake.URL()), cache, cachedFile)
-		assert.Check(t, cmp.ErrorContains(err, "HTTP 401"))
+		assert.Check(t, httpcl.HasStatusCode(err, 401), "got %v", err)
 
 		names := cachedEnvVarNames(cache, cachedFile)
 		assert.Check(t, cmp.Len(names, 0))
@@ -130,7 +131,7 @@ func TestGetAllProjectEnvVariables(t *testing.T) {
 		cachedFile := openRocketConfig(t, cache)
 
 		err := utils.GetAllProjectEnvVariables(testHelpers.GetLsContextForHost(fake.URL()), cache, cachedFile)
-		assert.Check(t, cmp.ErrorContains(err, "HTTP 404"))
+		assert.Check(t, httpcl.HasStatusCode(err, 404), "got %v", err)
 	})
 
 	t.Run("reports a malformed body", func(t *testing.T) {
@@ -141,7 +142,7 @@ func TestGetAllProjectEnvVariables(t *testing.T) {
 		cachedFile := openRocketConfig(t, cache)
 
 		err := utils.GetAllProjectEnvVariables(testHelpers.GetLsContextForHost(fake.URL()), cache, cachedFile)
-		assert.Check(t, cmp.ErrorContains(err, "unexpected end of JSON input"))
+		assert.Check(t, cmp.ErrorContains(err, "decode response"))
 
 		names := cachedEnvVarNames(cache, cachedFile)
 		assert.Check(t, cmp.Len(names, 0))
@@ -158,7 +159,7 @@ func TestGetAllProjectEnvVariables(t *testing.T) {
 		cachedFile := openRocketConfig(t, cache)
 
 		err := utils.GetAllProjectEnvVariables(testHelpers.GetLsContextForHost(fake.URL()), cache, cachedFile)
-		assert.Check(t, cmp.ErrorContains(err, "HTTP 500"))
+		assert.Check(t, httpcl.HasStatusCode(err, 500), "got %v", err)
 
 		names := cachedEnvVarNames(cache, cachedFile)
 		assert.Check(t, cmp.DeepEqual(names, []string{"AWS_REGION", "DEPLOY_KEY"}))

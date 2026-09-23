@@ -1,15 +1,16 @@
 package utils
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"strings"
 
 	"github.com/go-git/go-git/v5"
 	gitUrl "github.com/whilp/git-urls"
+
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/httpcl"
 )
 
 func GetProjectSlug(configPath string) string {
@@ -81,36 +82,16 @@ func GetProjectOrg(projectSlug string) string {
 }
 
 func GetProjectId(projectSlug string, lsContext *LsContext) (Project, error) {
-	url := fmt.Sprintf("%s/api/v2/project/%s", lsContext.Api.HostUrl, projectSlug)
-
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return Project{}, err
-	}
-
-	req.Header.Add("Circle-Token", lsContext.Api.Token)
-	req.Header.Set("User-Agent", UserAgent)
-
-	res, err := http.DefaultClient.Do(req)
-
-	if err != nil {
-		return Project{}, err
-	}
-
-	defer res.Body.Close()
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		return Project{}, err
-	}
-
-	if res.StatusCode < 200 || res.StatusCode >= 300 {
-		return Project{}, fmt.Errorf("get project %q: HTTP %d: %s", projectSlug, res.StatusCode, string(body))
-	}
-
 	var projectIdRes Project
-	err = json.Unmarshal(body, &projectIdRes)
+
+	// The slug is joined onto the route as it is: its slashes are path
+	// separators, which httpcl.RouteParams would escape.
+	_, err := newV2Client(lsContext.Api).Call(context.Background(), httpcl.NewRequest(
+		http.MethodGet, "/project/"+projectSlug,
+		httpcl.JSONDecoder(&projectIdRes),
+	))
 	if err != nil {
-		return Project{}, err
+		return Project{}, fmt.Errorf("get project %q: %w", projectSlug, err)
 	}
 
 	return projectIdRes, nil

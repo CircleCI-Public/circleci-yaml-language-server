@@ -1,15 +1,10 @@
 package dockerhub
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"net/url"
 	"regexp"
 	"strings"
-
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
 type BaseHUBResponse struct {
@@ -80,26 +75,8 @@ func (h *HubNamespace) loadNext() ([]Repository, error) {
 		return nil, fmt.Errorf("No more to load")
 	}
 
-	req, err := http.NewRequest("GET", queryURL, nil)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to load next")
-	}
-
-	req.Header.Set("User-Agent", utils.UserAgent)
-
-	res, err := h.api.httpClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to load next")
-	}
-
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to load next")
-	}
-
-	err = json.Unmarshal(body, &hubResponse)
-	if err != nil {
-		return nil, err
+	if _, err := h.api.get(queryURL, &hubResponse); err != nil {
+		return nil, fmt.Errorf("loading repositories of %s: %w", h.namespace, err)
 	}
 
 	h.allRepositories = append(h.allRepositories, hubResponse.Results...)

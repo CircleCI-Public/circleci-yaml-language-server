@@ -1,8 +1,12 @@
 package dockerhub
 
 import (
+	"context"
 	"net/http"
 	"net/url"
+
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/httpcl"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
 type DockerHubAPI interface {
@@ -14,20 +18,21 @@ type DockerHubAPI interface {
 // Config configures an API. It exists so that a test can point this package at
 // a fake Docker Hub; production has no reason to set any of it.
 //
-// It follows the shape of the CLI's internal/httpcl Config — a base URL and an
-// injectable client — so the two read alike.
+// Its fields are the subset of internal/httpcl's Config — a base URL and an
+// injectable transport — that a test needs, so the two read alike.
 type Config struct {
 	// BaseURL is the API root including its version path, for example
 	// "https://hub.docker.com/v2". Empty means the public Docker Hub.
 	BaseURL string
-	// HTTPClient issues every request. Nil means http.DefaultClient, which is
-	// what this package has always used.
-	HTTPClient *http.Client
+	// Transport carries every request. Nil means http.DefaultTransport.
+	Transport http.RoundTripper
 }
 
 type dockerHubAPI struct {
-	baseURL    url.URL
-	httpClient *http.Client
+	baseURL url.URL
+	// client has no base URL of its own: Docker Hub hands back each next page
+	// as an absolute URL, so every request is made to one.
+	client *httpcl.Client
 
 	// namespaces caches the repositories read for a namespace. It used to be a
 	// package-level map, which every test in the binary shared and none could
@@ -55,7 +60,7 @@ func NewAPIWithConfig(cfg Config) DockerHubAPI {
 func newAPI(cfg Config) *dockerHubAPI {
 	api := &dockerHubAPI{
 		baseURL:    baseURL,
-		httpClient: cfg.HTTPClient,
+		client:     utils.NewHTTPClient(httpcl.Config{Transport: cfg.Transport}),
 		namespaces: map[string]*HubNamespace{},
 	}
 
@@ -65,11 +70,18 @@ func newAPI(cfg Config) *dockerHubAPI {
 		}
 	}
 
-	if api.httpClient == nil {
-		api.httpClient = http.DefaultClient
-	}
-
 	api.namespaces["library"] = &HubNamespace{namespace: "library", api: api}
 
 	return api
+}
+
+// get requests an absolute URL, decoding a 2xx body into out when out is not
+// nil. Any other status is an *httpcl.HTTPError.
+func (me *dockerHubAPI) get(address string, out any) (int, error) {
+	opts := []func(*httpcl.Request){}
+	if out != nil {
+		opts = append(opts, httpcl.JSONDecoder(out))
+	}
+
+	return me.client.Call(context.Background(), httpcl.NewRequest(http.MethodGet, address, opts...))
 }

@@ -8,6 +8,7 @@ import (
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/httpcl"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/fakes"
 )
 
@@ -87,7 +88,7 @@ func Test_getContext(t *testing.T) {
 		fake.RequireToken("a-different-token")
 
 		res, err := getContext(lsContextFor(fake.URL()), acmeOrgID, "", false)
-		assert.Check(t, cmp.ErrorContains(err, "HTTP 401"))
+		assert.Check(t, httpcl.HasStatusCode(err, 401), "got %v", err)
 		assert.Check(t, cmp.Nil(res))
 	})
 
@@ -96,7 +97,7 @@ func Test_getContext(t *testing.T) {
 		fake.SetStatus(contextRoute, http.StatusInternalServerError)
 
 		res, err := getContext(lsContextFor(fake.URL()), acmeOrgID, "", false)
-		assert.Check(t, cmp.ErrorContains(err, "HTTP 500"))
+		assert.Check(t, httpcl.HasStatusCode(err, 500), "got %v", err)
 		assert.Check(t, cmp.Nil(res))
 	})
 
@@ -105,7 +106,7 @@ func Test_getContext(t *testing.T) {
 		fake.SetBody(contextRoute, "{")
 
 		res, err := getContext(lsContextFor(fake.URL()), acmeOrgID, "", false)
-		assert.Check(t, cmp.ErrorContains(err, "unexpected end of JSON input"))
+		assert.Check(t, cmp.ErrorContains(err, "decode response"))
 		assert.Check(t, cmp.Nil(res))
 	})
 
@@ -149,7 +150,7 @@ func TestGetAllContext(t *testing.T) {
 		cache := CreateCache()
 
 		err := GetAllContext(lsContextFor(fake.URL()), acmeOrgID, cache)
-		assert.Check(t, cmp.ErrorContains(err, "HTTP 500"))
+		assert.Check(t, httpcl.HasStatusCode(err, 500), "got %v", err)
 
 		deploy := cache.ContextCache.GetOrganizationContext(acmeOrgID, "acme/deploy")
 		assert.Check(t, deploy != nil, "the context from the page that succeeded must be cached")
@@ -215,7 +216,7 @@ func TestGetAllContextWithEnvVars(t *testing.T) {
 		cache := CreateCache()
 
 		err := GetAllContextWithEnvVars(lsContextFor(fake.URL()), acmeOrgID, cache)
-		assert.Check(t, cmp.ErrorContains(err, "HTTP 403"))
+		assert.Check(t, httpcl.HasStatusCode(err, 403), "got %v", err)
 	})
 
 	// Permission is per context, so a refusal can arrive on a later page after
@@ -227,7 +228,7 @@ func TestGetAllContextWithEnvVars(t *testing.T) {
 		cache := CreateCache()
 
 		err := GetAllContextWithEnvVars(lsContextFor(fake.URL()), acmeOrgID, cache)
-		assert.Check(t, cmp.ErrorContains(err, "HTTP 403"))
+		assert.Check(t, httpcl.HasStatusCode(err, 403), "got %v", err)
 
 		deploy := cache.ContextCache.GetOrganizationContext(acmeOrgID, "acme/deploy")
 		assert.Assert(t, deploy != nil, "the context from the page that succeeded must be cached")

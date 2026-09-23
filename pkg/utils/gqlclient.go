@@ -4,15 +4,15 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
 	"strings"
 
-	"github.com/pkg/errors"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/httpcl"
 )
 
 // A Client is an HTTP client for our GraphQL endpoint.
@@ -25,13 +25,21 @@ type Client struct {
 	Endpoint   string
 	Host       string
 	Token      string
-	httpClient *http.Client
+	httpClient *httpcl.Client
 }
 
 // NewClient returns a reference to a Client.
 func NewClient(host, endpoint, token string, debug bool) *Client {
+	var transport http.RoundTripper
+	if debug {
+		transport = newDebugTransport(http.DefaultTransport)
+	}
+
 	return &Client{
-		httpClient: GetHTTPClient(),
+		// The address is resolved per request by getServerAddress, so the
+		// client carries no base URL, and no token either: GraphQL requests
+		// set their own raw Authorization header through Request.SetToken.
+		httpClient: NewHTTPClient(httpcl.Config{Transport: transport}),
 		Endpoint:   endpoint,
 		Host:       host,
 		Token:      token,
@@ -123,13 +131,13 @@ func getServerAddress(host, endpoint string) (string, error) {
 	// 1. Parse the endpoint
 	e, err := url.Parse(endpoint)
 	if err != nil {
-		return "", errors.Wrapf(err, "Parsing endpoint '%s'", endpoint)
+		return "", fmt.Errorf("parsing endpoint '%s': %w", endpoint, err)
 	}
 
 	// 2. Parse the host
 	h, err := url.Parse(host)
 	if err != nil {
-		return "", errors.Wrapf(err, "Parsing host '%s'", host)
+		return "", fmt.Errorf("parsing host '%s': %w", host, err)
 	}
 	if !h.IsAbs() {
 		return h.String(), fmt.Errorf("Host (%s) must be absolute URL, including scheme", host)
@@ -146,27 +154,6 @@ func getServerAddress(host, endpoint string) (string, error) {
 	return h.ResolveReference(e).String(), err
 }
 
-func prepareRequest(ctx context.Context, address string, request *Request) (*http.Request, error) {
-	requestBody, err := request.Encode()
-	if err != nil {
-		return nil, err
-	}
-	r, err := http.NewRequestWithContext(ctx, http.MethodPost, address, &requestBody)
-	if err != nil {
-		return nil, err
-	}
-	r.Header.Set("User-Agent", UserAgent)
-	r.Header.Set("Content-Type", "application/json; charset=utf-8")
-	r.Header.Set("Accept", "application/json; charset=utf-8")
-	for key, values := range request.Header {
-		for _, value := range values {
-			r.Header.Add(key, value)
-		}
-	}
-
-	return r, nil
-}
-
 // Run sends an HTTP request to the GraphQL server and deserializes the response or returns an error.
 func (cl *Client) Run(request *Request, resp interface{}) error {
 	return cl.RunWithContext(context.Background(), request, resp)
@@ -175,8 +162,6 @@ func (cl *Client) Run(request *Request, resp interface{}) error {
 // RunWithContext sends an HTTP request to the GraphQL server and deserializes
 // the response or returns an error.
 func (cl *Client) RunWithContext(ctx context.Context, request *Request, resp interface{}) error {
-	l := log.New(os.Stderr, "", 0)
-
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -188,59 +173,33 @@ func (cl *Client) RunWithContext(ctx context.Context, request *Request, resp int
 		return err
 	}
 
-	req, err := prepareRequest(ctx, address, request)
-	if err != nil {
-		return err
-	}
-
 	if cl.Debug {
+		l := log.New(os.Stderr, "", 0)
 		l.Printf(">> variables: %v", request.Variables)
 		l.Printf(">> query: %s", request.Query)
-	}
-
-	res, err := cl.httpClient.Do(req)
-
-	if err != nil {
-		return err
-	}
-	defer func() {
-		responseBodyCloseErr := res.Body.Close()
-		if responseBodyCloseErr != nil {
-			l.Printf("%s", responseBodyCloseErr.Error())
-		}
-	}()
-
-	if cl.Debug {
-		l.Printf("<< request id: %s", res.Header.Get("X-Request-Id"))
-		l.Printf("<< result status: %s", res.Status)
-	}
-
-	if res.StatusCode != http.StatusOK {
-		return fmt.Errorf("failure calling GraphQL API: %s", res.Status)
-	}
-
-	// Request.Body is an io.ReadCloser it can only be read once
-	if cl.Debug {
-		var bodyBytes []byte
-		if res.Body != nil {
-			bodyBytes, err = io.ReadAll(res.Body)
-			if err != nil {
-				return errors.Wrap(err, "reading response")
-			}
-
-			l.Printf("<< %s", string(bodyBytes))
-
-			// Restore the io.ReadCloser to its original state
-			res.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
-		}
 	}
 
 	wrappedResponse := &Response{
 		Data: resp,
 	}
 
-	if err := json.NewDecoder(res.Body).Decode(&wrappedResponse); err != nil {
-		return errors.Wrap(err, "decoding response")
+	opts := []func(*httpcl.Request){
+		httpcl.Body(request),
+		httpcl.JSONDecoder(&wrappedResponse),
+	}
+	for key, values := range request.Header {
+		for _, value := range values {
+			opts = append(opts, httpcl.Header(key, value))
+		}
+	}
+
+	status, err := cl.httpClient.Call(ctx, httpcl.NewRequest(http.MethodPost, address, opts...))
+	var httpErr *httpcl.HTTPError
+	if errors.As(err, &httpErr) || (err == nil && status != http.StatusOK) {
+		return fmt.Errorf("failure calling GraphQL API: %d %s", status, http.StatusText(status))
+	}
+	if err != nil {
+		return err
 	}
 
 	if len(wrappedResponse.Errors) > 0 {
