@@ -2,6 +2,12 @@
 
 This repository contains a Language Server Protocol (LSP) implementation for CircleCI's configuration YAML.
 
+# Dependencies
+
+When a dependency is added, removed, or changes license, regenerate `CREDITS.md`
+(see the instructions at the bottom of that file). A plain version bump doesn't
+need this — license locations there point at `HEAD`, not a pinned version.
+
 # Testing
 
 Avoid coupling test comparisons with internal data structures. Prefer
