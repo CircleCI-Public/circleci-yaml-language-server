@@ -60,6 +60,48 @@ Note: `bin/start_server` is the entry point for the language server.
 $ task test
 ```
 
+## Contract probes
+
+The tests run against fakes of the CircleCI and Docker Hub APIs
+(`internal/testing/fakes`). Fakes drift: the service changes, or our reading of
+it was wrong to begin with, and the tests keep passing either way. The probes
+in `cmd/orb` and `cmd/dockerhub` are how that drift is caught — they make the
+same calls against the real APIs and check that what comes back still has the
+shape the fakes reproduce.
+
+```bash
+$ task probe                        # both
+$ task probe:orb                    # the CircleCI orb registry
+$ task probe:orb -- circleci/go@1.7 # ... resolving a reference of your choice
+$ task probe:dockerhub              # Docker Hub
+```
+
+They print what they found, which also makes them the quickest way to see what
+the language server sees for a given orb or image.
+
+Each probe exits with one of three codes:
+
+| Code | Meaning |
+| --- | --- |
+| 0 | the API looks as expected |
+| 1 | drift: something the fakes rely on is no longer true, and someone has to look |
+| 2 | the probe could not find out — unreachable, unauthorized, or too slow |
+
+The distinction between 1 and 2 is the point: on a schedule, drift is worth
+raising and an outage is not.
+
+Neither probe needs a token; both read public data. `cmd/orb` uses
+`CIRCLE_TOKEN` when it is set, and takes `CIRCLECI_HOST` and `ORB_BACKEND`
+(`graphql` forces the fallback path) — see the comment at the top of
+`cmd/orb/main.go`.
+
+Probes talk to the internet, so they should never run on a pull request: a
+service having a bad day is not a reason to block a merge. Nothing in CI runs
+them today — run them by hand when a fake is being written or doubted. A
+schedule is where they belong eventually, which is what the exit codes above
+are for, and Docker Hub's rate limit on anonymous callers is a reason to keep
+any such schedule infrequent.
+
 ## Managing Dependencies
 
 We use Go 1.19 Modules for managing our dependencies.
