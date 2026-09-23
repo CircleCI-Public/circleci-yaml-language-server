@@ -1,7 +1,7 @@
 // Package workspace builds the project an acceptance test opens a config from.
 //
 // A config on its own is not enough: the server reads the project slug from
-// the git remote of the directory holding .circleci (utils.GetProjectSlug), and
+// the git remote of the directory holding .circleci (projectslug.FromRepo), and
 // the project, its organization, its contexts and its environment variables all
 // key off that slug. So a workspace is a directory, a config, and a repository
 // with a remote.

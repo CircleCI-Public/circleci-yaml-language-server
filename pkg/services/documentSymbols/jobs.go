@@ -3,14 +3,14 @@ package documentSymbols
 import (
 	"fmt"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
 )
 
 func resolveJobsSymbols(document *parser.YamlDocument) []protocol.DocumentSymbol {
-	if utils.IsDefaultRange(document.JobsRange) {
+	if position.IsDefaultRange(document.JobsRange) {
 		return nil
 	}
 
@@ -34,7 +34,7 @@ func resolveJobsSymbols(document *parser.YamlDocument) []protocol.DocumentSymbol
 func singleJobSymbols(job ast.Job) protocol.DocumentSymbol {
 	jobSymbol := symbolFromRange(job.Range, job.Name, JobSymbol)
 
-	if !utils.IsDefaultRange(job.ParametersRange) {
+	if !position.IsDefaultRange(job.ParametersRange) {
 		jobSymbol.Children = append(jobSymbol.Children, protocol.DocumentSymbol{
 			Name:           "Parameters",
 			Range:          job.ParametersRange,
@@ -43,7 +43,7 @@ func singleJobSymbols(job ast.Job) protocol.DocumentSymbol {
 		})
 	}
 
-	if !utils.IsDefaultRange(job.StepsRange) {
+	if !position.IsDefaultRange(job.StepsRange) {
 		jobSymbol.Children = append(jobSymbol.Children, protocol.DocumentSymbol{
 			Name:           "Steps",
 			Range:          job.StepsRange,
@@ -54,7 +54,7 @@ func singleJobSymbols(job ast.Job) protocol.DocumentSymbol {
 		})
 	}
 
-	if !utils.IsDefaultRange(job.ExecutorRange) && job.Executor != "" {
+	if !position.IsDefaultRange(job.ExecutorRange) && job.Executor != "" {
 		jobSymbol.Children = append(jobSymbol.Children, protocol.DocumentSymbol{
 			Name:           fmt.Sprintf("Executor: %s", job.Executor),
 			Range:          job.ExecutorRange,
@@ -63,11 +63,11 @@ func singleJobSymbols(job ast.Job) protocol.DocumentSymbol {
 		})
 	}
 
-	if !utils.IsDefaultRange(job.DockerRange) {
+	if !position.IsDefaultRange(job.DockerRange) {
 		jobSymbol.Children = append(jobSymbol.Children, dockerExecutorSymbols(job.Docker))
 	}
 
-	if !utils.IsDefaultRange(job.EnvironmentRange) {
+	if !position.IsDefaultRange(job.EnvironmentRange) {
 		keys := []string{}
 
 		for k := range job.Environment {
@@ -85,7 +85,7 @@ func singleJobSymbols(job ast.Job) protocol.DocumentSymbol {
 		)
 	}
 
-	if !utils.IsDefaultRange(job.MacOSRange) {
+	if !position.IsDefaultRange(job.MacOSRange) {
 		jobSymbol.Children = append(jobSymbol.Children, protocol.DocumentSymbol{
 			Name:           "MacOS",
 			Range:          job.MacOSRange,

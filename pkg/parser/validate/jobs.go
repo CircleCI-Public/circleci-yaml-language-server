@@ -6,8 +6,9 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/paramref"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
 )
 
@@ -37,7 +38,7 @@ func (val Validate) validateSingleJob(job ast.Job) {
 		val.checkAndReportUnusedJob(job)
 	}
 
-	if !utils.HasStoreTestResultStep(job.Steps) && strings.Contains(job.Name, "test") {
+	if !ast.HasStoreTestResultStep(job.Steps) && strings.Contains(job.Name, "test") {
 		val.addDiagnostic(
 			protocol.Diagnostic{
 				Range:    job.NameRange,
@@ -48,8 +49,8 @@ func (val Validate) validateSingleJob(job ast.Job) {
 	}
 
 	if job.Executor != "" {
-		if utils.CheckIfOnlyParamUsed(job.Executor) {
-			_, paramName := utils.ExtractParameterName(job.Executor)
+		if paramref.IsOnlyParameter(job.Executor) {
+			_, paramName := paramref.ExtractName(job.Executor)
 			param := job.Parameters[paramName]
 
 			checkParam := func(executorDefault string, rng protocol.Range) {
@@ -168,7 +169,7 @@ func (val Validate) checkAndReportUnusedJob(job ast.Job) {
 
 	if len(unusedGroups) > 0 {
 		sort.Strings(unusedGroups)
-		val.addDiagnostic(utils.CreateWarningDiagnosticFromRange(
+		val.addDiagnostic(diagnostic.Warning(
 			job.NameRange,
 			fmt.Sprintf("Job \"%s\" is used in job group \"%s\", but that group is never invoked in a workflow", job.Name, unusedGroups[0]),
 		))
@@ -176,7 +177,7 @@ func (val Validate) checkAndReportUnusedJob(job ast.Job) {
 	}
 
 	// Not referenced anywhere
-	val.addDiagnostic(utils.CreateWarningDiagnosticFromRange(job.NameRange, "Job is unused"))
+	val.addDiagnostic(diagnostic.Warning(job.NameRange, "Job is unused"))
 }
 
 // isJobGroupUsedInWorkflows returns true if any workflow references the given
@@ -200,13 +201,13 @@ func (val Validate) validateJobType(job ast.Job) {
 		return
 	}
 
-	if !slices.Contains(utils.JobTypes, job.Type) {
+	if !slices.Contains(ast.JobTypes, job.Type) {
 		val.addDiagnostic(
-			utils.CreateErrorDiagnosticFromRange(
+			diagnostic.Error(
 				job.TypeRange,
 				fmt.Sprintf("Invalid job type '%s'. Allowed types: %s",
 					job.Type,
-					strings.Join(utils.JobTypes, ", "))))
+					strings.Join(ast.JobTypes, ", "))))
 
 		return
 	}

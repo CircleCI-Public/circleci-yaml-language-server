@@ -3,9 +3,8 @@ package expect
 import (
 	"fmt"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 	"go.lsp.dev/protocol"
-
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
 // Indicate if a diagnostic is present in the given list
@@ -47,7 +46,7 @@ func AreDiagnosticEquivalent(a protocol.Diagnostic, b protocol.Diagnostic) bool 
 		return false
 	}
 
-	return utils.AreRangeEqual(a.Range, b.Range)
+	return position.AreRangeEqual(a.Range, b.Range)
 }
 
 // Return a string displaying a list of diagnostic information.

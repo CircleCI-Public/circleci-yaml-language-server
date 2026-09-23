@@ -1,19 +1,22 @@
 package testHelpers
 
-import "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
+import (
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/session"
+)
 
-func GetDefaultLsContext() *utils.LsContext {
-	return &utils.LsContext{
-		Api: utils.ApiContext{
+func DefaultSettings() *session.Settings {
+	return &session.Settings{
+		Api: circleci.Config{
 			Token:   "XXXXXXXXXXXX",
 			HostUrl: "https://circleci.com",
 		},
 	}
 }
 
-func GetLsContextForHost(hostUrl string) *utils.LsContext {
-	return &utils.LsContext{
-		Api: utils.ApiContext{
+func SettingsForHost(hostUrl string) *session.Settings {
+	return &session.Settings{
+		Api: circleci.Config{
 			Token:   "XXXXXXXXXXXX",
 			HostUrl: hostUrl,
 		},

@@ -1,7 +1,7 @@
 package definition
 
 import (
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 	"go.lsp.dev/protocol"
 )
 
@@ -11,7 +11,7 @@ func (def DefinitionStruct) searchForCommands() []protocol.Location {
 			return res
 		}
 
-		if utils.PosInRange(command.NameRange, def.Params.Position) {
+		if position.InRange(command.NameRange, def.Params.Position) {
 			return []protocol.Location{
 				{
 					URI:   def.Params.TextDocument.URI,

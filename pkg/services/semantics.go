@@ -6,9 +6,11 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/session"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	sitter "github.com/smacker/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
@@ -29,7 +31,7 @@ type SemanticTokenStruct struct {
 
 var PARAM_REGEX, _ = regexp.Compile(`<<\s*(parameters|pipeline.parameters)\.([A-z0-9-_]*)\s*>>`)
 
-func SemanticTokens(params protocol.SemanticTokensParams, cache *utils.Cache, context *utils.LsContext) protocol.SemanticTokens {
+func SemanticTokens(params protocol.SemanticTokensParams, cache *cache.Cache, context *session.Settings) protocol.SemanticTokens {
 	doc, err := parser.ParseFromUriWithCache(params.TextDocument.URI, cache, context)
 	if err != nil {
 		return protocol.SemanticTokens{}
@@ -157,7 +159,7 @@ func (sem SemanticTokenStruct) highlightOrbs(valueNode *sitter.Node) {
 
 			// Highlight orb method
 			sem.addToken(protocol.Position{Line: valueNode.StartPoint().Row, Character: valueNode.StartPoint().Column + orbNameLength}, orbMethodLength, 0, 0)
-		} else if _, ok := sem.doc.Orbs[content]; ok && utils.PosInRange(sem.doc.OrbsRange, sem.doc.NodeToRange(valueNode).Start) {
+		} else if _, ok := sem.doc.Orbs[content]; ok && position.InRange(sem.doc.OrbsRange, sem.doc.NodeToRange(valueNode).Start) {
 			// Orb definition in the orbs section
 			rng := sem.doc.NodeToRange(valueNode)
 			sem.addToken(rng.Start, rng.End.Character-rng.Start.Character, 1, 0)
@@ -184,7 +186,7 @@ func (sem SemanticTokenStruct) highlightWithRegex(valueNode *sitter.Node, regex 
 			continue
 		}
 
-		startPos := utils.IndexToPos(param[0], []byte(content))
+		startPos := position.FromIndex(param[0], []byte(content))
 		startPos.Line += valueNode.StartPoint().Row
 
 		if isFlowNode {
@@ -276,8 +278,8 @@ func (sem SemanticTokenStruct) highlightCommand(rawCommand string, commandRange 
 
 // Because it's not very well optimized, use this function only if you're not sure that the element is on a single line
 func (sem SemanticTokenStruct) addTokenRange(rng protocol.Range, tokenType uint32, tokenModifiers uint32) {
-	startIdx := utils.PosToIndex(rng.Start, sem.doc.Content)
-	endIdx := utils.PosToIndex(rng.End, sem.doc.Content)
+	startIdx := position.ToIndex(rng.Start, sem.doc.Content)
+	endIdx := position.ToIndex(rng.End, sem.doc.Content)
 
 	sem.addToken(rng.Start, uint32(endIdx-startIdx), tokenType, tokenModifiers)
 }

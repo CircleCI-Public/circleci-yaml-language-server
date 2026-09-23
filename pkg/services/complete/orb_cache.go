@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
 )
 
 // OrbCache memoises the orb metadata that autocomplete needs, so that typing
@@ -46,11 +46,11 @@ func (cache *OrbCache) GetOrbsOfRegistry(registry, hostUrl, token, userId string
 		return cached, nil
 	}
 
-	orbRegistry := utils.NewOrbRegistry(hostUrl, token, userId, false)
+	orbRegistry := circleci.NewOrbRegistry(hostUrl, token, userId, false)
 
 	packages, err := orbRegistry.ListNamespaceOrbs(context.Background(), registry)
 	if err != nil {
-		if utils.IsNotFound(err) {
+		if circleci.IsNotFound(err) {
 			return nil, fmt.Errorf("no namespace named %s", registry)
 		}
 
@@ -80,11 +80,11 @@ func (cache *OrbCache) GetVersionsOfOrb(orbName, hostUrl, token, userId string) 
 		return cached, nil
 	}
 
-	orbRegistry := utils.NewOrbRegistry(hostUrl, token, userId, false)
+	orbRegistry := circleci.NewOrbRegistry(hostUrl, token, userId, false)
 
 	pkg, err := orbRegistry.FetchOrb(context.Background(), orbName)
 	if err != nil {
-		if utils.IsNotFound(err) {
+		if circleci.IsNotFound(err) {
 			return nil, fmt.Errorf("no orb named %s", orbName)
 		}
 
@@ -97,7 +97,7 @@ func (cache *OrbCache) GetVersionsOfOrb(orbName, hostUrl, token, userId string) 
 	return &orb, nil
 }
 
-func toOrbData(pkg utils.OrbPackage) OrbData {
+func toOrbData(pkg circleci.OrbPackage) OrbData {
 	versions := make([]OrbVersion, 0, len(pkg.Versions))
 	for _, version := range pkg.Versions {
 		versions = append(versions, OrbVersion{Version: version.Version})

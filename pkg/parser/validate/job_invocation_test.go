@@ -3,7 +3,7 @@ package validate
 import (
 	"testing"
 
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"go.lsp.dev/protocol"
 )
 
@@ -39,7 +39,7 @@ workflows:
       - hold:
           type: invalid`,
 			Diagnostics: []protocol.Diagnostic{
-				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+				diagnostic.Error(protocol.Range{
 					Start: protocol.Position{Line: 0x6, Character: 0x10},
 					End:   protocol.Position{Line: 0x6, Character: 0x17},
 				}, "Only jobs with `type: approval` can be defined inline under the `workflows:`/`job-groups:` section. For `type: invalid`, define the job in the `jobs:` section instead."),
@@ -467,11 +467,11 @@ workflows:
           requires:
             - build`,
 			Diagnostics: []protocol.Diagnostic{
-				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+				diagnostic.Error(protocol.Range{
 					Start: protocol.Position{Line: 17, Character: 8},
 					End:   protocol.Position{Line: 17, Character: 13},
 				}, "The job `build` is part of a cycle"),
-				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+				diagnostic.Error(protocol.Range{
 					Start: protocol.Position{Line: 20, Character: 8},
 					End:   protocol.Position{Line: 20, Character: 12},
 				}, "The job `test` is part of a cycle"),
@@ -512,15 +512,15 @@ workflows:
           requires:
             - test`,
 			Diagnostics: []protocol.Diagnostic{
-				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+				diagnostic.Error(protocol.Range{
 					Start: protocol.Position{Line: 22, Character: 8},
 					End:   protocol.Position{Line: 22, Character: 13},
 				}, "The job `build` is part of a cycle"),
-				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+				diagnostic.Error(protocol.Range{
 					Start: protocol.Position{Line: 25, Character: 8},
 					End:   protocol.Position{Line: 25, Character: 12},
 				}, "The job `test` is part of a cycle"),
-				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+				diagnostic.Error(protocol.Range{
 					Start: protocol.Position{Line: 28, Character: 8},
 					End:   protocol.Position{Line: 28, Character: 14},
 				}, "The job `deploy` is part of a cycle"),
@@ -647,7 +647,7 @@ workflows:
             - ghost-job`,
 			OnlyErrors: true,
 			Diagnostics: []protocol.Diagnostic{
-				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+				diagnostic.Error(protocol.Range{
 					Start: protocol.Position{Line: 14, Character: 14},
 					End:   protocol.Position{Line: 14, Character: 23},
 				}, "Cannot find declaration for job invocation \"ghost-job\""),
@@ -777,7 +777,7 @@ workflows:
       - ci-group`,
 			OnlyErrors: true,
 			Diagnostics: []protocol.Diagnostic{
-				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+				diagnostic.Error(protocol.Range{
 					Start: protocol.Position{Line: 13, Character: 6},
 					End:   protocol.Position{Line: 13, Character: 17},
 				}, `Cannot find declaration for job "ghost-job"`),
@@ -820,7 +820,7 @@ workflows:
           requires:
             - deploy`,
 			Diagnostics: []protocol.Diagnostic{
-				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+				diagnostic.Error(protocol.Range{
 					Start: protocol.Position{Line: 25, Character: 14},
 					End:   protocol.Position{Line: 25, Character: 20},
 				}, `"deploy" is defined inside job group "deploy-group", not directly in this workflow`),
@@ -866,7 +866,7 @@ workflows:
       - g1
       - g2`,
 			Diagnostics: []protocol.Diagnostic{
-				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+				diagnostic.Error(protocol.Range{
 					Start: protocol.Position{Line: 22, Character: 14},
 					End:   protocol.Position{Line: 22, Character: 15},
 				}, `"a" is not a member of this job group`),
@@ -988,7 +988,7 @@ workflows:
     jobs:
       - my-group`,
 			Diagnostics: []protocol.Diagnostic{
-				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+				diagnostic.Error(protocol.Range{
 					Start: protocol.Position{Line: 10, Character: 24},
 					End:   protocol.Position{Line: 10, Character: 36},
 				}, "Use of `serial-group` on job invocations inside a job-group is not supported. Please consider using `serial-group` on the job-group instead."),
@@ -1092,7 +1092,7 @@ workflows:
       - deploy-group:
           name: prod-deploy`,
 			Diagnostics: []protocol.Diagnostic{
-				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+				diagnostic.Error(protocol.Range{
 					Start: protocol.Position{Line: 20, Character: 16},
 					End:   protocol.Position{Line: 20, Character: 27},
 				}, `Job group "deploy-group" is already invoked with the name "prod-deploy"`),
@@ -1121,11 +1121,11 @@ workflows:
       - deploy-group
       - deploy-group`,
 			Diagnostics: []protocol.Diagnostic{
-				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+				diagnostic.Error(protocol.Range{
 					Start: protocol.Position{Line: 17, Character: 8},
 					End:   protocol.Position{Line: 17, Character: 20},
 				}, `Job group "deploy-group" is invoked multiple times without a "name" attribute. Each invocation must have a unique name`),
-				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+				diagnostic.Error(protocol.Range{
 					Start: protocol.Position{Line: 18, Character: 8},
 					End:   protocol.Position{Line: 18, Character: 20},
 				}, `Job group "deploy-group" is invoked multiple times without a "name" attribute. Each invocation must have a unique name`),
@@ -1155,7 +1155,7 @@ workflows:
       - deploy-group:
           name: prod-deploy`,
 			Diagnostics: []protocol.Diagnostic{
-				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+				diagnostic.Error(protocol.Range{
 					Start: protocol.Position{Line: 17, Character: 8},
 					End:   protocol.Position{Line: 17, Character: 20},
 				}, `Job group "deploy-group" is invoked multiple times without a "name" attribute. Each invocation must have a unique name`),
@@ -1193,7 +1193,7 @@ workflows:
             parameters:
               env: [staging, prod]`,
 			Diagnostics: []protocol.Diagnostic{
-				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+				diagnostic.Error(protocol.Range{
 					Start: protocol.Position{Line: 18, Character: 10},
 					End:   protocol.Position{Line: 20, Character: 34},
 				}, "Job group invocations do not support `matrix`"),
@@ -1222,7 +1222,7 @@ workflows:
       - deploy-group:
           override-with: other-job`,
 			Diagnostics: []protocol.Diagnostic{
-				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+				diagnostic.Error(protocol.Range{
 					Start: protocol.Position{Line: 18, Character: 25},
 					End:   protocol.Position{Line: 18, Character: 34},
 				}, "Job group invocations do not support use of `override-with`"),
@@ -1251,7 +1251,7 @@ workflows:
       - deploy-group:
           type: approval`,
 			Diagnostics: []protocol.Diagnostic{
-				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+				diagnostic.Error(protocol.Range{
 					Start: protocol.Position{Line: 18, Character: 16},
 					End:   protocol.Position{Line: 18, Character: 24},
 				}, "Job group invocations do not support use of `type`"),
@@ -1281,7 +1281,7 @@ workflows:
           context:
             - my-context`,
 			Diagnostics: []protocol.Diagnostic{
-				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+				diagnostic.Error(protocol.Range{
 					Start: protocol.Position{Line: 17, Character: 6},
 					End:   protocol.Position{Line: 19, Character: 24},
 				}, "Job group invocations do not support use of `context`"),
@@ -1311,7 +1311,7 @@ workflows:
           pre-steps:
             - run: echo "pre"`,
 			Diagnostics: []protocol.Diagnostic{
-				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+				diagnostic.Error(protocol.Range{
 					Start: protocol.Position{Line: 18, Character: 10},
 					End:   protocol.Position{Line: 19, Character: 29},
 				}, "Job group invocations do not support use of `pre-steps`"),
@@ -1341,7 +1341,7 @@ workflows:
           post-steps:
             - run: echo "post"`,
 			Diagnostics: []protocol.Diagnostic{
-				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+				diagnostic.Error(protocol.Range{
 					Start: protocol.Position{Line: 18, Character: 10},
 					End:   protocol.Position{Line: 19, Character: 30},
 				}, "Job group invocations do not support use of `post-steps`"),
@@ -1373,7 +1373,7 @@ workflows:
       - deploy-group:
           env: staging`,
 			Diagnostics: []protocol.Diagnostic{
-				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+				diagnostic.Error(protocol.Range{
 					Start: protocol.Position{Line: 20, Character: 6},
 					End:   protocol.Position{Line: 21, Character: 22},
 				}, "Job group invocations do not support custom parameters, but found: `env`"),
@@ -1435,11 +1435,11 @@ workflows:
           context:
             - my-context`,
 			Diagnostics: []protocol.Diagnostic{
-				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+				diagnostic.Error(protocol.Range{
 					Start: protocol.Position{Line: 17, Character: 6},
 					End:   protocol.Position{Line: 20, Character: 24},
 				}, "Job group invocations do not support use of `context`"),
-				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+				diagnostic.Error(protocol.Range{
 					Start: protocol.Position{Line: 18, Character: 16},
 					End:   protocol.Position{Line: 18, Character: 24},
 				}, "Job group invocations do not support use of `type`"),

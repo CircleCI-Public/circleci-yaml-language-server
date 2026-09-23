@@ -16,7 +16,7 @@ func TestGetOrbByName(t *testing.T) {
 		fake := fakes.NewCircleCI(t)
 		fake.SeedGoOrb()
 
-		orb, err := GetOrbByName("circleci/go", testHelpers.GetLsContextForHost(fake.URL()))
+		orb, err := GetOrbByName("circleci/go", testHelpers.SettingsForHost(fake.URL()))
 		assert.NilError(t, err)
 
 		assert.Check(t, cmp.Equal(orb.Name, "circleci/go"))
@@ -27,7 +27,7 @@ func TestGetOrbByName(t *testing.T) {
 		fake := fakes.NewCircleCI(t)
 		fake.SeedGoOrb()
 
-		lsContext := testHelpers.GetLsContextForHost(fake.URL())
+		lsContext := testHelpers.SettingsForHost(fake.URL())
 		lsContext.Api.Token = ""
 
 		orb, err := GetOrbByName("circleci/go", lsContext)
@@ -39,7 +39,7 @@ func TestGetOrbByName(t *testing.T) {
 		fake := fakes.NewCircleCI(t)
 		fake.SeedGoOrb()
 
-		_, err := GetOrbByName("circleci/nope", testHelpers.GetLsContextForHost(fake.URL()))
+		_, err := GetOrbByName("circleci/nope", testHelpers.SettingsForHost(fake.URL()))
 		assert.Check(t, cmp.ErrorContains(err, "does not exist"))
 	})
 
@@ -47,13 +47,13 @@ func TestGetOrbByName(t *testing.T) {
 		fake := fakes.NewCircleCI(t)
 		fake.SetStatus("GET /api/v3/orb/packages", http.StatusInternalServerError)
 
-		_, err := GetOrbByName("circleci/go", testHelpers.GetLsContextForHost(fake.URL()))
+		_, err := GetOrbByName("circleci/go", testHelpers.SettingsForHost(fake.URL()))
 		assert.Assert(t, err != nil)
 		assert.Check(t, cmp.ErrorContains(err, "500"))
 	})
 
 	t.Run("reports an unconfigured host", func(t *testing.T) {
-		lsContext := testHelpers.GetLsContextForHost("")
+		lsContext := testHelpers.SettingsForHost("")
 
 		_, err := GetOrbByName("circleci/go", lsContext)
 		assert.Assert(t, err != nil)

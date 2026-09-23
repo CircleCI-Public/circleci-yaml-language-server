@@ -1,14 +1,15 @@
 package validate
 
 import (
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
 func (val Validate) ValidateCommands() {
-	if len(val.Doc.Commands) == 0 && !utils.IsDefaultRange(val.Doc.CommandsRange) {
+	if len(val.Doc.Commands) == 0 && !position.IsDefaultRange(val.Doc.CommandsRange) {
 		val.addDiagnostic(
-			utils.CreateEmptyAssignationWarning(val.Doc.CommandsRange),
+			diagnostic.EmptyAssignationWarning(val.Doc.CommandsRange),
 		)
 
 		return
@@ -56,5 +57,5 @@ func (val Validate) checkIfCommandIsUsed(command ast.Command) bool {
 }
 
 func (val Validate) commandIsUnused(command ast.Command) {
-	val.addDiagnostic(utils.CreateWarningDiagnosticFromRange(command.NameRange, "Command is unused"))
+	val.addDiagnostic(diagnostic.Warning(command.NameRange, "Command is unused"))
 }

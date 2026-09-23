@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	sitter "github.com/smacker/go-tree-sitter"
 	ymlgrammar "github.com/smacker/go-tree-sitter/yaml"
 	"go.lsp.dev/protocol"
@@ -388,7 +388,7 @@ func (doc *YamlDocument) NodeToRange(node *sitter.Node) protocol.Range {
 	if node == nil {
 		return protocol.Range{}
 	}
-	return utils.AddOffsetToRange(protocol.Range{
+	return position.AddOffsetToRange(protocol.Range{
 		Start: protocol.Position{
 			Line:      node.StartPoint().Row,
 			Character: node.StartPoint().Column,

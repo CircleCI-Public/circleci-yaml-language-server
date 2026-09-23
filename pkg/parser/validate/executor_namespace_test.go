@@ -8,9 +8,9 @@ import (
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/fakes"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/testHelpers"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
 // validateNamespaceAgainst runs the namespace check for a self-hosted runner
@@ -20,8 +20,8 @@ func validateNamespaceAgainst(fake *fakes.CircleCI, namespace string) []protocol
 	diagnostics := []protocol.Diagnostic{}
 	val := Validate{
 		Diagnostics: &diagnostics,
-		Cache:       utils.CreateCache(),
-		Context:     testHelpers.GetLsContextForHost(fake.URL()),
+		Cache:       cache.New(),
+		Context:     testHelpers.SettingsForHost(fake.URL()),
 	}
 
 	val.validateExecutorNamespace(namespace, protocol.Range{})
@@ -76,8 +76,8 @@ func TestValidateExecutorNamespace(t *testing.T) {
 		diagnostics := []protocol.Diagnostic{}
 		val := Validate{
 			Diagnostics: &diagnostics,
-			Cache:       utils.CreateCache(),
-			Context:     testHelpers.GetLsContextForHost(""),
+			Cache:       cache.New(),
+			Context:     testHelpers.SettingsForHost(""),
 		}
 
 		val.validateExecutorNamespace("acme", protocol.Range{})

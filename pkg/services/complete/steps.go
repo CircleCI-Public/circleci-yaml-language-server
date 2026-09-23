@@ -3,8 +3,8 @@ package complete
 import (
 	sitter "github.com/smacker/go-tree-sitter"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
 func (ch *CompletionHandler) completeSteps(entityName string, inJob bool, includeJobSteps bool, completionNode *sitter.Node) {
@@ -68,8 +68,8 @@ func (ch *CompletionHandler) isWritingAnEnvVariableInRunStep(entityName string, 
 	for _, step := range steps {
 		switch step := step.(type) {
 		case ast.Run:
-			if utils.PosInRange(step.CommandRange, ch.Params.Position) {
-				idx := utils.PosToIndex(ch.Params.Position, ch.Doc.Content)
+			if position.InRange(step.CommandRange, ch.Params.Position) {
+				idx := position.ToIndex(ch.Params.Position, ch.Doc.Content)
 				if idx > 0 && string(ch.Doc.Content[idx-1]) == "$" {
 					ch.addCompleteEnvVariables(contexts, parameters, environmentField)
 					return true
@@ -92,7 +92,7 @@ func (ch *CompletionHandler) isWritingCheckoutMethod(entityName string, inJob bo
 	for _, step := range steps {
 		switch step := step.(type) {
 		case ast.Checkout:
-			if utils.PosInRange(step.MethodRange, ch.Params.Position) {
+			if position.InRange(step.MethodRange, ch.Params.Position) {
 				return true
 			}
 		}
@@ -102,7 +102,7 @@ func (ch *CompletionHandler) isWritingCheckoutMethod(entityName string, inJob bo
 }
 
 func (ch *CompletionHandler) addCheckoutMethodCompletion() {
-	for _, method := range utils.CheckoutMethods {
+	for _, method := range ast.CheckoutMethods {
 		ch.addCompletionItem(method)
 	}
 }
@@ -124,7 +124,7 @@ func (ch *CompletionHandler) addCompleteEnvVariables(contexts []string, paramete
 			ch.addCompletionItemWithDetail(env, "From project "+cachedFile.Project.Name, "B")
 		}
 
-		contextEnvVariables := utils.GetAllContextEnvVariables(ch.Cache, cachedFile.Project.OrganizationId, contexts)
+		contextEnvVariables := ch.Cache.ContextEnvVariables(cachedFile.Project.OrganizationId, contexts)
 		for _, env := range contextEnvVariables {
 			ch.addCompletionItemWithDetail(env.Name, "From context "+env.AssociatedContext, "B")
 		}

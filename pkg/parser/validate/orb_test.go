@@ -10,10 +10,11 @@ import (
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/dockerhub"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/testHelpers"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/dockerhub"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
 type ErrorTestCase struct {
@@ -49,7 +50,7 @@ orbs:
         macos:
           xcode: 12.5`,
 			Diagnostics: []protocol.Diagnostic{
-				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+				diagnostic.Error(protocol.Range{
 					Start: protocol.Position{Line: 7, Character: 10},
 					End:   protocol.Position{Line: 7, Character: 21},
 				},
@@ -70,7 +71,7 @@ orbs:
           - run: echo "Hello world"
           - localorb/echo`,
 			Diagnostics: []protocol.Diagnostic{
-				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+				diagnostic.Error(protocol.Range{
 					Start: protocol.Position{Line: 9, Character: 12},
 					End:   protocol.Position{Line: 9, Character: 25},
 				},
@@ -107,17 +108,17 @@ jobs:
       - run: echo "Hello world"`,
 			// We want an error on the orb and a warning on the executor
 			Diagnostics: []protocol.Diagnostic{
-				utils.CreateErrorDiagnosticFromRange(protocol.Range{
+				diagnostic.Error(protocol.Range{
 					Start: protocol.Position{Line: 3, Character: 2},
 					End:   protocol.Position{Line: 3, Character: 28},
 				},
 					"Orb circleci/toto does not exist or is private."),
-				utils.CreateWarningDiagnosticFromRange(protocol.Range{
+				diagnostic.Warning(protocol.Range{
 					Start: protocol.Position{Line: 7, Character: 4},
 					End:   protocol.Position{Line: 7, Character: 24},
 				},
 					"Invalid orb or error trying to fetch it: could not find orb circleci/toto@1.0.0"),
-				utils.CreateWarningDiagnosticFromRange(protocol.Range{
+				diagnostic.Warning(protocol.Range{
 					Start: protocol.Position{Line: 6, Character: 2},
 					End:   protocol.Position{Line: 6, Character: 10},
 				},
@@ -281,7 +282,7 @@ func TestOrbStepsUsedInParameters(t *testing.T) {
 
 func TestLocalOrbUsedPartsFalsePositive(t *testing.T) {
 	fileURI := uri.File("some-uri")
-	context := testHelpers.GetDefaultLsContext()
+	context := testHelpers.DefaultSettings()
 	content, err := os.ReadFile("./testdata/orbs/local-orb-used-parts.yml")
 	assert.Check(t, err)
 
@@ -293,7 +294,7 @@ func TestLocalOrbUsedPartsFalsePositive(t *testing.T) {
 			DockerHub: dockerhub.NewAPI(),
 		},
 		Diagnostics: &[]protocol.Diagnostic{},
-		Cache:       utils.CreateCache(),
+		Cache:       cache.New(),
 		Doc:         doc,
 		Context:     context,
 	}
@@ -303,7 +304,7 @@ func TestLocalOrbUsedPartsFalsePositive(t *testing.T) {
 
 func TestLocalOrbUnusedPartsFalseNegative(t *testing.T) {
 	fileURI := uri.File("some-uri")
-	context := testHelpers.GetDefaultLsContext()
+	context := testHelpers.DefaultSettings()
 	content, err := os.ReadFile("./testdata/orbs/local-orb-unused-parts.yml")
 	assert.Check(t, err)
 
@@ -315,7 +316,7 @@ func TestLocalOrbUnusedPartsFalseNegative(t *testing.T) {
 			DockerHub: dockerhub.NewAPI(),
 		},
 		Diagnostics: &[]protocol.Diagnostic{},
-		Cache:       utils.CreateCache(),
+		Cache:       cache.New(),
 		Doc:         doc,
 		Context:     context,
 	}

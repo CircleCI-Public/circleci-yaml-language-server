@@ -3,9 +3,8 @@ package validate
 import (
 	"fmt"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"go.lsp.dev/protocol"
-
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
 type namedEntity struct {
@@ -36,10 +35,10 @@ func (val Validate) CheckNames() {
 		for j := i + 1; j < len(entities); j++ {
 			a, b := entities[i], entities[j]
 			if a.name == b.name && a.kind != b.kind {
-				val.addDiagnostic(utils.CreateWarningDiagnosticFromRange(
+				val.addDiagnostic(diagnostic.Warning(
 					a.nameRange,
 					fmt.Sprintf("The name \"%s\" is already used to define a %s. You might want to use a different name to avoid confusion.", a.name, b.kind)))
-				val.addDiagnostic(utils.CreateWarningDiagnosticFromRange(
+				val.addDiagnostic(diagnostic.Warning(
 					b.nameRange,
 					fmt.Sprintf("The name \"%s\" is already used to define a %s. You might want to use a different name to avoid confusion.", b.name, a.kind)))
 			}

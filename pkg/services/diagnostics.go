@@ -3,12 +3,14 @@ package languageservice
 import (
 	"fmt"
 
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/dockerhub"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/dockerhub"
 	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser/validate"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 
 	schema "github.com/CircleCI-Public/circleci-yaml-language-server"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/codeaction"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/session"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 )
@@ -18,7 +20,7 @@ type DiagnosticType struct {
 	yamlDocument yamlparser.YamlDocument
 }
 
-func Diagnostic(params protocol.PublishDiagnosticsParams, cache *utils.Cache, context *utils.LsContext, schemaLocation string) protocol.PublishDiagnosticsParams {
+func Diagnostic(params protocol.PublishDiagnosticsParams, cache *cache.Cache, context *session.Settings, schemaLocation string) protocol.PublishDiagnosticsParams {
 	diagnostics, _ := DiagnosticFile(params.URI, cache, context, schemaLocation)
 
 	diagnosticParams := protocol.PublishDiagnosticsParams{
@@ -29,7 +31,7 @@ func Diagnostic(params protocol.PublishDiagnosticsParams, cache *utils.Cache, co
 	return diagnosticParams
 }
 
-func DiagnosticFile(uri protocol.URI, cache *utils.Cache, context *utils.LsContext, schemaLocation string) ([]protocol.Diagnostic, error) {
+func DiagnosticFile(uri protocol.URI, cache *cache.Cache, context *session.Settings, schemaLocation string) ([]protocol.Diagnostic, error) {
 	yamlDocument, err := yamlparser.ParseFromUriWithCache(uri, cache, context)
 	yamlDocument.SchemaLocation = schemaLocation
 
@@ -40,7 +42,7 @@ func DiagnosticFile(uri protocol.URI, cache *utils.Cache, context *utils.LsConte
 	return DiagnosticYAML(yamlDocument, cache, context)
 }
 
-func DiagnosticString(content string, cache *utils.Cache, context *utils.LsContext, schemaLocation string) ([]protocol.Diagnostic, error) {
+func DiagnosticString(content string, cache *cache.Cache, context *session.Settings, schemaLocation string) ([]protocol.Diagnostic, error) {
 	yamlDocument, err := yamlparser.ParseFromContent([]byte(content), context, uri.File(""), protocol.Position{})
 	yamlDocument.SchemaLocation = schemaLocation
 
@@ -51,7 +53,7 @@ func DiagnosticString(content string, cache *utils.Cache, context *utils.LsConte
 	return DiagnosticYAML(yamlDocument, cache, context)
 }
 
-func DiagnosticYAML(yamlDocument yamlparser.YamlDocument, cache *utils.Cache, context *utils.LsContext) ([]protocol.Diagnostic, error) {
+func DiagnosticYAML(yamlDocument yamlparser.YamlDocument, cache *cache.Cache, context *session.Settings) ([]protocol.Diagnostic, error) {
 	if yamlDocument.Version != 0 && yamlDocument.Version < 2.1 {
 		// TODO: Handle error
 		return []protocol.Diagnostic{}, nil
@@ -102,7 +104,7 @@ func DiagnosticYAML(yamlDocument yamlparser.YamlDocument, cache *utils.Cache, co
 	*diag.diagnostics = yamlparser.FilterSuppressedDiagnostics(*diag.diagnostics, diag.yamlDocument.SuppressionInfo)
 
 	// append some extra add code actions to every diagnostic to suppress said diagnostic
-	*diag.diagnostics, err = utils.AppendSuppressionCodeActions(yamlDocument.URI, *diag.diagnostics, yamlDocument.Content)
+	*diag.diagnostics, err = codeaction.AppendSuppressions(yamlDocument.URI, *diag.diagnostics, yamlDocument.Content)
 	if err != nil {
 		return []protocol.Diagnostic{}, err
 	}

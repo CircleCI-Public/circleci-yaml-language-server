@@ -4,13 +4,16 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/paramref"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/session"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
-	utils "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
 )
 
-func References(params protocol.ReferenceParams, cache *utils.Cache, context *utils.LsContext) ([]protocol.Location, error) {
+func References(params protocol.ReferenceParams, cache *cache.Cache, context *session.Settings) ([]protocol.Location, error) {
 	yamlDocument, err := yamlparser.ParseFromUriWithCache(params.TextDocument.URI, cache, context)
 
 	if err != nil {
@@ -30,7 +33,7 @@ func References(params protocol.ReferenceParams, cache *utils.Cache, context *ut
 type ReferenceHandler struct {
 	Doc        yamlparser.YamlDocument
 	Params     protocol.ReferenceParams
-	Cache      *utils.Cache
+	Cache      *cache.Cache
 	FoundSteps *[]StepRangeAndName
 }
 
@@ -38,11 +41,11 @@ func (ref ReferenceHandler) GetReferences() ([]protocol.Location, error) {
 	cmdName := ""
 	isOrb := false
 
-	if utils.PosInRange(ref.Doc.OrbsRange, ref.Params.Position) {
+	if position.InRange(ref.Doc.OrbsRange, ref.Params.Position) {
 		var orb ast.Orb
 		for _, currentOrb := range ref.Doc.Orbs {
-			if utils.PosInRange(currentOrb.NameRange, ref.Params.Position) ||
-				utils.PosInRange(currentOrb.Range, ref.Params.Position) {
+			if position.InRange(currentOrb.NameRange, ref.Params.Position) ||
+				position.InRange(currentOrb.Range, ref.Params.Position) {
 				orb = currentOrb
 			}
 		}
@@ -76,24 +79,24 @@ func (ref ReferenceHandler) GetReferences() ([]protocol.Location, error) {
 
 	switch true {
 	// Workflow
-	case utils.PosInRange(ref.Doc.WorkflowRange, ref.Params.Position):
+	case position.InRange(ref.Doc.WorkflowRange, ref.Params.Position):
 		cmdName = ref.searchInWorkflows()
 
 	// Job
-	case utils.PosInRange(ref.Doc.JobsRange, ref.Params.Position):
+	case position.InRange(ref.Doc.JobsRange, ref.Params.Position):
 		cmdName = ref.searchInJobs()
 
 	// Command
-	case utils.PosInRange(ref.Doc.CommandsRange, ref.Params.Position):
+	case position.InRange(ref.Doc.CommandsRange, ref.Params.Position):
 		cmdName = ref.searchInCommands()
 
 	// Orb
-	case utils.PosInRange(ref.Doc.OrbsRange, ref.Params.Position):
+	case position.InRange(ref.Doc.OrbsRange, ref.Params.Position):
 		cmdName = ref.searchInOrbs()
 		isOrb = true
 
 	// Executor
-	case utils.PosInRange(ref.Doc.ExecutorsRange, ref.Params.Position):
+	case position.InRange(ref.Doc.ExecutorsRange, ref.Params.Position):
 		loc, executorName := ref.getExecutorReferences()
 		if len(loc) > 0 {
 			return loc, nil
@@ -101,8 +104,8 @@ func (ref ReferenceHandler) GetReferences() ([]protocol.Location, error) {
 		cmdName = executorName
 
 	// Pipeline parameters
-	case utils.PosInRange(ref.Doc.PipelineParametersRange, ref.Params.Position):
-		paramName := utils.GetParamNameDefinedAtPos(ref.Doc.PipelineParameters, ref.Params.Position)
+	case position.InRange(ref.Doc.PipelineParametersRange, ref.Params.Position):
+		paramName := paramref.NameDefinedAtPos(ref.Doc.PipelineParameters, ref.Params.Position)
 		return ref.getReferencesOfParamInRange(paramName, ref.Doc.NodeToRange(ref.Doc.RootNode))
 	}
 
@@ -158,7 +161,7 @@ func getStepsOfCommandOrJob(steps []ast.Step) []StepRangeAndName {
 
 func (ref ReferenceHandler) searchInOrbs() string {
 	for _, orb := range ref.Doc.Orbs {
-		if utils.PosInRange(orb.NameRange, ref.Params.Position) {
+		if position.InRange(orb.NameRange, ref.Params.Position) {
 			return orb.Name
 		}
 	}
@@ -168,7 +171,7 @@ func (ref ReferenceHandler) searchInOrbs() string {
 func (ref ReferenceHandler) searchInWorkflows() string {
 	for _, workflow := range ref.Doc.Workflows {
 		for _, jobInvocation := range workflow.JobInvocations {
-			if utils.PosInRange(jobInvocation.JobNameRange, ref.Params.Position) {
+			if position.InRange(jobInvocation.JobNameRange, ref.Params.Position) {
 				if ref.Doc.DoesCommandOrJobOrExecutorExist(jobInvocation.JobName, false) {
 					return jobInvocation.JobName
 				}
@@ -180,7 +183,7 @@ func (ref ReferenceHandler) searchInWorkflows() string {
 
 func (ref ReferenceHandler) searchInJobs() string {
 	for _, job := range ref.Doc.Jobs {
-		if utils.PosInRange(job.NameRange, ref.Params.Position) || utils.PosInRange(job.ParametersRange, ref.Params.Position) {
+		if position.InRange(job.NameRange, ref.Params.Position) || position.InRange(job.ParametersRange, ref.Params.Position) {
 			return job.Name
 		}
 	}
@@ -189,7 +192,7 @@ func (ref ReferenceHandler) searchInJobs() string {
 
 func (ref ReferenceHandler) searchInCommands() string {
 	for _, command := range ref.Doc.Commands {
-		if utils.PosInRange(command.NameRange, ref.Params.Position) || utils.PosInRange(command.ParametersRange, ref.Params.Position) {
+		if position.InRange(command.NameRange, ref.Params.Position) || position.InRange(command.ParametersRange, ref.Params.Position) {
 			return command.Name
 		}
 	}
@@ -215,7 +218,7 @@ func (ref ReferenceHandler) getExecutorReferences() ([]protocol.Location, string
 	executor := ref.Doc.GetExecutorDefinedAtPosition(ref.Params.Position)
 	executorName := executor.GetName()
 
-	if utils.PosInRange(executor.GetParametersRange(), ref.Params.Position) {
+	if position.InRange(executor.GetParametersRange(), ref.Params.Position) {
 		return []protocol.Location{}, executorName
 	}
 
@@ -237,24 +240,24 @@ func (ref ReferenceHandler) getParamReferences(cmdName string) ([]protocol.Locat
 	var rng protocol.Range
 
 	commandToSearch, ok := ref.Doc.Commands[cmdName]
-	if ok && utils.PosInRange(commandToSearch.ParametersRange, ref.Params.Position) {
+	if ok && position.InRange(commandToSearch.ParametersRange, ref.Params.Position) {
 		params = commandToSearch.Parameters
 		rng = commandToSearch.Range
 	}
 
 	jobToSearch, ok := ref.Doc.Jobs[cmdName]
-	if ok && utils.PosInRange(jobToSearch.ParametersRange, ref.Params.Position) {
+	if ok && position.InRange(jobToSearch.ParametersRange, ref.Params.Position) {
 		params = jobToSearch.Parameters
 		rng = jobToSearch.Range
 	}
 
 	executorToSearch, ok := ref.Doc.Executors[cmdName]
-	if ok && utils.PosInRange(executorToSearch.GetParametersRange(), ref.Params.Position) {
+	if ok && position.InRange(executorToSearch.GetParametersRange(), ref.Params.Position) {
 		params = executorToSearch.GetParameters()
 		rng = executorToSearch.GetRange()
 	}
 
-	paramName := utils.GetParamNameDefinedAtPos(params, ref.Params.Position)
+	paramName := paramref.NameDefinedAtPos(params, ref.Params.Position)
 
 	if paramName != "" {
 		return ref.getReferencesOfParamInRange(paramName, rng)
@@ -265,7 +268,7 @@ func (ref ReferenceHandler) getParamReferences(cmdName string) ([]protocol.Locat
 
 func (ref ReferenceHandler) getReferencesOfParamInRange(paramName string, rng protocol.Range) ([]protocol.Location, error) {
 	content := ref.Doc.Content
-	allParamsRef, err := utils.GetReferencesOfParamInRange(content, paramName, rng)
+	allParamsRef, err := paramref.ReferencesInRange(content, paramName, rng)
 
 	if err != nil {
 		return []protocol.Location{}, err
@@ -276,8 +279,8 @@ func (ref ReferenceHandler) getReferencesOfParamInRange(paramName string, rng pr
 		locations = append(locations, protocol.Location{
 			URI: ref.Params.TextDocument.URI,
 			Range: protocol.Range{
-				Start: utils.IndexToPos(paramRef[0], content),
-				End:   utils.IndexToPos(paramRef[1], content),
+				Start: position.FromIndex(paramRef[0], content),
+				End:   position.FromIndex(paramRef[1], content),
 			},
 		})
 	}

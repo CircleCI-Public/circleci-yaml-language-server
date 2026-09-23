@@ -11,24 +11,25 @@ import (
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/testHelpers"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/services/definition"
-	utils "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
 func TestDefinition(t *testing.T) {
-	cache := utils.CreateCache()
+	c := cache.New()
 
-	context := testHelpers.GetDefaultLsContext()
+	context := testHelpers.DefaultSettings()
 	parsedOrb, err := parser.ParseFromURI(uri.File(path.Join("./testdata/orb.yaml")), context)
 
 	if err != nil {
 		panic(err)
 	}
 
-	cache.OrbCache.SetOrb(&ast.OrbInfo{
+	c.OrbCache.SetOrb(&ast.OrbInfo{
 		OrbParsedAttributes: parsedOrb.ToOrbParsedAttributes(),
 		RemoteInfo: ast.RemoteOrbInfo{
 			FilePath: uri.File(path.Join("./testdata/orb.yaml")).Filename(),
@@ -401,12 +402,12 @@ func TestDefinition(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			content, _ := os.ReadFile(tt.args.filePath)
-			cache.FileCache.SetFile(utils.CachedFile{
+			c.FileCache.SetFile(cache.File{
 				TextDocument: protocol.TextDocumentItem{
 					URI:  uri.File(tt.args.filePath),
 					Text: string(content),
 				},
-				Project:      utils.Project{},
+				Project:      circleci.Project{},
 				EnvVariables: make([]string, 0),
 			})
 
@@ -419,7 +420,7 @@ func TestDefinition(t *testing.T) {
 				},
 			}
 
-			got, err := Definition(params, cache, context)
+			got, err := Definition(params, c, context)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Definition(): %s error = %v, wantErr %v", tt.name, err, tt.wantErr)
 				return
@@ -447,12 +448,12 @@ orbs:
           - image: cimg/node:21.6.1
         steps:
           - cmd`
-	context := testHelpers.GetDefaultLsContext()
+	context := testHelpers.DefaultSettings()
 
 	doc, err := parser.ParseFromContent([]byte(yaml), context, fileURI, protocol.Position{})
 	assert.Check(t, err)
 
-	def := definition.DefinitionStruct{Cache: utils.CreateCache(), Params: protocol.DefinitionParams{
+	def := definition.DefinitionStruct{Cache: cache.New(), Params: protocol.DefinitionParams{
 		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
 			TextDocument: protocol.TextDocumentIdentifier{
 				URI: fileURI,
@@ -492,12 +493,12 @@ orbs:
         executor: executor
         steps:
           - run: echo "Hello World"`
-	context := testHelpers.GetDefaultLsContext()
+	context := testHelpers.DefaultSettings()
 
 	doc, err := parser.ParseFromContent([]byte(yaml), context, fileURI, protocol.Position{})
 	assert.Check(t, err)
 
-	def := definition.DefinitionStruct{Cache: utils.CreateCache(), Params: protocol.DefinitionParams{
+	def := definition.DefinitionStruct{Cache: cache.New(), Params: protocol.DefinitionParams{
 		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
 			TextDocument: protocol.TextDocumentIdentifier{
 				URI: fileURI,
@@ -592,7 +593,7 @@ workflows:
 func parseJobGroupDefinitionFixture(t *testing.T) (parser.YamlDocument, protocol.URI) {
 	t.Helper()
 	fileURI := uri.File("some-uri")
-	context := testHelpers.GetDefaultLsContext()
+	context := testHelpers.DefaultSettings()
 	doc, err := parser.ParseFromContent([]byte(jobGroupDefinitionFixture), context, fileURI, protocol.Position{})
 	assert.Check(t, err)
 	return doc, fileURI
@@ -600,7 +601,7 @@ func parseJobGroupDefinitionFixture(t *testing.T) (parser.YamlDocument, protocol
 
 func definitionAt(t *testing.T, doc parser.YamlDocument, fileURI protocol.URI, line, char uint32) []protocol.Location {
 	t.Helper()
-	def := definition.DefinitionStruct{Cache: utils.CreateCache(), Params: protocol.DefinitionParams{
+	def := definition.DefinitionStruct{Cache: cache.New(), Params: protocol.DefinitionParams{
 		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
 			TextDocument: protocol.TextDocumentIdentifier{URI: fileURI},
 			Position:     protocol.Position{Line: line, Character: char},
@@ -710,7 +711,7 @@ workflows:
 
 func TestDefinition_WorkflowRequiresRenamedJob_GoesToJobInvocation(t *testing.T) {
 	fileURI := uri.File("some-uri")
-	context := testHelpers.GetDefaultLsContext()
+	context := testHelpers.DefaultSettings()
 	doc, err := parser.ParseFromContent([]byte(renamedJobDefinitionFixture), context, fileURI, protocol.Position{})
 	assert.Check(t, err)
 

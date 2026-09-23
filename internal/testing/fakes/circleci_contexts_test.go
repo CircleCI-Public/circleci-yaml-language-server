@@ -1,6 +1,6 @@
 package fakes_test
 
-// The context list is covered by the tests of its caller in pkg/utils. This
+// The context list is covered by the tests of its caller in internal/cache. This
 // route has no caller yet — the language server reads a context's variables
 // inline from the list — so it is checked here rather than left unexercised.
 

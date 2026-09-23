@@ -9,15 +9,17 @@ import (
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/codeaction"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/expect"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/testHelpers"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
 func TestCacheMissingError(t *testing.T) {
-	cache := utils.CreateCache()
-	_, err := parser.ParseFromUriWithCache(uri.New("file:///toto.yaml"), cache, nil)
+	c := cache.New()
+	_, err := parser.ParseFromUriWithCache(uri.New("file:///toto.yaml"), c, nil)
 
 	assert.Check(t, cmp.ErrorIs(err, parser.CacheMissingError))
 }
@@ -33,14 +35,14 @@ jobs:
 
 	yamlDocument, err := parser.ParseFromContent(
 		[]byte(yaml),
-		testHelpers.GetDefaultLsContext(),
+		testHelpers.DefaultSettings(),
 		uri.File(""),
 		protocol.Position{},
 	)
 
 	assert.Check(t, err)
 	assert.Check(t, yamlDocument.Context.Api.UseDefaultInstance())
-	img := utils.CurrentLinuxImage
+	img := circleci.CurrentLinuxImage
 	machineRange := protocol.Range{
 		Start: protocol.Position{Line: 3, Character: 4},
 		End:   protocol.Position{Line: 3, Character: 17},
@@ -48,14 +50,14 @@ jobs:
 	expect.DiagnosticList(t, *yamlDocument.Diagnostics).To.Include(protocol.Diagnostic{
 		Range:    machineRange,
 		Severity: protocol.DiagnosticSeverityWarning,
-		Message:  utils.GetMachineTrueMessage(img),
+		Message:  parser.MachineTrueMessage(img),
 		Data: []protocol.CodeAction{
-			utils.CreateCodeActionTextEdit("Replace with most updated ubuntu image", yamlDocument.URI,
+			codeaction.TextEdit("Replace with most updated ubuntu image", yamlDocument.URI,
 				[]protocol.TextEdit{
 					{
 						Range: machineRange,
 						NewText: `machine:
-		` + strings.Repeat(" ", int(machineRange.Start.Character)) + `  image: ` + utils.CurrentLinuxImage,
+		` + strings.Repeat(" ", int(machineRange.Start.Character)) + `  image: ` + circleci.CurrentLinuxImage,
 					},
 				}, false),
 		},
@@ -73,7 +75,7 @@ jobs:
 
 	yamlDocument, err := parser.ParseFromContent(
 		[]byte(yaml),
-		testHelpers.GetDefaultLsContext(),
+		testHelpers.DefaultSettings(),
 		uri.File(""),
 		protocol.Position{},
 	)
@@ -94,7 +96,7 @@ jobs:
 
 	yamlDocument, err := parser.ParseFromContent(
 		[]byte(yaml),
-		testHelpers.GetLsContextForHost("https://mycircleci.example.com"),
+		testHelpers.SettingsForHost("https://mycircleci.example.com"),
 		uri.File(""),
 		protocol.Position{},
 	)
@@ -120,14 +122,14 @@ jobs:
 
 	yamlDocument, err := parser.ParseFromContent(
 		[]byte(yaml),
-		testHelpers.GetDefaultLsContext(),
+		testHelpers.DefaultSettings(),
 		uri.File(""),
 		protocol.Position{},
 	)
 
 	assert.Check(t, err)
 	assert.Check(t, yamlDocument.Context.Api.UseDefaultInstance())
-	img := utils.CurrentLinuxImage
+	img := circleci.CurrentLinuxImage
 	machineRange := protocol.Range{
 		Start: protocol.Position{Line: 7, Character: 4},
 		End:   protocol.Position{Line: 7, Character: 17},
@@ -136,14 +138,14 @@ jobs:
 		protocol.Diagnostic{
 			Range:    machineRange,
 			Severity: protocol.DiagnosticSeverityWarning,
-			Message:  utils.GetMachineTrueMessage(img),
+			Message:  parser.MachineTrueMessage(img),
 			Data: []protocol.CodeAction{
-				utils.CreateCodeActionTextEdit("Replace with most updated ubuntu image", yamlDocument.URI,
+				codeaction.TextEdit("Replace with most updated ubuntu image", yamlDocument.URI,
 					[]protocol.TextEdit{
 						{
 							Range: machineRange,
 							NewText: `machine:
-		` + strings.Repeat(" ", int(machineRange.Start.Character)) + `  image: ` + utils.CurrentLinuxImage,
+		` + strings.Repeat(" ", int(machineRange.Start.Character)) + `  image: ` + circleci.CurrentLinuxImage,
 						},
 					}, false),
 			},
@@ -163,7 +165,7 @@ jobs:
 
 	yamlDocument, err := parser.ParseFromContent(
 		[]byte(yaml),
-		testHelpers.GetDefaultLsContext(),
+		testHelpers.DefaultSettings(),
 		uri.File(""),
 		protocol.Position{},
 	)
@@ -190,7 +192,7 @@ jobs:
 
 	yamlDocument, err := parser.ParseFromContent(
 		[]byte(yaml),
-		testHelpers.GetDefaultLsContext(),
+		testHelpers.DefaultSettings(),
 		uri.File(""),
 		protocol.Position{},
 	)
@@ -215,14 +217,14 @@ jobs:
 
 	yamlDocument, err := parser.ParseFromContent(
 		[]byte(yaml),
-		testHelpers.GetDefaultLsContext(),
+		testHelpers.DefaultSettings(),
 		uri.File(""),
 		protocol.Position{},
 	)
 
 	assert.Check(t, err)
 	assert.Check(t, yamlDocument.Context.Api.UseDefaultInstance())
-	img := utils.CurrentLinuxImage
+	img := circleci.CurrentLinuxImage
 	machineRange := protocol.Range{
 		Start: protocol.Position{Line: 3, Character: 4},
 		End:   protocol.Position{Line: 3, Character: 17},
@@ -234,14 +236,14 @@ jobs:
 		protocol.Diagnostic{
 			Range:    machineRange,
 			Severity: protocol.DiagnosticSeverityWarning,
-			Message:  utils.GetMachineTrueMessage(img),
+			Message:  parser.MachineTrueMessage(img),
 			Data: []protocol.CodeAction{
-				utils.CreateCodeActionTextEdit("Replace with most updated ubuntu image", yamlDocument.URI,
+				codeaction.TextEdit("Replace with most updated ubuntu image", yamlDocument.URI,
 					[]protocol.TextEdit{
 						{
 							Range: machineRange,
 							NewText: `machine:
-		` + strings.Repeat(" ", int(machineRange.Start.Character)) + `  image: ` + utils.CurrentLinuxImage,
+		` + strings.Repeat(" ", int(machineRange.Start.Character)) + `  image: ` + circleci.CurrentLinuxImage,
 						},
 					}, false),
 			},
@@ -255,7 +257,7 @@ func TestIsFromUnfetchableOrb(t *testing.T) {
 orbs:
   slack: circleci/slack@4.12.5
   ccc: cci-dev/ccc@<<pipeline.parameters.dev-orb-version>>
-`), testHelpers.GetDefaultLsContext(), uri.File(""), protocol.Position{})
+`), testHelpers.DefaultSettings(), uri.File(""), protocol.Position{})
 
 	assert.Check(t, err)
 	assert.Check(t, yamlDocument.IsFromUnfetchableOrb("ccc/entity"))
@@ -357,7 +359,7 @@ jobs:
 
 	for _, tt := range testCases {
 		t.Run(tt.Name, func(t *testing.T) {
-			yamlDocument, err := parser.ParseFromContent([]byte(tt.Content), testHelpers.GetDefaultLsContext(), uri.File(""), protocol.Position{})
+			yamlDocument, err := parser.ParseFromContent([]byte(tt.Content), testHelpers.DefaultSettings(), uri.File(""), protocol.Position{})
 			assert.Check(t, err)
 			assert.Check(t, cmp.Equal(tt.ExpectValue, yamlDocument.Setup))
 			assert.Check(t, cmp.DeepEqual(tt.ExpectRange, yamlDocument.SetupRange))

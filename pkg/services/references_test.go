@@ -9,12 +9,13 @@ import (
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/testHelpers"
-	utils "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
 func TestReferences(t *testing.T) {
-	cache := utils.CreateCache()
+	c := cache.New()
 
 	type args struct {
 		filePath string
@@ -254,16 +255,16 @@ func TestReferences(t *testing.T) {
 			},
 		},
 	}
-	context := testHelpers.GetDefaultLsContext()
+	context := testHelpers.DefaultSettings()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			content, _ := os.ReadFile(tt.args.filePath)
-			cache.FileCache.SetFile(utils.CachedFile{
+			c.FileCache.SetFile(cache.File{
 				TextDocument: protocol.TextDocumentItem{
 					URI:  uri.File(tt.args.filePath),
 					Text: string(content),
 				},
-				Project:      utils.Project{},
+				Project:      circleci.Project{},
 				EnvVariables: make([]string, 0),
 			})
 
@@ -276,7 +277,7 @@ func TestReferences(t *testing.T) {
 				},
 			}
 
-			got, err := References(params, cache, context)
+			got, err := References(params, c, context)
 
 			// We don't care about the order of the items,
 			// so we sort them before comparing to avoid the order

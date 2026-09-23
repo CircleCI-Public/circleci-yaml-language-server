@@ -3,9 +3,9 @@ package complete
 import (
 	"fmt"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
 )
 
@@ -16,24 +16,24 @@ func (ch *CompletionHandler) completeJobs() {
 	}
 
 	switch true {
-	case utils.PosInRange(job.ExecutorRange, ch.Params.Position):
+	case position.InRange(job.ExecutorRange, ch.Params.Position):
 		ch.addExecutorsCompletion()
 		return
-	case utils.PosInRange(job.ParametersRange, ch.Params.Position):
+	case position.InRange(job.ParametersRange, ch.Params.Position):
 		ch.addParametersDefinitionCompletion(job.Parameters)
 		return
-	case utils.PosInRange(job.StepsRange, ch.Params.Position):
-		nodeToComplete, _, _ := utils.NodeAtPos(ch.Doc.RootNode, ch.Params.Position)
+	case position.InRange(job.StepsRange, ch.Params.Position):
+		nodeToComplete, _, _ := position.NodeAt(ch.Doc.RootNode, ch.Params.Position)
 		if nodeToComplete.Type() == ":" {
 			nodeToComplete = nodeToComplete.PrevSibling()
 		}
 
 		ch.completeSteps(job.Name, true, true, nodeToComplete)
 		return
-	case utils.PosInRange(job.DockerRange, ch.Params.Position):
+	case position.InRange(job.DockerRange, ch.Params.Position):
 		ch.completeDockerExecutor(job.Docker)
 		return
-	case utils.PosInRange(job.TypeRange, ch.Params.Position):
+	case position.InRange(job.TypeRange, ch.Params.Position):
 		ch.addJobTypeCompletion()
 		return
 	}
@@ -75,7 +75,7 @@ func (ch *CompletionHandler) addExecutorsCompletion() {
 
 func findJob(pos protocol.Position, doc yamlparser.YamlDocument) (ast.Job, error) {
 	for _, job := range doc.Jobs {
-		if utils.PosInRange(job.Range, pos) {
+		if position.InRange(job.Range, pos) {
 			return job, nil
 		}
 	}
@@ -83,7 +83,7 @@ func findJob(pos protocol.Position, doc yamlparser.YamlDocument) (ast.Job, error
 }
 
 func (ch *CompletionHandler) addJobTypeCompletion() {
-	for _, jobType := range utils.JobTypes {
+	for _, jobType := range ast.JobTypes {
 		ch.addCompletionItem(jobType)
 	}
 }

@@ -3,10 +3,10 @@ package complete
 import (
 	"fmt"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/dockerhub"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/dockerhub"
 	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	sitter "github.com/smacker/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
@@ -36,7 +36,7 @@ func (ch *CompletionHandler) completeExecutors() {
 
 func findExecutor(pos protocol.Position, doc yamlparser.YamlDocument) (ast.Executor, error) {
 	for _, executor := range doc.Executors {
-		if utils.PosInRange(executor.GetRange(), pos) {
+		if position.InRange(executor.GetRange(), pos) {
 			return executor, nil
 		}
 	}
@@ -45,17 +45,17 @@ func findExecutor(pos protocol.Position, doc yamlparser.YamlDocument) (ast.Execu
 }
 
 func (ch *CompletionHandler) completeDockerExecutor(executor ast.DockerExecutor) {
-	if utils.PosInRange(executor.ResourceClassRange, ch.Params.Position) {
-		ch.addResourceClassCompletion(utils.DockerResourceClasses(ch.Context, ch.Cache))
+	if position.InRange(executor.ResourceClassRange, ch.Params.Position) {
+		ch.addResourceClassCompletion(ch.Cache.Offerings(ch.Context.Api).DockerResourceClasses())
 		return
 	}
 
 	// Check if we are in an image's range
 	for _, img := range executor.Image {
-		if utils.PosInRange(img.ImageRange, ch.Params.Position) {
+		if position.InRange(img.ImageRange, ch.Params.Position) {
 			// Suggest docker images w/ dockerhub package to perform search
 
-			node, _, _ := utils.NodeAtPos(ch.Doc.RootNode, ch.Params.Position)
+			node, _, _ := position.NodeAt(ch.Doc.RootNode, ch.Params.Position)
 
 			// The dockerhub searches are based on strings
 			// We need the string content of the current docker image but they are some things to consider
@@ -123,8 +123,8 @@ func (ch *CompletionHandler) completeDockerExecutor(executor ast.DockerExecutor)
 }
 
 func (ch *CompletionHandler) completeMachineExecutor(executor ast.MachineExecutor) {
-	if utils.PosInRange(executor.ResourceClassRange, ch.Params.Position) {
-		for _, resourceClass := range utils.MachineResourceClasses(ch.Context, ch.Cache) {
+	if position.InRange(executor.ResourceClassRange, ch.Params.Position) {
+		for _, resourceClass := range ch.Cache.Offerings(ch.Context.Api).MachineResourceClasses() {
 			ch.addCompletionItem(resourceClass)
 		}
 		if ch.Context.Api.IsLoggedIn() {
@@ -136,9 +136,9 @@ func (ch *CompletionHandler) completeMachineExecutor(executor ast.MachineExecuto
 		return
 	}
 
-	images := utils.MachineImages(ch.Context, ch.Cache)
+	images := ch.Cache.Offerings(ch.Context.Api).MachineImages()
 
-	if utils.PosInRange(executor.ImageRange, ch.Params.Position) {
+	if position.InRange(executor.ImageRange, ch.Params.Position) {
 		for _, img := range images {
 			ch.addCompletionItem(img)
 		}
@@ -149,7 +149,7 @@ func (ch *CompletionHandler) completeMachineExecutor(executor ast.MachineExecuto
 		extendedRange := executor.ImageRange
 		extendedRange.End.Character += 999
 
-		if utils.PosInRange(extendedRange, ch.Params.Position) {
+		if position.InRange(extendedRange, ch.Params.Position) {
 			for _, img := range images {
 				ch.addCompletionItem(img)
 			}
@@ -162,8 +162,8 @@ func (ch *CompletionHandler) completeMachineExecutor(executor ast.MachineExecuto
 }
 
 func (ch *CompletionHandler) completeMacOSExecutor(executor ast.MacOSExecutor) {
-	if utils.PosInRange(executor.ResourceClassRange, ch.Params.Position) {
-		ch.addResourceClassCompletion(utils.MacOSResourceClasses(ch.Context, ch.Cache))
+	if position.InRange(executor.ResourceClassRange, ch.Params.Position) {
+		ch.addResourceClassCompletion(ch.Cache.Offerings(ch.Context.Api).MacOSResourceClasses())
 		return
 	} else {
 		ch.checkAndAddResourceClassFieldCompletion(executor)

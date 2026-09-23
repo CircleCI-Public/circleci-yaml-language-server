@@ -3,7 +3,7 @@ package methods
 import (
 	"fmt"
 
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/version"
 	"github.com/segmentio/encoding/json"
 	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/protocol"
@@ -38,13 +38,13 @@ func (methods *Methods) Initialize(reply jsonrpc2.Replier, req jsonrpc2.Request)
 	if params.InitializationOptions != nil {
 		isCciExtension, ok := params.InitializationOptions.(map[string]interface{})["isCciExtension"]
 		if ok && isCciExtension == true {
-			methods.LsContext.IsCciExtension = true
+			methods.Settings.IsCciExtension = true
 		}
 		userAgent, ok := params.InitializationOptions.(map[string]interface{})["userAgent"]
 		if ok {
 			userAgentString, ok := userAgent.(string)
 			if ok {
-				utils.UserAgent += " " + userAgentString
+				version.UserAgent += " " + userAgentString
 			}
 		}
 	}
@@ -98,7 +98,7 @@ func (methods *Methods) Initialize(reply jsonrpc2.Replier, req jsonrpc2.Request)
 		},
 		ServerInfo: &protocol.ServerInfo{
 			Name:    "circleci-language-server",
-			Version: utils.ServerVersion,
+			Version: version.Server,
 		},
 	}
 	return reply(methods.Ctx, v, nil)

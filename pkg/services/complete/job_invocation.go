@@ -1,8 +1,8 @@
 package complete
 
 import (
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
 )
 
@@ -13,7 +13,7 @@ func isJobInvocation(pos protocol.Position, invocations []ast.JobInvocation) boo
 
 func findJobInvocation(pos protocol.Position, invocations []ast.JobInvocation) *ast.JobInvocation {
 	for _, jobInvocation := range invocations {
-		if utils.PosInRange(jobInvocation.JobNameRange, pos) {
+		if position.InRange(jobInvocation.JobNameRange, pos) {
 			return &jobInvocation
 		}
 	}
@@ -23,7 +23,7 @@ func findJobInvocation(pos protocol.Position, invocations []ast.JobInvocation) *
 func isInRequires(pos protocol.Position, jobInvocations []ast.JobInvocation) bool {
 	for _, jobInvocation := range jobInvocations {
 		for _, require := range jobInvocation.Requires {
-			if utils.PosInRange(require.Range, pos) {
+			if position.InRange(require.Range, pos) {
 				return true
 			}
 		}

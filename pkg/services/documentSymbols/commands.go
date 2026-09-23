@@ -1,14 +1,14 @@
 package documentSymbols
 
 import (
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
 )
 
 func resolveCommandsSymbols(document *parser.YamlDocument) []protocol.DocumentSymbol {
-	if utils.IsDefaultRange(document.CommandsRange) {
+	if position.IsDefaultRange(document.CommandsRange) {
 		return nil
 	}
 

@@ -3,19 +3,21 @@ package languageservice
 import (
 	"fmt"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/session"
 	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
-	utils "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	sitter "github.com/smacker/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
 
-func Hover(params protocol.HoverParams, cache *utils.Cache, context *utils.LsContext) (protocol.Hover, error) {
+func Hover(params protocol.HoverParams, cache *cache.Cache, context *session.Settings) (protocol.Hover, error) {
 	doc, err := yamlparser.ParseFromUriWithCache(params.TextDocument.URI, cache, context)
 	if err != nil {
 		return protocol.Hover{}, nil
 	}
 
-	if utils.PosInRange(doc.VersionRange, params.Position) && doc.Version < 2.1 {
+	if position.InRange(doc.VersionRange, params.Position) && doc.Version < 2.1 {
 		return protocol.Hover{
 			Contents: protocol.MarkupContent{
 				Kind:  protocol.PlainText,

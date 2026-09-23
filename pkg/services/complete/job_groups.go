@@ -3,9 +3,9 @@ package complete
 import (
 	"fmt"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
 )
 
@@ -37,7 +37,7 @@ func (ch *CompletionHandler) completeJobGroups() {
 
 func findJobGroup(pos protocol.Position, doc yamlparser.YamlDocument) (ast.JobGroup, error) {
 	for _, jobGroup := range doc.JobGroups {
-		if utils.PosInRange(jobGroup.Range, pos) {
+		if position.InRange(jobGroup.Range, pos) {
 			return jobGroup, nil
 		}
 	}

@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/session"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 	"gotest.tools/v3/assert"
@@ -14,8 +16,8 @@ import (
 
 func validateYAML(t *testing.T, yamlData string) *[]protocol.Diagnostic {
 	t.Helper()
-	ctx := &utils.LsContext{
-		Api: utils.ApiContext{
+	ctx := &session.Settings{
+		Api: circleci.Config{
 			Token:   "XXXXXXXXXXXX",
 			HostUrl: "https://circleci.com",
 		},
@@ -33,7 +35,7 @@ func validateYAML(t *testing.T, yamlData string) *[]protocol.Diagnostic {
 		Context:     ctx,
 		Doc:         doc,
 		Diagnostics: &[]protocol.Diagnostic{},
-		Cache:       utils.CreateCache(),
+		Cache:       cache.New(),
 	}
 	val.Validate()
 	return val.Diagnostics
@@ -248,8 +250,8 @@ func TestExecutorParam(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run("executor parameter: "+testCase.label, func(t *testing.T) {
-			ctx := &utils.LsContext{
-				Api: utils.ApiContext{
+			ctx := &session.Settings{
+				Api: circleci.Config{
 					Token:   "XXXXXXXXXXXX",
 					HostUrl: "https://circleci.com",
 				},
@@ -342,8 +344,8 @@ func TestResourceClass(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run("validate job resource_class: "+testCase.label, func(t *testing.T) {
-			ctx := &utils.LsContext{
-				Api: utils.ApiContext{
+			ctx := &session.Settings{
+				Api: circleci.Config{
 					Token:   "XXXXXXXXXXXX",
 					HostUrl: "https://circleci.com",
 				},
@@ -362,7 +364,7 @@ func TestResourceClass(t *testing.T) {
 				Context:     ctx,
 				Doc:         doc,
 				Diagnostics: &[]protocol.Diagnostic{},
-				Cache:       utils.CreateCache(),
+				Cache:       cache.New(),
 			}
 			val.Cache.MachineOfferingsCache.Set(testMachineOfferings())
 			val.validateSingleJob(doc.Jobs["test"])
@@ -436,8 +438,8 @@ func TestRetention(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run("validate job retention: "+testCase.label, func(t *testing.T) {
-			ctx := &utils.LsContext{
-				Api: utils.ApiContext{
+			ctx := &session.Settings{
+				Api: circleci.Config{
 					Token:   "XXXXXXXXXXXX",
 					HostUrl: "https://circleci.com",
 				},
@@ -456,7 +458,7 @@ func TestRetention(t *testing.T) {
 				Context:     ctx,
 				Doc:         doc,
 				Diagnostics: &[]protocol.Diagnostic{},
-				Cache:       utils.CreateCache(),
+				Cache:       cache.New(),
 			}
 			val.Cache.MachineOfferingsCache.Set(testMachineOfferings())
 			val.validateSingleJob(doc.Jobs["test"])
@@ -530,8 +532,8 @@ func TestJobTypeValidation(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run("validate job type: "+testCase.label, func(t *testing.T) {
-			ctx := &utils.LsContext{
-				Api: utils.ApiContext{
+			ctx := &session.Settings{
+				Api: circleci.Config{
 					Token:   "XXXXXXXXXXXX",
 					HostUrl: "https://circleci.com",
 				},
@@ -549,7 +551,7 @@ func TestJobTypeValidation(t *testing.T) {
 				Context:     ctx,
 				Doc:         doc,
 				Diagnostics: &[]protocol.Diagnostic{},
-				Cache:       utils.CreateCache(),
+				Cache:       cache.New(),
 			}
 
 			val.Validate()

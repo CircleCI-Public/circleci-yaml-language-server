@@ -8,8 +8,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/paramref"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
 )
 
@@ -117,8 +118,8 @@ func (val Validate) validateRunCommand(step ast.Run, jobOrCommandParameters map[
 		return
 	}
 
-	if utils.CheckIfOnlyParamUsed(step.When) {
-		paramName, isPipelineParam := utils.GetParamNameUsedAtPos(val.Doc.Content, step.WhenRange.End)
+	if paramref.IsOnlyParameter(step.When) {
+		paramName, isPipelineParam := paramref.NameUsedAtPos(val.Doc.Content, step.WhenRange.End)
 		var param ast.Parameter
 		var ok bool
 
@@ -137,7 +138,7 @@ func (val Validate) validateRunCommand(step ast.Run, jobOrCommandParameters map[
 			case ast.StringParameter:
 				value = param.Default
 			default:
-				val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
+				val.addDiagnostic(diagnostic.Error(
 					step.WhenRange,
 					fmt.Sprintf("Parameter %s is not a string type parameter, and therefore cannot be used inside the `when` field", paramName),
 				))
@@ -149,7 +150,7 @@ func (val Validate) validateRunCommand(step ast.Run, jobOrCommandParameters map[
 	}
 
 	if !slices.Contains(WHEN_KEYWORDS, value) {
-		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
+		val.addDiagnostic(diagnostic.Error(
 			step.WhenRange,
 			fmt.Sprintf("Invalid when condition: expected `%s`; got `%s`", strings.Join(WHEN_KEYWORDS, "`, `"), value)))
 	}
@@ -167,7 +168,7 @@ func (val Validate) validateNamedStep(step ast.NamedStep, usableParams map[strin
 	}
 
 	if !commandExists {
-		val.addDiagnostic(utils.CreateErrorDiagnosticFromRange(
+		val.addDiagnostic(diagnostic.Error(
 			step.Range,
 			fmt.Sprintf("Cannot find declaration for step %s", step.Name)))
 	}
@@ -218,7 +219,7 @@ func (val Validate) validateCheckout(step ast.Checkout) {
 		return
 	}
 
-	if !slices.Contains(utils.CheckoutMethods, step.Method) {
+	if !slices.Contains(ast.CheckoutMethods, step.Method) {
 		val.addDiagnostic(protocol.Diagnostic{
 			Severity: protocol.DiagnosticSeverityError,
 			Range:    step.Range,

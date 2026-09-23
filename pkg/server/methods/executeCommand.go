@@ -1,8 +1,8 @@
 package methods
 
 import (
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"github.com/rollbar/rollbar-go"
 	"github.com/segmentio/encoding/json"
 	"go.lsp.dev/jsonrpc2"
@@ -52,7 +52,7 @@ func (methods *Methods) ExecuteCommand(reply jsonrpc2.Replier, req jsonrpc2.Requ
 			return reply(methods.Ctx, nil, jsonrpc2.NewError(jsonrpc2.InvalidParams, "invalid method parameter: fileURI"))
 		}
 
-		parsedFile, err := parser.ParseFromContent([]byte(content), methods.LsContext, uri.File(fileUri), protocol.Position{})
+		parsedFile, err := parser.ParseFromContent([]byte(content), methods.Settings, uri.File(fileUri), protocol.Position{})
 		if err != nil {
 			return reply(methods.Ctx, nil, jsonrpc2.NewError(jsonrpc2.InternalError, "unable to parse file"))
 		}
@@ -93,11 +93,11 @@ func (methods *Methods) ExecuteCommand(reply jsonrpc2.Replier, req jsonrpc2.Requ
 }
 
 func (methods *Methods) setToken(token string) {
-	if methods.LsContext.Api.Token != token {
+	if methods.Settings.Api.Token != token {
 		methods.Cache.ClearHostData()
 	}
 
-	methods.LsContext.Api.Token = token
+	methods.Settings.Api.Token = token
 	filesCache := methods.Cache.FileCache.GetFiles()
 	for _, file := range filesCache {
 		go methods.notificationMethods(file.TextDocument)
@@ -107,14 +107,14 @@ func (methods *Methods) setToken(token string) {
 }
 
 func (methods *Methods) setHostUrl(hostUrl string) {
-	if methods.LsContext.Api.HostUrl != hostUrl {
+	if methods.Settings.Api.HostUrl != hostUrl {
 		methods.Cache.ClearHostData()
 	}
 
 	if hostUrl != "" {
-		methods.LsContext.Api.HostUrl = hostUrl
+		methods.Settings.Api.HostUrl = hostUrl
 	} else {
-		methods.LsContext.Api.HostUrl = utils.CIRCLE_CI_APP_HOST_URL
+		methods.Settings.Api.HostUrl = circleci.DefaultHostURL
 	}
 
 	filesCache := methods.Cache.FileCache.GetFiles()
@@ -126,5 +126,5 @@ func (methods *Methods) setHostUrl(hostUrl string) {
 }
 
 func (methods *Methods) setUserId(userId string) {
-	methods.LsContext.UserIdForTelemetry = userId
+	methods.Settings.UserIdForTelemetry = userId
 }

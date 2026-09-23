@@ -10,12 +10,13 @@ import (
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/testHelpers"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
 func TestFindErrors(t *testing.T) {
-	cache := utils.CreateCache()
+	c := cache.New()
 
 	type args struct {
 		filePath string
@@ -50,18 +51,18 @@ func TestFindErrors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			content, _ := os.ReadFile(tt.args.filePath)
-			cache.FileCache.SetFile(utils.CachedFile{
+			c.FileCache.SetFile(cache.File{
 				TextDocument: protocol.TextDocumentItem{
 					URI:  uri.File(tt.args.filePath),
 					Text: string(content),
 				},
-				Project:      utils.Project{},
+				Project:      circleci.Project{},
 				EnvVariables: make([]string, 0),
 			})
-			context := testHelpers.GetDefaultLsContext()
+			context := testHelpers.DefaultSettings()
 			context.Api.Token = ""
 			fileUri := uri.File(tt.args.filePath)
-			diagnostics, err := DiagnosticFile(fileUri, cache, context, "")
+			diagnostics, err := DiagnosticFile(fileUri, c, context, "")
 
 			if err != nil {
 				t.Error("findErrors()", err)
@@ -75,7 +76,7 @@ func TestFindErrors(t *testing.T) {
 }
 
 func TestFindErrorsWithEmbeddedSchema(t *testing.T) {
-	cache := utils.CreateCache()
+	c := cache.New()
 
 	tests := []struct {
 		name     string
@@ -97,20 +98,20 @@ func TestFindErrorsWithEmbeddedSchema(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			content, _ := os.ReadFile(tt.filePath)
-			cache.FileCache.SetFile(utils.CachedFile{
+			c.FileCache.SetFile(cache.File{
 				TextDocument: protocol.TextDocumentItem{
 					URI:  uri.File(tt.filePath),
 					Text: string(content),
 				},
-				Project:      utils.Project{},
+				Project:      circleci.Project{},
 				EnvVariables: make([]string, 0),
 			})
-			context := testHelpers.GetDefaultLsContext()
+			context := testHelpers.DefaultSettings()
 			context.Api.Token = ""
 			fileUri := uri.File(tt.filePath)
 
 			// Pass empty schemaLocation to exercise the embedded schema fallback
-			diagnostics, err := DiagnosticFile(fileUri, cache, context, "")
+			diagnostics, err := DiagnosticFile(fileUri, c, context, "")
 
 			if err != nil {
 				t.Fatalf("DiagnosticFile() with embedded schema returned error: %v", err)
@@ -146,29 +147,29 @@ func TestOverrideSchemaMatchesEmbeddedSchema(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cache := utils.CreateCache()
+			c := cache.New()
 			content, err := os.ReadFile(tt.filePath)
 			if err != nil {
 				t.Fatalf("failed to read test file %s: %v", tt.filePath, err)
 			}
-			cache.FileCache.SetFile(utils.CachedFile{
+			c.FileCache.SetFile(cache.File{
 				TextDocument: protocol.TextDocumentItem{
 					URI:  uri.File(tt.filePath),
 					Text: string(content),
 				},
-				Project:      utils.Project{},
+				Project:      circleci.Project{},
 				EnvVariables: make([]string, 0),
 			})
-			context := testHelpers.GetDefaultLsContext()
+			context := testHelpers.DefaultSettings()
 			context.Api.Token = ""
 			fileUri := uri.File(tt.filePath)
 
-			fileDiags, err := DiagnosticFile(fileUri, cache, context, schemaPath)
+			fileDiags, err := DiagnosticFile(fileUri, c, context, schemaPath)
 			if err != nil {
 				t.Fatalf("DiagnosticFile() with file schema returned error: %v", err)
 			}
 
-			embeddedDiags, err := DiagnosticFile(fileUri, cache, context, "")
+			embeddedDiags, err := DiagnosticFile(fileUri, c, context, "")
 			if err != nil {
 				t.Fatalf("DiagnosticFile() with embedded schema returned error: %v", err)
 			}
@@ -415,19 +416,19 @@ func TestStepWhenRejectsInvalidValue(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cache := utils.CreateCache()
-	cache.FileCache.SetFile(utils.CachedFile{
+	c := cache.New()
+	c.FileCache.SetFile(cache.File{
 		TextDocument: protocol.TextDocumentItem{
 			URI:  uri.File(filePath),
 			Text: string(content),
 		},
-		Project:      utils.Project{},
+		Project:      circleci.Project{},
 		EnvVariables: make([]string, 0),
 	})
-	context := testHelpers.GetDefaultLsContext()
+	context := testHelpers.DefaultSettings()
 	context.Api.Token = ""
 
-	diagnostics, err := DiagnosticFile(uri.File(filePath), cache, context, "")
+	diagnostics, err := DiagnosticFile(uri.File(filePath), c, context, "")
 	if err != nil {
 		t.Fatalf("DiagnosticFile() returned error: %v", err)
 	}

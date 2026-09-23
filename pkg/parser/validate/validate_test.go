@@ -10,9 +10,9 @@ import (
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/testHelpers"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
 type ValidateTestCase struct {
@@ -24,7 +24,7 @@ type ValidateTestCase struct {
 }
 
 func CreateValidateFromYAML(yaml string) Validate {
-	context := testHelpers.GetDefaultLsContext()
+	context := testHelpers.DefaultSettings()
 	context.Api.Token = ""
 	doc, _ := parser.ParseFromContent([]byte(yaml), context, uri.File(""), protocol.Position{})
 	val := Validate{
@@ -32,7 +32,7 @@ func CreateValidateFromYAML(yaml string) Validate {
 			DockerHub: DockerHubMock{},
 		},
 		Diagnostics: &[]protocol.Diagnostic{},
-		Cache:       utils.CreateCache(),
+		Cache:       cache.New(),
 		Doc:         doc,
 		Context:     context,
 	}
@@ -46,7 +46,7 @@ func CompareDiagnostics(t *testing.T, expected, actual *[]protocol.Diagnostic) {
 }
 
 func CheckYamlErrors(t *testing.T, testCases []ValidateTestCase) {
-	context := testHelpers.GetDefaultLsContext()
+	context := testHelpers.DefaultSettings()
 	context.Api.Token = ""
 	for _, tt := range testCases {
 		t.Run(tt.Name, func(t *testing.T) {

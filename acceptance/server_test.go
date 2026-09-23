@@ -320,6 +320,14 @@ func TestSetSelfHostedUrl(t *testing.T) {
 
 	assert.Assert(t, first.RequestCount(http.MethodGet, projectPath) > 0)
 
+	// Opening the document also reads the runner resource classes, in the
+	// background, from the runner host start pinned to the first fake. Wait for
+	// that read so it is not counted as the first host being read after the
+	// switch.
+	eventually(t, "the runner API to be read", func() bool {
+		return first.RequestCount(http.MethodGet, runnerPath) > 0
+	})
+
 	err := session.client.ExecuteCommand("setSelfHostedUrl", second.URL())
 	assert.NilError(t, err)
 

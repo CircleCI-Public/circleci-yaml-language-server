@@ -4,10 +4,12 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/dockerhub"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/codeaction"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/paramref"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/dockerhub"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"github.com/Masterminds/semver"
 	"go.lsp.dev/protocol"
 )
@@ -18,7 +20,7 @@ func isValidDockerDigest(digest string) bool {
 	return validDigestRegex.MatchString(digest)
 }
 
-func DoesDockerImageExists(img *ast.DockerImage, cache *utils.DockerCache, api dockerhub.DockerHubAPI) bool {
+func DoesDockerImageExists(img *ast.DockerImage, cache *cache.DockerImages, api dockerhub.API) bool {
 	cachedDockerImage := cache.Get(img.Image.FullPath)
 
 	if !isDockerImageCheckable(img) {
@@ -50,11 +52,11 @@ Unsupported syntaxes:
 */
 func isDockerImageCheckable(img *ast.DockerImage) bool {
 	// For now, just make the name & version mandatory
-	hasParamInTag, _ := utils.CheckIfParamIsPartiallyReferenced(img.Image.Tag)
+	hasParamInTag, _ := paramref.IsPartiallyReferenced(img.Image.Tag)
 	return img.Image.Name != "" && img.Auth == ast.DockerImageAuth{} && img.AwsAuth == ast.DockerImageAWSAuth{} && !hasParamInTag
 }
 
-func DoesTagExist(img *ast.DockerImage, searchedTag string, cache *utils.DockerTagsCache, api dockerhub.DockerHubAPI) bool {
+func DoesTagExist(img *ast.DockerImage, searchedTag string, cache *cache.DockerTags, api dockerhub.API) bool {
 	tagInfo := GetImageTagInfo(img, cache, api)
 
 	if tagInfo == nil {
@@ -77,7 +79,7 @@ func DoesTagExist(img *ast.DockerImage, searchedTag string, cache *utils.DockerT
 	return tagExists
 }
 
-func GetImageTagActions(doc *parser.YamlDocument, img *ast.DockerImage, cache *utils.DockerTagsCache, api dockerhub.DockerHubAPI) []protocol.CodeAction {
+func GetImageTagActions(doc *parser.YamlDocument, img *ast.DockerImage, cache *cache.DockerTags, api dockerhub.API) []protocol.CodeAction {
 	tagInfo := GetImageTagInfo(img, cache, api)
 	actions := []protocol.CodeAction{}
 
@@ -86,7 +88,7 @@ func GetImageTagActions(doc *parser.YamlDocument, img *ast.DockerImage, cache *u
 	}
 
 	if tagInfo.Recommended != "" {
-		actions = append(actions, utils.CreateCodeActionTextEdit(
+		actions = append(actions, codeaction.TextEdit(
 			"Use last tag",
 			doc.URI,
 			[]protocol.TextEdit{
@@ -97,7 +99,7 @@ func GetImageTagActions(doc *parser.YamlDocument, img *ast.DockerImage, cache *u
 	}
 
 	if DoesTagExist(img, "latest", cache, api) {
-		actions = append(actions, utils.CreateCodeActionTextEdit(
+		actions = append(actions, codeaction.TextEdit(
 			"Use 'latest'",
 			doc.URI,
 			[]protocol.TextEdit{
@@ -111,8 +113,8 @@ func GetImageTagActions(doc *parser.YamlDocument, img *ast.DockerImage, cache *u
 }
 
 // Get the image tag info and fill the image info if it is not present in the cache
-func GetImageTagInfo(img *ast.DockerImage, cache *utils.DockerTagsCache, api dockerhub.DockerHubAPI) *utils.CachedDockerTags {
-	tagInfo := cache.Get(img.Image.Namespace, img.Image.Name)
+func GetImageTagInfo(img *ast.DockerImage, c *cache.DockerTags, api dockerhub.API) *cache.ImageTags {
+	tagInfo := c.Get(img.Image.Namespace, img.Image.Name)
 
 	if tagInfo != nil {
 		return tagInfo
@@ -129,11 +131,11 @@ func GetImageTagInfo(img *ast.DockerImage, cache *utils.DockerTagsCache, api doc
 
 	recommended := chooseTagToRecommend(tags)
 
-	tagInfo = &utils.CachedDockerTags{
+	tagInfo = &cache.ImageTags{
 		CheckedTags: tagsForCache,
 		Recommended: recommended,
 	}
-	cache.Add(img.Image.Namespace, img.Image.Name, *tagInfo)
+	c.Add(img.Image.Namespace, img.Image.Name, *tagInfo)
 	return tagInfo
 }
 

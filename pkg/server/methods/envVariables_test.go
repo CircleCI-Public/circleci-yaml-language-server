@@ -14,9 +14,11 @@ import (
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/logging"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/session"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/fakes"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
 const (
@@ -40,9 +42,9 @@ func rocketMethods(t *testing.T, token string, envVarNames ...string) (*Methods,
 	}
 
 	methods := &Methods{
-		Cache: utils.CreateCache(),
-		LsContext: &utils.LsContext{
-			Api: utils.ApiContext{Token: token, HostUrl: fake.URL()},
+		Cache: cache.New(),
+		Settings: &session.Settings{
+			Api: circleci.Config{Token: token, HostUrl: fake.URL()},
 		},
 	}
 
@@ -51,12 +53,12 @@ func rocketMethods(t *testing.T, token string, envVarNames ...string) (*Methods,
 
 // openRocketConfig caches a config file of acme/rocket, carrying the env var
 // names given as already known.
-func openRocketConfig(t *testing.T, methods *Methods, known ...string) *utils.CachedFile {
+func openRocketConfig(t *testing.T, methods *Methods, known ...string) *cache.File {
 	t.Helper()
 
-	cached := methods.Cache.FileCache.SetFile(utils.CachedFile{
+	cached := methods.Cache.FileCache.SetFile(cache.File{
 		TextDocument: protocol.TextDocumentItem{URI: rocketURI},
-		Project:      utils.Project{Slug: rocketSlug},
+		Project:      circleci.Project{Slug: rocketSlug},
 		EnvVariables: known,
 	})
 

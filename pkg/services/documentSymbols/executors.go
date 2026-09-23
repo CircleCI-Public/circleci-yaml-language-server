@@ -1,14 +1,14 @@
 package documentSymbols
 
 import (
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
 )
 
 func resolveExecutorsSymbols(document *parser.YamlDocument) []protocol.DocumentSymbol {
-	if utils.IsDefaultRange(document.ExecutorsRange) {
+	if position.IsDefaultRange(document.ExecutorsRange) {
 		return nil
 	}
 
@@ -52,7 +52,7 @@ func singleExecutorSymbols(executor ast.Executor) protocol.DocumentSymbol {
 
 	envs := executor.GetEnvs()
 
-	if !utils.IsDefaultRange(envs.Range) {
+	if !position.IsDefaultRange(envs.Range) {
 		childrens = append(childrens, envsSymbols(envs))
 	}
 

@@ -3,9 +3,11 @@ package complete
 import (
 	"fmt"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/session"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	sitter "github.com/smacker/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
@@ -18,12 +20,12 @@ type CompletionHandler struct {
 	DocDiff string
 
 	Items   []protocol.CompletionItem
-	Cache   *utils.Cache
-	Context *utils.LsContext
+	Cache   *cache.Cache
+	Context *session.Settings
 }
 
 func (ch *CompletionHandler) GetCompletionItems() {
-	node, _, err := utils.NodeAtPos(ch.Doc.RootNode, ch.Params.Position)
+	node, _, err := position.NodeAt(ch.Doc.RootNode, ch.Params.Position)
 	if err == nil {
 		ch.addParameterReferenceCompletion(node)
 		if len(ch.Items) > 0 {
@@ -40,17 +42,17 @@ func (ch *CompletionHandler) GetCompletionItems() {
 
 		if ch.Doc.IsYamlAliasPosition(ch.Params.Position) {
 			ch.completeAnchors()
-		} else if utils.PosInRange(ch.Doc.WorkflowRange, ch.Params.Position) {
+		} else if position.InRange(ch.Doc.WorkflowRange, ch.Params.Position) {
 			ch.completeWorkflows()
-		} else if utils.PosInRange(ch.Doc.JobsRange, ch.Params.Position) {
+		} else if position.InRange(ch.Doc.JobsRange, ch.Params.Position) {
 			ch.completeJobs()
-		} else if utils.PosInRange(ch.Doc.JobGroupsRange, ch.Params.Position) {
+		} else if position.InRange(ch.Doc.JobGroupsRange, ch.Params.Position) {
 			ch.completeJobGroups()
-		} else if utils.PosInRange(ch.Doc.CommandsRange, ch.Params.Position) {
+		} else if position.InRange(ch.Doc.CommandsRange, ch.Params.Position) {
 			ch.completeCommands()
-		} else if utils.PosInRange(ch.Doc.ExecutorsRange, ch.Params.Position) {
+		} else if position.InRange(ch.Doc.ExecutorsRange, ch.Params.Position) {
 			ch.completeExecutors()
-		} else if utils.PosInRange(ch.Doc.OrbsRange, ch.Params.Position) {
+		} else if position.InRange(ch.Doc.OrbsRange, ch.Params.Position) {
 			ch.completeOrbs()
 		}
 

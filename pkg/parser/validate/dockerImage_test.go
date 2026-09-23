@@ -4,8 +4,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/dockerhub"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/dockerhub"
 	"go.lsp.dev/protocol"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
@@ -63,7 +63,7 @@ func TestValidateDockerImage(t *testing.T) {
 	testCases := []struct {
 		Name        string
 		YamlContent string
-		MockAPI     dockerhub.DockerHubAPI
+		MockAPI     dockerhub.API
 		Diagnostics []ComparableDiagnostic
 	}{
 		{

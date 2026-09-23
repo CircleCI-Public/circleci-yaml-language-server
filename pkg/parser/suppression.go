@@ -3,7 +3,7 @@ package parser
 import (
 	"regexp"
 
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	sitter "github.com/smacker/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
@@ -65,8 +65,8 @@ func ParseSuppressionComments(doc *YamlDocument) *SuppressionInfo {
 			// cci-ignore-start
 			if ignoreRangeStartRegex.MatchString(commentText) {
 				if isRangeOpen {
-					diagnostic := utils.CreateErrorDiagnosticFromNode(node, "cci-ignore-start must have a closing cci-ignore-end before trying to open a new ignore-range")
-					doc.addDiagnostic(diagnostic)
+					diag := diagnostic.ErrorFromNode(node, "cci-ignore-start must have a closing cci-ignore-end before trying to open a new ignore-range")
+					doc.addDiagnostic(diag)
 					return
 				}
 				isRangeOpen = true
@@ -76,8 +76,8 @@ func ParseSuppressionComments(doc *YamlDocument) *SuppressionInfo {
 			// cci-ignore-end
 			if ignoreRangeEndRegex.MatchString(commentText) {
 				if !isRangeOpen {
-					diagnostic := utils.CreateErrorDiagnosticFromNode(node, "cci-ignore-end must have an opening cci-ignore-start")
-					doc.addDiagnostic(diagnostic)
+					diag := diagnostic.ErrorFromNode(node, "cci-ignore-end must have an opening cci-ignore-start")
+					doc.addDiagnostic(diag)
 					return
 				}
 				isRangeOpen = false
@@ -90,7 +90,7 @@ func ParseSuppressionComments(doc *YamlDocument) *SuppressionInfo {
 	// Check if a range was left open without closing
 	if isRangeOpen {
 		// Create diagnostic at the cci-ignore-start line
-		diagnostic := protocol.Diagnostic{
+		diag := protocol.Diagnostic{
 			Range: protocol.Range{
 				Start: protocol.Position{Line: suppressionRange.StartLine, Character: 0},
 				End:   protocol.Position{Line: suppressionRange.StartLine, Character: 100},
@@ -99,14 +99,14 @@ func ParseSuppressionComments(doc *YamlDocument) *SuppressionInfo {
 			Source:   "circleci",
 			Message:  "cci-ignore-start is missing a closing cci-ignore-end",
 		}
-		doc.addDiagnostic(diagnostic)
+		doc.addDiagnostic(diag)
 	}
 
 	return suppressionInfo
 }
 
 // isDiagnosticSuppressed returns true if the diagnostic is suppressed by any one of the cci-ignore comments in the file
-func isDiagnosticSuppressed(suppressionInfo *SuppressionInfo, diagnostic protocol.Diagnostic) bool {
+func isDiagnosticSuppressed(suppressionInfo *SuppressionInfo, diag protocol.Diagnostic) bool {
 	if suppressionInfo == nil {
 		return false
 	}
@@ -116,12 +116,12 @@ func isDiagnosticSuppressed(suppressionInfo *SuppressionInfo, diagnostic protoco
 	}
 
 	// NOTE: for a multi-line diagnostic, having `# cci-ignore-next-line` before it would ignore the whole diagnostic
-	if suppressionInfo.SuppressedLines[diagnostic.Range.Start.Line] {
+	if suppressionInfo.SuppressedLines[diag.Range.Start.Line] {
 		return true
 	}
 
 	for _, suppressionRange := range suppressionInfo.SuppressedRanges {
-		if diagnosticOverlapsRange(suppressionRange, diagnostic) {
+		if diagnosticOverlapsRange(suppressionRange, diag) {
 			return true
 		}
 	}
@@ -130,17 +130,17 @@ func isDiagnosticSuppressed(suppressionInfo *SuppressionInfo, diagnostic protoco
 }
 
 // diagnosticOverlapsRange returns true if the diagnostic's line range overlaps with the cci-ignore suppression range
-func diagnosticOverlapsRange(r SuppressionRange, diagnostic protocol.Diagnostic) bool {
-	return r.StartLine <= diagnostic.Range.Start.Line && r.EndLine >= diagnostic.Range.Start.Line
+func diagnosticOverlapsRange(r SuppressionRange, diag protocol.Diagnostic) bool {
+	return r.StartLine <= diag.Range.Start.Line && r.EndLine >= diag.Range.Start.Line
 }
 
 // FilterSuppressedDiagnostics returns a new slice of diagnostics that are not suppressed by any of the cci-ignore comments in the file
 func FilterSuppressedDiagnostics(diagnostics []protocol.Diagnostic, suppression *SuppressionInfo) []protocol.Diagnostic {
 	remainingDiagnostics := []protocol.Diagnostic{}
 
-	for _, diagnostic := range diagnostics {
-		if !isDiagnosticSuppressed(suppression, diagnostic) {
-			remainingDiagnostics = append(remainingDiagnostics, diagnostic)
+	for _, diag := range diagnostics {
+		if !isDiagnosticSuppressed(suppression, diag) {
+			remainingDiagnostics = append(remainingDiagnostics, diag)
 		}
 	}
 

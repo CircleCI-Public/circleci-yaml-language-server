@@ -3,7 +3,7 @@ package parser
 import (
 	"testing"
 
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/session"
 	"go.lsp.dev/protocol"
 )
 
@@ -171,7 +171,7 @@ jobs:
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			doc := ParseFile([]byte(tt.yaml), &utils.LsContext{})
+			doc := ParseFile([]byte(tt.yaml), &session.Settings{})
 			suppressionInfo := ParseSuppressionComments(&doc)
 
 			if suppressionInfo.FileWideSuppression != tt.wantFileWideSuppression {

@@ -12,8 +12,11 @@ import (
 	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/protocol"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/session"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/version"
 	methods "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/server/methods"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"github.com/rollbar/rollbar-go"
 )
 
@@ -21,8 +24,8 @@ type JSONRPCServer struct {
 	ctx            context.Context
 	conn           jsonrpc2.Conn
 	methods        methods.Methods
-	cache          *utils.Cache
-	lsContext      *utils.LsContext
+	cache          *cache.Cache
+	lsContext      *session.Settings
 	SchemaLocation string
 }
 
@@ -93,12 +96,12 @@ func (server JSONRPCServer) ServeStream(_ context.Context, conn jsonrpc2.Conn) e
 	slog.Info("new client connection")
 
 	server.conn = conn
-	server.cache = utils.CreateCache()
+	server.cache = cache.New()
 	server.methods = methods.Methods{
 		Ctx:            server.ctx,
 		Conn:           server.conn,
 		Cache:          server.cache,
-		LsContext:      server.lsContext,
+		Settings:       server.lsContext,
 		SchemaLocation: server.SchemaLocation,
 	}
 	conn.Go(server.ctx, server.commandHandler)
@@ -135,7 +138,7 @@ func StartServer(port int, host string, schemaLocation string) {
 	// So we just print the log one second after the server started
 	go func() {
 		time.Sleep(1 * time.Second)
-		fmt.Printf("Server started on port %d, version %s\n", port, utils.ServerVersion)
+		fmt.Printf("Server started on port %d, version %s\n", port, version.Server)
 		if schemaLocation != "" {
 			fmt.Printf("   JSON Schema: %s\n", schemaLocation)
 		} else {
@@ -172,9 +175,9 @@ func StartServerStdio(schemaLocation string) {
 func getJsonRpcServer(ctx context.Context, schemaLocation string) JSONRPCServer {
 	return JSONRPCServer{
 		ctx: ctx,
-		lsContext: &utils.LsContext{
-			Api: utils.ApiContext{
-				HostUrl: utils.CIRCLE_CI_APP_HOST_URL,
+		lsContext: &session.Settings{
+			Api: circleci.Config{
+				HostUrl: circleci.DefaultHostURL,
 				Token:   "",
 				// A self-hosted install can serve the runner API somewhere
 				// other than runner.<host>. The host and token are set later

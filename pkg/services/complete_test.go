@@ -10,19 +10,20 @@ import (
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/testHelpers"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/services/complete"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
 func TestComplete(t *testing.T) {
-	cache := utils.CreateCache()
+	c := cache.New()
 
-	context := testHelpers.GetDefaultLsContext()
+	context := testHelpers.DefaultSettings()
 
-	cache.MachineOfferingsCache.Set(&utils.Offerings{
+	c.MachineOfferingsCache.Set(&circleci.Offerings{
 		Linux: map[string][]string{
 			"medium": {"ubuntu-2404:current", "ubuntu-2204:current"},
 			"large":  {"ubuntu-2404:current", "ubuntu-2204:current"},
@@ -51,7 +52,7 @@ func TestComplete(t *testing.T) {
 		})
 	}
 
-	cache.OrbCache.SetOrb(&ast.OrbInfo{
+	c.OrbCache.SetOrb(&ast.OrbInfo{
 		OrbParsedAttributes: parsedOrb.ToOrbParsedAttributes(),
 		RemoteInfo: ast.RemoteOrbInfo{
 			FilePath: uri.File(path.Join("./testdata/orb.yaml")).Filename(),
@@ -245,7 +246,7 @@ func TestComplete(t *testing.T) {
 					Character: 19,
 				},
 			},
-			want: createCompletionItemForLabels(utils.MachineImages(context, cache)),
+			want: createCompletionItemForLabels(c.Offerings(context.Api).MachineImages()),
 		},
 		{
 			name: "Completion for resource class",
@@ -256,7 +257,7 @@ func TestComplete(t *testing.T) {
 					Character: 24,
 				},
 			},
-			want: createCompletionItemForLabels(utils.MacOSResourceClasses(context, cache)),
+			want: createCompletionItemForLabels(c.Offerings(context.Api).MacOSResourceClasses()),
 		},
 		{
 			name: "Completion for executors reference in jobs",
@@ -315,12 +316,12 @@ func TestComplete(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			content, _ := os.ReadFile(tt.args.filePath)
-			cache.FileCache.SetFile(utils.CachedFile{
+			c.FileCache.SetFile(cache.File{
 				TextDocument: protocol.TextDocumentItem{
 					URI:  uri.File(tt.args.filePath),
 					Text: string(content),
 				},
-				Project:      utils.Project{},
+				Project:      circleci.Project{},
 				EnvVariables: make([]string, 0),
 			})
 
@@ -333,7 +334,7 @@ func TestComplete(t *testing.T) {
 				},
 			}
 
-			got, err := Complete(param, cache, context)
+			got, err := Complete(param, c, context)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Complete() error = %v, wantErr %v", err, tt.wantErr)
 				return

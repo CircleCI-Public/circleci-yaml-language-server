@@ -3,15 +3,15 @@ package parser
 import (
 	"strings"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	sitter "github.com/smacker/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
 
 var simpleOrbExistanceCache = make(map[string]bool)
 
-func (doc *YamlDocument) GetOrbInfoFromName(name string, cache *utils.Cache) (*ast.OrbInfo, error) {
+func (doc *YamlDocument) GetOrbInfoFromName(name string, cache *cache.Cache) (*ast.OrbInfo, error) {
 	// Searching within local orbs
 	orbInfo, ok := doc.LocalOrbInfo[name]
 	if ok {
@@ -27,7 +27,7 @@ func (doc *YamlDocument) GetOrbInfoFromName(name string, cache *utils.Cache) (*a
 	return doc.GetOrFetchOrbInfo(orb, cache)
 }
 
-func (doc *YamlDocument) GetOrFetchOrbInfo(orb ast.Orb, cache *utils.Cache) (*ast.OrbInfo, error) {
+func (doc *YamlDocument) GetOrFetchOrbInfo(orb ast.Orb, cache *cache.Cache) (*ast.OrbInfo, error) {
 	// Searching within local orbs
 	orbInfo, ok := doc.LocalOrbInfo[orb.Name]
 	if ok {
@@ -53,7 +53,7 @@ func (doc *YamlDocument) GetOrFetchOrbInfo(orb ast.Orb, cache *utils.Cache) (*as
 	return orbInfo, nil
 }
 
-func (doc *YamlDocument) DoesOrbExist(orb ast.Orb, cache *utils.Cache) bool {
+func (doc *YamlDocument) DoesOrbExist(orb ast.Orb, cache *cache.Cache) bool {
 	lookup := orb.Url.Name
 	exists, inMap := simpleOrbExistanceCache[lookup]
 

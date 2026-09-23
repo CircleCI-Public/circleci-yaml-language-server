@@ -1,8 +1,8 @@
 package validate
 
 import (
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
 func (val Validate) ValidateJobGroups() {
@@ -16,6 +16,6 @@ func (val Validate) validateSingleJobGroup(jobGroup ast.JobGroup) {
 	val.validateDAG(jobGroup.JobInvocations, jobGroup.JobsDAG)
 
 	if !val.isJobGroupUsedInWorkflows(jobGroup.Name) {
-		val.addDiagnostic(utils.CreateWarningDiagnosticFromRange(jobGroup.NameRange, "Job group is unused"))
+		val.addDiagnostic(diagnostic.Warning(jobGroup.NameRange, "Job group is unused"))
 	}
 }
