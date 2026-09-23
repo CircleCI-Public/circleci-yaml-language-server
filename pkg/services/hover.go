@@ -27,7 +27,7 @@ func Hover(params protocol.HoverParams, cache *cache.Cache, context *session.Set
 		}, nil
 	}
 
-	return protocol.Hover{}, fmt.Errorf("No hover")
+	return protocol.Hover{}, fmt.Errorf("no hover")
 }
 
 func GetPathFromVisitedNodes(visitedNodes []*sitter.Node, doc yamlparser.YamlDocument) []string {

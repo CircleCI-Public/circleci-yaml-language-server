@@ -8,6 +8,9 @@ import (
 	"strconv"
 	"strings"
 
+	sitter "github.com/tree-sitter/go-tree-sitter"
+	"go.lsp.dev/protocol"
+
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/paramref"
@@ -15,8 +18,6 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/session"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/yamltree"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
-	sitter "github.com/tree-sitter/go-tree-sitter"
-	"go.lsp.dev/protocol"
 )
 
 // ParseFile parses a config. The document owns the tree its nodes belong to:
@@ -168,13 +169,13 @@ func ParseFromURI(URI protocol.URI, context *session.Settings) (YamlDocument, er
 	return doc, err
 }
 
-var CacheMissingError = errors.New("file not found in cache")
+var ErrCacheMissing = errors.New("file not found in cache")
 
 func ParseFromUriWithCache(URI protocol.URI, cache *cache.Cache, context *session.Settings) (YamlDocument, error) {
 	cachedFile := cache.FileCache.GetFile(URI)
 
 	if cachedFile == nil {
-		return YamlDocument{}, fmt.Errorf("%w: %s", CacheMissingError, URI.Filename())
+		return YamlDocument{}, fmt.Errorf("%w: %s", ErrCacheMissing, URI.Filename())
 	}
 
 	content := []byte(cachedFile.TextDocument.Text)

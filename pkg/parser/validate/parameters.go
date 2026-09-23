@@ -120,7 +120,7 @@ func (val Validate) checkParamUsedWithParam(param ast.ParameterValue, stepName s
 	}
 	definedType := definedParam.GetType()
 	valueType := paramUsedAsValue.GetType()
-	if definedType != valueType && !(definedType == "string" && valueType == "enum") { // String params can accept "string" or "enum"
+	if definedType != valueType && (definedType != "string" || valueType != "enum") { // String params can accept "string" or "enum"
 		val.createParameterError(param, stepName, definedParam.GetType())
 	}
 }
@@ -230,7 +230,8 @@ func (val Validate) checkExecutorParamValue(param ast.ParameterValue) {
 	executorName := ""
 	executorNameRange := param.Range
 
-	if param.Type == "map" {
+	switch param.Type {
+	case "map":
 		nameParam, ok := param.Value.(map[string]ast.ParameterValue)["name"]
 
 		if !ok || nameParam.Type != "string" {
@@ -245,7 +246,7 @@ func (val Validate) checkExecutorParamValue(param ast.ParameterValue) {
 
 		executorName = nameParam.Value.(string)
 		executorNameRange = nameParam.Range
-	} else if param.Type == "string" {
+	case "string":
 		executorName = param.Value.(string)
 	}
 

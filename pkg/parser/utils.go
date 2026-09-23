@@ -327,8 +327,12 @@ func iterateOnBlockSequence(blockSequenceNode *sitter.Node, fn func(child *sitte
 	}
 }
 
-func ExecQuery(node *sitter.Node, query string, fn func(match *sitter.QueryMatch)) error {
-	return yamltree.Query(node, query, fn)
+// ExecQuery runs query over node, calling fn for each match. The query is a
+// constant pattern, so failing to compile it is a programming error and panics.
+func ExecQuery(node *sitter.Node, query string, fn func(match *sitter.QueryMatch)) {
+	if err := yamltree.Query(node, query, fn); err != nil {
+		panic(fmt.Sprintf("invalid tree-sitter query %q: %s", query, err))
+	}
 }
 
 func FindDeepestNode(rootNode *sitter.Node, content []byte, toFind []string) (*sitter.Node, error) {

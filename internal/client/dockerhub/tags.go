@@ -16,7 +16,7 @@ type RepoTag struct {
 
 func (t *TagResponse) loadNext(api *dockerHubAPI) (TagResponse, error) {
 	if t.Next == "" {
-		return TagResponse{}, fmt.Errorf("Failed to fetch more tags: nothing to fetch")
+		return TagResponse{}, fmt.Errorf("failed to fetch more tags: nothing to fetch")
 	}
 
 	return api.fetchTagsByURL(t.Next)

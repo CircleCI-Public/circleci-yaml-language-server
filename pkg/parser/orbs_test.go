@@ -106,8 +106,8 @@ func TestParseOrbDefinition(t *testing.T) {
 			Name: "Basic behavior",
 			Text: "a/b@c",
 			Range: protocol.Range{
-				Start: protocol.Position{0, 0},
-				End:   protocol.Position{0, 5},
+				Start: protocol.Position{Line: 0, Character: 0},
+				End:   protocol.Position{Line: 0, Character: 5},
 			},
 			Expected: ast.OrbURLDefinition{
 				Namespace: createOrbPart("a", 0, 0, 1),
@@ -119,8 +119,8 @@ func TestParseOrbDefinition(t *testing.T) {
 			Name: "Basic behavior with strange range",
 			Text: "a/b@c",
 			Range: protocol.Range{
-				Start: protocol.Position{113, 42},
-				End:   protocol.Position{113, 47},
+				Start: protocol.Position{Line: 113, Character: 42},
+				End:   protocol.Position{Line: 113, Character: 47},
 			},
 			Expected: ast.OrbURLDefinition{
 				Namespace: createOrbPart("a", 113, 42, 43),
@@ -132,8 +132,8 @@ func TestParseOrbDefinition(t *testing.T) {
 			Name: "Stop for no version",
 			Text: "a/b",
 			Range: protocol.Range{
-				Start: protocol.Position{0, 0},
-				End:   protocol.Position{0, 3},
+				Start: protocol.Position{Line: 0, Character: 0},
+				End:   protocol.Position{Line: 0, Character: 3},
 			},
 			Expected: ast.OrbURLDefinition{
 				Namespace: createOrbPart("a", 0, 0, 1),
@@ -144,8 +144,8 @@ func TestParseOrbDefinition(t *testing.T) {
 			Name: "Stop for no name",
 			Text: "a",
 			Range: protocol.Range{
-				Start: protocol.Position{0, 0},
-				End:   protocol.Position{0, 1},
+				Start: protocol.Position{Line: 0, Character: 0},
+				End:   protocol.Position{Line: 0, Character: 1},
 			},
 			Expected: ast.OrbURLDefinition{
 				Namespace: createOrbPart("a", 0, 0, 1),
@@ -155,8 +155,8 @@ func TestParseOrbDefinition(t *testing.T) {
 			Name: "Detect start of name",
 			Text: "a/",
 			Range: protocol.Range{
-				Start: protocol.Position{0, 0},
-				End:   protocol.Position{0, 2},
+				Start: protocol.Position{Line: 0, Character: 0},
+				End:   protocol.Position{Line: 0, Character: 2},
 			},
 			Expected: ast.OrbURLDefinition{
 				Namespace: createOrbPart("a", 0, 0, 1),
@@ -167,8 +167,8 @@ func TestParseOrbDefinition(t *testing.T) {
 			Name: "Detect start of version",
 			Text: "a/b@",
 			Range: protocol.Range{
-				Start: protocol.Position{0, 0},
-				End:   protocol.Position{0, 4},
+				Start: protocol.Position{Line: 0, Character: 0},
+				End:   protocol.Position{Line: 0, Character: 4},
 			},
 			Expected: ast.OrbURLDefinition{
 				Namespace: createOrbPart("a", 0, 0, 1),

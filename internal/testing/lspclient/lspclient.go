@@ -15,6 +15,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"path/filepath"
 	"sync"
 	"testing"
 	"time"
@@ -75,7 +76,9 @@ func New(t *testing.T, ctx context.Context, stream io.ReadWriteCloser) *Client {
 // Initialize performs the handshake, rooted at the workspace directory.
 func (c *Client) Initialize(rootURI protocol.URI) (*protocol.InitializeResult, error) {
 	params := protocol.InitializeParams{
-		RootURI:      rootURI,
+		WorkspaceFolders: []protocol.WorkspaceFolder{
+			{URI: string(rootURI), Name: filepath.Base(rootURI.Filename())},
+		},
 		Capabilities: protocol.ClientCapabilities{},
 		InitializationOptions: map[string]any{
 			"isCciExtension": true,

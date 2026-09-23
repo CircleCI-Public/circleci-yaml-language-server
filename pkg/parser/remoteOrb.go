@@ -81,7 +81,9 @@ func ParseRemoteOrbs(orbs map[string]ast.Orb, cache *cache.Cache, context *sessi
 			}
 		}
 
-		fetchOrbInfo(orb.Url.GetOrbID(), cache, context)
+		if _, err := fetchOrbInfo(orb.Url.GetOrbID(), cache, context); err != nil {
+			slog.Warn("fetching remote orb", "orb", orb.Url.GetOrbID(), "err", err)
+		}
 	}
 }
 
@@ -266,14 +268,11 @@ func addAlreadyExistingRemoteOrbsToFSCache(orb ast.Orb, c *cache.Cache, context 
 	filePath := cache.OrbSourcePath(orb.Url.GetOrbID())
 
 	content, err := os.ReadFile(filePath)
-
-	AddOrbToCacheWithContent(orb, uri.File(filePath), content, context, c)
-
 	if err != nil {
 		return err
 	}
 
-	return nil
+	return AddOrbToCacheWithContent(orb, uri.File(filePath), content, context, c)
 }
 
 func AddOrbToCacheWithContent(orb ast.Orb, uri protocol.URI, content []byte, context *session.Settings, cache *cache.Cache) error {

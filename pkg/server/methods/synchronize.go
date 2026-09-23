@@ -96,8 +96,7 @@ func (methods *Methods) DidClose(reply jsonrpc2.Replier, req jsonrpc2.Request) e
 	isOrb, _ := methods.isOrb(params.TextDocument.URI)
 	if isOrb {
 		methods.Cache.FileCache.RemoveFile(params.TextDocument.URI)
-		defer methods.Conn.Notify(
-			methods.Ctx,
+		defer methods.notify(
 			protocol.MethodTextDocumentPublishDiagnostics,
 			protocol.PublishDiagnosticsParams{
 				URI:         params.TextDocument.URI,
@@ -122,8 +121,7 @@ func (methods *Methods) notificationMethods(textDocument protocol.TextDocumentIt
 	// Compare the version
 	// To avoid notifying based on an older version document
 	if original != nil && original.TextDocument.Version == textDocument.Version {
-		methods.Conn.Notify(
-			methods.Ctx,
+		methods.notify(
 			protocol.MethodTextDocumentPublishDiagnostics,
 			diagnostics,
 		)

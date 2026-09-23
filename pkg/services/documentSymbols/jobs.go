@@ -129,33 +129,3 @@ func stepsSymbols(steps []ast.Step) []protocol.DocumentSymbol {
 
 	return symbols
 }
-
-func jobDockerExecutorSymbol(job ast.Job) protocol.DocumentSymbol {
-	symbol := protocol.DocumentSymbol{
-		Name:           "Docker",
-		Range:          job.DockerRange,
-		SelectionRange: job.DockerRange,
-		Kind:           protocol.SymbolKind(DockerSymbol),
-	}
-
-	for _, img := range job.Docker.Image {
-		name := img.Name
-
-		if name == "" {
-			name = img.Image.FullPath
-		}
-
-		if name == "" {
-			continue
-		}
-
-		symbol.Children = append(symbol.Children, protocol.DocumentSymbol{
-			Name:           name,
-			Range:          img.ImageRange,
-			SelectionRange: img.ImageRange,
-			Kind:           8,
-		})
-	}
-
-	return symbol
-}

@@ -32,7 +32,7 @@ func (ch *CompletionHandler) completeCommands() {
 	if command.Description == "" {
 		ch.addCompletionItemField("description")
 	}
-	if command.Steps == nil || len(command.Steps) == 0 {
+	if len(command.Steps) == 0 {
 		ch.addCompletionItemField("steps")
 	}
 }

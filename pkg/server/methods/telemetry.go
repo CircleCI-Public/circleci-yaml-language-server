@@ -1,6 +1,8 @@
 package methods
 
 import (
+	"log/slog"
+
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/version"
 	"go.lsp.dev/protocol"
 )
@@ -26,5 +28,13 @@ func (methods *Methods) SendTelemetryEvent(event TelemetryEvent) {
 		event.TriggerType = "frontend_interaction"
 	}
 	event.Properties["lspVersion"] = version.Server
-	methods.Conn.Notify(methods.Ctx, protocol.MethodTelemetryEvent, event)
+	methods.notify(protocol.MethodTelemetryEvent, event)
+}
+
+// notify sends a notification to the client. There is no one to report a
+// failure to, so it is logged.
+func (methods *Methods) notify(method string, params any) {
+	if err := methods.Conn.Notify(methods.Ctx, method, params); err != nil {
+		slog.Warn("sending notification", "method", method, "err", err)
+	}
 }

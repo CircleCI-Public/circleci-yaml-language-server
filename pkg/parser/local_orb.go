@@ -50,7 +50,7 @@ func (doc *YamlDocument) parseLocalOrb(name string, orbNode *sitter.Node) (*Loca
 	}
 
 	if orbNode.Kind() != "block_node" {
-		return nil, fmt.Errorf("Invalid orb body")
+		return nil, fmt.Errorf("invalid orb body")
 	}
 
 	orbContent := strings.Repeat(" ", int(orbRange.Start.Character)) + doc.GetNodeText(orbNode)

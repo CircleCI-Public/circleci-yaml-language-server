@@ -205,9 +205,10 @@ func (doc *YamlDocument) parseSingleScheduleTrigger(node *sitter.Node) *ast.Sche
 		keyNode, valueNode := doc.GetKeyValueNodes(child)
 		key := doc.GetNodeText(keyNode)
 
-		if key == "cron" {
+		switch key {
+		case "cron":
 			crontab = doc.GetNodeText(valueNode)
-		} else if key == "filters" {
+		case "filters":
 			f := doc.parseFilters(valueNode)
 
 			if f != nil {
@@ -280,13 +281,14 @@ func (doc *YamlDocument) parseBranchFilter(node *sitter.Node) *ast.BranchesFilte
 			return
 		}
 
-		if key == "only" {
+		switch key {
+		case "only":
 			if valueNode.Child(0) != nil {
 				branchesFilter.Only = doc.sequenceToStrings(valueNode.Child(0))
 			}
 
 			branchesFilter.OnlyRange = doc.NodeToRange(valueNode)
-		} else if key == "ignore" {
+		case "ignore":
 			if valueNode.Child(0) != nil {
 				branchesFilter.Ignore = doc.sequenceToStrings(valueNode.Child(0))
 			}

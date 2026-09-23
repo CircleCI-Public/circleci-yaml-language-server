@@ -16,7 +16,7 @@ func getJSON(t *testing.T, url string, target any) int {
 
 	res, err := http.Get(url)
 	assert.NilError(t, err)
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 
 	err = json.NewDecoder(res.Body).Decode(target)
 	assert.NilError(t, err)

@@ -17,11 +17,11 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
 )
 
-func TestCacheMissingError(t *testing.T) {
+func TestErrCacheMissing(t *testing.T) {
 	c := cache.New()
 	_, err := parser.ParseFromUriWithCache(uri.New("file:///toto.yaml"), c, nil)
 
-	assert.Check(t, cmp.ErrorIs(err, parser.CacheMissingError))
+	assert.Check(t, cmp.ErrorIs(err, parser.ErrCacheMissing))
 }
 
 func TestJobExecutorMachineTrueOnApp(t *testing.T) {
