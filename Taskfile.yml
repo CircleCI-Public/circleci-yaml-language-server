@@ -25,6 +25,15 @@ tasks:
           BIN_PATH: bin/start_server
           GO_FILE: ./cmd/server
 
+  build:server:debug:
+    desc: Build server binary without optimizations
+    cmds:
+      - task: build:do
+        vars:
+          BIN_PATH: bin/start_server
+          BUILD_FLAGS: -gcflags='all=-N -l'
+          GO_FILE: ./cmd/server
+
   run:
     cmds:
       - go run ./cmd/server
