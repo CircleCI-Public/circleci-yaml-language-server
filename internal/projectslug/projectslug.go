@@ -4,8 +4,8 @@ import (
 	"net/url"
 	"strings"
 
+	gitUrl "github.com/chainguard-dev/git-urls"
 	"github.com/go-git/go-git/v6"
-	gitUrl "github.com/whilp/git-urls"
 )
 
 func FromRepo(configPath string) string {
