@@ -11,3 +11,4 @@ coverage
 __debug_bin
 report.xml
 .idea
+test-reports

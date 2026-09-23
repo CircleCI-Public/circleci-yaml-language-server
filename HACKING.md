@@ -111,12 +111,13 @@ https://github.com/golang/go/wiki/Modules
 
 ## Linting your code
 
-We use [`gofmt`](https://pkg.go.dev/cmd/gofmt) for linting.
-
-In order to lint your code, you can run this command:
+We use [`golangci-lint`](https://golangci-lint.run) for formatting and linting.
 
 ```
-$ task lint
+$ task check   # every static check CI runs: formatting, lint, and go mod tidy
+$ task fix     # apply what can be fixed automatically
+$ task lint    # just the linters
+$ task fmt     # just the formatters
 ```
 
 ## Editor support

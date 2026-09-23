@@ -65,7 +65,7 @@ func apiFor(fake *fakes.DockerHub) *dockerHubAPI {
 func TestNewAPIWithConfig(t *testing.T) {
 	fake := cimgFake(t)
 
-	var api API = NewAPIWithConfig(Config{BaseURL: fake.URL()})
+	api := NewAPIWithConfig(Config{BaseURL: fake.URL()})
 
 	exists, err := api.DoesImageExist("cimg", "node")
 	assert.NilError(t, err)

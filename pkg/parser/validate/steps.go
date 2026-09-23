@@ -23,7 +23,7 @@ var WHEN_KEYWORDS = []string{
 // AutoRerunDelay validation regex: matches 1-10 minutes or any number of seconds (but not both)
 var AUTO_RERUN_DELAY_REGEX = regexp.MustCompile(`^((10|[1-9])m|([1-9][0-9]*)s)$`)
 
-func (val Validate) validateSteps(steps []ast.Step, name string, jobOrCommandParameters map[string]ast.Parameter) error {
+func (val Validate) validateSteps(steps []ast.Step, name string, jobOrCommandParameters map[string]ast.Parameter) {
 	for _, step := range steps {
 		switch step := step.(type) {
 		case ast.Run:
@@ -36,7 +36,6 @@ func (val Validate) validateSteps(steps []ast.Step, name string, jobOrCommandPar
 			val.validateCheckout(step)
 		}
 	}
-	return nil
 }
 
 func (val Validate) validateRunCommand(step ast.Run, jobOrCommandParameters map[string]ast.Parameter) {

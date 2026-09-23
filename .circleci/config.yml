@@ -27,7 +27,7 @@ parameters:
     type: string
     default: ""
 orbs:
-  go: circleci/go@3.0.4
+  go: circleci/go@4.0.2
   node: circleci/node@5.0.2
   snyk: snyk/snyk@2.2.0
   slack: circleci/slack@4.12.1
@@ -213,18 +213,15 @@ jobs:
 
   Unit Tests:
     executor: go-executor
-    parallelism: 5
     steps:
       - checkout
-      - go/mod-download-cached
-      - run:
-          name: Installing JUnit reporter
-          command: go install github.com/jstemmer/go-junit-report/v2@latest
-      - run:
-          name: Running tests
-          command: go test -v 2>&1 $(go list ./... | circleci tests split --split-by=timings) | go-junit-report -set-exit-code > report.xml
-      - store_test_results:
-          path: report.xml
+      - go/with-cache:
+          checksum: '{{ checksum "go.sum" }}_{{ checksum "tools/go.sum" }}'
+          mod: true
+          steps:
+            - run: task ci:test
+            - store_test_results:
+                path: test-reports
 
   Build Linux:
     parameters:
@@ -360,11 +357,14 @@ jobs:
     executor: go-executor
     steps:
       - checkout
-      - go/mod-download-cached
       - go/with-cache:
+          checksum: '{{ checksum "go.sum" }}_{{ checksum "tools/go.sum" }}'
+          mod: true
           golangci-lint: true
           steps:
-            - run: task ci:lint
+            - run: task ci:check
+      - store_test_results:
+          path: test-reports
 
   Lint PR title:
     docker:

@@ -242,7 +242,7 @@ func (val Validate) validateSingleJobInvocation(jobInvocation ast.JobInvocation,
 
 	if jobInvocation.Type != "approval" && // Special case: if the job is defined inline via `type: approval`, then it must exist
 		!val.Doc.DoesJobExist(jobInvocation.JobName) &&
-		!(val.Doc.IsOrbReference(jobInvocation.JobName) && (val.Doc.IsOrbCommand(jobInvocation.JobName, val.Cache) || val.Doc.IsOrbJob(jobInvocation.JobName, val.Cache))) {
+		(!val.Doc.IsOrbReference(jobInvocation.JobName) || (!val.Doc.IsOrbCommand(jobInvocation.JobName, val.Cache) && !val.Doc.IsOrbJob(jobInvocation.JobName, val.Cache))) {
 		val.addDiagnostic(diagnostic.Error(
 			jobInvocation.JobInvocationRange,
 			fmt.Sprintf("Cannot find declaration for job \"%s\"", jobInvocation.JobName)))

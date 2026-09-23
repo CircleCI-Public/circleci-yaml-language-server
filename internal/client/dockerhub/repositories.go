@@ -59,7 +59,6 @@ var baseURL = url.URL{
 }
 
 var namespaceRegex = regexp.MustCompile(`^([a-z0-9\-_]+)\/`)
-var tagNameRegex = regexp.MustCompile(`(?:[a-z0-9\-_]+\/)?(?:[a-z0-9\-_]+):(.*)`)
 var imageNameRegex = regexp.MustCompile(`^([a-z0-9\-_]+\/([a-z0-9\-_]+)|[a-z0-9\-_]+).*$`)
 
 func (h *HubNamespace) createSearchCursor(search string) ResultsCursor {
@@ -95,7 +94,7 @@ func (h *HubNamespace) loadNext() ([]Repository, error) {
 			fmt.Sprintf("/namespaces/%s/repositories", h.namespace),
 		).String()
 	} else if h.hasLoaded && h.nextURL == "" {
-		return nil, fmt.Errorf("No more to load")
+		return nil, fmt.Errorf("no more to load")
 	}
 
 	if _, err := h.api.get(queryURL, &hubResponse); err != nil {

@@ -42,7 +42,7 @@ func getLatestVersion() string {
 		panic(err)
 	}
 
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		panic(err)
@@ -58,7 +58,7 @@ func getLatestVersion() string {
 		panic(err)
 	}
 	if release.TagName == "" {
-		panic(fmt.Errorf("Did not find previous versions"))
+		panic(fmt.Errorf("did not find previous versions"))
 	}
 
 	return release.TagName
@@ -78,10 +78,10 @@ func incrementVersion(tagName string) string {
 		return newVersion.String()
 	}
 
-	prereleaseReg := regexp.MustCompile("^pre\\.(\\d+)")
+	prereleaseReg := regexp.MustCompile(`^pre\.(\d+)`)
 	subMatches := prereleaseReg.FindAllStringSubmatch(prerelease, 1)
 	if len(subMatches) != 1 {
-		panic(fmt.Errorf("Invalid metadata format"))
+		panic(fmt.Errorf("invalid metadata format"))
 	}
 
 	prereleaseNumber, err := strconv.Atoi(subMatches[0][1])

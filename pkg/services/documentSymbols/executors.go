@@ -36,18 +36,18 @@ func singleExecutorSymbols(executor ast.Executor) protocol.DocumentSymbol {
 	// TODO: More details on executors
 	// -- little pickle when we have multiple types defined (Docker & Machine for example)
 
-	switch executor.(type) {
+	switch executor := executor.(type) {
 	case ast.DockerExecutor:
 		execType = "Docker"
-		childrens = append(childrens, dockerExecutorSymbols(executor.(ast.DockerExecutor)))
+		childrens = append(childrens, dockerExecutorSymbols(executor))
 
 	case ast.MachineExecutor:
 		execType = "Machine"
-		childrens = append(childrens, machineExecutorSymbols(executor.(ast.MachineExecutor)))
+		childrens = append(childrens, machineExecutorSymbols(executor))
 
 	case ast.MacOSExecutor:
 		execType = "Mac OS"
-		childrens = append(childrens, macosExecutorSymbols(executor.(ast.MacOSExecutor)))
+		childrens = append(childrens, macosExecutorSymbols(executor))
 	}
 
 	envs := executor.GetEnvs()

@@ -140,7 +140,7 @@ func getServerAddress(host, endpoint string) (string, error) {
 		return "", fmt.Errorf("parsing host '%s': %w", host, err)
 	}
 	if !h.IsAbs() {
-		return h.String(), fmt.Errorf("Host (%s) must be absolute URL, including scheme", host)
+		return h.String(), fmt.Errorf("host (%s) must be absolute URL, including scheme", host)
 	}
 
 	// 3. Resolve the two URLs using host as the base

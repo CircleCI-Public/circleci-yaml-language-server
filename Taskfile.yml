@@ -1,5 +1,9 @@
 version: "3"
 
+vars:
+  RESULTS_DIR: test-reports
+  LINT_REPORT: test-reports/lint.xml
+
 tasks:
   build:
     desc: Build server binary.
@@ -69,18 +73,45 @@ tasks:
 
   lint:
     desc: Run golangci-lint
+    vars:
+      ARGS: '{{default "./..." .CLI_ARGS}}'
     cmds:
-      - go tool -modfile tools/go.mod golangci-lint run ./...
+      - go tool -modfile tools/go.mod golangci-lint run {{.ARGS}}
 
   fmt:
     desc: Format the code
+    vars:
+      ARGS: '{{default "./..." .CLI_ARGS}}'
     cmds:
-      - go tool -modfile tools/go.mod golangci-lint fmt ./...
+      - go tool -modfile tools/go.mod golangci-lint fmt {{.ARGS}}
 
-  ci:lint:
-    desc: Check formatting (CI)
+  mod-tidy:
+    desc: Run 'go mod tidy'
+    vars:
+      ARGS: '{{default "-v" .CLI_ARGS}}'
     cmds:
-      - go tool -modfile tools/go.mod golangci-lint fmt --diff ./...
+      - go mod tidy {{.ARGS}}
+      - go -C tools mod tidy {{.ARGS}}
+
+  check:
+    desc: Run all static checks
+    cmds:
+      - task: fmt
+        vars:
+          CLI_ARGS: ./... --diff
+      - task: lint
+      - task: mod-tidy
+        vars:
+          CLI_ARGS: -diff
+
+  fix:
+    desc: Auto-fix static checks
+    cmds:
+      - task: fmt
+      - task: mod-tidy
+      - task: lint
+        vars:
+          CLI_ARGS: ./... --fix
 
   prepare:vscode:
     dir: editors/vscode
@@ -89,16 +120,11 @@ tasks:
       - yarn run build
 
   test:
+    desc: Run unit and acceptance tests
+    vars:
+      ARGS: '{{default "./..." .CLI_ARGS}}'
     cmds:
-      - task: test:go
-
-  test:all:
-    cmds:
-      - task: test:go
-
-  test:go:
-    cmds:
-      - go test ./... -count=1
+      - go tool -modfile tools/go.mod gotestsum -- -race -count=1 {{.ARGS}}
 
   probe:
     desc: Run every contract probe against the real APIs
@@ -124,3 +150,33 @@ tasks:
       - task: lint
       - task: build:all
       - task: test
+
+  # CI tasks
+
+  ci:lint:
+    desc: Lint with JUnit output
+    cmds:
+      - mkdir -p "{{.RESULTS_DIR}}"
+      - task: lint
+        vars:
+          CLI_ARGS: |
+            ./... \
+            --output.junit-xml.path "{{.LINT_REPORT}}" --output.junit-xml.extended \
+            --output.text.path=stdout --output.text.colors=true
+
+  ci:test:
+    desc: Run tests with JUnit output
+    cmds:
+      - mkdir -p "{{.RESULTS_DIR}}"
+      - circleci testsuite run "ci tests"
+
+  ci:check:
+    desc: Run all static checks, with JUnit output
+    cmds:
+      - task: fmt
+        vars:
+          CLI_ARGS: ./... --diff
+      - task: ci:lint
+      - task: mod-tidy
+        vars:
+          CLI_ARGS: -diff

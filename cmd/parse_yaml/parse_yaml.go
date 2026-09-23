@@ -56,7 +56,9 @@ func main() {
 	})
 
 	fileURI := uri.File(filepath)
-	languageservice.DiagnosticFile(fileURI, c, context, schema)
+	if _, err := languageservice.DiagnosticFile(fileURI, c, context, schema); err != nil {
+		panic(err)
+	}
 
 	// fmt.Printf("S-expression:\n%v\n\n", node.RootNode)
 }
