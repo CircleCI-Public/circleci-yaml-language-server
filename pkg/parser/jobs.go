@@ -4,7 +4,7 @@ import (
 	"strconv"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
-	sitter "github.com/smacker/go-tree-sitter"
+	sitter "github.com/tree-sitter/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
 
@@ -59,7 +59,7 @@ func (doc *YamlDocument) parseSingleJob(jobNode *sitter.Node) ast.Job {
 	machineNodeFound := false
 
 	doc.iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
-		if child.Type() == "block_mapping_pair" || child.Type() == "flow_pair" {
+		if child.Kind() == "block_mapping_pair" || child.Kind() == "flow_pair" {
 			keyNode, valueNode := doc.GetKeyValueNodes(child)
 			if keyNode == nil || valueNode == nil {
 				return

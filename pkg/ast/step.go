@@ -1,7 +1,6 @@
 package ast
 
 import (
-	sitter "github.com/smacker/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
 
@@ -17,7 +16,6 @@ type ParameterValue struct {
 	ValueRange protocol.Range
 	Range      protocol.Range
 	Type       string
-	Node       *sitter.Node
 }
 type NamedStep struct {
 	Name            string

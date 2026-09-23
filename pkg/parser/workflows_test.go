@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
-	sitter "github.com/smacker/go-tree-sitter"
+	sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
 func TestYamlDocument_parseWorkflows(t *testing.T) {
@@ -14,7 +14,7 @@ func TestYamlDocument_parseWorkflows(t *testing.T) {
         jobs:
           - build`
 
-	var workflowsNode1 = getFirstChildOfType(GetRootNode([]byte(worfklows1)), "block_node")
+	var workflowsNode1 = getFirstChildOfType(rootNodeOf(t, []byte(worfklows1)), "block_node")
 	type fields struct {
 		Content   []byte
 		Workflows map[string]ast.Workflow

@@ -6,7 +6,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/paramref"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
-	sitter "github.com/smacker/go-tree-sitter"
+	sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
 func (ch *CompletionHandler) addParametersDefinitionCompletion(parameters map[string]ast.Parameter) {
@@ -61,7 +61,7 @@ func (ch *CompletionHandler) addParametersDefinitionCompletion(parameters map[st
 }
 
 func (ch *CompletionHandler) addParameterReferenceCompletion(node *sitter.Node) {
-	if node.Type() == "string_scalar" {
+	if node.Kind() == "string_scalar" {
 		isParamBeingWritten, isPipelineParam := paramref.IsPartiallyReferenced(ch.Doc.GetNodeText(node))
 		if isParamBeingWritten {
 			if isPipelineParam {

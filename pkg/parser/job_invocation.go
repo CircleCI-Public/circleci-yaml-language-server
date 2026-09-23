@@ -3,8 +3,10 @@ package parser
 import (
 	"strings"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
+
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
-	sitter "github.com/smacker/go-tree-sitter"
+	sitter "github.com/tree-sitter/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
 
@@ -27,19 +29,19 @@ func (doc *YamlDocument) parseSingleJobInvocation(jobInvocationNode *sitter.Node
 		return res
 	}
 	res.JobInvocationRange = doc.NodeToRange(jobInvocationNode)
-	if jobInvocationNode.Type() != "block_sequence_item" {
+	if jobInvocationNode.Kind() != "block_sequence_item" {
 		return res
 	}
 
 	if jobInvocationNode.ChildCount() == 1 {
 		res.JobNameRange = protocol.Range{
 			Start: protocol.Position{
-				Line:      jobInvocationNode.StartPoint().Row,
-				Character: jobInvocationNode.StartPoint().Column + 1,
+				Line:      position.Start(jobInvocationNode).Line,
+				Character: position.Start(jobInvocationNode).Character + 1,
 			},
 			End: protocol.Position{
-				Line:      jobInvocationNode.StartPoint().Row,
-				Character: jobInvocationNode.StartPoint().Column + 2,
+				Line:      position.Start(jobInvocationNode).Line,
+				Character: position.Start(jobInvocationNode).Character + 2,
 			},
 		}
 		return res
@@ -60,7 +62,7 @@ func (doc *YamlDocument) parseSingleJobInvocation(jobInvocationNode *sitter.Node
 		element = anchor.ValueNode
 	}
 
-	if element != nil && element.Type() == "flow_node" {
+	if element != nil && element.Kind() == "flow_node" {
 		name := GetChildOfType(element, "plain_scalar")
 		res.JobName = doc.GetNodeText(name)
 		res.JobNameRange = doc.NodeToRange(element)
@@ -145,7 +147,7 @@ func (doc *YamlDocument) parseContext(node *sitter.Node) []ast.TextAndRange {
 		return []ast.TextAndRange{}
 	}
 
-	if node.Type() == "flow_node" && node.ChildCount() == 1 && node.Child(0).Type() == "plain_scalar" {
+	if node.Kind() == "flow_node" && node.ChildCount() == 1 && node.Child(0).Kind() == "plain_scalar" {
 		return []ast.TextAndRange{doc.GetNodeTextWithRange(node)}
 	}
 
@@ -187,14 +189,14 @@ func (doc *YamlDocument) parseSingleJobRequires(requiresNode *sitter.Node) []ast
 		}
 
 		// If blockSequenceNode is a flow_sequence, then requiresItemNode is directly a flow_node
-		if requiresItemNode.Type() == "flow_node" {
+		if requiresItemNode.Kind() == "flow_node" {
 			res = append(res, getRequire(requiresItemNode))
 		} else {
 			// But if blockSequenceNode is a block_sequence, then requiresItemNode is a block_sequence_item
 			// The first child of requiresItemNode is the hyphen node, the second child is what we need
 			element := requiresItemNode.Child(1)
 			// If the second child is a flow_node, then it is a simple require
-			if element != nil && element.Type() == "flow_node" {
+			if element != nil && element.Kind() == "flow_node" {
 				res = append(res, getRequire(element))
 			} else {
 				// Otherwise the second child is a block_mapping, then it is a require with status
@@ -205,7 +207,7 @@ func (doc *YamlDocument) parseSingleJobRequires(requiresNode *sitter.Node) []ast
 				if key == nil || value == nil {
 					return
 				}
-				if GetFirstChild(value).Type() == "plain_scalar" {
+				if GetFirstChild(value).Kind() == "plain_scalar" {
 					status := make([]string, 1)
 					status[0] = doc.GetNodeText(value)
 					res = append(res, ast.Require{
@@ -219,10 +221,10 @@ func (doc *YamlDocument) parseSingleJobRequires(requiresNode *sitter.Node) []ast
 					status := make([]string, 0, statusesNode.ChildCount())
 					isBlockSequence := false
 					iterateOnBlockSequence(statusesNode, func(statusItemNode *sitter.Node) {
-						if statusItemNode.Type() == "flow_node" {
+						if statusItemNode.Kind() == "flow_node" {
 							status = append(status, doc.GetNodeText(statusItemNode))
 						}
-						if statusItemNode.Type() == "block_sequence_item" {
+						if statusItemNode.Kind() == "block_sequence_item" {
 							status = append(status, doc.GetNodeText(statusItemNode.Child(1)))
 							isBlockSequence = true
 						}

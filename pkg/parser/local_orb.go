@@ -35,7 +35,7 @@ import (
 	"strings"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
-	sitter "github.com/smacker/go-tree-sitter"
+	sitter "github.com/tree-sitter/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
 
@@ -49,7 +49,7 @@ func (doc *YamlDocument) parseLocalOrb(name string, orbNode *sitter.Node) (*Loca
 		Name: name,
 	}
 
-	if orbNode.Type() != "block_node" {
+	if orbNode.Kind() != "block_node" {
 		return nil, fmt.Errorf("Invalid orb body")
 	}
 
@@ -62,6 +62,9 @@ func (doc *YamlDocument) parseLocalOrb(name string, orbNode *sitter.Node) (*Loca
 	if err != nil {
 		return nil, err
 	}
+	// Only the attributes read from the orb outlive this function, and they
+	// hold no nodes.
+	defer orbDoc.Close()
 
 	orbInfo := &ast.OrbInfo{
 		IsLocal: true,

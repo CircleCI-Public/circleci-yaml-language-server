@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
-	sitter "github.com/smacker/go-tree-sitter"
+	sitter "github.com/tree-sitter/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
 
@@ -54,7 +54,7 @@ func TestYamlDocument_parseSingleJobInvocation(t *testing.T) {
 		{
 			name:   "Simple named job invocation",
 			fields: fields{Content: []byte(jobInv1)},
-			args:   args{jobInvocationNode: getFirstChildOfType(GetRootNode([]byte(jobInv1)), "block_sequence_item")},
+			args:   args{jobInvocationNode: getFirstChildOfType(rootNodeOf(t, []byte(jobInv1)), "block_sequence_item")},
 			want: ast.JobInvocation{
 				JobName: "build",
 				JobInvocationRange: protocol.Range{
@@ -96,7 +96,7 @@ func TestYamlDocument_parseSingleJobInvocation(t *testing.T) {
 		{
 			name:   "Named job invocation with parameters",
 			fields: fields{Content: []byte(jobInv2)},
-			args:   args{jobInvocationNode: getFirstChildOfType(GetRootNode([]byte(jobInv2)), "block_sequence_item")},
+			args:   args{jobInvocationNode: getFirstChildOfType(rootNodeOf(t, []byte(jobInv2)), "block_sequence_item")},
 			want: ast.JobInvocation{
 				JobName: "test",
 				JobInvocationRange: protocol.Range{
@@ -151,7 +151,7 @@ func TestYamlDocument_parseSingleJobInvocation(t *testing.T) {
 		{
 			name:   "Named job invocation with matrix parameters",
 			fields: fields{Content: []byte(jobInv3)},
-			args:   args{jobInvocationNode: getFirstChildOfType(GetRootNode([]byte(jobInv3)), "block_sequence_item")},
+			args:   args{jobInvocationNode: getFirstChildOfType(rootNodeOf(t, []byte(jobInv3)), "block_sequence_item")},
 			want: ast.JobInvocation{
 				JobName: "test",
 				JobInvocationRange: protocol.Range{
@@ -282,7 +282,7 @@ func TestYamlDocument_parseSingleJobInvocation(t *testing.T) {
 		{
 			name:   "Named job invocation with explicit step name",
 			fields: fields{Content: []byte(jobInv4)},
-			args:   args{jobInvocationNode: getFirstChildOfType(GetRootNode([]byte(jobInv4)), "block_sequence_item")},
+			args:   args{jobInvocationNode: getFirstChildOfType(rootNodeOf(t, []byte(jobInv4)), "block_sequence_item")},
 			want: ast.JobInvocation{
 				JobName: "test",
 				JobNameRange: protocol.Range{
@@ -324,7 +324,7 @@ func TestYamlDocument_parseSingleJobInvocation(t *testing.T) {
 		{
 			name:   "Job invocation with requires and single status",
 			fields: fields{Content: []byte(jobInv5)},
-			args:   args{jobInvocationNode: getFirstChildOfType(GetRootNode([]byte(jobInv5)), "block_sequence_item")},
+			args:   args{jobInvocationNode: getFirstChildOfType(rootNodeOf(t, []byte(jobInv5)), "block_sequence_item")},
 			want: ast.JobInvocation{
 				JobName: "test",
 				JobInvocationRange: protocol.Range{
@@ -379,7 +379,7 @@ func TestYamlDocument_parseSingleJobInvocation(t *testing.T) {
 		{
 			name:   "Job invocation with requires and multiple statuses",
 			fields: fields{Content: []byte(jobInv6)},
-			args:   args{jobInvocationNode: getFirstChildOfType(GetRootNode([]byte(jobInv6)), "block_sequence_item")},
+			args:   args{jobInvocationNode: getFirstChildOfType(rootNodeOf(t, []byte(jobInv6)), "block_sequence_item")},
 			want: ast.JobInvocation{
 				JobName: "test",
 				JobInvocationRange: protocol.Range{
@@ -434,7 +434,7 @@ func TestYamlDocument_parseSingleJobInvocation(t *testing.T) {
 		{
 			name:   "Job invocation with serial group",
 			fields: fields{Content: []byte(jobInv7)},
-			args:   args{jobInvocationNode: getFirstChildOfType(GetRootNode([]byte(jobInv7)), "block_sequence_item")},
+			args:   args{jobInvocationNode: getFirstChildOfType(rootNodeOf(t, []byte(jobInv7)), "block_sequence_item")},
 			want: ast.JobInvocation{
 				JobName: "deploy",
 				JobInvocationRange: protocol.Range{
@@ -487,7 +487,7 @@ func TestYamlDocument_parseSingleJobInvocation(t *testing.T) {
 		{
 			name:   "Job invocation with override",
 			fields: fields{Content: []byte(jobInv8)},
-			args:   args{jobInvocationNode: getFirstChildOfType(GetRootNode([]byte(jobInv8)), "block_sequence_item")},
+			args:   args{jobInvocationNode: getFirstChildOfType(rootNodeOf(t, []byte(jobInv8)), "block_sequence_item")},
 			want: ast.JobInvocation{
 				JobName: "deploy",
 				JobInvocationRange: protocol.Range{

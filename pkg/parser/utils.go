@@ -6,28 +6,19 @@ import (
 	"strings"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/yamltree"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
-	sitter "github.com/smacker/go-tree-sitter"
-	ymlgrammar "github.com/smacker/go-tree-sitter/yaml"
+	sitter "github.com/tree-sitter/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
-
-func GetRootNode(content []byte) *sitter.Node {
-	parser := sitter.NewParser()
-	parser.SetLanguage(ymlgrammar.GetLanguage())
-
-	tree := parser.Parse(nil, content)
-
-	return tree.RootNode()
-}
 
 func GetChildOfType(node *sitter.Node, typeName string) *sitter.Node {
 	if node == nil {
 		return nil
 	}
-	for i := 0; uint32(i) < node.ChildCount(); i++ {
+	for i := uint(0); i < node.ChildCount(); i++ {
 		child := node.Child(i)
-		if child.Type() == typeName {
+		if child.Kind() == typeName {
 			return child
 		}
 	}
@@ -39,7 +30,7 @@ func GetFirstChild(node *sitter.Node) *sitter.Node {
 		return nil
 	}
 	if node.ChildCount() > 0 {
-		if node.Child(0).Type() == "comment" || node.Child(0).Type() == "anchor" {
+		if node.Child(0).Kind() == "comment" || node.Child(0).Kind() == "anchor" {
 			return node.Child(1)
 		}
 		return node.Child(0)
@@ -69,7 +60,7 @@ func GetChildSequence(node *sitter.Node) *sitter.Node {
 
 func GetBlockMappingNode(streamNode *sitter.Node) *sitter.Node {
 	documentNode := GetChildOfType(streamNode, "document")
-	if documentNode != nil && documentNode.Type() != "document" {
+	if documentNode != nil && documentNode.Kind() != "document" {
 		return nil
 	}
 	blockNode := GetChildOfType(documentNode, "block_node")
@@ -151,7 +142,7 @@ func (doc *YamlDocument) getNodeTextArrayWithRange(valueNode *sitter.Node) []ast
 
 		// If blockSequence is a flow_sequence, then the child is
 		// directly a flow_node
-		if child.Type() == "flow_node" {
+		if child.Kind() == "flow_node" {
 			texts = append(texts, getText(child))
 		} else {
 			// But if the blockSequence is a block_sequence, then the child is
@@ -181,7 +172,7 @@ func (doc *YamlDocument) parseDictionary(valueNode *sitter.Node) map[string]stri
 	dictionary := make(map[string]string)
 
 	doc.iterateOnBlockMapping(valueNode, func(child *sitter.Node) {
-		if child.Type() == "block_mapping_pair" || child.Type() == "flow_pair" {
+		if child.Kind() == "block_mapping_pair" || child.Kind() == "flow_pair" {
 			keyNode, valueNode := doc.GetKeyValueNodes(child)
 
 			if keyNode != nil && valueNode != nil {
@@ -198,7 +189,7 @@ func (doc *YamlDocument) parseDescription(descriptionNode *sitter.Node) string {
 }
 
 func (doc *YamlDocument) GetKeyValueNodes(node *sitter.Node) (keyNode *sitter.Node, valueNode *sitter.Node) {
-	if node != nil && (node.Type() == "block_mapping_pair" || node.Type() == "flow_pair") {
+	if node != nil && (node.Kind() == "block_mapping_pair" || node.Kind() == "flow_pair") {
 		keyNode = node.ChildByFieldName("key")
 		valueNode = node.ChildByFieldName("value")
 
@@ -216,7 +207,7 @@ func (doc *YamlDocument) GetKeyValueNodes(node *sitter.Node) (keyNode *sitter.No
 }
 
 func (doc *YamlDocument) iterateOnBlockMapping(blockMappingNode *sitter.Node, fn func(child *sitter.Node)) {
-	if blockMappingNode == nil || (blockMappingNode.Type() != "block_mapping" && blockMappingNode.Type() != "flow_mapping") {
+	if blockMappingNode == nil || (blockMappingNode.Kind() != "block_mapping" && blockMappingNode.Kind() != "flow_mapping") {
 		return
 	}
 
@@ -227,10 +218,10 @@ func (doc *YamlDocument) iterateOnBlockMapping(blockMappingNode *sitter.Node, fn
 	mappedKeys := map[string]bool{}
 	mergeKeys := map[string]bool{}
 
-	for i := 0; uint32(i) < blockMappingNode.ChildCount(); i++ {
+	for i := uint(0); i < blockMappingNode.ChildCount(); i++ {
 		child := blockMappingNode.Child(i)
 
-		if child.Type() == "comment" {
+		if child.Kind() == "comment" {
 			continue
 		}
 
@@ -299,7 +290,7 @@ func extractMergeAnchorNames(node *sitter.Node, doc *YamlDocument) []string {
 
 	// One alias; just return the alias name
 	// example: <<: *myAlias
-	if child.Type() == "alias" {
+	if child.Kind() == "alias" {
 		txt := doc.GetNodeText(child)
 
 		return []string{txt[1:]}
@@ -307,10 +298,10 @@ func extractMergeAnchorNames(node *sitter.Node, doc *YamlDocument) []string {
 
 	// List of aliases; return all of em dude
 	// example: <<: [*alias1, *alias2, ..., *aliasN]
-	if child.Type() == "flow_sequence" {
+	if child.Kind() == "flow_sequence" {
 		names := []string{}
 
-		for i := 0; uint32(i) < child.ChildCount(); i++ {
+		for i := uint(0); i < child.ChildCount(); i++ {
 			names = append(names, extractMergeAnchorNames(child.Child(i), doc)...)
 		}
 
@@ -322,13 +313,13 @@ func extractMergeAnchorNames(node *sitter.Node, doc *YamlDocument) []string {
 
 func iterateOnBlockSequence(blockSequenceNode *sitter.Node, fn func(child *sitter.Node)) {
 	if blockSequenceNode == nil ||
-		(blockSequenceNode.Type() != "block_sequence" && blockSequenceNode.Type() != "flow_sequence") {
+		(blockSequenceNode.Kind() != "block_sequence" && blockSequenceNode.Kind() != "flow_sequence") {
 		return
 	}
-	for i := 0; uint32(i) < blockSequenceNode.ChildCount(); i++ {
+	for i := uint(0); i < blockSequenceNode.ChildCount(); i++ {
 		child := blockSequenceNode.Child(i)
 
-		if child.Type() == "comment" {
+		if child.Kind() == "comment" {
 			continue
 		}
 
@@ -337,21 +328,7 @@ func iterateOnBlockSequence(blockSequenceNode *sitter.Node, fn func(child *sitte
 }
 
 func ExecQuery(node *sitter.Node, query string, fn func(match *sitter.QueryMatch)) error {
-	pattern := []byte(query)
-	queryTreeSitter, err := sitter.NewQuery(pattern, ymlgrammar.GetLanguage())
-	if err != nil {
-		return err
-	}
-
-	cursor := sitter.NewQueryCursor()
-	cursor.Exec(queryTreeSitter, node)
-	anchorMatches, found := cursor.NextMatch()
-	for found {
-		fn(anchorMatches)
-		anchorMatches, found = cursor.NextMatch()
-	}
-
-	return nil
+	return yamltree.Query(node, query, fn)
 }
 
 func FindDeepestNode(rootNode *sitter.Node, content []byte, toFind []string) (*sitter.Node, error) {
@@ -359,29 +336,25 @@ func FindDeepestNode(rootNode *sitter.Node, content []byte, toFind []string) (*s
 		return rootNode, nil
 	}
 
-	iterator := sitter.NewIterator(rootNode, sitter.DFSMode)
-	node, err := iterator.Next()
-
-	for err == nil {
-		if intValue, err := strconv.Atoi(toFind[0]); err == nil {
-			if node.Type() == "block_sequence" {
-				if node.ChildCount() < uint32(intValue+1) {
+	for node := range yamltree.Walk(rootNode) {
+		if intValue, err := strconv.Atoi(toFind[0]); err == nil && intValue >= 0 {
+			if node.Kind() == "block_sequence" {
+				if node.ChildCount() < uint(intValue+1) {
 					return nil, fmt.Errorf("index out of range: trying to access %d in array of size %d", intValue, node.ChildCount())
 				}
 
-				childNode := node.Child((intValue))
+				childNode := node.Child(uint(intValue))
 				return FindDeepestNode(childNode, content, toFind[1:])
 			}
 		}
-		if node.Type() == "block_mapping_pair" {
+		if node.Kind() == "block_mapping_pair" {
 			if key := node.ChildByFieldName("key"); string(content[key.StartByte():key.EndByte()]) == toFind[0] {
 				return FindDeepestNode(node, content, toFind[1:])
 			}
 		}
-		node, err = iterator.Next()
 	}
 
-	return node, fmt.Errorf("not found")
+	return nil, fmt.Errorf("not found")
 }
 
 func (doc *YamlDocument) NodeToRange(node *sitter.Node) protocol.Range {
@@ -390,12 +363,12 @@ func (doc *YamlDocument) NodeToRange(node *sitter.Node) protocol.Range {
 	}
 	return position.AddOffsetToRange(protocol.Range{
 		Start: protocol.Position{
-			Line:      node.StartPoint().Row,
-			Character: node.StartPoint().Column,
+			Line:      position.Start(node).Line,
+			Character: position.Start(node).Character,
 		},
 		End: protocol.Position{
-			Line:      node.EndPoint().Row,
-			Character: node.EndPoint().Column,
+			Line:      position.End(node).Line,
+			Character: position.End(node).Character,
 		},
 	}, doc.Offset)
 }

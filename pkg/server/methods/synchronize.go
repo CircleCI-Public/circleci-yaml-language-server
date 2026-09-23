@@ -146,6 +146,7 @@ func (methods *Methods) parsingMethods(textDocument protocol.TextDocumentItem) {
 	if err != nil {
 		return
 	}
+	defer parsedFile.Close()
 
 	parser.ParseRemoteOrbs(parsedFile.Orbs, methods.Cache, methods.Settings)
 }
@@ -173,6 +174,7 @@ func (methods *Methods) updateOrbFile(content []byte, uri protocol.URI) {
 		parsedOrbSource, err := parser.ParseFromContent([]byte(content), methods.Settings, uri, protocol.Position{})
 		if err == nil {
 			methods.Cache.OrbCache.UpdateOrbParsedAttributes(orbId, parsedOrbSource.ToOrbParsedAttributes())
+			parsedOrbSource.Close()
 		}
 	}
 }

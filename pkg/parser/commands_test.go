@@ -5,11 +5,11 @@ import (
 	"testing"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
-	sitter "github.com/smacker/go-tree-sitter"
+	sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
 func getNodeForString(commandString string) *sitter.Node {
-	rootNode := GetRootNode([]byte(commandString))
+	rootNode := permanentRootOf([]byte(commandString))
 	documentNode := rootNode.Child(0)
 	blockNode := GetChildOfType(documentNode, "block_node")
 	blockNode = (GetChildOfType(blockNode, "block_mapping")).Child(0).ChildByFieldName("value")

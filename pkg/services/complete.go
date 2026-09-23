@@ -15,6 +15,7 @@ func Complete(params protocol.CompletionParams, cache *cache.Cache, context *ses
 	if err != nil {
 		return protocol.CompletionList{}, err
 	}
+	defer yamlDocument.Close()
 
 	if yamlDocument.Version < 2.1 {
 		return protocol.CompletionList{

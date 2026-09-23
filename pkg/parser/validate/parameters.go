@@ -10,7 +10,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
-	sitter "github.com/smacker/go-tree-sitter"
+	sitter "github.com/tree-sitter/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
 
@@ -128,7 +128,7 @@ func (val Validate) checkParamUsedWithParam(param ast.ParameterValue, stepName s
 func (val Validate) CheckIfParamsExist() {
 	checkOnNode := func(match *sitter.QueryMatch) {
 		for _, capture := range match.Captures {
-			node := capture.Node
+			node := &capture.Node
 			content := val.Doc.GetRawNodeText(node)
 			params, err := paramref.InString(content)
 			if err != nil {
@@ -154,21 +154,21 @@ func (val Validate) CheckIfParamsExist() {
 
 				diagnosticRange := protocol.Range{
 					Start: protocol.Position{
-						Line:      param.ParamRange.Start.Line + node.StartPoint().Row,
-						Character: param.ParamRange.Start.Character + node.StartPoint().Column,
+						Line:      param.ParamRange.Start.Line + position.Start(node).Line,
+						Character: param.ParamRange.Start.Character + position.Start(node).Character,
 					},
 					End: protocol.Position{
-						Line:      param.ParamRange.End.Line + node.StartPoint().Row,
-						Character: param.ParamRange.End.Character + node.StartPoint().Column,
+						Line:      param.ParamRange.End.Line + position.Start(node).Line,
+						Character: param.ParamRange.End.Character + position.Start(node).Character,
 					},
 				}
 
-				if node.Type() == "block_scalar" {
+				if node.Kind() == "block_scalar" {
 					// Little difference when the node is a block scalar,
 					// We should remove the node Char bonus on the positions
 
-					diagnosticRange.Start.Character -= node.StartPoint().Column
-					diagnosticRange.End.Character -= node.StartPoint().Column
+					diagnosticRange.Start.Character -= position.Start(node).Character
+					diagnosticRange.End.Character -= position.Start(node).Character
 				}
 
 				errorMessage := ""

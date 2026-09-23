@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	sitter "github.com/smacker/go-tree-sitter"
+	sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
 const YamlFloat = "foo"
@@ -16,10 +16,10 @@ const YamlBig = `foo:
     - 1
     - 2`
 
-var FloatNode = GetRootNode([]byte(YamlFloat)).Child(0).Child(0)
-var SeqNode = GetRootNode([]byte(YamlSeq)).Child(0).Child(0)
-var MapNode = GetRootNode([]byte(YamlMap)).Child(0).Child(0)
-var BigNode = GetRootNode([]byte(YamlBig)).Child(0).Child(0)
+var FloatNode = permanentRootOf([]byte(YamlFloat)).Child(0).Child(0)
+var SeqNode = permanentRootOf([]byte(YamlSeq)).Child(0).Child(0)
+var MapNode = permanentRootOf([]byte(YamlMap)).Child(0).Child(0)
+var BigNode = permanentRootOf([]byte(YamlBig)).Child(0).Child(0)
 
 func TestGetChildOfType(t *testing.T) {
 
@@ -46,8 +46,8 @@ func TestGetChildOfType(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := GetChildOfType(tt.yamlNode, tt.typeName); !reflect.DeepEqual(got.Type(), tt.typeName) {
-				t.Errorf("GetChildOfType() = %v, want %v", got.Type(), tt.typeName)
+			if got := GetChildOfType(tt.yamlNode, tt.typeName); !reflect.DeepEqual(got.Kind(), tt.typeName) {
+				t.Errorf("GetChildOfType() = %v, want %v", got.Kind(), tt.typeName)
 			}
 		})
 	}
@@ -69,27 +69,31 @@ func Test_getBlockMappingNode(t *testing.T) {
 	}{
 		{
 			name:       "Succeeding test case",
-			streamNode: GetRootNode([]byte(YamlBig)),
+			streamNode: rootNodeOf(t, []byte(YamlBig)),
 			want:       "block_mapping",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := GetBlockMappingNode(tt.streamNode); !reflect.DeepEqual(got.Type(), tt.want) {
+			if got := GetBlockMappingNode(tt.streamNode); !reflect.DeepEqual(got.Kind(), tt.want) {
 				t.Errorf("getBlockMappingNode() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
+// getFirstChildOfType finds the shallowest node of a type, breadth first.
 func getFirstChildOfType(rootNode *sitter.Node, typeName string) *sitter.Node {
-	iter := sitter.NewIterator(rootNode, sitter.BFSMode)
-	node, err := iter.Next()
-	for err == nil {
-		if node.Type() == typeName {
+	queue := []*sitter.Node{rootNode}
+	for len(queue) > 0 {
+		node := queue[0]
+		queue = queue[1:]
+		if node.Kind() == typeName {
 			return node
 		}
-		node, err = iter.Next()
+		for i := uint(0); i < node.ChildCount(); i++ {
+			queue = append(queue, node.Child(i))
+		}
 	}
 	return nil
 }
@@ -120,18 +124,18 @@ func TestGetFirstChildOfType(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := getFirstChildOfType(GetRootNode([]byte(tt.yaml)), tt.typeName)
+			got := getFirstChildOfType(rootNodeOf(t, []byte(tt.yaml)), tt.typeName)
 			if tt.wantNil {
 				if got != nil {
-					t.Errorf("getFirstChildOfType() = %v, want nil", got.Type())
+					t.Errorf("getFirstChildOfType() = %v, want nil", got.Kind())
 				}
 				return
 			}
 			if got == nil {
 				t.Fatal("getFirstChildOfType() = nil, want non-nil")
 			}
-			if got.Type() != tt.typeName {
-				t.Errorf("getFirstChildOfType() type = %v, want %v", got.Type(), tt.typeName)
+			if got.Kind() != tt.typeName {
+				t.Errorf("getFirstChildOfType() type = %v, want %v", got.Kind(), tt.typeName)
 			}
 		})
 	}

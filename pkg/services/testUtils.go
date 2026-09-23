@@ -58,6 +58,7 @@ func ExpectDiagnostic(t *testing.T) ExpDiag {
 // ExpectDiagnostic.File
 func (root ExpDiag) File(context *session.Settings, uri protocol.URI) ExpDiagStruct {
 	yamlDocument, err := parser.ParseFromURI(uri, context)
+	root.t.Cleanup(yamlDocument.Close)
 
 	return buildExDiag(root.t, yamlDocument, err)
 }
@@ -65,6 +66,7 @@ func (root ExpDiag) File(context *session.Settings, uri protocol.URI) ExpDiagStr
 // ExpectDiagnostic.String
 func (root ExpDiag) String(context *session.Settings, content string) ExpDiagStruct {
 	yamlDocument, err := parser.ParseFromContent([]byte(content), context, uri.File(""), protocol.Position{})
+	root.t.Cleanup(yamlDocument.Close)
 
 	return buildExDiag(root.t, yamlDocument, err)
 }

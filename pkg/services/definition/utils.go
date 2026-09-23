@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
-	sitter "github.com/smacker/go-tree-sitter"
+	sitter "github.com/tree-sitter/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
 
@@ -84,7 +84,7 @@ func GetPathFromVisitedNodes(visitedNodes []*sitter.Node, doc yamlparser.YamlDoc
 	}
 
 	for _, node := range visitedNodes[1:] {
-		switch node.Type() {
+		switch node.Kind() {
 		case "block_mapping_pair":
 			key := node.ChildByFieldName("key")
 			name := string(doc.Content[key.StartByte():key.EndByte()])

@@ -20,6 +20,7 @@ func DocumentSymbols(params protocol.DocumentSymbolParams, cache *cache.Cache, c
 	if err != nil {
 		return nil, err
 	}
+	defer yamlDocument.Close()
 
 	symbols := documentSymbols.SymbolsForDocument(&yamlDocument)
 

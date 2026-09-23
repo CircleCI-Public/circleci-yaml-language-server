@@ -13,6 +13,7 @@ func Definition(params protocol.DefinitionParams, cache *cache.Cache, context *s
 	if err != nil {
 		return nil, err
 	}
+	defer yamlDocument.Close()
 
 	def := definition.DefinitionStruct{Cache: cache, Params: params, Doc: yamlDocument}
 

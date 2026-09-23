@@ -18,6 +18,7 @@ func main() {
 		},
 	}
 	rootNode := yamlparser.ParseFile([]byte(content), context)
+	defer rootNode.Close()
 
 	res, err := yamlparser.FindDeepestNode(rootNode.RootNode, content, []string{"workflows", "test-build", "jobs", "0"})
 	if err != nil {

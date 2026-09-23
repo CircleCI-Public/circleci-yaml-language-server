@@ -19,6 +19,7 @@ func References(params protocol.ReferenceParams, cache *cache.Cache, context *se
 	if err != nil {
 		return nil, err
 	}
+	defer yamlDocument.Close()
 
 	ref := ReferenceHandler{
 		Doc:        yamlDocument,

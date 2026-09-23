@@ -10,7 +10,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/paramref"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
-	"github.com/Masterminds/semver"
+	"github.com/Masterminds/semver/v3"
 	"go.lsp.dev/protocol"
 )
 

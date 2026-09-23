@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
-	sitter "github.com/smacker/go-tree-sitter"
+	sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
 const YamlFile = `
@@ -73,7 +73,7 @@ steps:
 `
 
 func TestYamlDocument_parseSteps(t *testing.T) {
-	rootNode := GetRootNode([]byte(YamlFile))
+	rootNode := rootNodeOf(t, []byte(YamlFile))
 	stepsNode := getFirstChildOfType(rootNode, "block_sequence").Parent() // Retrieve the block_node containing the steps
 
 	type fields struct {

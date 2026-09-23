@@ -3,7 +3,7 @@ package ast
 import (
 	"fmt"
 
-	sitter "github.com/smacker/go-tree-sitter"
+	sitter "github.com/tree-sitter/go-tree-sitter"
 	"go.lsp.dev/protocol"
 )
 
@@ -14,7 +14,10 @@ type Orb struct {
 	NameRange    protocol.Range
 	VersionRange protocol.Range
 	ValueRange   protocol.Range
-	ValueNode    *sitter.Node
+	// ValueNode belongs to the syntax tree of the document the orb was
+	// declared in, and is freed with it. It must not be kept past that
+	// document: nothing that is cached may hold it.
+	ValueNode *sitter.Node
 }
 
 type OrbURL struct {

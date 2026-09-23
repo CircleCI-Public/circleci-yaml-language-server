@@ -97,6 +97,7 @@ func fetchOrbInfo(orbVersionCode string, cache *cache.Cache, context *session.Se
 	if err != nil {
 		return &ast.OrbInfo{}, err
 	}
+	defer parsedOrbSource.Close()
 
 	filePath, err := writeRemoteOrbSourceInFSCache(orbVersionCode, orbQuery.Source)
 
@@ -281,6 +282,7 @@ func AddOrbToCacheWithContent(orb ast.Orb, uri protocol.URI, content []byte, con
 	if err != nil {
 		return err
 	}
+	defer parsedOrbSource.Close()
 
 	versions, err := GetOrbVersions(orb.Url.GetOrbID(), context.Api.Token, context.Api.HostUrl, context.UserIdForTelemetry)
 
