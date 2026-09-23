@@ -3,12 +3,13 @@ package documentSymbols
 import (
 	"testing"
 
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/testHelpers"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
+
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/testHelpers"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser"
 )
 
 func parseDoc(t *testing.T, yaml string) parser.YamlDocument {

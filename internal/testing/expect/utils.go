@@ -3,8 +3,9 @@ package expect
 import (
 	"fmt"
 
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
+
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
 // Indicate if a diagnostic is present in the given list

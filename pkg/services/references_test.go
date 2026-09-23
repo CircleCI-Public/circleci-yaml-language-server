@@ -6,10 +6,11 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/testHelpers"
-	utils "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
+
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/testHelpers"
+	utils "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
 func TestReferences(t *testing.T) {

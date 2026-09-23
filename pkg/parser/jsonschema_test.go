@@ -4,14 +4,15 @@ import (
 	"strings"
 	"testing"
 
-	schema "github.com/CircleCI-Public/circleci-yaml-language-server"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/expect"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/testHelpers"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 	"gopkg.in/yaml.v3"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
+
+	schema "github.com/CircleCI-Public/circleci-yaml-language-server"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/expect"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/testHelpers"
 )
 
 func Test_HandleYAMLErrors_MappingKeyError(t *testing.T) {

@@ -3,10 +3,11 @@ package languageservice
 import (
 	"testing"
 
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/testHelpers"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
+
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/testHelpers"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
 func TestBackgroundAutoRerunValidation(t *testing.T) {

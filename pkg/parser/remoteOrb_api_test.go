@@ -8,7 +8,7 @@ import (
 	"gotest.tools/v3/assert/cmp"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/fakes"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/testHelpers"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/testHelpers"
 )
 
 func TestGetOrbByName(t *testing.T) {

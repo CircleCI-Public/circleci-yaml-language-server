@@ -10,7 +10,7 @@ import (
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/httpcl"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/fakes"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/testHelpers"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/testHelpers"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
 
