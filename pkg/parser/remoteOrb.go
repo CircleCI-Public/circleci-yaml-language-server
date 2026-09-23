@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
@@ -241,7 +242,7 @@ func writeRemoteOrbSourceInFSCache(orbYaml string, source string) (string, error
 	_, err := os.Stat(filePath)
 
 	if errors.Is(err, os.ErrNotExist) {
-		fmt.Fprintln(os.Stderr, "Writing remote orb source in cache:", filePath)
+		slog.Debug("writing remote orb source in cache", "path", filePath)
 
 		err = os.WriteFile(filePath, []byte(source), 0644)
 		return filePath, err

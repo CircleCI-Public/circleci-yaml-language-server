@@ -3,10 +3,12 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log/slog"
 	"os"
 	"path"
 	"strconv"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/logging"
 	lsp "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/server"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
@@ -17,6 +19,7 @@ func main() {
 	schemaRef := flag.String("schema", "", "Location of the schema (optional, uses built-in schema if not provided)")
 	versionRef := flag.Bool("version", false, "display version")
 	stdioRef := flag.Bool("stdio", false, "Use stdio instead of socket to communicate")
+	debugRef := flag.Bool("debug", true, "Log debug messages, including every request (-debug=false for info and above)")
 	flag.Parse()
 
 	// Parameter: version
@@ -25,6 +28,8 @@ func main() {
 		fmt.Println(utils.ServerVersion)
 		return
 	}
+
+	logging.Setup(*debugRef)
 
 	// Parameter: schema
 	// If no schema is provided via flag or env, the embedded schema will be used.
@@ -37,7 +42,7 @@ func main() {
 		cwd, err := os.Getwd()
 
 		if err != nil {
-			fmt.Printf("Error while resolving schema path \"%s\"", schema)
+			slog.Error("resolving schema path", "schema", schema, "err", err)
 			panic(err)
 		}
 		schema = path.Join(cwd, schema)
@@ -68,22 +73,16 @@ func main() {
 		port, err = strconv.Atoi(portEnv)
 
 		if err != nil {
-			fmt.Printf(
-				"The \"PORT\" environment variable is not a valid number (value: %s)\n",
-				portEnv,
-			)
+			slog.Error("the PORT environment variable is not a valid number", "value", portEnv)
 			return
 		}
 
 		if port <= 0 || port > 65535 {
-			fmt.Printf(
-				"The \"PORT\" environment variable is not a valid port number (value: %d)\n",
-				port,
-			)
+			slog.Error("the PORT environment variable is not a valid port number", "value", port)
 			return
 		}
 	} else {
-		fmt.Println("No port defined: the server will find a free port")
+		slog.Info("no port defined: the server will find a free port")
 	}
 
 	lsp.StartServer(port, host, schema)

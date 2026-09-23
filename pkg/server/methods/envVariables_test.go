@@ -6,7 +6,7 @@ package methods
 
 import (
 	"bytes"
-	"log"
+	"log/slog"
 	"net/http"
 	"testing"
 
@@ -14,6 +14,7 @@ import (
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/logging"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/fakes"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils"
 )
@@ -67,9 +68,9 @@ func captureLog(t *testing.T) *bytes.Buffer {
 	t.Helper()
 
 	logged := &bytes.Buffer{}
-	previous := log.Writer()
-	log.SetOutput(logged)
-	t.Cleanup(func() { log.SetOutput(previous) })
+	previous := slog.Default()
+	slog.SetDefault(logging.New(logged, true))
+	t.Cleanup(func() { slog.SetDefault(previous) })
 
 	return logged
 }

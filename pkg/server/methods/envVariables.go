@@ -1,7 +1,7 @@
 package methods
 
 import (
-	"log"
+	"log/slog"
 
 	"go.lsp.dev/protocol"
 
@@ -22,13 +22,13 @@ func (methods *Methods) getAllEnvVariables(textDocument protocol.TextDocumentIte
 
 	err := utils.GetAllContext(methods.LsContext, cachedFile.Project.OrganizationId, methods.Cache)
 	if err != nil {
-		log.Printf("error getting contexts: %s", err)
+		slog.Warn("error getting contexts", "err", err)
 		return
 	}
 	methods.Cache.ContextCache.MarkOrganizationContextListLoaded(cachedFile.Project.OrganizationId)
 
 	if err := utils.GetAllContextWithEnvVars(methods.LsContext, cachedFile.Project.OrganizationId, methods.Cache); err != nil {
-		log.Printf("error getting context environment variables: %s", err)
+		slog.Warn("error getting context environment variables", "err", err)
 	}
 }
 
@@ -49,7 +49,7 @@ func (methods *Methods) updateProjectEnvVariables(file *utils.CachedFile) {
 	}
 	if methods.LsContext.Api.Token != "" {
 		if err := utils.GetAllProjectEnvVariables(methods.LsContext, methods.Cache, cachedFile); err != nil {
-			log.Printf("error getting project environment variables: %s", err)
+			slog.Warn("error getting project environment variables", "err", err)
 		}
 	}
 }

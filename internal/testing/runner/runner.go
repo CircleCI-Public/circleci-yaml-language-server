@@ -125,8 +125,8 @@ func (s *Server) Stdout() string {
 	return s.stdout.String()
 }
 
-// Stderr is everything the server has logged, which includes a line per method
-// it handled.
+// Stderr is everything the server has logged. The server logs at debug level
+// by default, so this includes a line per method it handled.
 func (s *Server) Stderr() string {
 	return s.stderr.String()
 }
