@@ -8,30 +8,45 @@
     "go": {
         "projects": [
             {
-                "path": "./cmd/start_server",
+                "path": "./cmd/server",
                 "subprojects": {
-                    "./pkg/server": "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/server",
-                    "./pkg/server/methods": "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/server/methods",
-                    "./pkg/utils": "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/utils",
-                    "./pkg/ast": "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast",
-                    "./pkg/parser": "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser",
-                    "./pkg/parser/validate": "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/parser/validate",
-                    "./pkg/services": "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/services",
-                    "./pkg/services/complete": "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/services/complete",
-                    "./pkg/services/definition": "github.com/CircleCI-Public/circleci-yaml-language-server/pkg/services/definition"
+                    "./internal/ast": "github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast",
+                    "./internal/cache": "github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache",
+                    "./internal/client": "github.com/CircleCI-Public/circleci-yaml-language-server/internal/client",
+                    "./internal/client/circleci": "github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci",
+                    "./internal/client/dockerhub": "github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/dockerhub",
+                    "./internal/codeaction": "github.com/CircleCI-Public/circleci-yaml-language-server/internal/codeaction",
+                    "./internal/diagnostic": "github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic",
+                    "./internal/httpcl": "github.com/CircleCI-Public/circleci-yaml-language-server/internal/httpcl",
+                    "./internal/logging": "github.com/CircleCI-Public/circleci-yaml-language-server/internal/logging",
+                    "./internal/paramref": "github.com/CircleCI-Public/circleci-yaml-language-server/internal/paramref",
+                    "./internal/parser": "github.com/CircleCI-Public/circleci-yaml-language-server/internal/parser",
+                    "./internal/parser/validate": "github.com/CircleCI-Public/circleci-yaml-language-server/internal/parser/validate",
+                    "./internal/position": "github.com/CircleCI-Public/circleci-yaml-language-server/internal/position",
+                    "./internal/projectslug": "github.com/CircleCI-Public/circleci-yaml-language-server/internal/projectslug",
+                    "./internal/server": "github.com/CircleCI-Public/circleci-yaml-language-server/internal/server",
+                    "./internal/server/methods": "github.com/CircleCI-Public/circleci-yaml-language-server/internal/server/methods",
+                    "./internal/services": "github.com/CircleCI-Public/circleci-yaml-language-server/internal/services",
+                    "./internal/services/complete": "github.com/CircleCI-Public/circleci-yaml-language-server/internal/services/complete",
+                    "./internal/services/definition": "github.com/CircleCI-Public/circleci-yaml-language-server/internal/services/definition",
+                    "./internal/services/documentSymbols": "github.com/CircleCI-Public/circleci-yaml-language-server/internal/services/documentSymbols",
+                    "./internal/session": "github.com/CircleCI-Public/circleci-yaml-language-server/internal/session",
+                    "./internal/testing/expect": "github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/expect",
+                    "./internal/version": "github.com/CircleCI-Public/circleci-yaml-language-server/internal/version",
+                    "./internal/yamlbool": "github.com/CircleCI-Public/circleci-yaml-language-server/internal/yamlbool",
+                    "./internal/yamltree": "github.com/CircleCI-Public/circleci-yaml-language-server/internal/yamltree"
                 },
                 "licenseFileType": "go-licenses",
                 "licenseFilePath": "./licenses.csv"
             }
         ],
         "exclude": [
-            "./cmd/gql",
-            "./cmd/test_tree-sitter",
-            "./cmd/parse_yaml",
-            "./cmd/dockerhub",
-            "./pkg/services/hover",
-            "./pkg/expect",
-            "./scripts"
+            "./cmd/dev/test_tree-sitter",
+            "./cmd/dev/parse_yaml",
+            "./cmd/dev/dockerhub",
+            "./cmd/dev/orb",
+            "./cmd/ci/get_next_release",
+            "./internal/services/hover"
         ]
     },
     "whitelisted_dependencies": {}

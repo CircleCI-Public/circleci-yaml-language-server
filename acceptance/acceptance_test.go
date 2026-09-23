@@ -39,9 +39,9 @@ func runTests(m *testing.M) (int, error) {
 
 	binaries.Add(compiler.Work{
 		Result: &serverBinary,
-		Name:   "start_server",
+		Name:   "server",
 		Target: "..",
-		Source: "./cmd/start_server",
+		Source: "./cmd/server",
 	})
 
 	if err := binaries.Run(ctx); err != nil {

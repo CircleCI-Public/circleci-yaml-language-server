@@ -8,10 +8,11 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/pkg/ast"
 	"github.com/adrg/xdg"
 	"go.lsp.dev/protocol"
+
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
 )
 
 type Cache struct {

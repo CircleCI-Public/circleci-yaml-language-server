@@ -1,0 +1,103 @@
+package validate
+
+import (
+	"sort"
+	"strings"
+	"testing"
+
+	"go.lsp.dev/protocol"
+	"go.lsp.dev/uri"
+	"gotest.tools/v3/assert"
+	"gotest.tools/v3/assert/cmp"
+
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/parser"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/testHelpers"
+)
+
+type ValidateTestCase struct {
+	Name        string
+	YamlContent string
+	// Whether you want to compare the Diagnostics to every diagnostics or only to the error diagnostics
+	OnlyErrors  bool
+	Diagnostics []protocol.Diagnostic
+}
+
+func CreateValidateFromYAML(yaml string) Validate {
+	context := testHelpers.DefaultSettings()
+	context.Api.Token = ""
+	doc, _ := parser.ParseFromContent([]byte(yaml), context, uri.File(""), protocol.Position{})
+	val := Validate{
+		APIs: ValidateAPIs{
+			DockerHub: DockerHubMock{},
+		},
+		Diagnostics: &[]protocol.Diagnostic{},
+		Cache:       cache.New(),
+		Doc:         doc,
+		Context:     context,
+	}
+	return val
+}
+
+func CompareDiagnostics(t *testing.T, expected, actual *[]protocol.Diagnostic) {
+	sortDiagnostic(expected)
+	sortDiagnostic(actual)
+	assert.Check(t, cmp.DeepEqual(expected, actual))
+}
+
+func CheckYamlErrors(t *testing.T, testCases []ValidateTestCase) {
+	context := testHelpers.DefaultSettings()
+	context.Api.Token = ""
+	for _, tt := range testCases {
+		t.Run(tt.Name, func(t *testing.T) {
+			if strings.Contains(tt.YamlContent, "\t") {
+				t.Fatal("Test YAML content contains tab characters -- YAML does not allow tabs for indentation. Use spaces instead.")
+			}
+			val := CreateValidateFromYAML(tt.YamlContent)
+			val.Cache.MachineOfferingsCache.Set(testMachineOfferings())
+			val.Validate()
+
+			diags := *val.Diagnostics
+			if tt.OnlyErrors == true {
+				diags = getErrorDiagnostic(&diags)
+			}
+
+			if tt.Diagnostics == nil {
+				assert.Check(t, cmp.Len(diags, 0))
+			} else {
+				CompareDiagnostics(t, &tt.Diagnostics, &diags)
+			}
+		})
+	}
+}
+
+func getErrorDiagnostic(diags *[]protocol.Diagnostic) []protocol.Diagnostic {
+	res := []protocol.Diagnostic{}
+	for _, d := range *diags {
+		if d.Severity == protocol.DiagnosticSeverityError {
+			res = append(res, d)
+		}
+	}
+	return res
+}
+
+func sortDiagnostic(diags *[]protocol.Diagnostic) {
+	sort.Slice(*diags, func(i, j int) bool {
+		if (*diags)[i].Range.Start.Line == (*diags)[j].Range.Start.Line {
+			return (*diags)[i].Range.Start.Character < (*diags)[j].Range.Start.Character
+		}
+		if (*diags)[i].Range.End.Line == (*diags)[j].Range.End.Line {
+			return (*diags)[i].Range.End.Character < (*diags)[j].Range.End.Character
+		}
+
+		return (*diags)[i].Range.Start.Line < (*diags)[j].Range.Start.Line
+	})
+}
+
+func getDiagnosticMessages(diags *[]protocol.Diagnostic) []string {
+	messages := make([]string, len(*diags))
+	for i, diag := range *diags {
+		messages[i] = diag.Message
+	}
+	return messages
+}
