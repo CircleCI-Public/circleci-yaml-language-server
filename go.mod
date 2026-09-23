@@ -5,13 +5,13 @@ go 1.27.1
 require (
 	charm.land/log/v2 v2.0.1
 	github.com/Masterminds/semver/v3 v3.5.0
-	github.com/adrg/xdg v0.4.0
+	github.com/adrg/xdg v0.5.3
 	github.com/bep/debounce v1.2.1
 	github.com/go-git/go-git/v6 v6.0.0-alpha.5
 	github.com/google/go-cmp v0.7.0
 	github.com/hashicorp/go-retryablehttp v0.7.8
-	github.com/rollbar/rollbar-go v1.4.5
-	github.com/segmentio/encoding v0.4.0
+	github.com/rollbar/rollbar-go v1.4.8
+	github.com/segmentio/encoding v0.5.4
 	github.com/tree-sitter-grammars/tree-sitter-yaml v0.7.2
 	github.com/tree-sitter/go-tree-sitter v0.24.1-0.20251112183152-c9492002f76e
 	github.com/whilp/git-urls v1.0.0
@@ -19,8 +19,8 @@ require (
 	go.lsp.dev/jsonrpc2 v0.10.0
 	go.lsp.dev/protocol v0.12.0
 	go.lsp.dev/uri v0.3.0
-	golang.org/x/mod v0.36.0
-	golang.org/x/sync v0.22.0
+	golang.org/x/mod v0.41.0
+	golang.org/x/sync v0.23.0
 	gopkg.in/yaml.v3 v3.0.1
 	gotest.tools/v3 v3.5.2
 )
