@@ -26,6 +26,45 @@
         "SELF_HOSTED_URL": ""
       }
     },
+    // "Run Extension (attach over IPv4)" starts the extension host paused on a
+    // fixed port and attaches to it at 127.0.0.1. "Run Extension" attaches to
+    // localhost, which the debugger tries over IPv4 and IPv6 at once; where the
+    // IPv6 attempt is refused before IPv4 answers, the attach fails and the
+    // extension host never starts.
+    {
+      "name": "Extension Host (paused on 9333)",
+      "presentation": {
+        "hidden": true
+      },
+      "type": "extensionHost",
+      "request": "launch",
+      "noDebug": true,
+      "args": [
+        "--extensionDevelopmentPath=${workspaceFolder}/editors/vscode",
+        "--disable-extensions",
+        "--inspect-brk-extensions=9333"
+      ],
+      "env": {
+        "CCI_DEV": "true",
+        "TOKEN": "",
+        "SELF_HOSTED_URL": ""
+      }
+    },
+    {
+      "name": "Attach to Extension Host (127.0.0.1:9333)",
+      "presentation": {
+        "hidden": true
+      },
+      "type": "node",
+      "request": "attach",
+      "address": "127.0.0.1",
+      "port": 9333,
+      "timeout": 30000,
+      // The extension host waits on its first line for the debugger, so that
+      // breakpoints are set before activation; this resumes it once they are.
+      "continueOnAttach": true,
+      "outFiles": ["${workspaceFolder}/editors/vscode/dist/**/*.js"]
+    },
     {
       "name": "Run Extension (user extensions enabled)",
       "presentation": {
@@ -91,6 +130,22 @@
       "request": "attach",
       "mode": "local",
       "processId": "start_server"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Run Extension (attach over IPv4)",
+      "presentation": {
+        "hidden": false,
+        "group": "Run",
+        "order": 1
+      },
+      "configurations": [
+        "Extension Host (paused on 9333)",
+        "Attach to Extension Host (127.0.0.1:9333)"
+      ],
+      "preLaunchTask": "task: task build",
+      "stopAll": true
     }
   ]
 }
