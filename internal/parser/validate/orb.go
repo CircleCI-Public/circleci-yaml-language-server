@@ -265,6 +265,12 @@ func (val Validate) ValidateLocalOrbs() {
 			}
 
 			for _, command := range orbInfo.Commands {
+				// The orb's own commands and jobs call it by its bare name,
+				// and the rest of the config by the orb's name.
+				if validateStruct.checkIfCommandIsUsed(command) {
+					continue
+				}
+
 				command.Name = fmt.Sprintf("%s/%s", orb.Name, command.Name)
 				if !val.checkIfCommandIsUsed(command) {
 					val.commandIsUnused(command)
