@@ -33,15 +33,6 @@ type JSONRPCServer struct {
 func (server JSONRPCServer) commandHandler(_ context.Context, reply jsonrpc2.Replier, req jsonrpc2.Request) error {
 	slog.Debug("called method", "method", req.Method())
 
-	defer func() {
-		err := recover()
-
-		if err != nil {
-			rollbar.LogPanic(err, true)
-			panic(err)
-		}
-	}()
-
 	switch req.Method() {
 
 	case protocol.MethodInitialize:
@@ -105,7 +96,7 @@ func (server JSONRPCServer) ServeStream(_ context.Context, conn jsonrpc2.Conn) e
 		Settings:       server.lsContext,
 		SchemaLocation: server.SchemaLocation,
 	}
-	conn.Go(server.ctx, server.commandHandler)
+	conn.Go(server.ctx, recoverPanics(server.commandHandler))
 	<-conn.Done()
 
 	return conn.Err()

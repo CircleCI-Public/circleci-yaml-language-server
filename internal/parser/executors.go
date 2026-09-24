@@ -249,8 +249,12 @@ func (doc *YamlDocument) parseDockerImage(imageNode *sitter.Node) ast2.DockerIma
 		keyName := doc.GetNodeText(keyNode)
 		switch keyName {
 		case "image":
-			dockerImg.Image = ParseDockerImageValue(doc.GetNodeText(valueNode))
+			text := doc.GetNodeText(valueNode)
+			dockerImg.Image = ParseDockerImageValue(text)
 			dockerImg.ImageRange = doc.NodeToRange(child)
+			dockerImg.ImageValueRange = doc.unquotedRange(valueNode)
+			// An anchor on the value is not part of the image.
+			dockerImg.ImageValueRange.Start.Character += uint32(len(aliasRemover.FindString(text)))
 		case "name":
 			dockerImg.Name = doc.GetNodeText(valueNode)
 		case "entrypoint":

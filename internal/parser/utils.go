@@ -377,3 +377,18 @@ func (doc *YamlDocument) NodeToRange(node *sitter.Node) protocol.Range {
 		},
 	}, doc.Offset)
 }
+
+// unquotedRange is the range of a single-line scalar's text, inside its quotes
+// if it has them: the range GetNodeText's result occupies.
+func (doc *YamlDocument) unquotedRange(node *sitter.Node) protocol.Range {
+	rng := doc.NodeToRange(node)
+	raw := doc.GetRawNodeText(node)
+
+	quoted := len(raw) >= 2 && (raw[0] == '"' || raw[0] == '\'') && raw[len(raw)-1] == raw[0]
+	if quoted && rng.Start.Line == rng.End.Line {
+		rng.Start.Character++
+		rng.End.Character--
+	}
+
+	return rng
+}

@@ -110,8 +110,12 @@ func (e DockerExecutor) GetEnvs() Environment {
 }
 
 type DockerImage struct {
-	Image      DockerImageInfo
+	Image DockerImageInfo
+	// ImageRange spans the whole `image: <value>` entry.
 	ImageRange protocol.Range
+	// ImageValueRange spans the image value alone, inside any quotes, so that
+	// a position in it lines up with Image.FullPath.
+	ImageValueRange protocol.Range
 
 	Name        string
 	Entrypoint  []string

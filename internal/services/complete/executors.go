@@ -2,6 +2,7 @@ package complete
 
 import (
 	"fmt"
+	"strings"
 
 	sitter "github.com/tree-sitter/go-tree-sitter"
 	"go.lsp.dev/protocol"
@@ -56,28 +57,17 @@ func (ch *CompletionHandler) completeDockerExecutor(executor ast2.DockerExecutor
 		if position.InRange(img.ImageRange, ch.Params.Position) {
 			// Suggest docker images w/ dockerhub package to perform search
 
-			node, _, _ := position.NodeAt(ch.Doc.RootNode, ch.Params.Position)
-
-			// The dockerhub searches are based on strings
-			// We need the string content of the current docker image but they are some things to consider
-			// - The current completion could run on an "altered document" (cf ModifyTextForAutocomplete)
-			//   in this case, we should strip any additional content
-			// - The user cursor position
-			//    "- image: cimg/node|" (| is caret) should search for cimg/node
-			//    "- image: cimg/n|ode" should search for cim/n
-			//	This help with suggesting tags after the current completion (cf: addDockerImageCompletion -> Command)
-			completionString := img.Image.FullPath
-			if ch.DocDiff != "" {
-				completionString = completionString[0 : len(completionString)-len(ch.DocDiff)]
+			completionString, ok := typedImage(img, ch.Params.Position)
+			if !ok {
+				return
 			}
 
-			diff := img.ImageRange.End.Character - ch.Params.Position.Character
-			completionString = completionString[0 : len(img.Image.FullPath)-int(diff)]
+			node, _, _ := position.NodeAt(ch.Doc.RootNode, ch.Params.Position)
 
 			// Based on the reduced string, extract image info
 			theImg := parser.ParseDockerImageValue(completionString)
 
-			if theImg.Tag == "" && completionString[len(completionString)-1:] != ":" {
+			if theImg.Tag == "" && !strings.HasSuffix(completionString, ":") {
 				// Search for repositories
 				results := dockerhub.Search(completionString)
 				i := 0
@@ -121,6 +111,32 @@ func (ch *CompletionHandler) completeDockerExecutor(executor ast2.DockerExecutor
 			break
 		}
 	}
+}
+
+// typedImage is the part of an image's value before pos, which is what the
+// Docker Hub searches run on: "- image: cimg/node|" (| is the cursor) searches
+// for cimg/node, and "- image: cimg/n|ode" for cimg/n.
+//
+// It is false when pos is not inside the value, or nothing has been typed
+// there yet. Text inserted to make the document parse (see
+// ModifyTextForAutocomplete) goes in at the cursor, after the prefix, so it is
+// never part of it.
+func typedImage(img ast2.DockerImage, pos protocol.Position) (string, bool) {
+	value := img.ImageValueRange
+	if pos.Line != value.Start.Line || value.Start.Line != value.End.Line {
+		return "", false
+	}
+
+	if pos.Character <= value.Start.Character {
+		return "", false
+	}
+
+	typed := int(pos.Character - value.Start.Character)
+	if typed > len(img.Image.FullPath) {
+		return "", false
+	}
+
+	return img.Image.FullPath[:typed], true
 }
 
 func (ch *CompletionHandler) completeMachineExecutor(executor ast2.MachineExecutor) {

@@ -97,6 +97,16 @@ func TestYamlDocument_parseExecutors(t *testing.T) {
 									Character: 45,
 								},
 							},
+							ImageValueRange: protocol.Range{
+								Start: protocol.Position{
+									Line:      4,
+									Character: 21,
+								},
+								End: protocol.Position{
+									Line:      4,
+									Character: 45,
+								},
+							},
 							Auth: ast2.DockerImageAuth{
 								Username: "mydockerhub-user",
 								Password: "$DOCKERHUB_PASSWORD",
