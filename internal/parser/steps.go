@@ -56,7 +56,9 @@ func (doc *YamlDocument) parseSingleStep(stepNode *sitter.Node) []ast.Step {
 
 	switch child.Kind() {
 	case "flow_node":
-		if GetFirstChild(child).Kind() != "alias" {
+		// A node holding only an anchor, whose value is yet to be typed, has no
+		// first child.
+		if first := GetFirstChild(child); first == nil || first.Kind() != "alias" {
 			return []ast.Step{ast.NamedStep{Name: doc.GetNodeText(child), Range: doc.NodeToRange(child)}}
 		}
 		step := doc.YamlAnchors[doc.GetNodeText(child)[1:]].ValueNode

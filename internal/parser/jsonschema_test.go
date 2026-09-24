@@ -335,3 +335,52 @@ jobs:
 		})
 	}
 }
+
+// yamlErrorDiagnostics is what handleYAMLErrors makes of the error yaml.v3
+// reports for content.
+func yamlErrorDiagnostics(t *testing.T, content string) []protocol.Diagnostic {
+	t.Helper()
+
+	var m map[string]any
+	yamlErr := yaml.Unmarshal([]byte(content), &m)
+	assert.Assert(t, yamlErr != nil, "content must not be valid YAML")
+
+	yamlDocument, err := ParseFromContent([]byte(content), testHelpers.DefaultSettings(), uri.File(""), protocol.Position{})
+	assert.NilError(t, err)
+	t.Cleanup(yamlDocument.Close)
+
+	diagnostics, err := handleYAMLErrors(yamlErr.Error(), []byte(content), yamlDocument.RootNode)
+	assert.NilError(t, err)
+
+	return diagnostics
+}
+
+func Test_HandleYAMLErrors_LineError(t *testing.T) {
+	t.Run("is reported on the line it names", func(t *testing.T) {
+		// yaml: line 2: could not find expected ':'
+		diagnostics := yamlErrorDiagnostics(t, "a: 1\nb\nc: 2\n")
+
+		assert.Assert(t, cmp.Len(diagnostics, 1))
+		assert.Check(t, cmp.Equal(diagnostics[0].Range.Start.Line, uint32(1)))
+		assert.Check(t, cmp.Contains(diagnostic.MessageText(diagnostics[0]), "Could not find expected ':'"))
+	})
+
+	t.Run("is reported on the last line when it names that one", func(t *testing.T) {
+		// A key still being typed at the end of the file. This used to index
+		// past the last line, and the panic took the server down.
+		diagnostics := yamlErrorDiagnostics(t, "version: 2.1\nj")
+
+		assert.Assert(t, cmp.Len(diagnostics, 1))
+		assert.Check(t, cmp.Equal(diagnostics[0].Range.Start.Line, uint32(1)))
+	})
+}
+
+func Test_HandleYamlError_UnknownAnchorWhereTheTreeHasNoNode(t *testing.T) {
+	// The anchor's name is searched for in the whole text. Around the broken
+	// tag, tree-sitter recovers with no node covering either place the name
+	// is found, and the missing node used to be dereferenced. Found by
+	// FuzzRequests.
+	diagnostics := yamlErrorDiagnostics(t, "a: !0,0\nb: *0\n")
+
+	assert.Check(t, cmp.Len(diagnostics, 0))
+}

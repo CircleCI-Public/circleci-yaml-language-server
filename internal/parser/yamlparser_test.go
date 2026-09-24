@@ -366,3 +366,36 @@ jobs:
 		})
 	}
 }
+
+func TestModifyTextForAutocomplete(t *testing.T) {
+	// Each case used to panic: the one on the root node because it has no
+	// parent, and the other because the node there has no text.
+	for name, tc := range map[string]struct {
+		content string
+		pos     protocol.Position
+	}{
+		"on the root node between documents": {
+			content: "version: 2.1\n---\njobs:\n  build:\n---\n",
+			pos:     protocol.Position{Line: 0, Character: 13},
+		},
+		"at the start of an empty block scalar": {
+			content: "version: 2.1\njobs:\n  build:\n    steps:\n      - run: |\n",
+			pos:     protocol.Position{Line: 4, Character: 0},
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			doc, err := parser2.ParseFromContent([]byte(tc.content), testHelpers.DefaultSettings(), uri.File(""), protocol.Position{})
+			assert.NilError(t, err)
+			t.Cleanup(doc.Close)
+
+			modified := doc.ModifyTextForAutocomplete(tc.pos)
+
+			assert.Assert(t, len(modified) != 0)
+			last := modified[len(modified)-1]
+			assert.Check(t, cmp.Equal(last.Tag, "original"))
+			for _, m := range modified[:len(modified)-1] {
+				m.Document.Close()
+			}
+		})
+	}
+}
