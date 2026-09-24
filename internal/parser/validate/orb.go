@@ -242,7 +242,7 @@ func (val Validate) doesOrbExecutorExist(executorName string, executorRange prot
 
 func (val Validate) ValidateLocalOrbs() {
 	for _, orb := range val.Doc.Orbs {
-		if orb.Url.IsLocal {
+		if orb.Url.IsLocal && !orb.IsPlaceholder {
 			orbInfo, err := val.Doc.GetOrFetchOrbInfo(orb, val.Cache)
 
 			if err != nil {

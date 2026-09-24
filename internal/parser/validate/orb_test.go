@@ -466,3 +466,38 @@ workflows:
 `))
 	})
 }
+
+// orb-tools/continue tests an orb by writing its source into the `{}` it is
+// declared as, so what the orb declares is not known until then.
+// https://circleci.com/docs/orbs/author/testing-orbs/
+func TestInjectedOrbPlaceholder(t *testing.T) {
+	testCases := []ValidateTestCase{
+		{
+			Name: "Nothing referenced from an orb declared as {} is reported",
+			YamlContent: `version: 2.1
+
+orbs:
+  my-orb: {}
+
+jobs:
+  integration-test:
+    executor: my-orb/default
+    steps:
+      - my-orb/greet:
+          to: world
+      - my-orb/greet
+
+workflows:
+  test-deploy:
+    jobs:
+      - integration-test
+      - my-orb/hello:
+          name: hello-test
+          to: world
+`,
+			OnlyErrors: true,
+		},
+	}
+
+	CheckYamlErrors(t, testCases)
+}
