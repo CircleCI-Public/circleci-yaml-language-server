@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## [0.40.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.39.0...0.40.0) (2026-09-23)
+
+
+### Features
+
+* share and expire Docker Hub and namespace lookups ([#489](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/489)) ([9a88f12](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/9a88f126c6b24a86e1ff2eed31608acfbeaa8f78))
+* use slog for logging ([#481](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/481)) ([91e34e3](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/91e34e366956f8f0ccb4ea48bd098f6e1b108b96))
+
+
+### Bug Fixes
+
+* restore debug build task ([#488](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/488)) ([4561c58](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/4561c58a11ad5f772c3982c78f85dc5e70388833))
+* stop reporting Docker Hub failures and clone URLs as missing things ([#479](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/479)) ([5a50206](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/5a50206065e8cd9b8ce75e5d8f1da8a8b16b9273))
+
 ## [0.39.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.38.1...0.39.0) (2026-09-18)
 
 
