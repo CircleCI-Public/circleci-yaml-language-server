@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"maps"
 	"os"
 	"path"
 	"slices"
@@ -60,7 +61,7 @@ type File struct {
 
 type Files struct {
 	cacheMutex *sync.Mutex
-	fileCache  map[uri.URI]*File
+	fileCache  map[uri.URI]File
 }
 
 type Orbs struct {
@@ -81,7 +82,7 @@ type ResourceClasses struct {
 }
 
 func (c *Cache) init() {
-	c.FileCache.fileCache = make(map[uri.URI]*File)
+	c.FileCache.fileCache = make(map[uri.URI]File)
 	c.FileCache.cacheMutex = &sync.Mutex{}
 
 	c.OrbCache.orbsCache = make(map[string]*ast.OrbInfo)
@@ -103,23 +104,41 @@ func (c *Cache) init() {
 
 // FILE
 
+// A file is handed out as a copy, and changed only by the methods here, under
+// the lock: a validation reading a file in the background must not see it
+// change half way through because the document was edited.
+
+// copy returns a copy of a file that shares nothing with it.
+func (file File) copy() *File {
+	file.EnvVariables = slices.Clone(file.EnvVariables)
+	return &file
+}
+
 func (c *Files) SetFile(cachedFile File) File {
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()
-	c.fileCache[cachedFile.TextDocument.URI] = &cachedFile
+	c.fileCache[cachedFile.TextDocument.URI] = *cachedFile.copy()
 	return cachedFile
 }
 
 func (c *Files) GetFile(uri uri.URI) *File {
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()
-	return c.fileCache[uri]
+	file, ok := c.fileCache[uri]
+	if !ok {
+		return nil
+	}
+	return file.copy()
 }
 
 func (c *Files) GetFiles() map[uri.URI]*File {
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()
-	return c.fileCache
+	files := make(map[uri.URI]*File, len(c.fileCache))
+	for uri, file := range c.fileCache {
+		files[uri] = file.copy()
+	}
+	return files
 }
 
 func (c *Files) RemoveFile(uri uri.URI) {
@@ -128,25 +147,38 @@ func (c *Files) RemoveFile(uri uri.URI) {
 	delete(c.fileCache, uri)
 }
 
-func (c *Files) AddEnvVariableToProjectLinkedToFile(uri uri.URI, envVariable string) {
+// update changes the file cached for uri, if there is one: a file closed while
+// something was being fetched for it stays closed.
+func (c *Files) update(uri uri.URI, change func(*File)) {
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()
-	project := c.fileCache[uri]
-
-	if !slices.Contains(project.EnvVariables, envVariable) {
-		project.EnvVariables = append(project.EnvVariables, envVariable)
+	file, ok := c.fileCache[uri]
+	if !ok {
+		return
 	}
-	c.fileCache[uri] = project
+	change(&file)
+	c.fileCache[uri] = file
+}
+
+func (c *Files) AddEnvVariableToProjectLinkedToFile(uri uri.URI, envVariable string) {
+	c.update(uri, func(file *File) {
+		if !slices.Contains(file.EnvVariables, envVariable) {
+			file.EnvVariables = append(file.EnvVariables, envVariable)
+		}
+	})
+}
+
+// ClearEnvVariables forgets the variables read for a file's project.
+func (c *Files) ClearEnvVariables(uri uri.URI) {
+	c.update(uri, func(file *File) {
+		file.EnvVariables = []string{}
+	})
 }
 
 func (c *Files) AddProjectSlugToFile(uri uri.URI, project circleci.Project) {
-	c.cacheMutex.Lock()
-	defer c.cacheMutex.Unlock()
-	file := c.fileCache[uri]
-
-	file.Project = project
-
-	c.fileCache[uri] = file
+	c.update(uri, func(file *File) {
+		file.Project = project
+	})
 }
 
 // forgetProjects drops the project resolved for every file, and the variables
@@ -155,19 +187,17 @@ func (c *Files) forgetProjects() {
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()
 
-	for _, file := range c.fileCache {
+	for uri, file := range c.fileCache {
 		file.Project = circleci.Project{}
 		file.EnvVariables = nil
+		c.fileCache[uri] = file
 	}
 }
 
 func (c *Files) UpdateTextDocument(uri uri.URI, textDocument protocol.TextDocumentItem) {
-	c.cacheMutex.Lock()
-	defer c.cacheMutex.Unlock()
-	file := c.fileCache[uri]
-	file.TextDocument = textDocument
-
-	c.fileCache[uri] = file
+	c.update(uri, func(file *File) {
+		file.TextDocument = textDocument
+	})
 }
 
 // ORBS
@@ -191,7 +221,11 @@ func (c *Orbs) SetOrb(orb *ast.OrbInfo, orbID string) ast.OrbInfo {
 func (c *Orbs) UpdateOrbParsedAttributes(orbID string, parsedOrbAttributes ast.OrbParsedAttributes) ast.OrbParsedAttributes {
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()
-	c.orbsCache[orbID].OrbParsedAttributes = parsedOrbAttributes
+	// The orb is replaced rather than changed: whoever got it from GetOrb may
+	// still be reading it.
+	updated := *c.orbsCache[orbID]
+	updated.OrbParsedAttributes = parsedOrbAttributes
+	c.orbsCache[orbID] = &updated
 	return parsedOrbAttributes
 }
 
@@ -442,7 +476,26 @@ func (c *Contexts) AddEnvVariableToOrganizationContext(organizationId string, na
 func (c *Contexts) GetAllContextOfOrganization(organizationId string) map[string]*Context {
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()
-	return c.contextCache[organizationId]
+	return maps.Clone(c.contextCache[organizationId])
+}
+
+// setEnvVariables replaces the variables of a context.
+func (c *Contexts) setEnvVariables(ctx *Context, envVariables []string) {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	ctx.envVariables = envVariables
+}
+
+// envVariablesOf returns the variables of an organization's context, and
+// whether the context is known.
+func (c *Contexts) envVariablesOf(organizationId string, name string) ([]string, bool) {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	ctx := c.contextCache[organizationId][name]
+	if ctx == nil {
+		return nil, false
+	}
+	return slices.Clone(ctx.envVariables), true
 }
 
 // Resource class

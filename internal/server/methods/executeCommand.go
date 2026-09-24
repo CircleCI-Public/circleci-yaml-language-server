@@ -10,6 +10,7 @@ import (
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/parser"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/session"
 )
 
 func (methods *Methods) ExecuteCommand(_ context.Context, params *protocol.ExecuteCommandParams) (protocol.LSPAny, error) {
@@ -49,7 +50,7 @@ func (methods *Methods) ExecuteCommand(_ context.Context, params *protocol.Execu
 			return nil, jsonrpc2.NewError(jsonrpc2.InvalidParams, "invalid method parameter: fileURI")
 		}
 
-		parsedFile, err := parser.ParseFromContent([]byte(content), methods.Settings, uri.File(fileUri), protocol.Position{})
+		parsedFile, err := parser.ParseFromContent([]byte(content), methods.Settings(), uri.File(fileUri), protocol.Position{})
 		if err != nil {
 			return nil, jsonrpc2.NewError(jsonrpc2.InternalError, "unable to parse file")
 		}
@@ -106,11 +107,13 @@ func argument[T any](arguments []protocol.LSPAny, i int) (T, bool) {
 }
 
 func (methods *Methods) setToken(token string) {
-	if methods.Settings.Api.Token != token {
+	if methods.Settings().Api.Token != token {
 		methods.Cache.ClearHostData()
 	}
 
-	methods.Settings.Api.Token = token
+	methods.updateSettings(func(settings *session.Settings) {
+		settings.Api.Token = token
+	})
 	filesCache := methods.Cache.FileCache.GetFiles()
 	for _, file := range filesCache {
 		go methods.notificationMethods(file.TextDocument)
@@ -120,15 +123,16 @@ func (methods *Methods) setToken(token string) {
 }
 
 func (methods *Methods) setHostUrl(hostUrl string) {
-	if methods.Settings.Api.HostUrl != hostUrl {
+	if methods.Settings().Api.HostUrl != hostUrl {
 		methods.Cache.ClearHostData()
 	}
 
-	if hostUrl != "" {
-		methods.Settings.Api.HostUrl = hostUrl
-	} else {
-		methods.Settings.Api.HostUrl = circleci.DefaultHostURL
+	if hostUrl == "" {
+		hostUrl = circleci.DefaultHostURL
 	}
+	methods.updateSettings(func(settings *session.Settings) {
+		settings.Api.HostUrl = hostUrl
+	})
 
 	filesCache := methods.Cache.FileCache.GetFiles()
 	for _, file := range filesCache {
@@ -139,5 +143,7 @@ func (methods *Methods) setHostUrl(hostUrl string) {
 }
 
 func (methods *Methods) setUserId(userId string) {
-	methods.Settings.UserIdForTelemetry = userId
+	methods.updateSettings(func(settings *session.Settings) {
+		settings.UserIdForTelemetry = userId
+	})
 }

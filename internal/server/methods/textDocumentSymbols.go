@@ -9,7 +9,7 @@ import (
 )
 
 func (methods *Methods) DocumentSymbol(_ context.Context, params *protocol.DocumentSymbolParams) (protocol.DocumentSymbolResult, error) {
-	res, err := languageservice.DocumentSymbols(*params, methods.Cache, methods.Settings)
+	res, err := languageservice.DocumentSymbols(*params, methods.Cache, methods.Settings())
 	if err != nil {
 		return nil, err
 	}

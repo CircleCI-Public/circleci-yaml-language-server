@@ -10,7 +10,7 @@ import (
 )
 
 func (methods *Methods) SetResourceClassOfFile(params protocol.DidOpenTextDocumentParams) {
-	resourceClasses := getResourceClassOfOrg(params.TextDocument.URI, methods.Settings)
+	resourceClasses := getResourceClassOfOrg(params.TextDocument.URI, methods.Settings())
 
 	methods.Cache.ResourceClassCache.SetResourceClassForFile(params.TextDocument.URI, &resourceClasses)
 }

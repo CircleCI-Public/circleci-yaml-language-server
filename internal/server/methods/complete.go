@@ -9,7 +9,7 @@ import (
 )
 
 func (methods *Methods) Completion(_ context.Context, params *protocol.CompletionParams) (protocol.CompletionResult, error) {
-	res, err := languageservice.Complete(*params, methods.Cache, methods.Settings)
+	res, err := languageservice.Complete(*params, methods.Cache, methods.Settings())
 	go (func() {
 		methods.SendTelemetryEvent(TelemetryEvent{
 			Action: "autocompleted",

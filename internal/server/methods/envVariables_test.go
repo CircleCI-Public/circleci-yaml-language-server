@@ -6,6 +6,7 @@ package methods
 
 import (
 	"bytes"
+	"context"
 	"log/slog"
 	"net/http"
 	"testing"
@@ -31,7 +32,7 @@ const (
 // rocketMethods builds a Methods over a fake serving acme/rocket with the env
 // vars named, and a cache holding one open config file of that project.
 //
-// Client and Ctx are left zero: nothing on this path touches them, and a nil
+// The client is left nil: nothing on this path touches it, and a nil
 // client is a louder failure than a stub if that ever stops being true.
 func rocketMethods(t *testing.T, token string, envVarNames ...string) (*Methods, *fakes.CircleCI) {
 	t.Helper()
@@ -42,12 +43,9 @@ func rocketMethods(t *testing.T, token string, envVarNames ...string) (*Methods,
 		fake.AddProjectEnvVar(rocketSlug, name, "")
 	}
 
-	methods := &Methods{
-		Cache: cache.New(),
-		Settings: &session.Settings{
-			Api: circleci.Config{Token: token, HostUrl: fake.URL()},
-		},
-	}
+	methods := New(context.Background(), nil, cache.New(), session.Settings{
+		Api: circleci.Config{Token: token, HostUrl: fake.URL()},
+	}, "")
 
 	return methods, fake
 }

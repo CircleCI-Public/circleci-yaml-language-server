@@ -9,5 +9,5 @@ import (
 )
 
 func (methods *Methods) References(_ context.Context, params *protocol.ReferenceParams) ([]protocol.Location, error) {
-	return languageservice.References(*params, methods.Cache, methods.Settings)
+	return languageservice.References(*params, methods.Cache, methods.Settings())
 }

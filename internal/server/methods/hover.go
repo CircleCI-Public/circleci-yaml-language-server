@@ -9,7 +9,7 @@ import (
 )
 
 func (methods *Methods) Hover(_ context.Context, params *protocol.HoverParams) (*protocol.Hover, error) {
-	res, err := languageservice.Hover(*params, methods.Cache, methods.Settings)
+	res, err := languageservice.Hover(*params, methods.Cache, methods.Settings())
 	if err != nil {
 		return nil, nil
 	}

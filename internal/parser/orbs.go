@@ -2,6 +2,7 @@ package parser
 
 import (
 	"strings"
+	"sync"
 
 	sitter "github.com/tree-sitter/go-tree-sitter"
 	"go.lsp.dev/protocol"
@@ -10,7 +11,13 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
 )
 
-var simpleOrbExistanceCache = make(map[string]bool)
+// simpleOrbExistanceCache remembers whether each orb exists. Documents are
+// parsed on several goroutines at once, so it is read and written under
+// simpleOrbExistanceMutex.
+var (
+	simpleOrbExistanceCache = make(map[string]bool)
+	simpleOrbExistanceMutex sync.Mutex
+)
 
 func (doc *YamlDocument) GetOrbInfoFromName(name string, cache *cache.Cache) (*ast.OrbInfo, error) {
 	// Searching within local orbs
@@ -56,16 +63,22 @@ func (doc *YamlDocument) GetOrFetchOrbInfo(orb ast.Orb, cache *cache.Cache) (*as
 
 func (doc *YamlDocument) DoesOrbExist(orb ast.Orb, cache *cache.Cache) bool {
 	lookup := orb.Url.Name
+	simpleOrbExistanceMutex.Lock()
 	exists, inMap := simpleOrbExistanceCache[lookup]
+	simpleOrbExistanceMutex.Unlock()
 
 	if inMap {
 		return exists
 	}
 
 	fetchedOrb, err := GetOrbByName(lookup, doc.Context)
-	simpleOrbExistanceCache[lookup] = err == nil && fetchedOrb.Name != ""
+	exists = err == nil && fetchedOrb.Name != ""
 
-	return simpleOrbExistanceCache[lookup]
+	simpleOrbExistanceMutex.Lock()
+	simpleOrbExistanceCache[lookup] = exists
+	simpleOrbExistanceMutex.Unlock()
+
+	return exists
 }
 
 func (doc *YamlDocument) parseOrbs(orbsNode *sitter.Node) {
