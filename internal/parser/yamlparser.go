@@ -474,7 +474,9 @@ func (doc *YamlDocument) ModifyTextForAutocomplete(pos protocol.Position) []Modi
 
 	res := []ModifiedYamlDocument{}
 
-	if node.Parent().Kind() == "double_quote_scalar" {
+	// The node at the position is the root when nothing narrower holds it, as
+	// between the documents of a stream.
+	if parent := node.Parent(); parent != nil && parent.Kind() == "double_quote_scalar" {
 		// Fixes a crash, investigate later
 		// Autocompletion still works fine.
 		return []ModifiedYamlDocument{
@@ -496,7 +498,7 @@ func (doc *YamlDocument) ModifyTextForAutocomplete(pos protocol.Position) []Modi
 		// keep decides whether a candidate that parsed cleanly is offered.
 		keep bool
 	}{
-		{"- a: 1", "edit-item", strings.TrimSpace(text)[0] != '-'},
+		{"- a: 1", "edit-item", !strings.HasPrefix(strings.TrimSpace(text), "-")},
 		{"a: 1", "edit-key", true},
 		{"a", "edit-value", true},
 	}

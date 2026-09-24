@@ -4,10 +4,13 @@ import (
 	"reflect"
 	"testing"
 
+	"go.lsp.dev/protocol"
+	"go.lsp.dev/uri"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/testHelpers"
 )
 
 type jobsArgs struct {
@@ -208,5 +211,59 @@ func TestYamlDocument_jobExecutors(t *testing.T) {
 
 		assert.Check(t, cmp.Equal("26.5.0", doc.Jobs["job-macos"].MacOS.Xcode))
 		assert.Check(t, cmp.Equal("m4pro.large", doc.Jobs["job-macos"].ResourceClass))
+	}
+}
+
+func TestJobMergingAnAnchorThatMergesItself(t *testing.T) {
+	// Merging these used to recurse until the stack overflowed, which no
+	// recover can catch, so it ended the server rather than the request.
+	for name, tc := range map[string]struct {
+		content           string
+		wantResourceClass string
+	}{
+		"directly": {
+			content: `version: 2.1
+jobs:
+  build: &a
+    <<: *a
+    resource_class: large
+`,
+			wantResourceClass: "large",
+		},
+		"through another anchor": {
+			content: `version: 2.1
+x: &a
+  <<: *b
+y: &b
+  <<: *a
+  resource_class: large
+jobs:
+  build:
+    <<: *a
+`,
+			wantResourceClass: "large",
+		},
+		"alongside an anchor merged twice without a cycle": {
+			content: `version: 2.1
+x: &shared
+  resource_class: large
+y: &other
+  <<: *shared
+jobs:
+  build:
+    <<: [*shared, *other]
+`,
+			wantResourceClass: "large",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			doc, err := ParseFromContent([]byte(tc.content), testHelpers.DefaultSettings(), uri.File(""), protocol.Position{})
+			assert.NilError(t, err)
+			t.Cleanup(doc.Close)
+
+			job, ok := doc.Jobs["build"]
+			assert.Assert(t, ok, "job build was not parsed")
+			assert.Check(t, cmp.Equal(job.ResourceClass, tc.wantResourceClass))
+		})
 	}
 }

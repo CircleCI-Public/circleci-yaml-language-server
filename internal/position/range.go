@@ -44,6 +44,9 @@ func LineContentRange(lineIndex int, content []byte) protocol.Range {
 
 // Return the exact range of the text on a all given lines.
 // See LineContentRange for more information
+//
+// A line past the end of the content is taken to be the last one: a YAML error
+// found at the end of the stream can be reported on the line after it.
 func AllLineContentRange(lineIndexes []int, content []byte) []protocol.Range {
 	str := string(content)
 
@@ -52,6 +55,7 @@ func AllLineContentRange(lineIndexes []int, content []byte) []protocol.Range {
 	ranges := []protocol.Range{}
 
 	for _, lineIndex := range lineIndexes {
+		lineIndex = max(0, min(lineIndex, len(allLines)-1))
 		line := allLines[lineIndex]
 
 		trim := strings.TrimSpace(line)

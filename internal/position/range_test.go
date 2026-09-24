@@ -62,3 +62,16 @@ some-key:
 
 	assert.Check(t, cmp.DeepEqual(expected, actual))
 }
+
+func TestAllLineContentRangePastTheEnd(t *testing.T) {
+	// A YAML error at the end of the stream can name the line after the last.
+	content := "version: 2.1\nj"
+
+	actual := AllLineContentRange([]int{2, 5}, []byte(content))
+
+	last := protocol.Range{
+		Start: protocol.Position{Line: 1, Character: 0},
+		End:   protocol.Position{Line: 1, Character: 1},
+	}
+	assert.Check(t, cmp.DeepEqual(actual, []protocol.Range{last, last}))
+}

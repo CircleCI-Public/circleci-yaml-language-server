@@ -5,8 +5,13 @@ import (
 	"testing"
 
 	sitter "github.com/tree-sitter/go-tree-sitter"
+	"go.lsp.dev/protocol"
+	"go.lsp.dev/uri"
+	"gotest.tools/v3/assert"
+	"gotest.tools/v3/assert/cmp"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/testHelpers"
 )
 
 const YamlFile = `
@@ -187,4 +192,26 @@ func TestYamlDocument_parseSteps(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestStepThatIsOnlyAnAnchor(t *testing.T) {
+	// The anchor is typed before the step it names. This used to dereference
+	// the step's missing value.
+	content := `version: 2.1
+jobs:
+  build:
+    steps:
+      - &s
+      - checkout
+`
+	doc, err := ParseFromContent([]byte(content), testHelpers.DefaultSettings(), uri.File(""), protocol.Position{})
+	assert.NilError(t, err)
+	t.Cleanup(doc.Close)
+
+	job, ok := doc.Jobs["build"]
+	assert.Assert(t, ok, "job build was not parsed")
+	assert.Assert(t, cmp.Len(job.Steps, 2))
+	named, ok := job.Steps[1].(ast.NamedStep)
+	assert.Assert(t, ok, "second step is %T", job.Steps[1])
+	assert.Check(t, cmp.Equal(named.Name, "checkout"))
 }

@@ -208,6 +208,14 @@ func (doc *YamlDocument) GetKeyValueNodes(node *sitter.Node) (keyNode *sitter.No
 }
 
 func (doc *YamlDocument) iterateOnBlockMapping(blockMappingNode *sitter.Node, fn func(child *sitter.Node)) {
+	doc.iterateOnMergedBlockMapping(blockMappingNode, fn, map[string]bool{})
+}
+
+// iterateOnMergedBlockMapping is iterateOnBlockMapping for a mapping reached
+// through the merge keys of the anchors in merging. An anchor already among
+// them is not merged again: an anchor that merges itself, directly or through
+// others, would otherwise be merged forever.
+func (doc *YamlDocument) iterateOnMergedBlockMapping(blockMappingNode *sitter.Node, fn func(child *sitter.Node), merging map[string]bool) {
 	if blockMappingNode == nil || (blockMappingNode.Kind() != "block_mapping" && blockMappingNode.Kind() != "flow_mapping") {
 		return
 	}
@@ -253,10 +261,15 @@ func (doc *YamlDocument) iterateOnBlockMapping(blockMappingNode *sitter.Node, fn
 			return
 		}
 
+		if merging[anchorName] {
+			continue
+		}
+
 		anchorValue := GetFirstChild(anchor.ValueNode)
 
 		// Recursively call iterateOnBlockMapping to handle merged block that contain merged blocks themselves
-		doc.iterateOnBlockMapping(
+		merging[anchorName] = true
+		doc.iterateOnMergedBlockMapping(
 			anchorValue,
 			func(child *sitter.Node) {
 				keyNode, _ := doc.GetKeyValueNodes(child)
@@ -273,7 +286,9 @@ func (doc *YamlDocument) iterateOnBlockMapping(blockMappingNode *sitter.Node, fn
 				fn(child)
 				mappedKeys[keyName] = true
 			},
+			merging,
 		)
+		delete(merging, anchorName)
 	}
 
 }

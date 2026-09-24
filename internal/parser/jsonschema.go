@@ -77,8 +77,11 @@ func handleYAMLErrors(err string, content []byte, rootNode *sitter.Node) ([]prot
 				Start: position.FromIndex(match[0], content),
 				End:   position.FromIndex(match[1], content),
 			}
-			node, _, _ := position.NodeAt(rootNode, rng.Start)
-			if node.Kind() == "alias_name" {
+			// The name is found wherever it is in the text, which can be
+			// somewhere no node is, as where tree-sitter recovered from an
+			// error.
+			node, _, nodeErr := position.NodeAt(rootNode, rng.Start)
+			if nodeErr == nil && node.Kind() == "alias_name" {
 				diagnostics = append(diagnostics, diagnostic.Error(rng, err))
 			}
 		}
@@ -101,7 +104,8 @@ func handleYAMLErrors(err string, content []byte, rootNode *sitter.Node) ([]prot
 			return []protocol.Diagnostic{diagnostic.ErrorFromNode(rootNode, err)}, nil
 		}
 
-		lineRange := position.AllLineContentRange([]int{lineNumber}, content)[0]
+		// The error counts lines from one.
+		lineRange := position.LineContentRange(lineNumber-1, content)
 
 		diag := diagnostic.Error(
 			lineRange,
