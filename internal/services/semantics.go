@@ -131,13 +131,10 @@ func (sem SemanticTokenStruct) highlightParameters(valueNode *sitter.Node) {
 	sem.highlightWithRegex(valueNode, PARAM_REGEX)
 }
 
-func (sem SemanticTokenStruct) highlightCacheKeys(valueNode *sitter.Node) {
-	reg, err := regexp.Compile(`{{ ?(.Branch|.BuildNum|.Revision|.CheckoutKey|.Environment.variableName|checksum .*|epoch|arch) ?}}`)
-	if err != nil {
-		return
-	}
+var cacheKeyTemplateRegex = regexp.MustCompile(`{{ ?(.Branch|.BuildNum|.Revision|.CheckoutKey|.Environment.variableName|checksum .*|epoch|arch) ?}}`)
 
-	sem.highlightWithRegex(valueNode, reg)
+func (sem SemanticTokenStruct) highlightCacheKeys(valueNode *sitter.Node) {
+	sem.highlightWithRegex(valueNode, cacheKeyTemplateRegex)
 }
 
 func (sem SemanticTokenStruct) highlightOrbs(valueNode *sitter.Node) {

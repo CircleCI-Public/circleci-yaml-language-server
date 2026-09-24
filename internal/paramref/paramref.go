@@ -121,10 +121,13 @@ func IsPartiallyReferenced(content string) (bool, bool) {
 	return partialParamRegex.Find([]byte(content)) != nil, isPipelineParam
 }
 
+var partialMatrixRegex = regexp.MustCompile(`<<\s*matrix\.\s*>?>?`)
+
 func IsMatrixPartiallyReferenced(content string) bool {
-	regex, _ := regexp.Compile(`<<\s*matrix\.\s*>?>?`)
-	return regex.Find([]byte(content)) != nil
+	return partialMatrixRegex.Find([]byte(content)) != nil
 }
+
+var paramInStringRegex = regexp.MustCompile(`<<\s*(parameters|pipeline.parameters)\.([A-Za-z0-9-_]*)\s*>>`)
 
 func InString(content string) ([]struct {
 	Name       string
@@ -132,13 +135,8 @@ func InString(content string) ([]struct {
 	ParamRange protocol.Range
 }, error,
 ) {
-	paramRegex, err := regexp.Compile(`<<\s*(parameters|pipeline.parameters)\.([A-Za-z0-9-_]*)\s*>>`)
-	if err != nil {
-		return nil, fmt.Errorf("")
-	}
-
 	byteContent := []byte(content)
-	params := paramRegex.FindAllIndex(byteContent, -1)
+	params := paramInStringRegex.FindAllIndex(byteContent, -1)
 
 	results := []struct {
 		Name       string

@@ -5,6 +5,12 @@ import (
 	"go.lsp.dev/protocol"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/yamltree"
+)
+
+var (
+	anchorsQuery = yamltree.MustCompileQuery("(anchor) @query")
+	aliasesQuery = yamltree.MustCompileQuery("(alias) @query")
 )
 
 func ParseYamlAnchors(doc *YamlDocument) map[string]YamlAnchor {
@@ -14,7 +20,7 @@ func ParseYamlAnchors(doc *YamlDocument) map[string]YamlAnchor {
 	anchorMap := map[string]YamlAnchor{}
 
 	// Mapping all anchors
-	ExecQuery(rootNode, "(anchor) @query", func(match *sitter.QueryMatch) {
+	anchorsQuery.Run(rootNode, func(match *sitter.QueryMatch) {
 		for _, capture := range match.Captures {
 			node := &capture.Node
 			nameNode := GetChildOfType(node, "anchor_name")
@@ -30,7 +36,7 @@ func ParseYamlAnchors(doc *YamlDocument) map[string]YamlAnchor {
 	})
 
 	// Searching for all aliases
-	ExecQuery(rootNode, "(alias) @query", func(match *sitter.QueryMatch) {
+	aliasesQuery.Run(rootNode, func(match *sitter.QueryMatch) {
 		for _, capture := range match.Captures {
 			node := &capture.Node
 			name := doc.GetNodeText(node)[1:]

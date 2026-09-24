@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 
 	sitter "github.com/tree-sitter/go-tree-sitter"
 	"github.com/xeipuuv/gojsonschema"
@@ -12,6 +13,7 @@ import (
 	"go.lsp.dev/uri"
 	"gopkg.in/yaml.v3"
 
+	schema "github.com/CircleCI-Public/circleci-yaml-language-server"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/paramref"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
@@ -45,6 +47,26 @@ func schemaURI(location string) string {
 		return location
 	}
 	return string(uri.File(location))
+}
+
+// embeddedSchema is the schema built into the server, compiled the first time
+// it is needed and shared after. Compiling it was a third of what diagnostics
+// cost, and it cannot change while the server runs; validating against a
+// schema only reads it, so every request can share one.
+var embeddedSchema = sync.OnceValues(func() (*gojsonschema.Schema, error) {
+	return gojsonschema.NewSchema(gojsonschema.NewBytesLoader(schema.EmbeddedSchemaJSON))
+})
+
+// LoadEmbeddedJsonSchema validates against the schema built into the server.
+func (validator *JSONSchemaValidator) LoadEmbeddedJsonSchema() error {
+	compiled, err := embeddedSchema()
+	if err != nil {
+		return err
+	}
+
+	validator.schema = compiled
+
+	return nil
 }
 
 func (validator *JSONSchemaValidator) LoadJsonSchemaFromBytes(data []byte) error {

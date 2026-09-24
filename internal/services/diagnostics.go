@@ -10,7 +10,6 @@ import (
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 
-	schema "github.com/CircleCI-Public/circleci-yaml-language-server"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/codeaction"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/session"
@@ -78,7 +77,7 @@ func DiagnosticYAML(yamlDocument parser.YamlDocument, cache *cache.Cache, contex
 	if yamlDocument.SchemaLocation != "" {
 		err = validator.LoadJsonSchema(yamlDocument.SchemaLocation)
 	} else {
-		err = validator.LoadJsonSchemaFromBytes(schema.EmbeddedSchemaJSON)
+		err = validator.LoadEmbeddedJsonSchema()
 	}
 
 	if err != nil {

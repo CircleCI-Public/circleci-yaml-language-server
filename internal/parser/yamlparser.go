@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	sitter "github.com/tree-sitter/go-tree-sitter"
 	"go.lsp.dev/protocol"
@@ -142,10 +143,12 @@ func (doc *YamlDocument) ParseYAML(context *session.Settings, offset protocol.Po
 	doc.assignContexts()
 }
 
+var errorsQuery = yamltree.MustCompileQuery("(ERROR) @flows")
+
 func (doc *YamlDocument) ValidateYAML() {
 	rootNode := doc.RootNode
 
-	ExecQuery(rootNode, "(ERROR) @flows", func(match *sitter.QueryMatch) {
+	errorsQuery.Run(rootNode, func(match *sitter.QueryMatch) {
 		for _, capture := range match.Captures {
 			node := &capture.Node
 			diag := diagnostic.ErrorFromNode(node, "Error! Please fix your yaml file")
@@ -438,16 +441,15 @@ func (doc *YamlDocument) Close() {
 func (doc *YamlDocument) InsertText(pos protocol.Position, text string) (YamlDocument, error) {
 	content := doc.Content
 	posIdx := position.ToIndex(pos, content)
-	newContent := ""
 
-	for i, r := range content {
-		if i == posIdx {
-			newContent += text
-		}
-		newContent += string(r)
+	// The text goes in before the character at the position, so at the very
+	// end of the content, where there is none, it does not go in at all.
+	newContent := slices.Clone(content)
+	if posIdx < len(content) && utf8.RuneStart(content[posIdx]) {
+		newContent = slices.Concat(content[:posIdx], []byte(text), content[posIdx:])
 	}
 
-	return ParseFromContent([]byte(newContent), doc.Context, doc.URI, doc.Offset)
+	return ParseFromContent(newContent, doc.Context, doc.URI, doc.Offset)
 }
 
 type ModifiedYamlDocument struct {
