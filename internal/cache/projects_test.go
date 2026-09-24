@@ -2,6 +2,7 @@ package cache
 
 import (
 	"net/http"
+	"sync"
 	"testing"
 
 	"go.lsp.dev/protocol"
@@ -185,5 +186,59 @@ func TestLoadProjectEnvVariables(t *testing.T) {
 
 		err := c.LoadProjectEnvVariables(configFor("not a url"), cachedFile)
 		assert.Check(t, err != nil, "an unparseable host must be reported, not panic")
+	})
+}
+
+func TestProject(t *testing.T) {
+	const projectRoute = "/api/v2/project/gh/acme/rocket"
+
+	t.Run("resolves a slug once for every caller", func(t *testing.T) {
+		fake := projectFake(t)
+		c := New()
+
+		var wg sync.WaitGroup
+		for range 10 {
+			wg.Go(func() {
+				project, err := c.Project(configFor(fake.URL()), rocketSlug)
+				assert.Check(t, err)
+				assert.Check(t, cmp.Equal(project.OrganizationId, "org-acme"))
+			})
+		}
+		wg.Wait()
+
+		assert.Check(t, cmp.Equal(fake.RequestCount(http.MethodGet, projectRoute), 1))
+	})
+
+	// A repository that is not a CircleCI project is asked about on every edit
+	// of its config.
+	t.Run("remembers that a slug names no project", func(t *testing.T) {
+		fake := fakes.NewCircleCI(t)
+		c := New()
+
+		for range 2 {
+			project, err := c.Project(configFor(fake.URL()), rocketSlug)
+			assert.NilError(t, err)
+			assert.Check(t, cmp.DeepEqual(project, circleci.Project{}))
+		}
+
+		assert.Check(t, cmp.Equal(fake.RequestCount(http.MethodGet, projectRoute), 1))
+	})
+
+	t.Run("does not remember a failure", func(t *testing.T) {
+		fake := projectFake(t)
+		c := New()
+
+		t.Run("fail the lookup", func(t *testing.T) {
+			fake.SetStatus("GET "+projectRoute, http.StatusInternalServerError)
+			_, err := c.Project(configFor(fake.URL()), rocketSlug)
+			assert.Check(t, httpcl.HasStatusCode(err, 500), "got %v", err)
+		})
+
+		t.Run("check the next call resolves it", func(t *testing.T) {
+			fake.SetStatus("GET "+projectRoute, 0)
+			project, err := c.Project(configFor(fake.URL()), rocketSlug)
+			assert.NilError(t, err)
+			assert.Check(t, cmp.Equal(project.Slug, rocketSlug))
+		})
 	})
 }

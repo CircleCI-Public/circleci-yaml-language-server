@@ -1,8 +1,41 @@
 package cache
 
 import (
+	"net/http"
+	"time"
+
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/httpcl"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/memo"
 )
+
+// Projects remembers the project each slug names, and that a slug names none.
+// Every file of a repository names the same project, and each is resolved as
+// it is opened.
+type Projects struct {
+	// projects holds the zero Project for a slug that names none.
+	projects *memo.Memo[circleci.Project]
+}
+
+func projectLifetime(project circleci.Project) time.Duration {
+	return memo.Existence(project.Slug != "")
+}
+
+// Project returns the project a slug names, or the zero Project when it names
+// none, asking the host only when no answer is remembered. An error is
+// returned but not remembered.
+//
+// A repository that is not a CircleCI project is common, and is asked about
+// on every edit of its config, so that it names no project is remembered too.
+func (c *Cache) Project(api circleci.Config, slug string) (circleci.Project, error) {
+	return c.ProjectCache.projects.Get(slug, func() (circleci.Project, error) {
+		project, err := circleci.GetProject(api, slug)
+		if httpcl.HasStatusCode(err, http.StatusNotFound) {
+			return circleci.Project{}, nil
+		}
+		return project, err
+	})
+}
 
 // LoadProjectEnvVariables caches the names of a project's environment
 // variables against the file that belongs to the project.

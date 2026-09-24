@@ -5,6 +5,8 @@ import (
 	"log/slog"
 	"net/url"
 	"sync"
+
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/memo"
 )
 
 // OrbRegistry reads orb and namespace metadata.
@@ -83,36 +85,15 @@ func NewGraphQLOrbRegistry(hostUrl, token, userId string, debug bool) OrbRegistr
 
 // v3OrbRoutes caches, per host, whether the V3 orb routes are served. Hosts are
 // long-lived and the answer cannot change under a running process, so one
-// answer per host is enough.
-var v3OrbRoutes = struct {
-	mutex sync.RWMutex
-	known map[string]bool
-}{known: map[string]bool{}}
-
-func lookupV3OrbRoutes(host string) (available, known bool) {
-	v3OrbRoutes.mutex.RLock()
-	defer v3OrbRoutes.mutex.RUnlock()
-
-	available, known = v3OrbRoutes.known[host]
-
-	return available, known
-}
-
-func recordV3OrbRoutes(host string, available bool) {
-	v3OrbRoutes.mutex.Lock()
-	defer v3OrbRoutes.mutex.Unlock()
-
-	v3OrbRoutes.known[host] = available
-}
+// answer per host for memo.FoundLifetime is plenty. Concurrent first requests
+// to a host share one probe.
+var v3OrbRoutes = memo.New(memo.Fixed[bool](memo.FoundLifetime), nil)
 
 // resetV3OrbRoutes forgets what is known about every host. It exists for tests,
 // which stand up a fresh server per case on a fresh address, and reaches them
 // through export_test.go rather than this package's public API.
 func resetV3OrbRoutes() {
-	v3OrbRoutes.mutex.Lock()
-	defer v3OrbRoutes.mutex.Unlock()
-
-	v3OrbRoutes.known = map[string]bool{}
+	v3OrbRoutes.Clear()
 }
 
 // fallbackOrbRegistry dispatches to V3 where it is available and to GraphQL
@@ -146,19 +127,16 @@ func (registry *fallbackOrbRegistry) useV3(ctx context.Context) bool {
 		return true
 	}
 
-	if available, known := lookupV3OrbRoutes(registry.host); known {
-		return available
-	}
-
-	available, err := v3OrbRoutesRespond(ctx, registry.v3.client)
+	available, err := v3OrbRoutes.Get(registry.host, func() (bool, error) {
+		return v3OrbRoutesRespond(ctx, registry.v3.client)
+	})
 	if err != nil {
 		// The request failed for a reason that says nothing about whether the
-		// route exists. Assume V3 so that circleci.com-like hosts keep working,
-		// and do not cache, so a later call can settle the question.
+		// route exists. Assume V3 so that circleci.com-like hosts keep working;
+		// the failure is not remembered, so a later call can settle the
+		// question.
 		return true
 	}
-
-	recordV3OrbRoutes(registry.host, available)
 
 	return available
 }

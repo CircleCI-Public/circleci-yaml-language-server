@@ -16,6 +16,10 @@ const fixedTime = "2026-01-15T10:30:00Z"
 type contextsState struct {
 	contexts map[string][]Context       // org id -> contexts, insertion order
 	envVars  map[string][]ContextEnvVar // context id -> env vars, insertion order
+
+	// envVarsRefused refuses a listing that asks for the variables, as the
+	// real API does a token that cannot read those of a private context.
+	envVarsRefused bool
 }
 
 func newContextsState() contextsState {
@@ -51,6 +55,15 @@ func (f *CircleCI) AddContext(orgID, id, name string) {
 	})
 }
 
+// RefuseContextEnvVars makes a context listing that asks for the environment
+// variables answer 403, while one that does not ask still lists the contexts.
+func (f *CircleCI) RefuseContextEnvVars() {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	f.contexts.envVarsRefused = true
+}
+
 // AddContextEnvVar registers an environment variable of a context.
 func (f *CircleCI) AddContextEnvVar(contextID, name string) {
 	f.mu.Lock()
@@ -75,6 +88,12 @@ func (f *CircleCI) handleListContexts(w http.ResponseWriter, r *http.Request) {
 	withEnvVars := r.URL.Query().Get("include-env-vars") == "true"
 
 	f.mu.RLock()
+	if withEnvVars && f.contexts.envVarsRefused {
+		f.mu.RUnlock()
+		writeV2Error(w, http.StatusForbidden, "Permission denied")
+
+		return
+	}
 	items := make([]any, 0, len(f.contexts.contexts[orgID]))
 	for _, context := range f.contexts.contexts[orgID] {
 		item := map[string]any{

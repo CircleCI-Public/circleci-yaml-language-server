@@ -1,4 +1,4 @@
-package cache
+package memo
 
 import (
 	"errors"
@@ -12,7 +12,7 @@ import (
 )
 
 // keepForever is a lifetime long enough that nothing expires during a test.
-func keepForever(string) time.Duration { return 24 * time.Hour }
+var keepForever = Fixed[string](24 * time.Hour)
 
 // fakeClock is a clock that moves only when a test advances it.
 type fakeClock struct {
@@ -28,7 +28,7 @@ func (c *fakeClock) advance(d time.Duration) { c.now.Add(int64(d)) }
 
 func TestMemo(t *testing.T) {
 	t.Run("concurrent callers share one fetch", func(t *testing.T) {
-		m := newMemo(keepForever, nil)
+		m := New(keepForever, nil)
 		var fetches atomic.Int32
 		release := make(chan struct{})
 
@@ -41,7 +41,7 @@ func TestMemo(t *testing.T) {
 				started.Add(1)
 				done.Go(func() {
 					started.Done()
-					results[i], _ = m.get("key", func() (string, error) {
+					results[i], _ = m.Get("key", func() (string, error) {
 						fetches.Add(1)
 						<-release
 						return "value", nil
@@ -65,11 +65,11 @@ func TestMemo(t *testing.T) {
 	})
 
 	t.Run("a remembered value is not fetched again", func(t *testing.T) {
-		m := newMemo(keepForever, nil)
-		_, err := m.get("key", func() (string, error) { return "value", nil })
+		m := New(keepForever, nil)
+		_, err := m.Get("key", func() (string, error) { return "value", nil })
 		assert.NilError(t, err)
 
-		got, err := m.get("key", func() (string, error) {
+		got, err := m.Get("key", func() (string, error) {
 			t.Error("fetched a value that was remembered")
 			return "", nil
 		})
@@ -78,29 +78,29 @@ func TestMemo(t *testing.T) {
 	})
 
 	t.Run("an error is returned but not remembered", func(t *testing.T) {
-		m := newMemo(keepForever, nil)
+		m := New(keepForever, nil)
 		errFetch := errors.New("unavailable")
 
-		_, err := m.get("key", func() (string, error) { return "", errFetch })
+		_, err := m.Get("key", func() (string, error) { return "", errFetch })
 		assert.Check(t, cmp.ErrorIs(err, errFetch))
 
-		_, known := m.peek("key")
+		_, known := m.Peek("key")
 		assert.Check(t, !known, "a failed fetch must not be remembered")
 
-		got, err := m.get("key", func() (string, error) { return "value", nil })
+		got, err := m.Get("key", func() (string, error) { return "value", nil })
 		assert.NilError(t, err)
 		assert.Check(t, cmp.Equal(got, "value"))
 	})
 
 	t.Run("a fetch in flight across clear is not remembered", func(t *testing.T) {
-		m := newMemo(keepForever, nil)
+		m := New(keepForever, nil)
 		fetching := make(chan struct{})
 		release := make(chan struct{})
 		var done sync.WaitGroup
 
 		t.Run("start a fetch", func(t *testing.T) {
 			done.Go(func() {
-				_, _ = m.get("key", func() (string, error) {
+				_, _ = m.Get("key", func() (string, error) {
 					close(fetching)
 					<-release
 					return "stale", nil
@@ -110,43 +110,43 @@ func TestMemo(t *testing.T) {
 		})
 
 		t.Run("clear, then let the fetch finish", func(t *testing.T) {
-			m.clear()
+			m.Clear()
 			close(release)
 			done.Wait()
 		})
 
 		t.Run("check the value was dropped", func(t *testing.T) {
-			_, known := m.peek("key")
+			_, known := m.Peek("key")
 			assert.Check(t, !known, "a value read before clear must not survive it")
 		})
 	})
 	t.Run("an answer is kept for as long as its lifetime", func(t *testing.T) {
 		clock := &fakeClock{}
-		m := newMemo(existenceLifetime, clock)
+		m := New(Existence, clock)
 
 		t.Run("remember that one thing exists and one does not", func(t *testing.T) {
-			m.put("found", true)
-			m.put("missing", false)
+			m.Put("found", true)
+			m.Put("missing", false)
 		})
 
 		t.Run("check a missing answer expires first", func(t *testing.T) {
-			clock.advance(notFoundLifetime + time.Second)
+			clock.advance(NotFoundLifetime + time.Second)
 
-			_, known := m.peek("missing")
-			assert.Check(t, !known, "a not-found answer must expire after notFoundLifetime")
-			_, known = m.peek("found")
-			assert.Check(t, known, "a found answer must outlive notFoundLifetime")
+			_, known := m.Peek("missing")
+			assert.Check(t, !known, "a not-found answer must expire after NotFoundLifetime")
+			_, known = m.Peek("found")
+			assert.Check(t, known, "a found answer must outlive NotFoundLifetime")
 		})
 
 		t.Run("check a found answer expires after its own lifetime", func(t *testing.T) {
-			clock.advance(foundLifetime)
+			clock.advance(FoundLifetime)
 
-			_, known := m.peek("found")
-			assert.Check(t, !known, "a found answer must expire after foundLifetime")
+			_, known := m.Peek("found")
+			assert.Check(t, !known, "a found answer must expire after FoundLifetime")
 		})
 
 		t.Run("check an expired answer is fetched again", func(t *testing.T) {
-			got, err := m.get("missing", func() (bool, error) { return true, nil })
+			got, err := m.Get("missing", func() (bool, error) { return true, nil })
 			assert.NilError(t, err)
 			assert.Check(t, got, "the answer fetched after expiry")
 		})

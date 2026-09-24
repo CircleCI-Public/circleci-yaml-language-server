@@ -145,9 +145,9 @@ func (s *Server) Stop() {
 	})
 }
 
-// command builds the process without starting it, with its own cache
-// directory: the server writes fetched orb sources under the user cache, and
-// tests must not share that with each other or with the developer running them.
+// command builds the process without starting it, with its own home and
+// temporary directory: the server writes fetched orb sources under the
+// temporary directory, and tests must not leave them in the developer's.
 func command(t *testing.T, binary string, args []string, environment []string) *Server {
 	t.Helper()
 
@@ -156,7 +156,7 @@ func command(t *testing.T, binary string, args []string, environment []string) *
 	cmd := exec.Command(binary, args...)
 	cmd.Env = append(cmd.Environ(),
 		"HOME="+home,
-		"XDG_CACHE_HOME="+home+"/cache",
+		"TMPDIR="+home,
 	)
 	cmd.Env = append(cmd.Env, environment...)
 
