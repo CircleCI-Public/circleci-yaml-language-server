@@ -36,7 +36,7 @@ func (r *RetentionSettings) ValidateCaches() []protocol.Diagnostic {
 	if r.Caches.Text != "" && !r.ValidateCachesDuration() {
 		diagnostics = append(diagnostics, protocol.Diagnostic{
 			Range:    r.Caches.Range,
-			Message:  "Retention caches duration must be between 1d and 15d",
+			Message:  protocol.String("Retention caches duration must be between 1d and 15d"),
 			Severity: protocol.DiagnosticSeverityError,
 		})
 	}

@@ -274,7 +274,7 @@ func TestOrbStepsUsedInParameters(t *testing.T) {
 	val := CreateValidateFromYAML(string(content))
 	val.Validate()
 	for _, diag := range *val.Diagnostics {
-		if diag.Message == "Orb is unused" {
+		if diag.Message == protocol.String("Orb is unused") {
 			t.Errorf("Got orb is unused diagnostic")
 		}
 	}

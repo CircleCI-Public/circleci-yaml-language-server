@@ -61,7 +61,7 @@ func singleExecutorSymbols(executor ast2.Executor) protocol.DocumentSymbol {
 		Name:           executor.GetName(),
 		Range:          executor.GetRange(),
 		SelectionRange: executor.GetRange(),
-		Detail:         execType,
+		Detail:         unlessZero(execType),
 		Kind:           protocol.SymbolKind(ExecutorsSymbol),
 		Children:       childrens,
 	}

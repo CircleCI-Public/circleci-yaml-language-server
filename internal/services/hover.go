@@ -21,8 +21,8 @@ func Hover(params protocol.HoverParams, cache *cache.Cache, context *session.Set
 
 	if position.InRange(doc.VersionRange, params.Position) && doc.Version < 2.1 {
 		return protocol.Hover{
-			Contents: protocol.MarkupContent{
-				Kind:  protocol.PlainText,
+			Contents: &protocol.MarkupContent{
+				Kind:  protocol.MarkupKindPlainText,
 				Value: "Circle CI Config Helper is not available for this version. (Supported: 2.1)",
 			},
 		}, nil

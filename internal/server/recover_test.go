@@ -10,73 +10,71 @@ import (
 	"gotest.tools/v3/assert/cmp"
 )
 
-// reply is what a handler answered, as the replier saw it.
-type reply struct {
-	count  int
-	result any
-	err    error
-}
-
-func (r *reply) replier(_ context.Context, result any, err error) error {
-	r.count++
-	r.result = result
-	r.err = err
-	return nil
-}
-
-func call(t *testing.T) jsonrpc2.Request {
+// serve runs handler behind recoverPanics on one end of an in-memory
+// connection, and returns the other end to call it from.
+func serve(t *testing.T, handler jsonrpc2.Handler) jsonrpc2.Conn {
 	t.Helper()
 
-	req, err := jsonrpc2.NewCall(jsonrpc2.NewNumberID(1), "textDocument/completion", nil)
-	assert.NilError(t, err)
+	serverStream, clientStream := jsonrpc2.NewChannelStreamPair(0)
+	server := jsonrpc2.NewConn(serverStream)
+	server.Go(context.Background(), recoverPanics(handler))
+	client := jsonrpc2.NewConn(clientStream)
+	client.Go(context.Background(), jsonrpc2.MethodNotFoundHandler)
+	t.Cleanup(func() {
+		_ = client.Close()
+		_ = server.Close()
+	})
 
-	return req
+	return client
 }
 
 func TestRecoverPanics(t *testing.T) {
-	t.Run("answers a panicking request with an internal error", func(t *testing.T) {
-		got := &reply{}
-		handler := recoverPanics(func(context.Context, jsonrpc2.Replier, jsonrpc2.Request) error {
+	ctx := context.Background()
+
+	handler := func(_ context.Context, req *jsonrpc2.Request) (any, error) {
+		switch req.Method() {
+		case "panic", "panicNotification":
 			panic(errors.New("boom"))
-		})
+		default:
+			return "ok", nil
+		}
+	}
 
-		err := handler(context.Background(), got.replier, call(t))
+	t.Run("answers a panicking request with an internal error", func(t *testing.T) {
+		client := serve(t, handler)
 
-		assert.Check(t, err, "a returned error would close the connection")
-		assert.Check(t, cmp.Equal(got.count, 1))
-		assert.Check(t, cmp.Nil(got.result))
+		_, err := client.Call(ctx, "panic", nil, nil)
 
 		var rpcErr *jsonrpc2.Error
-		assert.Assert(t, errors.As(got.err, &rpcErr), "reply error %v is not a JSON-RPC error", got.err)
+		assert.Assert(t, errors.As(err, &rpcErr), "error %v is not a JSON-RPC error", err)
 		assert.Check(t, cmp.Equal(rpcErr.Code, jsonrpc2.InternalError))
-		assert.Check(t, cmp.Equal(rpcErr.Message, "textDocument/completion: internal error"))
+		assert.Check(t, cmp.Equal(rpcErr.Message, "panic: internal error"))
+
+		t.Run("and keeps the connection open", func(t *testing.T) {
+			var result string
+			_, err := client.Call(ctx, "fine", nil, &result)
+			assert.Check(t, err)
+			assert.Check(t, cmp.Equal(result, "ok"))
+		})
 	})
 
-	t.Run("does not reply twice to a request answered before it panicked", func(t *testing.T) {
-		got := &reply{}
-		handler := recoverPanics(func(ctx context.Context, reply jsonrpc2.Replier, _ jsonrpc2.Request) error {
-			_ = reply(ctx, "answered", nil)
-			panic("after replying")
-		})
+	t.Run("keeps the connection open after a panicking notification", func(t *testing.T) {
+		client := serve(t, handler)
 
-		err := handler(context.Background(), got.replier, call(t))
+		assert.Check(t, client.Notify(ctx, "panicNotification", nil))
 
+		var result string
+		_, err := client.Call(ctx, "fine", nil, &result)
 		assert.Check(t, err)
-		assert.Check(t, cmp.Equal(got.count, 1))
-		assert.Check(t, cmp.Equal(got.result, "answered"))
+		assert.Check(t, cmp.Equal(result, "ok"))
 	})
 
 	t.Run("passes a request that does not panic through", func(t *testing.T) {
-		got := &reply{}
-		handler := recoverPanics(func(ctx context.Context, reply jsonrpc2.Replier, _ jsonrpc2.Request) error {
-			return reply(ctx, "ok", nil)
-		})
+		client := serve(t, handler)
 
-		err := handler(context.Background(), got.replier, call(t))
-
+		var result string
+		_, err := client.Call(ctx, "fine", nil, &result)
 		assert.Check(t, err)
-		assert.Check(t, cmp.Equal(got.count, 1))
-		assert.Check(t, cmp.Equal(got.result, "ok"))
-		assert.Check(t, cmp.Nil(got.err))
+		assert.Check(t, cmp.Equal(result, "ok"))
 	})
 }

@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"go.lsp.dev/protocol"
 )
 
@@ -16,8 +17,8 @@ const settleTimeout = 20 * time.Second
 // and a failure prints something readable.
 func messages(diagnostics []protocol.Diagnostic) []string {
 	said := make([]string, 0, len(diagnostics))
-	for _, diagnostic := range diagnostics {
-		said = append(said, diagnostic.Message)
+	for _, d := range diagnostics {
+		said = append(said, diagnostic.MessageText(d))
 	}
 
 	return said

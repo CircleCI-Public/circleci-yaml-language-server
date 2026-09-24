@@ -22,14 +22,14 @@ func (doc *YamlDocument) parseJobs(jobsNode *sitter.Node) {
 			doc.addDiagnostic(protocol.Diagnostic{
 				Severity: protocol.DiagnosticSeverityWarning,
 				Range:    job.NameRange,
-				Message:  "Job already defined",
-				Source:   "cci-language-server",
+				Message:  protocol.String("Job already defined"),
+				Source:   protocol.NewOptional("cci-language-server"),
 			})
 			doc.addDiagnostic(protocol.Diagnostic{
 				Severity: protocol.DiagnosticSeverityWarning,
 				Range:    definedJob.NameRange,
-				Message:  "Job already defined",
-				Source:   "cci-language-server",
+				Message:  protocol.String("Job already defined"),
+				Source:   protocol.NewOptional("cci-language-server"),
 			})
 			return
 		}

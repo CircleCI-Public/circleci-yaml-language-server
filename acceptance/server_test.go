@@ -200,7 +200,7 @@ func TestInitialize(t *testing.T) {
 		assert.Check(t, result.Capabilities.HoverProvider != nil, "hover")
 		assert.Check(t, result.Capabilities.DefinitionProvider != nil, "definition")
 		assert.Check(t, result.Capabilities.CodeActionProvider != nil, "code actions")
-		assert.Check(t, result.Capabilities.ExecuteCommandProvider != nil, "commands")
+		assert.Check(t, len(result.Capabilities.ExecuteCommandProvider.Commands) > 0, "commands")
 		assert.Check(t, result.Capabilities.SemanticTokensProvider != nil, "semantic tokens")
 	})
 

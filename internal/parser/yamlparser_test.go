@@ -19,7 +19,7 @@ import (
 
 func TestErrCacheMissing(t *testing.T) {
 	c := cache.New()
-	_, err := parser2.ParseFromUriWithCache(uri.New("file:///toto.yaml"), c, nil)
+	_, err := parser2.ParseFromUriWithCache(uri.MustParse("file:///toto.yaml"), c, nil)
 
 	assert.Check(t, cmp.ErrorIs(err, parser2.ErrCacheMissing))
 }
@@ -50,8 +50,8 @@ jobs:
 	expect.DiagnosticList(t, *yamlDocument.Diagnostics).To.Include(protocol.Diagnostic{
 		Range:    machineRange,
 		Severity: protocol.DiagnosticSeverityWarning,
-		Message:  parser2.MachineTrueMessage(img),
-		Data: []protocol.CodeAction{
+		Message:  protocol.String(parser2.MachineTrueMessage(img)),
+		Data: codeaction.Data([]protocol.CodeAction{
 			codeaction.TextEdit("Replace with most updated ubuntu image", yamlDocument.URI,
 				[]protocol.TextEdit{
 					{
@@ -60,7 +60,7 @@ jobs:
 		` + strings.Repeat(" ", int(machineRange.Start.Character)) + `  image: ` + circleci.CurrentLinuxImage,
 					},
 				}, false),
-		},
+		}),
 	})
 }
 
@@ -138,8 +138,8 @@ jobs:
 		protocol.Diagnostic{
 			Range:    machineRange,
 			Severity: protocol.DiagnosticSeverityWarning,
-			Message:  parser2.MachineTrueMessage(img),
-			Data: []protocol.CodeAction{
+			Message:  protocol.String(parser2.MachineTrueMessage(img)),
+			Data: codeaction.Data([]protocol.CodeAction{
 				codeaction.TextEdit("Replace with most updated ubuntu image", yamlDocument.URI,
 					[]protocol.TextEdit{
 						{
@@ -148,7 +148,7 @@ jobs:
 		` + strings.Repeat(" ", int(machineRange.Start.Character)) + `  image: ` + circleci.CurrentLinuxImage,
 						},
 					}, false),
-			},
+			}),
 		},
 	)
 }
@@ -236,8 +236,8 @@ jobs:
 		protocol.Diagnostic{
 			Range:    machineRange,
 			Severity: protocol.DiagnosticSeverityWarning,
-			Message:  parser2.MachineTrueMessage(img),
-			Data: []protocol.CodeAction{
+			Message:  protocol.String(parser2.MachineTrueMessage(img)),
+			Data: codeaction.Data([]protocol.CodeAction{
 				codeaction.TextEdit("Replace with most updated ubuntu image", yamlDocument.URI,
 					[]protocol.TextEdit{
 						{
@@ -246,7 +246,7 @@ jobs:
 		` + strings.Repeat(" ", int(machineRange.Start.Character)) + `  image: ` + circleci.CurrentLinuxImage,
 						},
 					}, false),
-			},
+			}),
 		},
 	)
 }

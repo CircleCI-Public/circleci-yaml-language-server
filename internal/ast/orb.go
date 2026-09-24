@@ -5,6 +5,7 @@ import (
 
 	sitter "github.com/tree-sitter/go-tree-sitter"
 	"go.lsp.dev/protocol"
+	"go.lsp.dev/uri"
 )
 
 type Orb struct {
@@ -50,7 +51,7 @@ type OrbInfo struct {
 }
 
 type OrbParsedAttributes struct {
-	URI  protocol.URI
+	URI  uri.URI
 	Name string
 
 	Commands           map[string]Command

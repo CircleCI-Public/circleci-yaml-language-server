@@ -10,6 +10,8 @@ import (
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/dockerhub"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/codeaction"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 )
 
 type ComparableAction struct {
@@ -504,10 +506,10 @@ func compareDiagnostics(t *testing.T, expected []ComparableDiagnostic, diagnosti
 }
 
 func diagnosticToComparableDiagnostic(diag protocol.Diagnostic) ComparableDiagnostic {
-	actions, ok := diag.Data.([]protocol.CodeAction)
+	actions, err := codeaction.FromData(diag.Data)
 	var codeActions []ComparableAction
 
-	if ok && len(actions) > 0 {
+	if err == nil && len(actions) > 0 {
 		codeActions = make([]ComparableAction, 0)
 
 		for _, action := range actions {
@@ -526,7 +528,7 @@ func diagnosticToComparableDiagnostic(diag protocol.Diagnostic) ComparableDiagno
 	}
 	return ComparableDiagnostic{
 		Severity: diag.Severity,
-		Message:  diag.Message,
+		Message:  diagnostic.MessageText(diag),
 		Actions:  codeActions,
 	}
 }

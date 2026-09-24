@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
@@ -49,17 +50,25 @@ func main() {
 	c := cache.New()
 	c.FileCache.SetFile(cache.File{
 		TextDocument: protocol.TextDocumentItem{
-			URI:  uri.File(filepath),
+			URI:  fileURI(filepath),
 			Text: string(content),
 		},
 		Project:      circleci.Project{},
 		EnvVariables: make([]string, 0),
 	})
 
-	fileURI := uri.File(filepath)
-	if _, err := languageservice.DiagnosticFile(fileURI, c, context, schema); err != nil {
+	if _, err := languageservice.DiagnosticFile(fileURI(filepath), c, context, schema); err != nil {
 		panic(err)
 	}
 
 	// fmt.Printf("S-expression:\n%v\n\n", node.RootNode)
+}
+
+// fileURI is the URI of a file named by a path relative to the working
+// directory, which a file URI cannot hold.
+func fileURI(path string) uri.URI {
+	if absolute, err := filepath.Abs(path); err == nil {
+		path = absolute
+	}
+	return uri.File(path)
 }

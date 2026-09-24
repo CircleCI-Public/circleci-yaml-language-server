@@ -28,7 +28,7 @@ func resolveOrbSymbols(document *parser.YamlDocument) []protocol.DocumentSymbol 
 				Kind:           protocol.SymbolKind(OrbSymbol),
 				Range:          orb.Range,
 				SelectionRange: orb.Range,
-				Detail:         orb.Url.Version,
+				Detail:         unlessZero(orb.Url.Version),
 			},
 		)
 	}

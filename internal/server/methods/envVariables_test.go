@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"go.lsp.dev/protocol"
+	"go.lsp.dev/uri"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
 
@@ -24,7 +25,7 @@ import (
 const (
 	rocketSlug     = "gh/acme/rocket"
 	rocketEnvRoute = "GET /api/v2/project/gh/acme/rocket/envvar"
-	rocketURI      = protocol.URI("file:///rocket/.circleci/config.yml")
+	rocketURI      = uri.URI("file:///rocket/.circleci/config.yml")
 )
 
 // rocketMethods builds a Methods over a fake serving acme/rocket with the env

@@ -10,6 +10,7 @@ import (
 
 	sitter "github.com/tree-sitter/go-tree-sitter"
 	"go.lsp.dev/protocol"
+	"go.lsp.dev/uri"
 
 	ast2 "github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
@@ -159,8 +160,8 @@ func (doc *YamlDocument) ValidateYAML() {
 	}
 }
 
-func ParseFromURI(URI protocol.URI, context *session.Settings) (YamlDocument, error) {
-	content, err := os.ReadFile(URI.Filename())
+func ParseFromURI(URI uri.URI, context *session.Settings) (YamlDocument, error) {
+	content, err := os.ReadFile(URI.FsPath())
 	if err != nil {
 		return YamlDocument{}, err
 	}
@@ -171,11 +172,11 @@ func ParseFromURI(URI protocol.URI, context *session.Settings) (YamlDocument, er
 
 var ErrCacheMissing = errors.New("file not found in cache")
 
-func ParseFromUriWithCache(URI protocol.URI, cache *cache.Cache, context *session.Settings) (YamlDocument, error) {
+func ParseFromUriWithCache(URI uri.URI, cache *cache.Cache, context *session.Settings) (YamlDocument, error) {
 	cachedFile := cache.FileCache.GetFile(URI)
 
 	if cachedFile == nil {
-		return YamlDocument{}, fmt.Errorf("%w: %s", ErrCacheMissing, URI.Filename())
+		return YamlDocument{}, fmt.Errorf("%w: %s", ErrCacheMissing, URI.FsPath())
 	}
 
 	content := []byte(cachedFile.TextDocument.Text)
@@ -185,7 +186,7 @@ func ParseFromUriWithCache(URI protocol.URI, cache *cache.Cache, context *sessio
 	return doc, err
 }
 
-func ParseFromContent(content []byte, context *session.Settings, URI protocol.URI, offset protocol.Position) (YamlDocument, error) {
+func ParseFromContent(content []byte, context *session.Settings, URI uri.URI, offset protocol.Position) (YamlDocument, error) {
 	doc := ParseFile([]byte(content), context)
 	doc.URI = URI
 
@@ -209,7 +210,7 @@ type YamlDocument struct {
 	RootNode       *sitter.Node
 	Version        float32
 	Description    string
-	URI            protocol.URI
+	URI            uri.URI
 	Diagnostics    *[]protocol.Diagnostic
 	Context        *session.Settings
 	SchemaLocation string

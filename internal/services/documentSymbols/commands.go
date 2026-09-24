@@ -35,7 +35,7 @@ func singleCommandSymbols(command ast.Command) protocol.DocumentSymbol {
 		Name:           command.Name,
 		Range:          command.Range,
 		SelectionRange: command.Range,
-		Detail:         command.Description,
+		Detail:         unlessZero(command.Description),
 		Kind:           protocol.SymbolKind(CommandsSymbol),
 	}
 

@@ -2,7 +2,7 @@ package languageservice
 
 import (
 	"os"
-	"path"
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -22,8 +22,11 @@ import (
 func TestDefinition(t *testing.T) {
 	c := cache.New()
 
+	orbPath, err := filepath.Abs("./testdata/orb.yaml")
+	assert.NilError(t, err)
+
 	context := testHelpers.DefaultSettings()
-	parsedOrb, err := parser.ParseFromURI(uri.File(path.Join("./testdata/orb.yaml")), context)
+	parsedOrb, err := parser.ParseFromURI(uri.File(orbPath), context)
 
 	if err != nil {
 		panic(err)
@@ -32,7 +35,7 @@ func TestDefinition(t *testing.T) {
 	c.OrbCache.SetOrb(&ast.OrbInfo{
 		OrbParsedAttributes: parsedOrb.ToOrbParsedAttributes(),
 		RemoteInfo: ast.RemoteOrbInfo{
-			FilePath: uri.File(path.Join("./testdata/orb.yaml")).Filename(),
+			FilePath: uri.File(orbPath).FsPath(),
 		},
 	}, "superorb/superfunc@1.2.3")
 
@@ -309,7 +312,7 @@ func TestDefinition(t *testing.T) {
 			},
 			want: []protocol.Location{
 				{
-					URI: uri.File("./testdata/orb.yaml"),
+					URI: uri.File(orbPath),
 					Range: protocol.Range{
 						Start: protocol.Position{
 							Line:      9,
@@ -384,7 +387,7 @@ func TestDefinition(t *testing.T) {
 			},
 			want: []protocol.Location{
 				{
-					URI: uri.File("./testdata/orb.yaml"),
+					URI: uri.File(orbPath),
 					Range: protocol.Range{
 						Start: protocol.Position{
 							Line:      0,
@@ -590,7 +593,7 @@ workflows:
           requires:
             - build`
 
-func parseJobGroupDefinitionFixture(t *testing.T) (parser.YamlDocument, protocol.URI) {
+func parseJobGroupDefinitionFixture(t *testing.T) (parser.YamlDocument, uri.URI) {
 	t.Helper()
 	fileURI := uri.File("some-uri")
 	context := testHelpers.DefaultSettings()
@@ -599,7 +602,7 @@ func parseJobGroupDefinitionFixture(t *testing.T) (parser.YamlDocument, protocol
 	return doc, fileURI
 }
 
-func definitionAt(t *testing.T, doc parser.YamlDocument, fileURI protocol.URI, line, char uint32) []protocol.Location {
+func definitionAt(t *testing.T, doc parser.YamlDocument, fileURI uri.URI, line, char uint32) []protocol.Location {
 	t.Helper()
 	def := definition.DefinitionStruct{Cache: cache.New(), Params: protocol.DefinitionParams{
 		TextDocumentPositionParams: protocol.TextDocumentPositionParams{

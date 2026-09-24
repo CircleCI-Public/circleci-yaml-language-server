@@ -4,12 +4,13 @@ import (
 	"testing"
 
 	"go.lsp.dev/protocol"
+	"go.lsp.dev/uri"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
 )
 
 func TestAppendSuppressionCodeActions(t *testing.T) {
-	docURI := protocol.URI("file:///test.yml")
+	docURI := uri.URI("file:///test.yml")
 
 	tests := []struct {
 		name                 string
@@ -26,7 +27,7 @@ func TestAppendSuppressionCodeActions(t *testing.T) {
 						Start: protocol.Position{Line: 1, Character: 4},
 						End:   protocol.Position{Line: 1, Character: 10},
 					},
-					Message: "Test error",
+					Message: protocol.String("Test error"),
 				},
 			},
 			docContent: []byte("version: 2.1\n    indented: line\n"),
@@ -50,7 +51,7 @@ func TestAppendSuppressionCodeActions(t *testing.T) {
 						Start: protocol.Position{Line: 0, Character: 0},
 						End:   protocol.Position{Line: 0, Character: 7},
 					},
-					Message: "Single line error",
+					Message: protocol.String("Single line error"),
 				},
 			},
 			docContent: []byte("version: 2.1"),
@@ -79,7 +80,7 @@ func TestAppendSuppressionCodeActions(t *testing.T) {
 						Start: protocol.Position{Line: 1, Character: 0},
 						End:   protocol.Position{Line: 1, Character: 4},
 					},
-					Message: "Test error",
+					Message: protocol.String("Test error"),
 				},
 			},
 			docContent: []byte("version: 2.1\njobs:\n  test: value"),
@@ -104,7 +105,7 @@ func TestAppendSuppressionCodeActions(t *testing.T) {
 						Start: protocol.Position{Line: 1, Character: 0},
 						End:   protocol.Position{Line: 3, Character: 5},
 					},
-					Message: "Multi-line error",
+					Message: protocol.String("Multi-line error"),
 				},
 			},
 			docContent: []byte("version: 2.1\njobs:\n  test:\n    docker:\n"),
@@ -137,13 +138,12 @@ func TestAppendSuppressionCodeActions(t *testing.T) {
 						Start: protocol.Position{Line: 0, Character: 0},
 						End:   protocol.Position{Line: 0, Character: 7},
 					},
-					Message: "Test error",
-					Data: []protocol.CodeAction{
+					Message: protocol.String("Test error"),
+					Data: Data([]protocol.CodeAction{
 						{
 							Title: "Existing action",
-							Kind:  "quickfix",
 						},
-					},
+					}),
 				},
 			},
 			docContent: []byte("version: 2.1"),
@@ -168,8 +168,8 @@ func TestAppendSuppressionCodeActions(t *testing.T) {
 			assert.Check(t, err)
 			assert.Check(t, cmp.Len(result, len(tt.diagnostics)))
 
-			actions, ok := result[0].Data.([]protocol.CodeAction)
-			assert.Check(t, ok)
+			actions, err := FromData(result[0].Data)
+			assert.Check(t, err)
 
 			if len(tt.wantCodeActionTitles) > 0 {
 				titles := make([]string, len(actions))

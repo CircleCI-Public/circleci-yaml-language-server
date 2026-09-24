@@ -97,8 +97,8 @@ func ParseSuppressionComments(doc *YamlDocument) *SuppressionInfo {
 				End:   protocol.Position{Line: suppressionRange.StartLine, Character: 100},
 			},
 			Severity: protocol.DiagnosticSeverityError,
-			Source:   "circleci",
-			Message:  "cci-ignore-start is missing a closing cci-ignore-end",
+			Source:   protocol.NewOptional("circleci"),
+			Message:  protocol.String("cci-ignore-start is missing a closing cci-ignore-end"),
 		}
 		doc.addDiagnostic(diag)
 	}

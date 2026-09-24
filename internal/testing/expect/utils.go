@@ -67,7 +67,22 @@ func diagnosticInfo(diagnostic protocol.Diagnostic) string {
 		diagnostic.Range.Start.Character,
 		diagnostic.Range.End.Line,
 		diagnostic.Range.End.Character,
-		diagnostic.Severity,
+		severityName(diagnostic.Severity),
 		diagnostic.Message,
 	)
+}
+
+func severityName(severity protocol.DiagnosticSeverity) string {
+	switch severity {
+	case protocol.DiagnosticSeverityError:
+		return "Error"
+	case protocol.DiagnosticSeverityWarning:
+		return "Warning"
+	case protocol.DiagnosticSeverityInformation:
+		return "Information"
+	case protocol.DiagnosticSeverityHint:
+		return "Hint"
+	default:
+		return fmt.Sprint(uint32(severity))
+	}
 }

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"go.lsp.dev/protocol"
+	"go.lsp.dev/uri"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
 
@@ -38,7 +39,7 @@ func openRocketConfig(t *testing.T, c *Cache) *File {
 	t.Helper()
 
 	cached := c.FileCache.SetFile(File{
-		TextDocument: protocol.TextDocumentItem{URI: protocol.URI("file:///rocket/.circleci/config.yml")},
+		TextDocument: protocol.TextDocumentItem{URI: uri.URI("file:///rocket/.circleci/config.yml")},
 		Project:      circleci.Project{Slug: rocketSlug},
 	})
 

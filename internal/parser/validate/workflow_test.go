@@ -3,6 +3,7 @@ package validate
 import (
 	"testing"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/codeaction"
 	"go.lsp.dev/protocol"
 )
 
@@ -89,9 +90,9 @@ workflows:
 						End:   protocol.Position{Line: 11, Character: 22},
 					},
 					Severity: protocol.DiagnosticSeverityError,
-					Source:   "cci-language-server",
-					Message:  "Must be greater than or equal to 1",
-					Data:     []protocol.CodeAction{},
+					Source:   protocol.NewOptional("cci-language-server"),
+					Message:  protocol.String("Must be greater than or equal to 1"),
+					Data:     codeaction.Data([]protocol.CodeAction{}),
 				},
 			},
 		},
@@ -119,9 +120,9 @@ workflows:
 						End:   protocol.Position{Line: 11, Character: 22},
 					},
 					Severity: protocol.DiagnosticSeverityError,
-					Source:   "cci-language-server",
-					Message:  "Must be less than or equal to 5",
-					Data:     []protocol.CodeAction{},
+					Source:   protocol.NewOptional("cci-language-server"),
+					Message:  protocol.String("Must be less than or equal to 5"),
+					Data:     codeaction.Data([]protocol.CodeAction{}),
 				},
 			},
 		},
@@ -149,9 +150,9 @@ workflows:
 						End:   protocol.Position{Line: 11, Character: 30},
 					},
 					Severity: protocol.DiagnosticSeverityError,
-					Source:   "cci-language-server",
-					Message:  "Must be greater than or equal to 1",
-					Data:     []protocol.CodeAction{},
+					Source:   protocol.NewOptional("cci-language-server"),
+					Message:  protocol.String("Must be greater than or equal to 1"),
+					Data:     codeaction.Data([]protocol.CodeAction{}),
 				},
 			},
 		},

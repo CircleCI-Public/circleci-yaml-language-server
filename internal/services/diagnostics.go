@@ -32,7 +32,7 @@ func Diagnostic(params protocol.PublishDiagnosticsParams, cache *cache.Cache, co
 	return diagnosticParams
 }
 
-func DiagnosticFile(uri protocol.URI, cache *cache.Cache, context *session.Settings, schemaLocation string) ([]protocol.Diagnostic, error) {
+func DiagnosticFile(uri uri.URI, cache *cache.Cache, context *session.Settings, schemaLocation string) ([]protocol.Diagnostic, error) {
 	yamlDocument, err := parser.ParseFromUriWithCache(uri, cache, context)
 	yamlDocument.SchemaLocation = schemaLocation
 

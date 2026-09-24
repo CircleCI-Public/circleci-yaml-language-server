@@ -13,7 +13,7 @@ import (
 func (methods *Methods) getAllEnvVariables(textDocument protocol.TextDocumentItem) {
 	cachedFile := methods.Cache.FileCache.GetFile(textDocument.URI)
 	if cachedFile.Project.Slug == "" {
-		projectSlug := projectslug.FromRepo(textDocument.URI.Filename())
+		projectSlug := projectslug.FromRepo(textDocument.URI.FsPath())
 		project, err := circleci.GetProject(methods.Settings.Api, projectSlug)
 		if err != nil {
 			return

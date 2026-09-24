@@ -30,56 +30,84 @@ type JSONRPCServer struct {
 	SchemaLocation string
 }
 
-func (server JSONRPCServer) commandHandler(_ context.Context, reply jsonrpc2.Replier, req jsonrpc2.Request) error {
+func (server JSONRPCServer) commandHandler(_ context.Context, req *jsonrpc2.Request) (any, error) {
 	slog.Debug("called method", "method", req.Method())
+
+	params := req.Params()
 
 	switch req.Method() {
 
 	case protocol.MethodInitialize:
-		return server.methods.Initialize(reply, req)
+		return server.methods.Initialize(params)
 
 	case protocol.MethodWorkspaceExecuteCommand:
-		return server.methods.ExecuteCommand(reply, req)
+		return server.methods.ExecuteCommand(params)
 
 	case protocol.MethodTextDocumentDidOpen:
-		return server.methods.DidOpen(reply, req)
+		server.methods.DidOpen(params)
+		return nil, nil
 
 	case protocol.MethodTextDocumentDidClose:
-		return server.methods.DidClose(reply, req)
+		server.methods.DidClose(params)
+		return nil, nil
 
 	case protocol.MethodTextDocumentDidChange:
-		return server.methods.DidChange(reply, req)
+		server.methods.DidChange(params)
+		return nil, nil
 
 	case protocol.MethodTextDocumentHover:
-		return server.methods.Hover(reply, req)
+		return server.methods.Hover(params)
 
-	case protocol.MethodSemanticTokensFull:
-		return server.methods.SemanticTokens(reply, req)
+	case protocol.MethodTextDocumentSemanticTokensFull:
+		return server.methods.SemanticTokens(params)
 
 	case protocol.MethodTextDocumentDefinition:
-		return server.methods.Definition(reply, req)
+		return server.methods.Definition(params)
 
 	case protocol.MethodTextDocumentReferences:
-		return server.methods.References(reply, req)
+		return server.methods.References(params)
 
 	case protocol.MethodTextDocumentCompletion:
-		return server.methods.Complete(reply, req)
+		return server.methods.Complete(params)
 
 	case protocol.MethodTextDocumentCodeAction:
-		return server.methods.CodeAction(reply, req)
+		return server.methods.CodeAction(params)
 
 	case protocol.MethodShutdown:
-		return reply(server.ctx, nil, nil)
+		return nil, nil
 
 	case protocol.MethodTextDocumentDocumentSymbol:
-		return server.methods.DocumentSymbols(reply, req)
+		return server.methods.DocumentSymbols(params)
 
 	case protocol.MethodExit:
 		os.Exit(0)
-		return nil
+		return nil, nil
 
 	default:
-		return jsonrpc2.MethodNotFoundHandler(server.ctx, reply, req)
+		// A notification we do not handle is dropped: an error from one
+		// closes the connection.
+		if !req.IsCall() {
+			return nil, nil
+		}
+		return nil, jsonrpc2.ErrMethodNotFound
+	}
+}
+
+// encodeResults encodes what a handler answers with using the protocol's own
+// codec, which is what writes its union and optional fields. It is done here
+// rather than by the connection's codec because a connection jsonrpc2.Serve
+// accepts always has the default one.
+func encodeResults(handler jsonrpc2.Handler) jsonrpc2.Handler {
+	return func(ctx context.Context, req *jsonrpc2.Request) (any, error) {
+		result, err := handler(ctx, req)
+		if err != nil || result == nil {
+			return nil, err
+		}
+		encoded, err := protocol.Marshal(result)
+		if err != nil {
+			return nil, jsonrpc2.Errorf(jsonrpc2.InternalError, "%s: encoding result: %v", req.Method(), err)
+		}
+		return jsonrpc2.RawMessage(encoded), nil
 	}
 }
 
@@ -96,7 +124,7 @@ func (server JSONRPCServer) ServeStream(_ context.Context, conn jsonrpc2.Conn) e
 		Settings:       server.lsContext,
 		SchemaLocation: server.SchemaLocation,
 	}
-	conn.Go(server.ctx, recoverPanics(server.commandHandler))
+	conn.Go(server.ctx, recoverPanics(encodeResults(server.commandHandler)))
 	<-conn.Done()
 
 	return conn.Err()

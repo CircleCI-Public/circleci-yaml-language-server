@@ -56,7 +56,7 @@ func ExpectDiagnostic(t *testing.T) ExpDiag {
 }
 
 // ExpectDiagnostic.File
-func (root ExpDiag) File(context *session.Settings, uri protocol.URI) ExpDiagStruct {
+func (root ExpDiag) File(context *session.Settings, uri uri.URI) ExpDiagStruct {
 	yamlDocument, err := parser.ParseFromURI(uri, context)
 	root.t.Cleanup(yamlDocument.Close)
 

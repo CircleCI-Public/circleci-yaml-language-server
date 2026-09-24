@@ -8,6 +8,7 @@ import (
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/testHelpers"
 )
 
@@ -562,7 +563,7 @@ workflows:
 				for _, expectedSubstring := range tc.errorSubstrings {
 					found := false
 					for _, diag := range errorDiagnostics {
-						if contains(diag.Message, expectedSubstring) {
+						if contains(diagnostic.MessageText(diag), expectedSubstring) {
 							found = true
 							break
 						}
@@ -595,7 +596,7 @@ func contains(s, substr string) bool {
 func getErrorMessages(diagnostics []protocol.Diagnostic) []string {
 	messages := make([]string, len(diagnostics))
 	for i, diag := range diagnostics {
-		messages[i] = diag.Message
+		messages[i] = diagnostic.MessageText(diag)
 	}
 	return messages
 }

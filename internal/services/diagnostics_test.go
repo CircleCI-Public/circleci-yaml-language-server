@@ -12,6 +12,7 @@ import (
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/testHelpers"
 )
 
@@ -199,7 +200,7 @@ func TestDeduplicateDiagnosticsByRange(t *testing.T) {
 						Start: protocol.Position{Line: 1, Character: 0},
 						End:   protocol.Position{Line: 1, Character: 10},
 					},
-					Message:  "Test error",
+					Message:  protocol.String("Test error"),
 					Severity: protocol.DiagnosticSeverityError,
 				},
 				{
@@ -207,7 +208,7 @@ func TestDeduplicateDiagnosticsByRange(t *testing.T) {
 						Start: protocol.Position{Line: 1, Character: 0},
 						End:   protocol.Position{Line: 1, Character: 10},
 					},
-					Message:  "Test error",
+					Message:  protocol.String("Test error"),
 					Severity: protocol.DiagnosticSeverityError,
 				},
 			},
@@ -217,7 +218,7 @@ func TestDeduplicateDiagnosticsByRange(t *testing.T) {
 						Start: protocol.Position{Line: 1, Character: 0},
 						End:   protocol.Position{Line: 1, Character: 10},
 					},
-					Message:  "Test error",
+					Message:  protocol.String("Test error"),
 					Severity: protocol.DiagnosticSeverityError,
 				},
 			},
@@ -230,7 +231,7 @@ func TestDeduplicateDiagnosticsByRange(t *testing.T) {
 						Start: protocol.Position{Line: 1, Character: 0},
 						End:   protocol.Position{Line: 1, Character: 10},
 					},
-					Message:  "Test error",
+					Message:  protocol.String("Test error"),
 					Severity: protocol.DiagnosticSeverityError,
 				},
 				{
@@ -238,7 +239,7 @@ func TestDeduplicateDiagnosticsByRange(t *testing.T) {
 						Start: protocol.Position{Line: 2, Character: 0},
 						End:   protocol.Position{Line: 2, Character: 10},
 					},
-					Message:  "Test error",
+					Message:  protocol.String("Test error"),
 					Severity: protocol.DiagnosticSeverityError,
 				},
 			},
@@ -248,7 +249,7 @@ func TestDeduplicateDiagnosticsByRange(t *testing.T) {
 						Start: protocol.Position{Line: 1, Character: 0},
 						End:   protocol.Position{Line: 1, Character: 10},
 					},
-					Message:  "Test error",
+					Message:  protocol.String("Test error"),
 					Severity: protocol.DiagnosticSeverityError,
 				},
 				{
@@ -256,7 +257,7 @@ func TestDeduplicateDiagnosticsByRange(t *testing.T) {
 						Start: protocol.Position{Line: 2, Character: 0},
 						End:   protocol.Position{Line: 2, Character: 10},
 					},
-					Message:  "Test error",
+					Message:  protocol.String("Test error"),
 					Severity: protocol.DiagnosticSeverityError,
 				},
 			},
@@ -269,7 +270,7 @@ func TestDeduplicateDiagnosticsByRange(t *testing.T) {
 						Start: protocol.Position{Line: 1, Character: 0},
 						End:   protocol.Position{Line: 1, Character: 10},
 					},
-					Message:  "Error 1",
+					Message:  protocol.String("Error 1"),
 					Severity: protocol.DiagnosticSeverityError,
 				},
 				{
@@ -277,7 +278,7 @@ func TestDeduplicateDiagnosticsByRange(t *testing.T) {
 						Start: protocol.Position{Line: 1, Character: 0},
 						End:   protocol.Position{Line: 1, Character: 10},
 					},
-					Message:  "Error 2",
+					Message:  protocol.String("Error 2"),
 					Severity: protocol.DiagnosticSeverityError,
 				},
 			},
@@ -287,7 +288,7 @@ func TestDeduplicateDiagnosticsByRange(t *testing.T) {
 						Start: protocol.Position{Line: 1, Character: 0},
 						End:   protocol.Position{Line: 1, Character: 10},
 					},
-					Message:  "Error 1",
+					Message:  protocol.String("Error 1"),
 					Severity: protocol.DiagnosticSeverityError,
 				},
 				{
@@ -295,7 +296,7 @@ func TestDeduplicateDiagnosticsByRange(t *testing.T) {
 						Start: protocol.Position{Line: 1, Character: 0},
 						End:   protocol.Position{Line: 1, Character: 10},
 					},
-					Message:  "Error 2",
+					Message:  protocol.String("Error 2"),
 					Severity: protocol.DiagnosticSeverityError,
 				},
 			},
@@ -308,7 +309,7 @@ func TestDeduplicateDiagnosticsByRange(t *testing.T) {
 						Start: protocol.Position{Line: 1, Character: 0},
 						End:   protocol.Position{Line: 1, Character: 10},
 					},
-					Message:  "Test error",
+					Message:  protocol.String("Test error"),
 					Severity: protocol.DiagnosticSeverityError,
 				},
 				{
@@ -316,7 +317,7 @@ func TestDeduplicateDiagnosticsByRange(t *testing.T) {
 						Start: protocol.Position{Line: 1, Character: 0},
 						End:   protocol.Position{Line: 1, Character: 10},
 					},
-					Message:  "Test error",
+					Message:  protocol.String("Test error"),
 					Severity: protocol.DiagnosticSeverityWarning,
 				},
 			},
@@ -326,7 +327,7 @@ func TestDeduplicateDiagnosticsByRange(t *testing.T) {
 						Start: protocol.Position{Line: 1, Character: 0},
 						End:   protocol.Position{Line: 1, Character: 10},
 					},
-					Message:  "Test error",
+					Message:  protocol.String("Test error"),
 					Severity: protocol.DiagnosticSeverityError,
 				},
 				{
@@ -334,7 +335,7 @@ func TestDeduplicateDiagnosticsByRange(t *testing.T) {
 						Start: protocol.Position{Line: 1, Character: 0},
 						End:   protocol.Position{Line: 1, Character: 10},
 					},
-					Message:  "Test error",
+					Message:  protocol.String("Test error"),
 					Severity: protocol.DiagnosticSeverityWarning,
 				},
 			},
@@ -347,7 +348,7 @@ func TestDeduplicateDiagnosticsByRange(t *testing.T) {
 						Start: protocol.Position{Line: 1, Character: 0},
 						End:   protocol.Position{Line: 1, Character: 10},
 					},
-					Message:  "Test error",
+					Message:  protocol.String("Test error"),
 					Severity: protocol.DiagnosticSeverityError,
 				},
 				{
@@ -355,7 +356,7 @@ func TestDeduplicateDiagnosticsByRange(t *testing.T) {
 						Start: protocol.Position{Line: 1, Character: 0},
 						End:   protocol.Position{Line: 1, Character: 10},
 					},
-					Message:  "Test error",
+					Message:  protocol.String("Test error"),
 					Severity: protocol.DiagnosticSeverityError,
 				},
 				{
@@ -363,7 +364,7 @@ func TestDeduplicateDiagnosticsByRange(t *testing.T) {
 						Start: protocol.Position{Line: 1, Character: 0},
 						End:   protocol.Position{Line: 1, Character: 10},
 					},
-					Message:  "Test error",
+					Message:  protocol.String("Test error"),
 					Severity: protocol.DiagnosticSeverityError,
 				},
 			},
@@ -373,7 +374,7 @@ func TestDeduplicateDiagnosticsByRange(t *testing.T) {
 						Start: protocol.Position{Line: 1, Character: 0},
 						End:   protocol.Position{Line: 1, Character: 10},
 					},
-					Message:  "Test error",
+					Message:  protocol.String("Test error"),
 					Severity: protocol.DiagnosticSeverityError,
 				},
 			},
@@ -436,8 +437,8 @@ func TestStepWhenRejectsInvalidValue(t *testing.T) {
 	for _, stepName := range stepNames {
 		t.Run(stepName, func(t *testing.T) {
 			wanted := "." + stepName + `.when must be one of the following: "always", "on_success", "on_fail"`
-			for _, diagnostic := range diagnostics {
-				if strings.Contains(diagnostic.Message, wanted) {
+			for _, d := range diagnostics {
+				if strings.Contains(diagnostic.MessageText(d), wanted) {
 					return
 				}
 			}

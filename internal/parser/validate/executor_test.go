@@ -146,7 +146,7 @@ executors:
 
 			var found *protocol.Diagnostic
 			for i := range *val.Diagnostics {
-				if (*val.Diagnostics)[i].Message == c.wantMessage {
+				if (*val.Diagnostics)[i].Message == protocol.String(c.wantMessage) {
 					found = &(*val.Diagnostics)[i]
 					break
 				}
@@ -156,7 +156,7 @@ executors:
 				t.Fatalf("expected diagnostic %q, got %+v", c.wantMessage, *val.Diagnostics)
 			}
 			assert.Check(t, cmp.Equal(protocol.DiagnosticSeverityWarning, found.Severity))
-			assert.Check(t, cmp.Contains(found.Tags, protocol.DiagnosticTagDeprecated))
+			assert.Check(t, cmp.Contains(found.Tags.Slice(), protocol.DiagnosticTagDeprecated))
 		})
 	}
 }
@@ -262,7 +262,7 @@ func TestMachineExecutor(t *testing.T) {
 			re := regexp.MustCompile(c.errRegex)
 
 			for _, diag := range *val.Diagnostics {
-				if re.MatchString(diag.Message) {
+				if re.MatchString(diagnostic.MessageText(diag)) {
 					return
 				}
 			}

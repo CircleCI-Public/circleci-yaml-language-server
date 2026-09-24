@@ -28,7 +28,7 @@ func (val Validate) validateSingleJob(job ast2.Job) {
 		val.addDiagnostic(
 			protocol.Diagnostic{
 				Range:    job.StepsRange,
-				Message:  "Steps only exist in `build` jobs. Steps here will be ignored.",
+				Message:  protocol.String("Steps only exist in `build` jobs. Steps here will be ignored."),
 				Severity: protocol.DiagnosticSeverityWarning,
 			},
 		)
@@ -43,7 +43,7 @@ func (val Validate) validateSingleJob(job ast2.Job) {
 		val.addDiagnostic(
 			protocol.Diagnostic{
 				Range:    job.NameRange,
-				Message:  "You may want to add the `store_test_results` step to visualize the test results in CircleCI",
+				Message:  protocol.String("You may want to add the `store_test_results` step to visualize the test results in CircleCI"),
 				Severity: protocol.DiagnosticSeverityHint,
 			},
 		)
@@ -60,10 +60,10 @@ func (val Validate) validateSingleJob(job ast2.Job) {
 					val.addDiagnostic(
 						protocol.Diagnostic{
 							Range: rng,
-							Message: fmt.Sprintf(
+							Message: protocol.String(fmt.Sprintf(
 								"No default value specified for parameter `%s`.",
 								paramName,
-							),
+							)),
 							Severity: protocol.DiagnosticSeverityWarning,
 						},
 					)
@@ -73,10 +73,10 @@ func (val Validate) validateSingleJob(job ast2.Job) {
 					val.addDiagnostic(
 						protocol.Diagnostic{
 							Range: rng,
-							Message: fmt.Sprintf(
+							Message: protocol.String(fmt.Sprintf(
 								"Parameter is used as executor but executor `%s` does not exist.",
 								executorDefault,
-							),
+							)),
 							Severity: protocol.DiagnosticSeverityError,
 						},
 					)
@@ -110,13 +110,13 @@ func (val Validate) validateSingleJob(job ast2.Job) {
 		val.addDiagnostic(
 			protocol.Diagnostic{
 				Range:    job.ParallelismRange,
-				Message:  "To benefit from parallelism, you should select a value greater than 1. You can read more about how to leverage parallelism to speed up pipelines in the CircleCI docs.",
+				Message:  protocol.String("To benefit from parallelism, you should select a value greater than 1. You can read more about how to leverage parallelism to speed up pipelines in the CircleCI docs."),
 				Severity: protocol.DiagnosticSeverityWarning,
-				CodeDescription: &protocol.CodeDescription{
+				CodeDescription: protocol.CodeDescription{
 					Href: "https://circleci.com/docs/parallelism-faster-jobs/",
 				},
-				Source: "More info",
-				Code:   "Docs",
+				Source: protocol.NewOptional("More info"),
+				Code:   protocol.String("Docs"),
 			},
 		)
 	}
@@ -217,7 +217,7 @@ func (val Validate) validateJobType(job ast2.Job) {
 		val.addDiagnostic(
 			protocol.Diagnostic{
 				Range:    job.TypeRange,
-				Message:  "If no `type:` key is specified, the job will default to `type: build`.",
+				Message:  protocol.String("If no `type:` key is specified, the job will default to `type: build`."),
 				Severity: protocol.DiagnosticSeverityHint,
 			},
 		)
