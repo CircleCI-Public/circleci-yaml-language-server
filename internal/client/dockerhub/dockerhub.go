@@ -50,10 +50,20 @@ type dockerHubAPI struct {
 	namespaces      map[string]*HubNamespace
 }
 
-// defaultAPI backs the package-level Search and SearchTags, which the
-// completion path calls without an API of its own. Tests build their own with
-// NewAPIWithConfig rather than reaching for this one.
+// defaultAPI backs the package-level Search and SearchTags for the zero
+// Config, which is what the server runs with, so that every completion
+// request shares its cache of namespaces.
 var defaultAPI = newAPI(Config{})
+
+// searchAPI is the API the package-level Search and SearchTags read through
+// for cfg: the shared default for the zero Config, and one of its own for any
+// other, such as a test's fake.
+func searchAPI(cfg Config) *dockerHubAPI {
+	if cfg.BaseURL == "" && cfg.Transport == nil {
+		return defaultAPI
+	}
+	return newAPI(cfg)
+}
 
 func NewAPI() API {
 	return newAPI(Config{})

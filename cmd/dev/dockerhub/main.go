@@ -85,7 +85,7 @@ func run() int {
 	api := dockerhub.NewAPI()
 
 	hubProbe.Check("a namespace lists its repositories, paging past the first", func() error {
-		cursor := dockerhub.Search(namespace + "/")
+		cursor := dockerhub.Search(dockerhub.Config{}, namespace+"/")
 
 		found := 0
 		for cursor.HasNext() {
@@ -182,7 +182,7 @@ func run() int {
 	// cursor to put in a query, which is the other claim the fake makes about
 	// this API.
 	hubProbe.Check("tags page past the first, on an absolute next url", func() error {
-		cursor, err := dockerhub.SearchTags(namespace, repository, "")
+		cursor, err := dockerhub.SearchTags(dockerhub.Config{}, namespace, repository, "")
 		if err != nil {
 			return probe.Unavailable(err)
 		}

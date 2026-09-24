@@ -72,7 +72,7 @@ type Request struct {
 }
 
 // NewCircleCI starts a fake CircleCI API server and closes it on cleanup.
-func NewCircleCI(t *testing.T) *CircleCI {
+func NewCircleCI(t testing.TB) *CircleCI {
 	t.Helper()
 
 	fake := &CircleCI{

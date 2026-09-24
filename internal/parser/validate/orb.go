@@ -8,7 +8,6 @@ import (
 	"golang.org/x/mod/semver"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/dockerhub"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/codeaction"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/paramref"
@@ -251,9 +250,7 @@ func (val Validate) ValidateLocalOrbs() {
 			}
 
 			validateStruct := Validate{
-				APIs: ValidateAPIs{
-					DockerHub: dockerhub.NewAPI(),
-				},
+				APIs:        val.APIs,
 				Doc:         val.Doc.FromOrbParsedAttributesToYamlDocument(orbInfo.OrbParsedAttributes),
 				Diagnostics: val.Diagnostics,
 				Cache:       val.Cache,
