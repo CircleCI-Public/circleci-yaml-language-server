@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## [0.40.3](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.40.2...0.40.3) (2026-09-24)
+
+
+### Bug Fixes
+
+* stop definition crashing on a pair whose key is yet to be typed ([#501](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/501)) ([f77b5b6](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/f77b5b6fa37b7f312ae4b296df165b1ae38305b8))
+* stop malformed and unfinished configs from crashing the server ([#497](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/497)) ([b644a30](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/b644a30d4a5d8b9eb1d25eda1397a51bba3c6a74))
+
+
+### Performance Improvements
+
+* stop recompiling queries, the schema and regexps per request ([#499](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/499)) ([a4e9ae1](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/a4e9ae143a23cc30812b1b5352e28ab17b7c0ade))
+
 ## [0.40.2](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.40.1...0.40.2) (2026-09-24)
 
 
