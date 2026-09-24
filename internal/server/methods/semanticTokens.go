@@ -9,6 +9,6 @@ import (
 )
 
 func (methods *Methods) SemanticTokensFull(_ context.Context, params *protocol.SemanticTokensParams) (*protocol.SemanticTokens, error) {
-	tokens := lsp.SemanticTokens(*params, methods.Cache, methods.Settings)
+	tokens := lsp.SemanticTokens(*params, methods.Cache, methods.Settings())
 	return &tokens, nil
 }

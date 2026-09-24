@@ -37,13 +37,9 @@ workflows:
 // each one, since the tree-sitter bindings free a tree only when it is closed.
 func TestMethodsCloseTheTreesTheyParse(t *testing.T) {
 	fake := fakes.NewCircleCI(t)
-	methods := &Methods{
-		Ctx:   context.Background(),
-		Cache: cache.New(),
-		Settings: &session.Settings{
-			Api: circleci.Config{HostUrl: fake.URL()},
-		},
-	}
+	methods := New(context.Background(), nil, cache.New(), session.Settings{
+		Api: circleci.Config{HostUrl: fake.URL()},
+	}, "")
 
 	configURI := uri.File("/workspace/.circleci/config.yml")
 	config := protocol.TextDocumentItem{URI: configURI, Text: leakConfig}

@@ -5,9 +5,7 @@ import (
 	"context"
 	"path"
 	"strings"
-	"time"
 
-	"github.com/bep/debounce"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 
@@ -45,10 +43,8 @@ func (methods *Methods) DidOpen(_ context.Context, params *protocol.DidOpenTextD
 	return nil
 }
 
-var debounceUpdateCachedFile = debounce.New(1000 * time.Millisecond)
-
 func (methods *Methods) updateAllCachedFiles() {
-	debounceUpdateCachedFile(func() {
+	methods.debounceRevalidation(func() {
 		files := methods.Cache.FileCache.GetFiles()
 
 		for _, file := range files {
@@ -56,8 +52,6 @@ func (methods *Methods) updateAllCachedFiles() {
 		}
 	})
 }
-
-var debounceInnerChange = debounce.New(1000 * time.Millisecond)
 
 func (methods *Methods) DidChange(_ context.Context, params *protocol.DidChangeTextDocumentParams) error {
 	newText := methods.applyIncrementalChanges(params.TextDocument.URI, params.ContentChanges)
@@ -69,7 +63,7 @@ func (methods *Methods) DidChange(_ context.Context, params *protocol.DidChangeT
 	methods.setChangeInFileCache(textDocument)
 	methods.updateOrbFile([]byte(newText), params.TextDocument.URI)
 
-	debounceInnerChange(func() {
+	methods.debounceEdit(func() {
 		methods.parsingMethods(textDocument)
 		go methods.notificationMethods(textDocument)
 	})
@@ -91,7 +85,7 @@ func (methods *Methods) DidClose(_ context.Context, params *protocol.DidCloseTex
 
 func (methods *Methods) notificationMethods(textDocument protocol.TextDocumentItem) {
 	isOrb, _ := methods.isOrb(textDocument.URI)
-	if methods.Settings.Api.Token != "" && !isOrb {
+	if methods.Settings().Api.Token != "" && !isOrb {
 		methods.getAllEnvVariables(textDocument)
 	}
 
@@ -117,14 +111,14 @@ func (methods *Methods) notificationMethods(textDocument protocol.TextDocumentIt
 }
 
 func (methods *Methods) parsingMethods(textDocument protocol.TextDocumentItem) {
-	parsedFile, err := parser2.ParseFromUriWithCache(textDocument.URI, methods.Cache, methods.Settings)
+	parsedFile, err := parser2.ParseFromUriWithCache(textDocument.URI, methods.Cache, methods.Settings())
 
 	if err != nil {
 		return
 	}
 	defer parsedFile.Close()
 
-	parser2.ParseRemoteOrbs(parsedFile.Orbs, methods.Cache, methods.Settings)
+	parser2.ParseRemoteOrbs(parsedFile.Orbs, methods.Cache, methods.Settings())
 }
 
 func (methods *Methods) applyIncrementalChanges(uri uri.URI, changes []protocol.TextDocumentContentChangeEvent) string {
@@ -152,7 +146,7 @@ func (methods *Methods) applyIncrementalChanges(uri uri.URI, changes []protocol.
 func (methods *Methods) updateOrbFile(content []byte, uri uri.URI) {
 	isOrb, orbId := methods.isOrb(uri)
 	if isOrb {
-		parsedOrbSource, err := parser2.ParseFromContent([]byte(content), methods.Settings, uri, protocol.Position{})
+		parsedOrbSource, err := parser2.ParseFromContent([]byte(content), methods.Settings(), uri, protocol.Position{})
 		if err == nil {
 			methods.Cache.OrbCache.UpdateOrbParsedAttributes(orbId, parsedOrbSource.ToOrbParsedAttributes())
 			parsedOrbSource.Close()

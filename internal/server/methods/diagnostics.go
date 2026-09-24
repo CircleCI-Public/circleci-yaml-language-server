@@ -10,7 +10,7 @@ func (methods *Methods) Diagnostics(textDocument protocol.TextDocumentItem) prot
 	diagnostic, _ := languageservice.DiagnosticFile(
 		textDocument.URI,
 		methods.Cache,
-		methods.Settings,
+		methods.Settings(),
 		methods.SchemaLocation,
 	)
 

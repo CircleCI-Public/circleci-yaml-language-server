@@ -9,7 +9,7 @@ import (
 )
 
 func (methods *Methods) Definition(_ context.Context, params *protocol.DefinitionParams) (protocol.DefinitionResult, error) {
-	res, err := languageservice.Definition(*params, methods.Cache, methods.Settings)
+	res, err := languageservice.Definition(*params, methods.Cache, methods.Settings())
 	if err != nil {
 		return nil, err
 	}

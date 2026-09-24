@@ -5,6 +5,7 @@ import (
 
 	"go.lsp.dev/protocol"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/session"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/version"
 )
 
@@ -28,7 +29,9 @@ func (methods *Methods) Initialize(_ context.Context, params *protocol.Initializ
 		_ = protocol.Unmarshal(params.InitializationOptions, &options)
 	}
 	if isCciExtension, ok := options["isCciExtension"]; ok && isCciExtension == true {
-		methods.Settings.IsCciExtension = true
+		methods.updateSettings(func(settings *session.Settings) {
+			settings.IsCciExtension = true
+		})
 	}
 	if userAgent, ok := options["userAgent"].(string); ok {
 		version.UserAgent += " " + userAgent

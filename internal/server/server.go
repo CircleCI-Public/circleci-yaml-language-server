@@ -29,24 +29,44 @@ type JSONRPCServer struct {
 }
 
 // serve runs a session with one client over stream, until the client goes.
-// Requests are handled one at a time, in the order they arrive.
 func (server JSONRPCServer) serve(stream jsonrpc2.Stream) error {
-	defer rollbar.Close()
 	slog.Info("new client connection")
 
 	conn := jsonrpc2.NewConn(stream, jsonrpc2.WithCodec(lspcodec.Codec{}))
-	lsp := &methods.Methods{
-		Ctx:            server.ctx,
-		Client:         protocol.ClientDispatcher(conn),
-		Cache:          cache.New(),
-		Settings:       server.lsContext,
-		SchemaLocation: server.SchemaLocation,
-	}
+	// Each client gets settings of its own: one setting a token should not
+	// sign every other client in with it.
+	lsp := methods.New(server.ctx, protocol.ClientDispatcher(conn), cache.New(), *server.lsContext, server.SchemaLocation)
 	handler := protocol.ServerHandler(lsp, jsonrpc2.MethodNotFoundHandler)
-	conn.Go(server.ctx, recoverPanics(dropFailedNotifications(logMethods(handler))))
+	conn.Go(server.ctx, recoverPanics(dropFailedNotifications(logMethods(releaseQueries(handler)))))
 	<-conn.Done()
 
 	return conn.Err()
+}
+
+// queries are the requests that answer from what the server knows without
+// changing it.
+var queries = map[string]bool{
+	protocol.MethodTextDocumentCodeAction:         true,
+	protocol.MethodTextDocumentCompletion:         true,
+	protocol.MethodTextDocumentDefinition:         true,
+	protocol.MethodTextDocumentDocumentSymbol:     true,
+	protocol.MethodTextDocumentHover:              true,
+	protocol.MethodTextDocumentReferences:         true,
+	protocol.MethodTextDocumentSemanticTokensFull: true,
+}
+
+// releaseQueries lets a query run alongside the messages after it, so a slow
+// one, such as a completion waiting on the network, does not hold up the rest.
+// Everything else is handled in the order it arrives, and before anything
+// after it starts: an edit has to apply on top of the one before, and a query
+// has to see every edit and setting sent before it.
+func releaseQueries(handler jsonrpc2.Handler) jsonrpc2.Handler {
+	return func(ctx context.Context, req *jsonrpc2.Request) (any, error) {
+		if queries[req.Method()] {
+			jsonrpc2.Async(ctx)
+		}
+		return handler(ctx, req)
+	}
 }
 
 func logMethods(handler jsonrpc2.Handler) jsonrpc2.Handler {
@@ -121,6 +141,10 @@ func StartServerStdio(schemaLocation string) {
 
 	stdioStream := jsonrpc2.NewStream(&StdioReadWriteCloser{os.Stdin, os.Stdout})
 	server := getJsonRpcServer(ctx, schemaLocation)
+
+	// Rollbar is shared by every connection, so it is closed only once the
+	// last one is over, and a TCP server never gets there.
+	defer rollbar.Close()
 
 	if err := server.serve(stdioStream); err != nil {
 		panic(err)

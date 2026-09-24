@@ -189,6 +189,11 @@ func (c *Client) ExecuteCommand(command string, arguments ...any) error {
 	return c.call(protocol.MethodWorkspaceExecuteCommand, params, nil)
 }
 
+// Call makes a request the client has no method of its own for.
+func (c *Client) Call(method string, params, result any) error {
+	return c.call(method, params, result)
+}
+
 // --- Notifications the server sends ---
 
 // WaitForDiagnostics waits for the next diagnostics the server publishes for a

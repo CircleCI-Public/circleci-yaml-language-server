@@ -21,12 +21,12 @@ type ContextEnvVariable struct {
 func (c *Cache) ContextEnvVariables(organizationId string, contexts []string) []ContextEnvVariable {
 	var contextEnvVariables []ContextEnvVariable
 	for _, context := range contexts {
-		cachedContext := c.ContextCache.GetOrganizationContext(organizationId, context)
-		if cachedContext == nil {
+		envVariables, ok := c.ContextCache.envVariablesOf(organizationId, context)
+		if !ok {
 			continue
 		}
 
-		for _, envVariable := range cachedContext.envVariables {
+		for _, envVariable := range envVariables {
 			contextEnvVariables = append(contextEnvVariables, ContextEnvVariable{
 				Name:              envVariable,
 				AssociatedContext: context,
@@ -63,7 +63,7 @@ func (c *Cache) LoadContextEnvVariables(api circleci.Config, orgID string) error
 	for _, context := range contexts {
 		existing := c.ContextCache.GetOrganizationContext(orgID, context.Name)
 		if existing != nil {
-			existing.envVariables = envVarNames(context.EnvironmentVariables)
+			c.ContextCache.setEnvVariables(existing, envVarNames(context.EnvironmentVariables))
 			continue
 		}
 		c.ContextCache.SetOrganizationContext(orgID, &Context{

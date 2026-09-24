@@ -3,9 +3,13 @@ package languageserver
 import (
 	"context"
 	"errors"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"go.lsp.dev/jsonrpc2"
+	"go.lsp.dev/protocol"
+	"golang.org/x/sync/errgroup"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
 )
@@ -107,5 +111,54 @@ func TestDropFailedNotifications(t *testing.T) {
 
 		_, err := client.Call(ctx, "fail", nil, nil)
 		assert.Check(t, cmp.ErrorContains(err, "boom"))
+	})
+}
+
+func TestReleaseQueries(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("a query does not hold up the requests after it", func(t *testing.T) {
+		unblock := make(chan struct{})
+		client := serve(t, releaseQueries(func(_ context.Context, req *jsonrpc2.Request) (any, error) {
+			if req.Method() == protocol.MethodTextDocumentHover {
+				<-unblock
+			}
+			return "ok", nil
+		}))
+
+		var hover errgroup.Group
+		hover.Go(func() error {
+			_, err := client.Call(ctx, protocol.MethodTextDocumentHover, nil, nil)
+			return err
+		})
+
+		bounded, cancel := context.WithTimeout(ctx, 5*time.Second)
+		defer cancel()
+		_, err := client.Call(bounded, "fine", nil, nil)
+		assert.Check(t, err, "a request after a query that has not finished")
+
+		close(unblock)
+		assert.Check(t, hover.Wait())
+	})
+
+	t.Run("anything else finishes before the next message starts", func(t *testing.T) {
+		var edited atomic.Bool
+		client := serve(t, releaseQueries(func(_ context.Context, req *jsonrpc2.Request) (any, error) {
+			switch req.Method() {
+			case protocol.MethodTextDocumentDidChange:
+				time.Sleep(50 * time.Millisecond)
+				edited.Store(true)
+				return nil, nil
+			default:
+				return edited.Load(), nil
+			}
+		}))
+
+		assert.NilError(t, client.Notify(ctx, protocol.MethodTextDocumentDidChange, nil))
+
+		var sawEdit bool
+		_, err := client.Call(ctx, protocol.MethodTextDocumentHover, nil, &sawEdit)
+		assert.Check(t, err)
+		assert.Check(t, sawEdit, "a query sent after an edit started before the edit finished")
 	})
 }
