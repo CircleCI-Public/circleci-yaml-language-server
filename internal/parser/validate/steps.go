@@ -13,6 +13,7 @@ import (
 	ast2 "github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/paramref"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/parser"
 )
 
 var WHEN_KEYWORDS = []string{
@@ -172,7 +173,7 @@ func (val Validate) validateNamedStep(step ast2.NamedStep, usableParams map[stri
 	}
 
 	if !val.Doc.IsBuiltIn(step.Name) {
-		targetEntityDefinedParams := val.Doc.GetDefinedParams(step.Name, val.Cache)
+		targetEntityDefinedParams := val.Doc.GetDefinedParams(step.Name, parser.CommandEntity, val.Cache)
 		val.validateParametersValue(
 			step.Parameters,
 			step.Name,

@@ -136,3 +136,81 @@ func TestYamlDocument_parseCheckout(t *testing.T) {
 	}
 	CheckYamlErrors(t, testCases)
 }
+
+func TestCommandAndJobWithTheSameName(t *testing.T) {
+	testCases := []ValidateTestCase{
+		{
+			Name: "A step takes the command's parameters and a workflow job the job's",
+			YamlContent: `version: 2.1
+
+commands:
+  build:
+    parameters:
+      cmdparam:
+        type: string
+    steps:
+      - run: echo << parameters.cmdparam >>
+
+jobs:
+  build:
+    parameters:
+      jobparam:
+        type: string
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - build:
+          cmdparam: x
+
+workflows:
+  w:
+    jobs:
+      - build:
+          jobparam: y
+`,
+			OnlyErrors: true,
+		},
+		{
+			Name: "The same holds for an orb's command and job",
+			YamlContent: `version: 2.1
+
+orbs:
+  my-orb:
+    commands:
+      build:
+        parameters:
+          cmdparam:
+            type: string
+        steps:
+          - run: echo << parameters.cmdparam >>
+    jobs:
+      build:
+        parameters:
+          jobparam:
+            type: string
+        docker:
+          - image: cimg/base:stable
+        steps:
+          - run: echo << parameters.jobparam >>
+
+jobs:
+  j:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - my-orb/build:
+          cmdparam: x
+
+workflows:
+  w:
+    jobs:
+      - j
+      - my-orb/build:
+          jobparam: y
+`,
+			OnlyErrors: true,
+		},
+	}
+
+	CheckYamlErrors(t, testCases)
+}

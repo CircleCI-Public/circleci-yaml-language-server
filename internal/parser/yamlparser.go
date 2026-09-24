@@ -631,45 +631,43 @@ func (doc *YamlDocument) GetExecutorDefinedAtPosition(pos protocol.Position) ast
 	return ast2.BaseExecutor{}
 }
 
-func (doc *YamlDocument) GetDefinedParams(entityName string, cache *cache.Cache) map[string]ast2.Parameter {
-	var definedParams map[string]ast2.Parameter
+// EntityKind is what a name is used as: a step names a command, and a
+// workflow's job entry names a job. A config may define a command and a job
+// with the same name, so a lookup by name has to be told which it wants.
+type EntityKind int
 
-	if command, ok := doc.Commands[entityName]; ok {
-		definedParams = command.Parameters
+const (
+	CommandEntity EntityKind = iota
+	JobEntity
+)
+
+// GetDefinedParams returns the parameters of the command or job that
+// entityName refers to, local or from an orb, preferring the kind it is used
+// as. The other kind is only a fallback: a name used as the wrong kind is
+// reported where its existence is checked.
+func (doc *YamlDocument) GetDefinedParams(entityName string, kind EntityKind, cache *cache.Cache) map[string]ast2.Parameter {
+	attributes := doc.ToOrbParsedAttributes()
+	name := entityName
+
+	if orbName, orbEntity, ok := strings.Cut(entityName, "/"); ok && !strings.Contains(orbEntity, "/") {
+		orbInfo, err := doc.GetOrbInfoFromName(orbName, cache)
+		if err == nil && orbInfo != nil {
+			attributes = orbInfo.OrbParsedAttributes
+			name = orbEntity
+		}
 	}
 
-	if job, ok := doc.Jobs[entityName]; ok {
-		definedParams = job.Parameters
+	command, isCommand := attributes.Commands[name]
+	job, isJob := attributes.Jobs[name]
+
+	switch {
+	case isCommand && (kind == CommandEntity || !isJob):
+		return command.Parameters
+	case isJob:
+		return job.Parameters
 	}
 
-	if doc.IsOrbCommand(entityName, cache) || doc.IsOrbJob(entityName, cache) {
-		return doc.GetOrbDefinedParams(entityName, cache)
-	}
-
-	return definedParams
-}
-
-func (doc *YamlDocument) GetOrbDefinedParams(entityName string, cache *cache.Cache) map[string]ast2.Parameter {
-	var definedParams map[string]ast2.Parameter
-
-	splittedName := strings.Split(entityName, "/")
-	orbName := splittedName[0]
-	commandOrJob := splittedName[1]
-
-	orbInfo, err := doc.GetOrFetchOrbInfo(doc.Orbs[orbName], cache)
-	if err != nil {
-		return definedParams
-	}
-
-	if command, ok := orbInfo.Commands[commandOrJob]; ok {
-		definedParams = command.Parameters
-	}
-
-	if job, ok := orbInfo.Jobs[commandOrJob]; ok {
-		definedParams = job.Parameters
-	}
-
-	return definedParams
+	return nil
 }
 
 func (doc *YamlDocument) ToOrbParsedAttributes() ast2.OrbParsedAttributes {

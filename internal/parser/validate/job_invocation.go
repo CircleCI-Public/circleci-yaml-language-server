@@ -11,6 +11,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/codeaction"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/paramref"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/parser"
 )
 
 // InvocationKind distinguishes where a job invocation appears.
@@ -44,7 +45,7 @@ func (val Validate) doesJobInvocationExist(jobInvocations []ast2.JobInvocation, 
 func (val Validate) validateJobInvocationParameters(jobInvocation ast2.JobInvocation) {
 	jobName := jobInvocation.JobName
 	jobRange := jobInvocation.JobInvocationRange
-	definedParams := val.Doc.GetDefinedParams(jobName, val.Cache)
+	definedParams := val.Doc.GetDefinedParams(jobName, parser.JobEntity, val.Cache)
 
 	for _, definedParam := range definedParams {
 		_, okMatrix := jobInvocation.MatrixParams[definedParam.GetName()]
