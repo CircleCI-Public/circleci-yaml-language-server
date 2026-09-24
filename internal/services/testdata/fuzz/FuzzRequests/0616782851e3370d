@@ -1,0 +1,4 @@
+go test fuzz v1
+string("A: 0\nA: !0,0 #0000000000000\n00: *0 0")
+uint32(62)
+uint32(50)
