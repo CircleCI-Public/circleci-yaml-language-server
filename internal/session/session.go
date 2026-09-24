@@ -2,12 +2,18 @@ package session
 
 import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/dockerhub"
 )
 
 type Settings struct {
 	Api                circleci.Config
 	UserIdForTelemetry string
 	IsCciExtension     bool
+
+	// DockerHub configures where the server asks Docker Hub. The zero value is
+	// the public Docker Hub; it exists so that a test can point the server at
+	// a fake.
+	DockerHub dockerhub.Config
 }
 
 // OrbRegistry returns the orb registry for the configured host and token.

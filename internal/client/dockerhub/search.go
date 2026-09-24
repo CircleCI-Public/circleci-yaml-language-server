@@ -12,10 +12,9 @@ type ResultsCursor interface {
 	Prev() *Repository
 }
 
-// Search reads through the process-wide default API; a caller with an API of
-// its own searches through that.
-func Search(query string) ResultsCursor {
-	return defaultAPI.Search(query)
+// Search searches the Docker Hub cfg configures; see searchAPI.
+func Search(cfg Config, query string) ResultsCursor {
+	return searchAPI(cfg).Search(query)
 }
 
 func (me *dockerHubAPI) Search(query string) ResultsCursor {

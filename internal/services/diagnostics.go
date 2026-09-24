@@ -91,7 +91,7 @@ func DiagnosticYAML(yamlDocument parser.YamlDocument, cache *cache.Cache, contex
 
 	validateStruct := validate.Validate{
 		APIs: validate.ValidateAPIs{
-			DockerHub: dockerhub.NewAPI(),
+			DockerHub: dockerhub.NewAPIWithConfig(context.DockerHub),
 		},
 		Doc:         diag.yamlDocument,
 		Diagnostics: &[]protocol.Diagnostic{},

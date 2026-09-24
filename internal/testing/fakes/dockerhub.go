@@ -58,7 +58,7 @@ type Tag struct {
 }
 
 // NewDockerHub starts a fake Docker Hub API server and closes it on cleanup.
-func NewDockerHub(t *testing.T) *DockerHub {
+func NewDockerHub(t testing.TB) *DockerHub {
 	t.Helper()
 
 	fake := &DockerHub{

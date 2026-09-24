@@ -14,10 +14,10 @@ type TagsResultsCursor interface {
 	Prev() *RepoTag
 }
 
-// SearchTags reads through the process-wide default API; a caller with an API
-// of its own searches through that.
-func SearchTags(namespace, repo string, query string) (TagsResultsCursor, error) {
-	return defaultAPI.SearchTags(namespace, repo, query)
+// SearchTags searches the tags of a repository on the Docker Hub cfg
+// configures; see searchAPI.
+func SearchTags(cfg Config, namespace, repo string, query string) (TagsResultsCursor, error) {
+	return searchAPI(cfg).SearchTags(namespace, repo, query)
 }
 
 func (me *dockerHubAPI) SearchTags(namespace, repo string, query string) (TagsResultsCursor, error) {

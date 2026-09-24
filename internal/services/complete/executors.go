@@ -69,7 +69,7 @@ func (ch *CompletionHandler) completeDockerExecutor(executor ast2.DockerExecutor
 
 			if theImg.Tag == "" && !strings.HasSuffix(completionString, ":") {
 				// Search for repositories
-				results := dockerhub.Search(completionString)
+				results := dockerhub.Search(ch.Context.DockerHub, completionString)
 				i := 0
 
 				for i < 5 && results.HasNext() {
@@ -86,7 +86,7 @@ func (ch *CompletionHandler) completeDockerExecutor(executor ast2.DockerExecutor
 				}
 			} else {
 				// Search for tags instead
-				results, err := dockerhub.SearchTags(img.Image.Namespace, img.Image.Name, theImg.Tag)
+				results, err := dockerhub.SearchTags(ch.Context.DockerHub, img.Image.Namespace, img.Image.Name, theImg.Tag)
 				if err != nil {
 					return
 				}
