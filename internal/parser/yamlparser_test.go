@@ -399,3 +399,37 @@ func TestModifyTextForAutocomplete(t *testing.T) {
 		})
 	}
 }
+
+func TestInsertText(t *testing.T) {
+	const content = "a: é\nb: 2\n"
+
+	for name, tc := range map[string]struct {
+		pos  protocol.Position
+		want string
+	}{
+		"before the character at the position": {
+			pos:  protocol.Position{Line: 1, Character: 3},
+			want: "a: é\nb: X2\n",
+		},
+		"after a character of more than one byte": {
+			pos:  protocol.Position{Line: 0, Character: 5},
+			want: "a: éX\nb: 2\n",
+		},
+		"nowhere at the end of the content": {
+			pos:  protocol.Position{Line: 2, Character: 0},
+			want: content,
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			doc, err := parser2.ParseFromContent([]byte(content), testHelpers.DefaultSettings(), uri.File(""), protocol.Position{})
+			assert.NilError(t, err)
+			t.Cleanup(doc.Close)
+
+			edited, err := doc.InsertText(tc.pos, "X")
+			assert.NilError(t, err)
+			t.Cleanup(edited.Close)
+
+			assert.Check(t, cmp.Equal(string(edited.Content), tc.want))
+		})
+	}
+}

@@ -8,6 +8,7 @@
 package yamltree
 
 import (
+	"fmt"
 	"iter"
 	"sync"
 
@@ -77,24 +78,38 @@ func walk(node *sitter.Node, yield func(*sitter.Node) bool) bool {
 	return true
 }
 
-// Query runs a query over node, calling fn for each match. The captured nodes
-// belong to node's tree.
-func Query(node *sitter.Node, pattern string, fn func(match *sitter.QueryMatch)) error {
-	query, queryErr := sitter.NewQuery(Language, pattern)
-	if queryErr != nil {
-		return queryErr
-	}
-	defer query.Close()
+// Query is a compiled query.
+//
+// Compiling a query is far more work than running it — it was most of what
+// parsing a document cost — so each is compiled once, as its package is
+// initialised, and run by every request after. Running a query only reads it,
+// so any number of requests can run one at once. Like Language, it is never
+// closed.
+type Query struct {
+	inner *sitter.Query
+}
 
+// MustCompileQuery compiles a query, panicking if it is not valid: that is a
+// mistake in the query, not something a document can cause.
+func MustCompileQuery(pattern string) *Query {
+	query, err := sitter.NewQuery(Language, pattern)
+	if err != nil {
+		panic(fmt.Sprintf("invalid tree-sitter query %q: %s", pattern, err))
+	}
+
+	return &Query{inner: query}
+}
+
+// Run runs the query over node, calling fn for each match. The captured nodes
+// belong to node's tree.
+func (q *Query) Run(node *sitter.Node, fn func(match *sitter.QueryMatch)) {
 	cursor := sitter.NewQueryCursor()
 	defer cursor.Close()
 
 	// The text is only read by text predicates, which none of these queries
 	// use.
-	matches := cursor.Matches(query, node, nil)
+	matches := cursor.Matches(q.inner, node, nil)
 	for match := matches.Next(); match != nil; match = matches.Next() {
 		fn(match)
 	}
-
-	return nil
 }

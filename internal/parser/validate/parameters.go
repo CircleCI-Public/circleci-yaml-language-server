@@ -11,8 +11,13 @@ import (
 	ast2 "github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/paramref"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/parser"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/yamltree"
+)
+
+var (
+	stringScalarsQuery = yamltree.MustCompileQuery("(string_scalar) @string")
+	blockScalarsQuery  = yamltree.MustCompileQuery("(block_scalar) @string")
 )
 
 func (val Validate) ValidatePipelineParameters() {
@@ -188,8 +193,8 @@ func (val Validate) CheckIfParamsExist() {
 		}
 	}
 
-	parser.ExecQuery(val.Doc.RootNode, "(string_scalar) @string", checkOnNode)
-	parser.ExecQuery(val.Doc.RootNode, "(block_scalar) @string", checkOnNode)
+	stringScalarsQuery.Run(val.Doc.RootNode, checkOnNode)
+	blockScalarsQuery.Run(val.Doc.RootNode, checkOnNode)
 }
 
 func (val Validate) validateParametersValue(paramsValue map[string]ast2.ParameterValue, calledEntity string, entityRange protocol.Range, calledEntityDefinedParams map[string]ast2.Parameter, usableParams map[string]ast2.Parameter) {

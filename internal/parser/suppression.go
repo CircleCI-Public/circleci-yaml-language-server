@@ -7,6 +7,7 @@ import (
 	"go.lsp.dev/protocol"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/yamltree"
 )
 
 type SuppressionInfo struct {
@@ -26,6 +27,8 @@ var (
 	ignoreNextLineRegex   = regexp.MustCompile(`^\s*#\s*cci-ignore-next-line\s*$`)
 	ignoreRangeStartRegex = regexp.MustCompile(`^\s*#\s*cci-ignore-start\s*$`)
 	ignoreRangeEndRegex   = regexp.MustCompile(`^\s*#\s*cci-ignore-end\s*$`)
+
+	commentsQuery = yamltree.MustCompileQuery("(comment) @comment")
 )
 
 func ParseSuppressionComments(doc *YamlDocument) *SuppressionInfo {
@@ -40,7 +43,7 @@ func ParseSuppressionComments(doc *YamlDocument) *SuppressionInfo {
 	suppressionRange := SuppressionRange{}
 
 	// fetch all comments via tree-sitter and build up the suppression info
-	ExecQuery(rootNode, "(comment) @comment", func(match *sitter.QueryMatch) {
+	commentsQuery.Run(rootNode, func(match *sitter.QueryMatch) {
 		for _, capture := range match.Captures {
 			node := &capture.Node
 			commentText := doc.GetNodeText(node)
