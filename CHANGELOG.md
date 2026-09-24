@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [0.40.2](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.40.1...0.40.2) (2026-09-24)
+
+
+### Bug Fixes
+
+* attach the extension debugger over IPv4 ([#495](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/495)) ([d468595](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/d4685957dd47c15a516a74ed597ea62d9fa67676))
+
 ## [0.40.1](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.40.0...0.40.1) (2026-09-24)
 
 
