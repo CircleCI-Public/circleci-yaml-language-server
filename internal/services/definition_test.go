@@ -723,3 +723,29 @@ func TestDefinition_WorkflowRequiresRenamedJob_GoesToJobInvocation(t *testing.T)
 	assert.Check(t, len(locations) != 0, "should resolve goto-def for renamed job in requires")
 	assert.Check(t, cmp.Equal(uint32(17), locations[0].Range.Start.Line), "should jump to the 'build' job-invocation (which has name: build-renamed)")
 }
+
+func TestDefinitionOfAParameterUnderAKeylessPair(t *testing.T) {
+	// The job's name is yet to be typed. Its pair has no key, which used to be
+	// dereferenced on the way to the parameter. Found by FuzzRequests.
+	const content = "version: 2.1\n" +
+		"jobs:\n" +
+		"  :\n" +
+		"    steps:\n" +
+		"      - run: echo << parameters.greeting >>\n"
+
+	docURI := uri.File(filepath.Join(t.TempDir(), "config.yml"))
+	c := cache.New()
+	c.FileCache.SetFile(cache.File{
+		TextDocument: protocol.TextDocumentItem{URI: docURI, Text: content},
+	})
+
+	locations, err := Definition(protocol.DefinitionParams{
+		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
+			TextDocument: protocol.TextDocumentIdentifier{URI: docURI},
+			Position:     protocol.Position{Line: 4, Character: 32},
+		},
+	}, c, testHelpers.DefaultSettings())
+
+	assert.Check(t, err)
+	assert.Check(t, cmp.Len(locations, 0))
+}

@@ -87,7 +87,12 @@ func GetPathFromVisitedNodes(visitedNodes []*sitter.Node, doc parser.YamlDocumen
 	for _, node := range visitedNodes[1:] {
 		switch node.Kind() {
 		case "block_mapping_pair":
+			// A pair whose key is yet to be typed, as `: value` is, has no
+			// name to go in the path.
 			key := node.ChildByFieldName("key")
+			if key == nil {
+				continue
+			}
 			name := string(doc.Content[key.StartByte():key.EndByte()])
 			path = append(path, name)
 		case "block_sequence_item":

@@ -1,0 +1,4 @@
+go test fuzz v1
+string(":\n <<parameters.0>>")
+uint32(1)
+uint32(90)
