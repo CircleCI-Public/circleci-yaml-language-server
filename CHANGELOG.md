@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [0.40.1](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.40.0...0.40.1) (2026-09-24)
+
+
+### Bug Fixes
+
+* stop image completion from crashing the server ([#490](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/490)) ([64dec62](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/64dec6265d0f31a2c7fe70950fcd41311c69d5f9))
+
 ## [0.40.0](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.39.0...0.40.0) (2026-09-23)
 
 
