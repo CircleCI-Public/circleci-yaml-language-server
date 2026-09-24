@@ -3,7 +3,6 @@ package validate
 import (
 	"testing"
 
-	"github.com/adrg/xdg"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 	"gotest.tools/v3/assert"
@@ -15,15 +14,12 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/testHelpers"
 )
 
-// isolateOrbFSCache points the on-disk orb source cache at a temporary
-// directory, so that a test neither reads orbs left by an earlier run nor
-// writes into the developer's real cache.
-func isolateOrbFSCache(t *testing.T) {
+// isolateOrbSources points the temporary directory, which fetched orb
+// sources are written under, somewhere the test cleans up.
+func isolateOrbSources(t *testing.T) {
 	t.Helper()
 
-	t.Setenv("XDG_CACHE_HOME", t.TempDir())
-	xdg.Reload()
-	t.Cleanup(xdg.Reload)
+	t.Setenv("TMPDIR", t.TempDir())
 }
 
 // orbDiagnostics validates a config against the fake and returns the
@@ -55,7 +51,7 @@ func TestOrbValidationOverV3(t *testing.T) {
 	// Each subtest uses its own orb name because parser memoises orb existence
 	// in a package-level map that a test cannot reach.
 	t.Run("accepts an orb at its latest version", func(t *testing.T) {
-		isolateOrbFSCache(t)
+		isolateOrbSources(t)
 
 		fake := fakes.NewCircleCI(t)
 		fake.AddNamespace("ns-acme", "acme")
@@ -86,7 +82,7 @@ workflows:
 	// @N and @N.M are prefix ranges. Comparing only as deep as the pin
 	// means @0 is not 0.0.0, but @6 still notices @7 (PIPE-9822).
 	t.Run("does not warn that a major-only pin is behind on patch or minor", func(t *testing.T) {
-		isolateOrbFSCache(t)
+		isolateOrbSources(t)
 
 		fake := fakes.NewCircleCI(t)
 		fake.AddNamespace("ns-acme", "acme")
@@ -116,7 +112,7 @@ workflows:
 	})
 
 	t.Run("reports a newer major for a major-only pin", func(t *testing.T) {
-		isolateOrbFSCache(t)
+		isolateOrbSources(t)
 
 		fake := fakes.NewCircleCI(t)
 		fake.AddNamespace("ns-acme", "acme")
@@ -148,7 +144,7 @@ workflows:
 	})
 
 	t.Run("reports a newer minor for a major.minor pin", func(t *testing.T) {
-		isolateOrbFSCache(t)
+		isolateOrbSources(t)
 
 		fake := fakes.NewCircleCI(t)
 		fake.AddNamespace("ns-acme", "acme")
@@ -180,7 +176,7 @@ workflows:
 		assert.Check(t, cmp.Equal(diagnostics[0].Severity, protocol.DiagnosticSeverityInformation))
 	})
 	t.Run("reports a newer version of an out-of-date orb", func(t *testing.T) {
-		isolateOrbFSCache(t)
+		isolateOrbSources(t)
 
 		fake := fakes.NewCircleCI(t)
 		fake.AddNamespace("ns-acme", "acme")
@@ -210,7 +206,7 @@ workflows:
 	})
 
 	t.Run("flags an orb that does not exist", func(t *testing.T) {
-		isolateOrbFSCache(t)
+		isolateOrbSources(t)
 
 		fake := fakes.NewCircleCI(t)
 		fake.AddNamespace("ns-acme", "acme")
@@ -237,7 +233,7 @@ workflows:
 	})
 
 	t.Run("flags a version that does not exist", func(t *testing.T) {
-		isolateOrbFSCache(t)
+		isolateOrbSources(t)
 
 		fake := fakes.NewCircleCI(t)
 		fake.AddNamespace("ns-acme", "acme")
@@ -266,7 +262,7 @@ workflows:
 	})
 
 	t.Run("resolves an orb pinned to a partial version", func(t *testing.T) {
-		isolateOrbFSCache(t)
+		isolateOrbSources(t)
 
 		fake := fakes.NewCircleCI(t)
 		fake.AddNamespace("ns-acme", "acme")
@@ -298,7 +294,7 @@ workflows:
 	// Without a token the language server still resolves public orbs, so an
 	// anonymous run must produce the same diagnostics as an authenticated one.
 	t.Run("resolves a public orb without a token", func(t *testing.T) {
-		isolateOrbFSCache(t)
+		isolateOrbSources(t)
 
 		fake := fakes.NewCircleCI(t)
 		fake.AddNamespace("ns-acme", "acme")

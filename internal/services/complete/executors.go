@@ -145,7 +145,7 @@ func (ch *CompletionHandler) completeMachineExecutor(executor ast2.MachineExecut
 			ch.addCompletionItem(resourceClass)
 		}
 		if ch.Context.Api.IsLoggedIn() {
-			customResourceClasses := ch.Cache.ResourceClassCache.GetResourceClassOfFile(ch.Doc.URI)
+			customResourceClasses := ch.Cache.ResourceClassesOfFile(ch.Context.Api, ch.Doc.URI)
 			for _, resourceClass := range customResourceClasses {
 				ch.addCompletionItem(resourceClass)
 			}

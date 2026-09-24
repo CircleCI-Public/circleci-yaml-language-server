@@ -3,8 +3,6 @@ package methods
 import (
 	"bytes"
 	"context"
-	"path"
-	"strings"
 
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
@@ -154,12 +152,10 @@ func (methods *Methods) updateOrbFile(content []byte, uri uri.URI) {
 	}
 }
 
+// isOrb reports whether a document is the source of a remote orb, which the
+// server wrote out for go-to-definition to open, and the reference of the orb.
 func (methods *Methods) isOrb(uri uri.URI) (bool, string) {
-	namespace := path.Base((path.Dir(uri.FsPath())))
-	orb := path.Base(uri.FsPath())
-	orbId := strings.TrimRight(path.Join(namespace, orb), ".yml")
-
-	isOrb := methods.Cache.OrbCache.HasOrb(orbId)
+	orbId, isOrb := methods.Cache.OrbIDOfSource(uri.FsPath())
 
 	return isOrb, orbId
 }

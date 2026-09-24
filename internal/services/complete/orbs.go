@@ -11,8 +11,6 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 )
 
-var orbCache = NewOrbCache()
-
 func (ch *CompletionHandler) completeOrbs() {
 	if ch.DocTag != "original" {
 		return
@@ -60,12 +58,7 @@ func (ch *CompletionHandler) wantOrbVersionCompletion(node *sitter.Node) bool {
 func (ch *CompletionHandler) completeOrbVersion(node *sitter.Node) {
 	def := ch.Doc.GetOrbURLDefinition(node)
 	orbName := fmt.Sprintf("%s/%s", def.Namespace.Text, def.Name.Text)
-	completions, err := ch.getOrbVersionCompletions(
-		orbName,
-		ch.Doc.Context.Api.HostUrl,
-		ch.Doc.Context.Api.Token,
-		ch.Doc.Context.UserIdForTelemetry,
-	)
+	completions, err := ch.getOrbVersionCompletions(orbName)
 	if err != nil {
 		return
 	}
@@ -84,28 +77,26 @@ func (ch *CompletionHandler) completeOrbVersion(node *sitter.Node) {
 	}
 }
 
-func (ch *CompletionHandler) getOrbVersionCompletions(name, hostUrl, token, userId string) ([]string, error) {
+func (ch *CompletionHandler) getOrbVersionCompletions(name string) ([]string, error) {
 	orbName := strings.TrimSuffix(name, "@")
 
-	orbData, err := orbCache.GetVersionsOfOrb(orbName, hostUrl, token, userId)
+	orb, err := ch.Cache.OrbPackages.Orb(ch.Doc.Context.OrbRegistry(), orbName)
 	if err != nil {
 		return nil, err
 	}
+	if orb == nil {
+		return nil, fmt.Errorf("no orb named %s", orbName)
+	}
 
-	versions := make([]string, len(orbData.Versions))
-	for i, version := range orbData.Versions {
+	versions := make([]string, len(orb.Versions))
+	for i, version := range orb.Versions {
 		versions[i] = version.Version
 	}
 	return versions, nil
 }
 
 func (ch *CompletionHandler) completeOrbName(node *sitter.Node) {
-	completions, err := getOrbNameCompletions(
-		ch.Doc.GetNodeText(node),
-		ch.Doc.Context.Api.HostUrl,
-		ch.Doc.Context.Api.Token,
-		ch.Doc.Context.UserIdForTelemetry,
-	)
+	completions, err := ch.getOrbNameCompletions(ch.Doc.GetNodeText(node))
 	if err != nil {
 		return
 	}
@@ -115,12 +106,11 @@ func (ch *CompletionHandler) completeOrbName(node *sitter.Node) {
 	}
 }
 
-func getOrbNameCompletions(name, hostUrl, token, userId string) ([]string, error) {
+func (ch *CompletionHandler) getOrbNameCompletions(name string) ([]string, error) {
 	parts := strings.Split(name, "/")
-	registry := parts[0]
+	namespace := parts[0]
 
-	orbs, err := orbCache.GetOrbsOfRegistry(registry, hostUrl, token, userId)
-
+	orbs, err := ch.Cache.OrbPackages.InNamespace(ch.Doc.Context.OrbRegistry(), namespace)
 	if err != nil {
 		return nil, err
 	}

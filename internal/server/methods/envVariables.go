@@ -6,7 +6,6 @@ import (
 	"go.lsp.dev/protocol"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/projectslug"
 )
 
@@ -18,8 +17,11 @@ func (methods *Methods) getAllEnvVariables(textDocument protocol.TextDocumentIte
 	}
 	if cachedFile.Project.Slug == "" {
 		projectSlug := projectslug.FromRepo(textDocument.URI.FsPath())
-		project, err := circleci.GetProject(api, projectSlug)
-		if err != nil {
+		if projectSlug == "" {
+			return
+		}
+		project, err := methods.Cache.Project(api, projectSlug)
+		if err != nil || project.Slug == "" {
 			return
 		}
 		methods.Cache.FileCache.AddProjectSlugToFile(textDocument.URI, project)
@@ -27,15 +29,8 @@ func (methods *Methods) getAllEnvVariables(textDocument protocol.TextDocumentIte
 		methods.updateProjectEnvVariables(cachedFile)
 	}
 
-	err := methods.Cache.LoadContexts(api, cachedFile.Project.OrganizationId)
-	if err != nil {
+	if err := methods.Cache.LoadContexts(api, cachedFile.Project.OrganizationId); err != nil {
 		slog.Warn("error getting contexts", "err", err)
-		return
-	}
-	methods.Cache.ContextCache.MarkOrganizationContextListLoaded(cachedFile.Project.OrganizationId)
-
-	if err := methods.Cache.LoadContextEnvVariables(api, cachedFile.Project.OrganizationId); err != nil {
-		slog.Warn("error getting context environment variables", "err", err)
 	}
 }
 

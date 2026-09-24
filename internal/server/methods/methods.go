@@ -73,6 +73,7 @@ func (methods *Methods) updateSettings(change func(*session.Settings)) {
 }
 
 func (methods *Methods) Shutdown(context.Context) error {
+	methods.Cache.Close()
 	return nil
 }
 

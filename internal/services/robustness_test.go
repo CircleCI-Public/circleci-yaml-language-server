@@ -8,7 +8,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/adrg/xdg"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 
@@ -250,14 +249,13 @@ workflows:
 `
 
 // hermeticSettings are settings whose CircleCI and Docker Hub are fakes, with
-// the on-disk orb cache moved somewhere of the test's own, so that nothing a
-// config names reaches a real service or the user's cache.
+// the temporary directory fetched orb sources are written under moved
+// somewhere of the test's own, so that nothing a config names reaches a real
+// service or outlives the test.
 func hermeticSettings(t testing.TB) *session.Settings {
 	t.Helper()
 
-	t.Setenv("XDG_CACHE_HOME", t.TempDir())
-	xdg.Reload()
-	t.Cleanup(xdg.Reload)
+	t.Setenv("TMPDIR", t.TempDir())
 
 	circleci := fakes.NewCircleCI(t)
 

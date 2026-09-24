@@ -1,35 +1,42 @@
 package cache
 
 import (
-	"sync"
+	"time"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/memo"
 )
 
+// MachineOfferings remembers the machine catalog of the API host.
 type MachineOfferings struct {
-	cacheMutex sync.Mutex
-	offerings  *circleci.Offerings
-	attempted  bool
+	catalog *memo.Memo[*circleci.Offerings]
+}
+
+// catalogKey is the one key the catalog is kept under: there is one catalog
+// per host, and the cache is cleared when the host changes.
+const catalogKey = "catalog"
+
+// offeringsLifetime keeps a catalog for memo.FoundLifetime, and the lack of
+// one only for memo.NotFoundLifetime.
+//
+// No catalog is usually a failed fetch, and it is remembered anyway, unlike
+// any other failure: validation asks for the catalog for every executor, and
+// each would otherwise wait out a request to a host that is down.
+func offeringsLifetime(offerings *circleci.Offerings) time.Duration {
+	return memo.Existence(offerings != nil)
 }
 
 func (c *MachineOfferings) Set(offerings *circleci.Offerings) {
-	c.cacheMutex.Lock()
-	defer c.cacheMutex.Unlock()
-	c.offerings = offerings
-	c.attempted = true
+	c.catalog.Put(catalogKey, offerings)
 }
 
-// Offerings fetches the machine catalog once, holding the lock across the fetch so concurrent
-// callers wait for the result instead of racing to a nil. Returns nil on failure, so callers
-// skip validation rather than flag valid config; every view of *Offerings answers nil for a
-// nil catalog.
+// Offerings returns the machine catalog, fetching it only when none is
+// remembered; concurrent callers share one fetch. Returns nil on failure, so
+// callers skip validation rather than flag valid config; every view of
+// *Offerings answers nil for a nil catalog.
 func (cache *Cache) Offerings(api circleci.Config) *circleci.Offerings {
-	c := &cache.MachineOfferingsCache
-	c.cacheMutex.Lock()
-	defer c.cacheMutex.Unlock()
-	if !c.attempted {
-		c.attempted = true
-		c.offerings = circleci.FetchOfferings(api)
-	}
-	return c.offerings
+	offerings, _ := cache.MachineOfferingsCache.catalog.Get(catalogKey, func() (*circleci.Offerings, error) {
+		return circleci.FetchOfferings(api), nil
+	})
+	return offerings
 }

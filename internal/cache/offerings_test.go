@@ -2,6 +2,7 @@ package cache
 
 import (
 	"net/http"
+	"sync"
 	"testing"
 
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -72,7 +73,8 @@ func TestMachineOfferings(t *testing.T) {
 
 	// A failed fetch has to leave the accessors reporting nothing, so that
 	// validation skips the check rather than flagging valid config — and it
-	// must not be retried on every keystroke either.
+	// must not be retried for every executor either. It is remembered for
+	// memo.NotFoundLifetime.
 	t.Run("reports nothing when the host fails, and does not retry", func(t *testing.T) {
 		fake := offeringsFake(t)
 		fake.SetStatus(catalogRoute, http.StatusInternalServerError)
@@ -82,6 +84,22 @@ func TestMachineOfferings(t *testing.T) {
 		assert.Check(t, cmp.Nil(offerings))
 
 		cache.Offerings(configFor(fake.URL()))
+
+		requestCount := fake.RequestCount(http.MethodGet, "/api/v3/catalog/offerings")
+		assert.Check(t, cmp.Equal(requestCount, 1))
+	})
+
+	t.Run("concurrent callers share one fetch", func(t *testing.T) {
+		fake := offeringsFake(t)
+		cache := New()
+
+		var wg sync.WaitGroup
+		for range 10 {
+			wg.Go(func() {
+				assert.Check(t, cache.Offerings(configFor(fake.URL())) != nil)
+			})
+		}
+		wg.Wait()
 
 		requestCount := fake.RequestCount(http.MethodGet, "/api/v3/catalog/offerings")
 		assert.Check(t, cmp.Equal(requestCount, 1))
@@ -185,7 +203,7 @@ func TestOfferingAccessors(t *testing.T) {
 
 func TestMachinePairs_NilWhenUnavailable(t *testing.T) {
 	cache := New()
-	cache.MachineOfferingsCache.attempted = true // simulate a failed fetch
+	cache.MachineOfferingsCache.Set(nil) // as a failed fetch leaves it
 
 	pairs := cache.Offerings(configFor("")).MachinePairs()
 	assert.Check(t, cmp.Nil(pairs))

@@ -5,7 +5,6 @@ go 1.27.1
 require (
 	charm.land/log/v2 v2.0.1
 	github.com/Masterminds/semver/v3 v3.5.0
-	github.com/adrg/xdg v0.5.3
 	github.com/bep/debounce v1.2.1
 	github.com/chainguard-dev/git-urls v1.0.2
 	github.com/go-git/go-git/v6 v6.0.0-alpha.5
