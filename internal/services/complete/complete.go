@@ -81,8 +81,8 @@ func (ch *CompletionHandler) addCompletionItem(label string) {
 func (ch *CompletionHandler) addCompletionItemWithDetail(label string, detail string, sortText string) {
 	ch.Items = append(ch.Items, protocol.CompletionItem{
 		Label:    label,
-		Detail:   detail,
-		SortText: sortText,
+		Detail:   unlessEmpty(detail),
+		SortText: unlessEmpty(sortText),
 	})
 }
 
@@ -116,10 +116,19 @@ func (ch *CompletionHandler) addCompletionItemFieldWithNewLine(label string) {
 func (ch *CompletionHandler) addCompletionItemFieldWithCustomText(label string, beforeText string, afterText string, detail string, sortText string) {
 	ch.Items = append(ch.Items, protocol.CompletionItem{
 		Label:      label,
-		InsertText: fmt.Sprintf("%s%s%s", beforeText, label, afterText),
-		Detail:     detail,
-		SortText:   sortText,
+		InsertText: protocol.NewOptional(fmt.Sprintf("%s%s%s", beforeText, label, afterText)),
+		Detail:     unlessEmpty(detail),
+		SortText:   unlessEmpty(sortText),
 	})
+}
+
+// unlessEmpty leaves an empty string out of the item, as it always has been,
+// rather than sending it as "".
+func unlessEmpty(s string) protocol.Optional[string] {
+	if s == "" {
+		return protocol.Optional[string]{}
+	}
+	return protocol.NewOptional(s)
 }
 
 func (ch *CompletionHandler) GetOrbInfo(orb ast.Orb) *ast.OrbInfo {

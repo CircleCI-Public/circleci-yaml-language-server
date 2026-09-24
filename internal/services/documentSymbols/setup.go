@@ -14,7 +14,7 @@ func resolveSetupSymbol(doc *parser.YamlDocument) (symbols []protocol.DocumentSy
 		symbols = append(symbols, protocol.DocumentSymbol{
 			Name:           "Setup",
 			Kind:           protocol.SymbolKindBoolean,
-			Detail:         strconv.FormatBool(doc.Setup),
+			Detail:         unlessZero(strconv.FormatBool(doc.Setup)),
 			Range:          doc.SetupRange,
 			SelectionRange: doc.SetupRange,
 		})

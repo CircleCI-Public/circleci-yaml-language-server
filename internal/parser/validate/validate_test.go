@@ -11,6 +11,7 @@ import (
 	"gotest.tools/v3/assert/cmp"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/parser"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/testHelpers"
 )
@@ -42,7 +43,7 @@ func CreateValidateFromYAML(yaml string) Validate {
 func CompareDiagnostics(t *testing.T, expected, actual *[]protocol.Diagnostic) {
 	sortDiagnostic(expected)
 	sortDiagnostic(actual)
-	assert.Check(t, cmp.DeepEqual(expected, actual))
+	assert.Check(t, cmp.DeepEqual(expected, actual, testHelpers.ProtocolTypes))
 }
 
 func CheckYamlErrors(t *testing.T, testCases []ValidateTestCase) {
@@ -97,7 +98,7 @@ func sortDiagnostic(diags *[]protocol.Diagnostic) {
 func getDiagnosticMessages(diags *[]protocol.Diagnostic) []string {
 	messages := make([]string, len(*diags))
 	for i, diag := range *diags {
-		messages[i] = diag.Message
+		messages[i] = diagnostic.MessageText(diag)
 	}
 	return messages
 }

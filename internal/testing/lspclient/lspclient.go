@@ -12,7 +12,6 @@ package lspclient
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -22,6 +21,7 @@ import (
 
 	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/protocol"
+	"go.lsp.dev/uri"
 )
 
 // DefaultTimeout bounds a request, and a wait for diagnostics.
@@ -37,8 +37,8 @@ type Client struct {
 	timeout time.Duration
 
 	mu          sync.Mutex
-	published   map[protocol.URI]publication
-	consumed    map[protocol.URI]int
+	published   map[uri.URI]publication
+	consumed    map[uri.URI]int
 	telemetry   []map[string]any
 	logMessages []string
 }
@@ -56,10 +56,10 @@ func New(t *testing.T, ctx context.Context, stream io.ReadWriteCloser) *Client {
 
 	client := &Client{
 		ctx:       ctx,
-		conn:      jsonrpc2.NewConn(jsonrpc2.NewStream(stream)),
+		conn:      jsonrpc2.NewConn(jsonrpc2.NewStream(stream), jsonrpc2.WithCodec(codec{})),
 		timeout:   DefaultTimeout,
-		published: map[protocol.URI]publication{},
-		consumed:  map[protocol.URI]int{},
+		published: map[uri.URI]publication{},
+		consumed:  map[uri.URI]int{},
 	}
 
 	client.conn.Go(ctx, client.handle)
@@ -74,16 +74,21 @@ func New(t *testing.T, ctx context.Context, stream io.ReadWriteCloser) *Client {
 // --- Requests ---
 
 // Initialize performs the handshake, rooted at the workspace directory.
-func (c *Client) Initialize(rootURI protocol.URI) (*protocol.InitializeResult, error) {
-	params := protocol.InitializeParams{
-		WorkspaceFolders: []protocol.WorkspaceFolder{
-			{URI: string(rootURI), Name: filepath.Base(rootURI.Filename())},
-		},
-		Capabilities: protocol.ClientCapabilities{},
-		InitializationOptions: map[string]any{
-			"isCciExtension": true,
-		},
+func (c *Client) Initialize(rootURI uri.URI) (*protocol.InitializeResult, error) {
+	options, err := protocol.Marshal(map[string]any{
+		"isCciExtension": true,
+	})
+	if err != nil {
+		return nil, err
 	}
+
+	params := protocol.InitializeParams{
+		Capabilities:          protocol.ClientCapabilities{},
+		InitializationOptions: options,
+	}
+	params.WorkspaceFolders = protocol.NewNullable([]protocol.WorkspaceFolder{
+		{URI: rootURI, Name: filepath.Base(rootURI.FsPath())},
+	})
 
 	result := &protocol.InitializeResult{}
 	if err := c.call(protocol.MethodInitialize, params, result); err != nil {
@@ -99,7 +104,7 @@ func (c *Client) Initialize(rootURI protocol.URI) (*protocol.InitializeResult, e
 
 // DidOpen tells the server a document is open, which is what starts the work
 // that ends in a diagnostics notification.
-func (c *Client) DidOpen(docURI protocol.URI, content string) error {
+func (c *Client) DidOpen(docURI uri.URI, content string) error {
 	return c.conn.Notify(c.ctx, protocol.MethodTextDocumentDidOpen, protocol.DidOpenTextDocumentParams{
 		TextDocument: protocol.TextDocumentItem{
 			URI:        docURI,
@@ -112,25 +117,27 @@ func (c *Client) DidOpen(docURI protocol.URI, content string) error {
 
 // DidChange replaces a document's content. The version has to advance, because
 // the server drops diagnostics computed for a version it no longer holds.
-func (c *Client) DidChange(docURI protocol.URI, version int32, content string) error {
+func (c *Client) DidChange(docURI uri.URI, version int32, content string) error {
 	return c.conn.Notify(c.ctx, protocol.MethodTextDocumentDidChange, protocol.DidChangeTextDocumentParams{
 		TextDocument: protocol.VersionedTextDocumentIdentifier{
 			TextDocumentIdentifier: protocol.TextDocumentIdentifier{URI: docURI},
 			Version:                version,
 		},
-		ContentChanges: []protocol.TextDocumentContentChangeEvent{{Text: content}},
+		ContentChanges: []protocol.TextDocumentContentChangeEvent{
+			&protocol.TextDocumentContentChangeWholeDocument{Text: content},
+		},
 	})
 }
 
 // DidClose tells the server a document is closed.
-func (c *Client) DidClose(docURI protocol.URI) error {
+func (c *Client) DidClose(docURI uri.URI) error {
 	return c.conn.Notify(c.ctx, protocol.MethodTextDocumentDidClose, protocol.DidCloseTextDocumentParams{
 		TextDocument: protocol.TextDocumentIdentifier{URI: docURI},
 	})
 }
 
 // Completion asks what could be written at a position.
-func (c *Client) Completion(docURI protocol.URI, position protocol.Position) (*protocol.CompletionList, error) {
+func (c *Client) Completion(docURI uri.URI, position protocol.Position) (*protocol.CompletionList, error) {
 	params := protocol.CompletionParams{
 		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
 			TextDocument: protocol.TextDocumentIdentifier{URI: docURI},
@@ -147,7 +154,7 @@ func (c *Client) Completion(docURI protocol.URI, position protocol.Position) (*p
 }
 
 // Hover asks what is at a position.
-func (c *Client) Hover(docURI protocol.URI, position protocol.Position) (*protocol.Hover, error) {
+func (c *Client) Hover(docURI uri.URI, position protocol.Position) (*protocol.Hover, error) {
 	params := protocol.HoverParams{
 		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
 			TextDocument: protocol.TextDocumentIdentifier{URI: docURI},
@@ -167,8 +174,14 @@ func (c *Client) Hover(docURI protocol.URI, position protocol.Position) (*protoc
 // configures the host and token it should use.
 func (c *Client) ExecuteCommand(command string, arguments ...any) error {
 	params := protocol.ExecuteCommandParams{
-		Command:   command,
-		Arguments: arguments,
+		Command: command,
+	}
+	for _, argument := range arguments {
+		encoded, err := protocol.Marshal(argument)
+		if err != nil {
+			return err
+		}
+		params.Arguments = append(params.Arguments, encoded)
 	}
 
 	return c.call(protocol.MethodWorkspaceExecuteCommand, params, nil)
@@ -179,13 +192,13 @@ func (c *Client) ExecuteCommand(command string, arguments ...any) error {
 // WaitForDiagnostics waits for the next diagnostics the server publishes for a
 // document and returns them, marking them read: a later call waits for the
 // publication after this one, so a test can follow a revalidation.
-func (c *Client) WaitForDiagnostics(docURI protocol.URI) ([]protocol.Diagnostic, error) {
+func (c *Client) WaitForDiagnostics(docURI uri.URI) ([]protocol.Diagnostic, error) {
 	return c.WaitForDiagnosticsWithin(docURI, c.timeout)
 }
 
 // WaitForDiagnosticsWithin is WaitForDiagnostics with an explicit bound, for a
 // case that expects to wait longer, or to give up sooner.
-func (c *Client) WaitForDiagnosticsWithin(docURI protocol.URI, timeout time.Duration) ([]protocol.Diagnostic, error) {
+func (c *Client) WaitForDiagnosticsWithin(docURI uri.URI, timeout time.Duration) ([]protocol.Diagnostic, error) {
 	deadline := time.Now().Add(timeout)
 
 	for {
@@ -242,42 +255,44 @@ func (c *Client) call(method string, params, result any) error {
 // handle takes what the server sends. Everything it sends is a notification,
 // so nothing here needs a reply; a request the client does not implement is
 // answered as unhandled rather than ignored, so that adding one server-side
-// does not silently stall.
-func (c *Client) handle(ctx context.Context, reply jsonrpc2.Replier, req jsonrpc2.Request) error {
+// does not silently stall. A notification that does not decode closes the
+// connection, so the test's next request fails rather than going on without
+// it.
+func (c *Client) handle(ctx context.Context, req *jsonrpc2.Request) (any, error) {
 	switch req.Method() {
 	case protocol.MethodTextDocumentPublishDiagnostics:
 		var params protocol.PublishDiagnosticsParams
-		if err := json.Unmarshal(req.Params(), &params); err != nil {
-			return reply(ctx, nil, err)
+		if err := protocol.Unmarshal(req.Params(), &params); err != nil {
+			return nil, err
 		}
 		c.recordDiagnostics(params)
 
-		return reply(ctx, nil, nil)
+		return nil, nil
 
 	case protocol.MethodTelemetryEvent:
 		var event map[string]any
-		if err := json.Unmarshal(req.Params(), &event); err != nil {
-			return reply(ctx, nil, err)
+		if err := protocol.Unmarshal(req.Params(), &event); err != nil {
+			return nil, err
 		}
 		c.mu.Lock()
 		c.telemetry = append(c.telemetry, event)
 		c.mu.Unlock()
 
-		return reply(ctx, nil, nil)
+		return nil, nil
 
 	case protocol.MethodWindowLogMessage, protocol.MethodWindowShowMessage:
 		var params protocol.LogMessageParams
-		if err := json.Unmarshal(req.Params(), &params); err != nil {
-			return reply(ctx, nil, err)
+		if err := protocol.Unmarshal(req.Params(), &params); err != nil {
+			return nil, err
 		}
 		c.mu.Lock()
 		c.logMessages = append(c.logMessages, params.Message)
 		c.mu.Unlock()
 
-		return reply(ctx, nil, nil)
+		return nil, nil
 
 	default:
-		return jsonrpc2.MethodNotFoundHandler(ctx, reply, req)
+		return jsonrpc2.MethodNotFoundHandler(ctx, req)
 	}
 }
 
@@ -290,4 +305,19 @@ func (c *Client) recordDiagnostics(params protocol.PublishDiagnosticsParams) {
 		count: previous.count + 1,
 		items: params.Diagnostics,
 	}
+}
+
+// codec encodes payloads with the protocol's own codec, which is what reads and
+// writes its union and optional fields.
+type codec struct{}
+
+func (codec) Marshal(v any) ([]byte, error) {
+	if raw, ok := v.(jsonrpc2.RawMessage); ok {
+		return raw, nil
+	}
+	return protocol.Marshal(v)
+}
+
+func (codec) Unmarshal(data []byte, v any) error {
+	return protocol.Unmarshal(data, v)
 }

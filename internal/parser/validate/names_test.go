@@ -3,6 +3,7 @@ package validate
 import (
 	"testing"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"go.lsp.dev/protocol"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
@@ -12,7 +13,7 @@ func getWarningMessages(diags *[]protocol.Diagnostic) []string {
 	var msgs []string
 	for _, d := range *diags {
 		if d.Severity == protocol.DiagnosticSeverityWarning {
-			msgs = append(msgs, d.Message)
+			msgs = append(msgs, diagnostic.MessageText(d))
 		}
 	}
 	return msgs

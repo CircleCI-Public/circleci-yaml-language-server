@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 	"gotest.tools/v3/assert"
@@ -74,19 +73,14 @@ func TestMethodsCloseTheTreesTheyParse(t *testing.T) {
 	t.Run("listing workflows for a command", func(t *testing.T) {
 		leaked := tsalloc.Track(t)
 
-		request, err := jsonrpc2.NewCall(jsonrpc2.NewNumberID(1), protocol.MethodWorkspaceExecuteCommand, protocol.ExecuteCommandParams{
-			Command:   "getWorkflows",
-			Arguments: []interface{}{leakConfig, configURI.Filename()},
+		params, err := protocol.Marshal(map[string]any{
+			"command":   "getWorkflows",
+			"arguments": []any{leakConfig, configURI.FsPath()},
 		})
 		assert.NilError(t, err)
 
-		var replyErr error
-		err = methods.ExecuteCommand(func(_ context.Context, _ interface{}, err error) error {
-			replyErr = err
-			return nil
-		}, request)
+		_, err = methods.ExecuteCommand(params)
 		assert.NilError(t, err)
-		assert.NilError(t, replyErr)
 
 		assert.Check(t, cmp.Equal(leaked(), int64(0)), "tree-sitter allocations left open")
 	})

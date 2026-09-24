@@ -40,7 +40,7 @@ func (def DefinitionStruct) getOrbDefinition() ([]protocol.Location, error) {
 
 	return []protocol.Location{
 		{
-			URI:   uri.New(orbInfo.RemoteInfo.FilePath),
+			URI:   uri.File(orbInfo.RemoteInfo.FilePath),
 			Range: protocol.Range{},
 		},
 	}, nil
@@ -74,12 +74,12 @@ func (def DefinitionStruct) getOrbLocation(name string, redirectToOrbFile bool) 
 }
 
 func (def DefinitionStruct) getOrbCommandOrJobLocation(orbInfo *ast.OrbInfo, name string) ([]protocol.Location, error) {
-	var fileUri protocol.DocumentURI
+	var fileUri uri.URI
 
 	if orbInfo.IsLocal {
 		fileUri = def.Doc.URI
 	} else {
-		fileUri = uri.New(orbInfo.RemoteInfo.FilePath)
+		fileUri = uri.File(orbInfo.RemoteInfo.FilePath)
 	}
 
 	command, ok := orbInfo.Commands[name]
@@ -126,12 +126,12 @@ func (def DefinitionStruct) getOrbParamLocation(name string, paramName string) (
 }
 
 func (def DefinitionStruct) getOrbCommandOrJobParamLocation(orbFile *ast.OrbInfo, name string, paramName string) ([]protocol.Location, error) {
-	var fileUri protocol.DocumentURI
+	var fileUri uri.URI
 
 	if orbFile.IsLocal {
 		fileUri = def.Doc.URI
 	} else {
-		fileUri = uri.New(orbFile.RemoteInfo.FilePath)
+		fileUri = uri.File(orbFile.RemoteInfo.FilePath)
 	}
 
 	orbCommand, ok := orbFile.Commands[name]

@@ -5,6 +5,7 @@ import (
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
 	"go.lsp.dev/protocol"
+	"go.lsp.dev/uri"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
 )
@@ -109,7 +110,7 @@ func TestContextCache_listLoadedTracking(t *testing.T) {
 // The project a file resolved to belongs to the host it was resolved on, so a
 // change of host has to forget it along with the rest of that host's data.
 func TestCache_ClearHostData_forgetsResolvedProjects(t *testing.T) {
-	const uri = protocol.URI("file:///workspace/.circleci/config.yml")
+	const uri = uri.URI("file:///workspace/.circleci/config.yml")
 
 	cache := New()
 	cache.FileCache.SetFile(File{TextDocument: protocol.TextDocumentItem{URI: uri}})

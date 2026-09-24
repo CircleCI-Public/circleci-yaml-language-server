@@ -2,7 +2,6 @@ package methods
 
 import (
 	"github.com/rollbar/rollbar-go"
-	"github.com/segmentio/encoding/json"
 	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
@@ -11,62 +10,60 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/parser"
 )
 
-func (methods *Methods) ExecuteCommand(reply jsonrpc2.Replier, req jsonrpc2.Request) error {
+func (methods *Methods) ExecuteCommand(raw jsonrpc2.RawMessage) (any, error) {
 	params := protocol.ExecuteCommandParams{}
-	if err := json.Unmarshal(req.Params(), &params); err != nil {
-		return reply(methods.Ctx, nil, jsonrpc2.NewError(jsonrpc2.ParseError, err.Error()))
+	if err := protocol.Unmarshal(raw, &params); err != nil {
+		return nil, jsonrpc2.NewError(jsonrpc2.ParseError, err.Error())
 	}
 
 	arguments := params.Arguments
 
 	switch params.Command {
 	case "setToken":
-		param, ok := arguments[0].(string)
+		param, ok := argument[string](arguments, 0)
 		if !ok {
-			return reply(methods.Ctx, nil, jsonrpc2.NewError(jsonrpc2.InvalidParams, "invalid method parameter: token"))
+			return nil, jsonrpc2.NewError(jsonrpc2.InvalidParams, "invalid method parameter: token")
 		}
 		methods.setToken(param)
 		methods.updateAllCachedFiles()
 
 	case "setSelfHostedUrl":
-		param, ok := arguments[0].(string)
+		param, ok := argument[string](arguments, 0)
 		if !ok {
-			return reply(methods.Ctx, nil, jsonrpc2.NewError(jsonrpc2.InvalidParams, "invalid method parameter: selfHostedURL"))
+			return nil, jsonrpc2.NewError(jsonrpc2.InvalidParams, "invalid method parameter: selfHostedURL")
 		}
 		methods.setHostUrl(param)
 		methods.updateAllCachedFiles()
 
 	case "setUserId":
-		param, ok := arguments[0].(string)
+		param, ok := argument[string](arguments, 0)
 		if !ok {
-			return reply(methods.Ctx, nil, jsonrpc2.NewError(jsonrpc2.InvalidParams, "invalid method parameter: userId"))
+			return nil, jsonrpc2.NewError(jsonrpc2.InvalidParams, "invalid method parameter: userId")
 		}
 		methods.setUserId(param)
 
 	case "getWorkflows":
-		content, okContent := arguments[0].(string)
+		content, okContent := argument[string](arguments, 0)
 		if !okContent {
-			return reply(methods.Ctx, nil, jsonrpc2.NewError(jsonrpc2.InvalidParams, "invalid method parameter: fileContent"))
+			return nil, jsonrpc2.NewError(jsonrpc2.InvalidParams, "invalid method parameter: fileContent")
 		}
-		fileUri, okUri := arguments[1].(string)
+		fileUri, okUri := argument[string](arguments, 1)
 		if !okUri {
-			return reply(methods.Ctx, nil, jsonrpc2.NewError(jsonrpc2.InvalidParams, "invalid method parameter: fileURI"))
+			return nil, jsonrpc2.NewError(jsonrpc2.InvalidParams, "invalid method parameter: fileURI")
 		}
 
 		parsedFile, err := parser.ParseFromContent([]byte(content), methods.Settings, uri.File(fileUri), protocol.Position{})
 		if err != nil {
-			return reply(methods.Ctx, nil, jsonrpc2.NewError(jsonrpc2.InternalError, "unable to parse file"))
+			return nil, jsonrpc2.NewError(jsonrpc2.InternalError, "unable to parse file")
 		}
 		defer parsedFile.Close()
 
-		workflows := parsedFile.GetWorkflows()
-
-		return reply(methods.Ctx, workflows, nil)
+		return parsedFile.GetWorkflows(), nil
 
 	case "setRollbarInformation":
-		parameters, ok := arguments[0].(map[string]interface{})
+		parameters, ok := argument[map[string]interface{}](arguments, 0)
 		if !ok {
-			return reply(methods.Ctx, nil, jsonrpc2.NewError(jsonrpc2.InvalidParams, "invalid method parameter: parameters"))
+			return nil, jsonrpc2.NewError(jsonrpc2.InvalidParams, "invalid method parameter: parameters")
 		}
 
 		for key, value := range parameters {
@@ -91,7 +88,20 @@ func (methods *Methods) ExecuteCommand(reply jsonrpc2.Replier, req jsonrpc2.Requ
 		rollbar.SetCustom(parameters)
 	}
 
-	return reply(methods.Ctx, nil, nil)
+	return nil, nil
+}
+
+// argument is a command's argument at i, and whether there is one of type T
+// there.
+func argument[T any](arguments []protocol.LSPAny, i int) (T, bool) {
+	var value T
+	if i >= len(arguments) {
+		return value, false
+	}
+	if err := protocol.Unmarshal(arguments[i], &value); err != nil {
+		return value, false
+	}
+	return value, true
 }
 
 func (methods *Methods) setToken(token string) {

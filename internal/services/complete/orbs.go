@@ -75,7 +75,7 @@ func (ch *CompletionHandler) completeOrbVersion(node *sitter.Node) {
 			Label: completion,
 			// TODO: this sorting implementation may encounter problems for orbs having more than 256
 			// versions
-			SortText: fmt.Sprintf("%c", i),
+			SortText: protocol.NewOptional(fmt.Sprintf("%c", i)),
 			TextEdit: &protocol.TextEdit{
 				Range:   def.Version.Range,
 				NewText: completion,

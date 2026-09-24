@@ -45,14 +45,14 @@ func (doc *YamlDocument) parseWorkflows(workflowsNode *sitter.Node) {
 				doc.addDiagnostic(protocol.Diagnostic{
 					Severity: protocol.DiagnosticSeverityWarning,
 					Range:    workflow.NameRange,
-					Message:  "Workflow already defined",
-					Source:   "cci-language-server",
+					Message:  protocol.String("Workflow already defined"),
+					Source:   protocol.NewOptional("cci-language-server"),
 				})
 				doc.addDiagnostic(protocol.Diagnostic{
 					Severity: protocol.DiagnosticSeverityWarning,
 					Range:    definedWorkflow.NameRange,
-					Message:  "Workflow already defined",
-					Source:   "cci-language-server",
+					Message:  protocol.String("Workflow already defined"),
+					Source:   protocol.NewOptional("cci-language-server"),
 				})
 				return
 			}

@@ -3,6 +3,7 @@ package methods
 import (
 	"log/slog"
 
+	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/protocol"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/version"
@@ -34,8 +35,16 @@ func (methods *Methods) SendTelemetryEvent(event TelemetryEvent) {
 
 // notify sends a notification to the client. There is no one to report a
 // failure to, so it is logged.
+//
+// The params are encoded here, with the protocol's own codec, as the
+// connection's codec may not be it.
 func (methods *Methods) notify(method string, params any) {
-	if err := methods.Conn.Notify(methods.Ctx, method, params); err != nil {
+	encoded, err := protocol.Marshal(params)
+	if err != nil {
+		slog.Warn("encoding notification", "method", method, "err", err)
+		return
+	}
+	if err := methods.Conn.Notify(methods.Ctx, method, jsonrpc2.RawMessage(encoded)); err != nil {
 		slog.Warn("sending notification", "method", method, "err", err)
 	}
 }

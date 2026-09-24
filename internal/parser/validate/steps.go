@@ -43,11 +43,9 @@ func (val Validate) validateRunCommand(step ast2.Run, jobOrCommandParameters map
 	if step.IsDeployStep {
 		val.addDiagnostic(protocol.Diagnostic{
 			Range:    step.Range,
-			Message:  "The `deploy` step is deprecated. Please use the `run` job instead.",
+			Message:  protocol.String("The `deploy` step is deprecated. Please use the `run` job instead."),
 			Severity: protocol.DiagnosticSeverityWarning,
-			Tags: []protocol.DiagnosticTag{
-				protocol.DiagnosticTagDeprecated,
-			},
+			Tags:     protocol.NewDiagnosticTags(protocol.DiagnosticTagDeprecated),
 		})
 	}
 
@@ -55,7 +53,7 @@ func (val Validate) validateRunCommand(step ast2.Run, jobOrCommandParameters map
 	if step.Background && (step.MaxAutoReruns != "" || step.AutoRerunDelay != "") {
 		val.addDiagnostic(protocol.Diagnostic{
 			Range:    step.Range,
-			Message:  "Background steps cannot use max_auto_reruns or auto_rerun_delay fields",
+			Message:  protocol.String("Background steps cannot use max_auto_reruns or auto_rerun_delay fields"),
 			Severity: protocol.DiagnosticSeverityError,
 		})
 	}
@@ -64,7 +62,7 @@ func (val Validate) validateRunCommand(step ast2.Run, jobOrCommandParameters map
 	if step.AutoRerunDelay != "" && step.MaxAutoReruns == "" {
 		val.addDiagnostic(protocol.Diagnostic{
 			Range:    step.Range,
-			Message:  "auto_rerun_delay requires max_auto_reruns to be specified",
+			Message:  protocol.String("auto_rerun_delay requires max_auto_reruns to be specified"),
 			Severity: protocol.DiagnosticSeverityError,
 		})
 	}
@@ -75,7 +73,7 @@ func (val Validate) validateRunCommand(step ast2.Run, jobOrCommandParameters map
 		if err != nil || rerunCount <= 0 || rerunCount > 5 {
 			val.addDiagnostic(protocol.Diagnostic{
 				Range:    step.Range,
-				Message:  "max_auto_reruns must be between 1 and 5",
+				Message:  protocol.String("max_auto_reruns must be between 1 and 5"),
 				Severity: protocol.DiagnosticSeverityError,
 			})
 		}
@@ -88,7 +86,7 @@ func (val Validate) validateRunCommand(step ast2.Run, jobOrCommandParameters map
 		if err != nil {
 			val.addDiagnostic(protocol.Diagnostic{
 				Range:    step.Range,
-				Message:  "auto_rerun_delay must be a valid duration",
+				Message:  protocol.String("auto_rerun_delay must be a valid duration"),
 				Severity: protocol.DiagnosticSeverityError,
 			})
 		} else {
@@ -96,7 +94,7 @@ func (val Validate) validateRunCommand(step ast2.Run, jobOrCommandParameters map
 			if !AUTO_RERUN_DELAY_REGEX.MatchString(step.AutoRerunDelay) {
 				val.addDiagnostic(protocol.Diagnostic{
 					Range:    step.Range,
-					Message:  "auto_rerun_delay must be in the format of 1-10 minutes (e.g., '1m', '10m') or any number of seconds (e.g., '30s', '120s')",
+					Message:  protocol.String("auto_rerun_delay must be in the format of 1-10 minutes (e.g., '1m', '10m') or any number of seconds (e.g., '30s', '120s')"),
 					Severity: protocol.DiagnosticSeverityError,
 				})
 			}
@@ -104,7 +102,7 @@ func (val Validate) validateRunCommand(step ast2.Run, jobOrCommandParameters map
 			if duration > 10*time.Minute {
 				val.addDiagnostic(protocol.Diagnostic{
 					Range:    step.Range,
-					Message:  "auto_rerun_delay must not exceed 10 minutes",
+					Message:  protocol.String("auto_rerun_delay must not exceed 10 minutes"),
 					Severity: protocol.DiagnosticSeverityError,
 				})
 			}
@@ -187,7 +185,7 @@ func (val Validate) validateNamedStep(step ast2.NamedStep, usableParams map[stri
 	if step.Name == "store_test_results" {
 		val.addDiagnostic(
 			protocol.Diagnostic{
-				Message:  "Path must be specified for `store_test_results` step",
+				Message:  protocol.String("Path must be specified for `store_test_results` step"),
 				Range:    step.Range,
 				Severity: protocol.DiagnosticSeverityError,
 			})
@@ -208,8 +206,8 @@ func (val Validate) validateStepSteps(step ast2.Steps, name string) {
 		val.addDiagnostic(protocol.Diagnostic{
 			Severity: protocol.DiagnosticSeverityError,
 			Range:    step.Range,
-			Message:  "Parameter type is not steps",
-			Source:   "cci-language-server",
+			Message:  protocol.String("Parameter type is not steps"),
+			Source:   protocol.NewOptional("cci-language-server"),
 		})
 	}
 }
@@ -223,7 +221,7 @@ func (val Validate) validateCheckout(step ast2.Checkout) {
 		val.addDiagnostic(protocol.Diagnostic{
 			Severity: protocol.DiagnosticSeverityError,
 			Range:    step.Range,
-			Message:  fmt.Sprintf("Checkout method '%s' is invalid", step.Method),
+			Message:  protocol.String(fmt.Sprintf("Checkout method '%s' is invalid", step.Method)),
 		})
 	}
 
@@ -233,7 +231,7 @@ func (val Validate) validateCheckout(step ast2.Checkout) {
 			val.addDiagnostic(protocol.Diagnostic{
 				Severity: protocol.DiagnosticSeverityError,
 				Range:    step.Range,
-				Message:  "Checkout depth is not an integer",
+				Message:  protocol.String("Checkout depth is not an integer"),
 			})
 			return
 		}
@@ -241,7 +239,7 @@ func (val Validate) validateCheckout(step ast2.Checkout) {
 			val.addDiagnostic(protocol.Diagnostic{
 				Severity: protocol.DiagnosticSeverityError,
 				Range:    step.Range,
-				Message:  "Checkout depth must be a positive integer when using the shallow checkout method",
+				Message:  protocol.String("Checkout depth must be a positive integer when using the shallow checkout method"),
 			})
 		}
 	}
@@ -250,7 +248,7 @@ func (val Validate) validateCheckout(step ast2.Checkout) {
 		val.addDiagnostic(protocol.Diagnostic{
 			Severity: protocol.DiagnosticSeverityError,
 			Range:    step.Range,
-			Message:  "Checkout depth can only be used with the shallow checkout method",
+			Message:  protocol.String("Checkout depth can only be used with the shallow checkout method"),
 		})
 	}
 

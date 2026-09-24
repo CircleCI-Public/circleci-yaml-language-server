@@ -13,8 +13,8 @@ func (val Validate) ValidateAnchors() {
 		val.addDiagnostic(protocol.Diagnostic{
 			Severity: protocol.DiagnosticSeverityInformation,
 			Range:    anchor.DefinitionRange,
-			Message:  "Anchor never used",
-			Source:   "cci-language-server",
+			Message:  protocol.String("Anchor never used"),
+			Source:   protocol.NewOptional("cci-language-server"),
 		})
 	}
 }

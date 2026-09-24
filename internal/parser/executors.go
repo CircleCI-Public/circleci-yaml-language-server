@@ -38,14 +38,14 @@ func (doc *YamlDocument) parseSingleExecutor(executorNode *sitter.Node) {
 		doc.addDiagnostic(protocol.Diagnostic{
 			Severity: protocol.DiagnosticSeverityWarning,
 			Range:    doc.NodeToRange(executorNameNode),
-			Message:  "Executor already defined",
-			Source:   "cci-language-server",
+			Message:  protocol.String("Executor already defined"),
+			Source:   protocol.NewOptional("cci-language-server"),
 		})
 		doc.addDiagnostic(protocol.Diagnostic{
 			Severity: protocol.DiagnosticSeverityWarning,
 			Range:    definedExecutor.GetNameRange(),
-			Message:  "Executor already defined",
-			Source:   "cci-language-server",
+			Message:  protocol.String("Executor already defined"),
+			Source:   protocol.NewOptional("cci-language-server"),
 		})
 
 		return
@@ -379,8 +379,6 @@ func (doc *YamlDocument) machineTrueFix(machineRange protocol.Range) {
 				}, false),
 		},
 	)
-	diag.Tags = []protocol.DiagnosticTag{
-		protocol.DiagnosticTagDeprecated,
-	}
+	diag.Tags = protocol.NewDiagnosticTags(protocol.DiagnosticTagDeprecated)
 	doc.addDiagnostic(diag)
 }

@@ -10,6 +10,7 @@ import (
 
 	"github.com/adrg/xdg"
 	"go.lsp.dev/protocol"
+	"go.lsp.dev/uri"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
@@ -59,7 +60,7 @@ type File struct {
 
 type Files struct {
 	cacheMutex *sync.Mutex
-	fileCache  map[protocol.URI]*File
+	fileCache  map[uri.URI]*File
 }
 
 type Orbs struct {
@@ -76,11 +77,11 @@ type Contexts struct {
 
 type ResourceClasses struct {
 	cacheMutex         *sync.Mutex
-	resourceClassCache map[protocol.URI]*[]string
+	resourceClassCache map[uri.URI]*[]string
 }
 
 func (c *Cache) init() {
-	c.FileCache.fileCache = make(map[protocol.URI]*File)
+	c.FileCache.fileCache = make(map[uri.URI]*File)
 	c.FileCache.cacheMutex = &sync.Mutex{}
 
 	c.OrbCache.orbsCache = make(map[string]*ast.OrbInfo)
@@ -97,7 +98,7 @@ func (c *Cache) init() {
 	c.ContextCache.listLoadedOrgs = make(map[string]bool)
 
 	c.ResourceClassCache.cacheMutex = &sync.Mutex{}
-	c.ResourceClassCache.resourceClassCache = make(map[protocol.URI]*[]string)
+	c.ResourceClassCache.resourceClassCache = make(map[uri.URI]*[]string)
 }
 
 // FILE
@@ -109,25 +110,25 @@ func (c *Files) SetFile(cachedFile File) File {
 	return cachedFile
 }
 
-func (c *Files) GetFile(uri protocol.URI) *File {
+func (c *Files) GetFile(uri uri.URI) *File {
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()
 	return c.fileCache[uri]
 }
 
-func (c *Files) GetFiles() map[protocol.URI]*File {
+func (c *Files) GetFiles() map[uri.URI]*File {
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()
 	return c.fileCache
 }
 
-func (c *Files) RemoveFile(uri protocol.URI) {
+func (c *Files) RemoveFile(uri uri.URI) {
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()
 	delete(c.fileCache, uri)
 }
 
-func (c *Files) AddEnvVariableToProjectLinkedToFile(uri protocol.URI, envVariable string) {
+func (c *Files) AddEnvVariableToProjectLinkedToFile(uri uri.URI, envVariable string) {
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()
 	project := c.fileCache[uri]
@@ -138,7 +139,7 @@ func (c *Files) AddEnvVariableToProjectLinkedToFile(uri protocol.URI, envVariabl
 	c.fileCache[uri] = project
 }
 
-func (c *Files) AddProjectSlugToFile(uri protocol.URI, project circleci.Project) {
+func (c *Files) AddProjectSlugToFile(uri uri.URI, project circleci.Project) {
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()
 	file := c.fileCache[uri]
@@ -160,7 +161,7 @@ func (c *Files) forgetProjects() {
 	}
 }
 
-func (c *Files) UpdateTextDocument(uri protocol.URI, textDocument protocol.TextDocumentItem) {
+func (c *Files) UpdateTextDocument(uri uri.URI, textDocument protocol.TextDocumentItem) {
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()
 	file := c.fileCache[uri]
@@ -446,14 +447,14 @@ func (c *Contexts) GetAllContextOfOrganization(organizationId string) map[string
 
 // Resource class
 
-func (c *ResourceClasses) SetResourceClassForFile(uri protocol.URI, resourceClass *[]string) *[]string {
+func (c *ResourceClasses) SetResourceClassForFile(uri uri.URI, resourceClass *[]string) *[]string {
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()
 	c.resourceClassCache[uri] = resourceClass
 	return resourceClass
 }
 
-func (c *ResourceClasses) GetResourceClassOfFile(uri protocol.URI) []string {
+func (c *ResourceClasses) GetResourceClassOfFile(uri uri.URI) []string {
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()
 	resourceClasses, ok := c.resourceClassCache[uri]

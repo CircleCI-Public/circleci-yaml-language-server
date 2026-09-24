@@ -3,25 +3,55 @@ package codeaction
 import (
 	"strings"
 
-	"github.com/segmentio/encoding/json"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 )
 
 func TextEdit(title string, textDocumentUri uri.URI, textEdits []protocol.TextEdit, isPreferred bool) protocol.CodeAction {
-	return protocol.CodeAction{
+	kind := protocol.CodeActionKindQuickFix
+	action := protocol.CodeAction{
 		Title: title,
-		Kind:  "quickfix",
+		Kind:  &kind,
 		Edit: &protocol.WorkspaceEdit{
 			Changes: map[uri.URI][]protocol.TextEdit{
 				textDocumentUri: textEdits,
 			},
 		},
-		IsPreferred: isPreferred,
 	}
+	// Left out rather than sent as false, as it always has been.
+	if isPreferred {
+		action.IsPreferred = &isPreferred
+	}
+	return action
 }
 
-func AppendSuppressions(docURI protocol.URI, diagnostics []protocol.Diagnostic, docContent []byte) ([]protocol.Diagnostic, error) {
+// Data carries code actions in a diagnostic's data, for the codeAction request
+// to hand back with FromData when the client asks for fixes.
+func Data(actions []protocol.CodeAction) protocol.LSPAny {
+	if actions == nil {
+		actions = []protocol.CodeAction{}
+	}
+	data, err := protocol.Marshal(actions)
+	if err != nil {
+		// Plain structs always encode; a diagnostic without fixes beats none.
+		return nil
+	}
+	return data
+}
+
+// FromData reads back the code actions Data put in a diagnostic.
+func FromData(data protocol.LSPAny) ([]protocol.CodeAction, error) {
+	actions := []protocol.CodeAction{}
+	if len(data) == 0 {
+		return actions, nil
+	}
+	if err := protocol.Unmarshal(data, &actions); err != nil {
+		return nil, err
+	}
+	return actions, nil
+}
+
+func AppendSuppressions(docURI uri.URI, diagnostics []protocol.Diagnostic, docContent []byte) ([]protocol.Diagnostic, error) {
 	newDiagnostics := []protocol.Diagnostic{}
 
 	docLines := strings.Split(string(docContent), "\n")
@@ -149,21 +179,12 @@ func AppendSuppressions(docURI protocol.URI, diagnostics []protocol.Diagnostic, 
 		)
 
 		// Append to existing code actions if there are any.
-		existingActions := []protocol.CodeAction{}
-		if diagnostic.Data != nil {
-			// Unmarshal existing code actions
-			str, err := json.Marshal(diagnostic.Data)
-			if err != nil {
-				return nil, err
-			}
-
-			err = json.Unmarshal(str, &existingActions)
-			if err != nil {
-				return nil, err
-			}
+		existingActions, err := FromData(diagnostic.Data)
+		if err != nil {
+			return nil, err
 		}
 
-		diagnostic.Data = append(existingActions, ignoreActions...)
+		diagnostic.Data = Data(append(existingActions, ignoreActions...))
 		newDiagnostics = append(newDiagnostics, diagnostic)
 	}
 

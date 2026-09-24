@@ -212,9 +212,9 @@ func (val Validate) validateInvocations(jobInvocations []ast2.JobInvocation, ctx
 				val.addDiagnostic(
 					protocol.Diagnostic{
 						Range:    require.StatusRange,
-						Message:  fmt.Sprintf("Statuses: '%v' can be simplified to just 'terminal'", require.Status),
+						Message:  protocol.String(fmt.Sprintf("Statuses: '%v' can be simplified to just 'terminal'", require.Status)),
 						Severity: protocol.DiagnosticSeverityHint,
-						Data:     []protocol.CodeAction{codeAction},
+						Data:     codeaction.Data([]protocol.CodeAction{codeAction}),
 					},
 				)
 			}

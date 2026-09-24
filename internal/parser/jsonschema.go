@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -22,8 +23,7 @@ type JSONSchemaValidator struct {
 }
 
 func (validator *JSONSchemaValidator) LoadJsonSchema(schemaLocation string) error {
-	URI := uri.New(schemaLocation)
-	loader := gojsonschema.NewReferenceLoader(string(URI))
+	loader := gojsonschema.NewReferenceLoader(schemaURI(schemaLocation))
 
 	schema, err := gojsonschema.NewSchema(loader)
 	if err != nil {
@@ -33,6 +33,18 @@ func (validator *JSONSchemaValidator) LoadJsonSchema(schemaLocation string) erro
 	validator.schema = schema
 
 	return nil
+}
+
+// schemaURI is the location of a schema as a URI: a file URI as it is, and a
+// path turned into one.
+func schemaURI(location string) string {
+	if unescaped, err := url.PathUnescape(location); err == nil {
+		location = unescaped
+	}
+	if strings.HasPrefix(location, "file://") {
+		return location
+	}
+	return string(uri.File(location))
 }
 
 func (validator *JSONSchemaValidator) LoadJsonSchemaFromBytes(data []byte) error {
@@ -230,7 +242,7 @@ func (validator *JSONSchemaValidator) doesNodeUseParameter(node *sitter.Node) bo
 func removeUselessMustValidateError(diags []protocol.Diagnostic) []protocol.Diagnostic {
 	resDiags := []protocol.Diagnostic{}
 	for i, diag := range diags {
-		if diag.Message == "Must validate one and only one schema (oneOf)" {
+		if diag.Message == protocol.String("Must validate one and only one schema (oneOf)") {
 			if hasAnotherDiagInsideRange(diags, diag.Range) {
 				continue
 			}

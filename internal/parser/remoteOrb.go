@@ -276,7 +276,7 @@ func addAlreadyExistingRemoteOrbsToFSCache(orb ast.Orb, c *cache.Cache, context 
 	return AddOrbToCacheWithContent(orb, uri.File(filePath), content, context, c)
 }
 
-func AddOrbToCacheWithContent(orb ast.Orb, uri protocol.URI, content []byte, context *session.Settings, cache *cache.Cache) error {
+func AddOrbToCacheWithContent(orb ast.Orb, uri uri.URI, content []byte, context *session.Settings, cache *cache.Cache) error {
 	parsedOrbSource, err := ParseFromContent(content, context, uri, protocol.Position{})
 
 	if err != nil {
@@ -301,7 +301,7 @@ func AddOrbToCacheWithContent(orb ast.Orb, uri protocol.URI, content []byte, con
 
 		RemoteInfo: ast.RemoteOrbInfo{
 			ID:                 orb.Url.GetOrbID(),
-			FilePath:           uri.Filename(),
+			FilePath:           uri.FsPath(),
 			Version:            orb.Url.Version,
 			LatestVersion:      latest[1:],
 			LatestMinorVersion: latestMinor[1:],

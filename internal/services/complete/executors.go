@@ -227,10 +227,10 @@ func (ch *CompletionHandler) addDockerImageCompletion(node *sitter.Node, namespa
 		fullImageName = fullImageName + ":" + tag
 	}
 
-	var command *protocol.Command = nil
+	var command protocol.Command
 
 	if retrigger {
-		command = &protocol.Command{
+		command = protocol.Command{
 			Command: "circleci-language-server.selectTagAndComplete",
 		}
 	}

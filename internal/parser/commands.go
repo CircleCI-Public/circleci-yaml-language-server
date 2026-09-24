@@ -20,14 +20,14 @@ func (doc *YamlDocument) parseCommands(commandsNode *sitter.Node) {
 			doc.addDiagnostic(protocol.Diagnostic{
 				Severity: protocol.DiagnosticSeverityWarning,
 				Range:    command.NameRange,
-				Message:  "Command already defined",
-				Source:   "cci-language-server",
+				Message:  protocol.String("Command already defined"),
+				Source:   protocol.NewOptional("cci-language-server"),
 			})
 			doc.addDiagnostic(protocol.Diagnostic{
 				Severity: protocol.DiagnosticSeverityWarning,
 				Range:    definedCommand.NameRange,
-				Message:  "Command already defined",
-				Source:   "cci-language-server",
+				Message:  protocol.String("Command already defined"),
+				Source:   protocol.NewOptional("cci-language-server"),
 			})
 
 			return

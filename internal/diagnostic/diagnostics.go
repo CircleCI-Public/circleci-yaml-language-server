@@ -3,6 +3,7 @@ package diagnostic
 import (
 	"strings"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/codeaction"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 	sitter "github.com/tree-sitter/go-tree-sitter"
 	"go.lsp.dev/protocol"
@@ -15,6 +16,19 @@ func Message(message string) string {
 	}
 
 	return strings.ToUpper(message[0:1]) + message[1:]
+}
+
+// MessageText is a diagnostic's message as text, whether it was sent as a
+// string or as markup.
+func MessageText(d protocol.Diagnostic) string {
+	switch message := d.Message.(type) {
+	case protocol.String:
+		return string(message)
+	case *protocol.MarkupContent:
+		return message.Value
+	default:
+		return ""
+	}
 }
 
 func Error(rng protocol.Range, msg string) protocol.Diagnostic {
@@ -41,9 +55,7 @@ func EmptyAssignationWarning(rng protocol.Range) protocol.Diagnostic {
 
 func Deprecated(rng protocol.Range, msg string) protocol.Diagnostic {
 	diagnostic := Warning(rng, msg)
-	diagnostic.Tags = []protocol.DiagnosticTag{
-		protocol.DiagnosticTagDeprecated,
-	}
+	diagnostic.Tags = protocol.NewDiagnosticTags(protocol.DiagnosticTagDeprecated)
 	return diagnostic
 }
 
@@ -74,9 +86,9 @@ func New(
 	return protocol.Diagnostic{
 		Range:    rng,
 		Severity: severity,
-		Source:   "cci-language-server",
-		Message:  msg,
-		Data:     codeAction,
+		Source:   protocol.NewOptional("cci-language-server"),
+		Message:  protocol.String(msg),
+		Data:     codeaction.Data(codeAction),
 	}
 }
 

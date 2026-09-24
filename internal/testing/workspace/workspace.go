@@ -14,7 +14,6 @@ import (
 
 	"github.com/go-git/go-git/v6"
 	gitconfig "github.com/go-git/go-git/v6/config"
-	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 )
 
@@ -86,11 +85,11 @@ func (w *Workspace) Write(t *testing.T, config string) {
 }
 
 // URI is the config file, as a client would name it.
-func (w *Workspace) URI() protocol.URI {
+func (w *Workspace) URI() uri.URI {
 	return uri.File(w.ConfigPath)
 }
 
 // RootURI is the project directory, for the initialize handshake.
-func (w *Workspace) RootURI() protocol.URI {
+func (w *Workspace) RootURI() uri.URI {
 	return uri.File(w.Root)
 }

@@ -2,15 +2,15 @@ package methods
 
 import (
 	"bytes"
-	"fmt"
+	"log/slog"
 	"path"
 	"strings"
 	"time"
 
 	"github.com/bep/debounce"
-	"github.com/segmentio/encoding/json"
 	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/protocol"
+	"go.lsp.dev/uri"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
 	parser2 "github.com/CircleCI-Public/circleci-yaml-language-server/internal/parser"
@@ -27,10 +27,21 @@ func (methods *Methods) setChangeInFileCache(textDocument protocol.TextDocumentI
 	}
 }
 
-func (methods *Methods) DidOpen(reply jsonrpc2.Replier, req jsonrpc2.Request) error {
-	params := protocol.DidOpenTextDocumentParams{}
-	if err := json.Unmarshal(req.Params(), &params); err != nil {
-		return reply(methods.Ctx, nil, fmt.Errorf("%s: %w", jsonrpc2.ErrParse, err))
+// Notifications have no reply to carry an error, and an error returned from
+// one closes the connection, so one that does not decode is logged and dropped.
+func decodeNotification[T any](method string, raw jsonrpc2.RawMessage) (T, bool) {
+	params, err := decode[T](raw)
+	if err != nil {
+		slog.Warn("dropping notification", "method", method, "err", err)
+		return params, false
+	}
+	return params, true
+}
+
+func (methods *Methods) DidOpen(raw jsonrpc2.RawMessage) {
+	params, ok := decodeNotification[protocol.DidOpenTextDocumentParams](protocol.MethodTextDocumentDidOpen, raw)
+	if !ok {
+		return
 	}
 
 	methods.setChangeInFileCache(params.TextDocument)
@@ -42,14 +53,12 @@ func (methods *Methods) DidOpen(reply jsonrpc2.Replier, req jsonrpc2.Request) er
 		methods.SendTelemetryEvent(TelemetryEvent{
 			Action: "opened_file",
 			Properties: map[string]interface{}{
-				"filename": params.TextDocument.URI.Filename(),
+				"filename": params.TextDocument.URI.FsPath(),
 			},
 			TriggerType: "frontend_interaction",
 			Object:      "lsp",
 		})
 	})()
-
-	return reply(methods.Ctx, nil, nil)
 }
 
 var debounceUpdateCachedFile = debounce.New(1000 * time.Millisecond)
@@ -66,10 +75,10 @@ func (methods *Methods) updateAllCachedFiles() {
 
 var debounceInnerChange = debounce.New(1000 * time.Millisecond)
 
-func (methods *Methods) DidChange(reply jsonrpc2.Replier, req jsonrpc2.Request) error {
-	params := protocol.DidChangeTextDocumentParams{}
-	if err := json.Unmarshal(req.Params(), &params); err != nil {
-		return reply(methods.Ctx, nil, fmt.Errorf("%s: %w", jsonrpc2.ErrParse, err))
+func (methods *Methods) DidChange(raw jsonrpc2.RawMessage) {
+	params, ok := decodeNotification[protocol.DidChangeTextDocumentParams](protocol.MethodTextDocumentDidChange, raw)
+	if !ok {
+		return
 	}
 	newText := methods.applyIncrementalChanges(params.TextDocument.URI, params.ContentChanges)
 	textDocument := protocol.TextDocumentItem{
@@ -84,13 +93,12 @@ func (methods *Methods) DidChange(reply jsonrpc2.Replier, req jsonrpc2.Request) 
 		methods.parsingMethods(textDocument)
 		go methods.notificationMethods(textDocument)
 	})
-	return reply(methods.Ctx, nil, nil)
 }
 
-func (methods *Methods) DidClose(reply jsonrpc2.Replier, req jsonrpc2.Request) error {
-	params := protocol.DidCloseTextDocumentParams{}
-	if err := json.Unmarshal(req.Params(), &params); err != nil {
-		return reply(methods.Ctx, nil, fmt.Errorf("%s: %w", jsonrpc2.ErrParse, err))
+func (methods *Methods) DidClose(raw jsonrpc2.RawMessage) {
+	params, ok := decodeNotification[protocol.DidCloseTextDocumentParams](protocol.MethodTextDocumentDidClose, raw)
+	if !ok {
+		return
 	}
 
 	// removed due to a bug in remote orbs
@@ -105,8 +113,6 @@ func (methods *Methods) DidClose(reply jsonrpc2.Replier, req jsonrpc2.Request) e
 			},
 		)
 	}
-
-	return reply(methods.Ctx, nil, nil)
 }
 
 func (methods *Methods) notificationMethods(textDocument protocol.TextDocumentItem) {
@@ -132,7 +138,7 @@ func (methods *Methods) notificationMethods(textDocument protocol.TextDocumentIt
 			TriggerType: "background_event",
 			Action:      "run_diagnostics",
 			Properties: map[string]interface{}{
-				"filename": textDocument.URI.Filename(),
+				"filename": textDocument.URI.FsPath(),
 			},
 		})
 	}
@@ -150,24 +156,29 @@ func (methods *Methods) parsingMethods(textDocument protocol.TextDocumentItem) {
 	parser2.ParseRemoteOrbs(parsedFile.Orbs, methods.Cache, methods.Settings)
 }
 
-func (methods *Methods) applyIncrementalChanges(uri protocol.URI, changes []protocol.TextDocumentContentChangeEvent) string {
+func (methods *Methods) applyIncrementalChanges(uri uri.URI, changes []protocol.TextDocumentContentChangeEvent) string {
 	file := methods.Cache.FileCache.GetFile(uri)
 	content := []byte(file.TextDocument.Text)
 
 	for _, change := range changes {
-		start, end := position.ToIndex(change.Range.Start, content), position.ToIndex(change.Range.End, content)
+		switch change := change.(type) {
+		case *protocol.TextDocumentContentChangePartial:
+			start, end := position.ToIndex(change.Range.Start, content), position.ToIndex(change.Range.End, content)
 
-		var buf bytes.Buffer
-		buf.Write(content[:start])
-		buf.Write([]byte(change.Text))
-		buf.Write(content[end:])
-		content = buf.Bytes()
+			var buf bytes.Buffer
+			buf.Write(content[:start])
+			buf.Write([]byte(change.Text))
+			buf.Write(content[end:])
+			content = buf.Bytes()
+		case *protocol.TextDocumentContentChangeWholeDocument:
+			content = []byte(change.Text)
+		}
 	}
 
 	return string(content)
 }
 
-func (methods *Methods) updateOrbFile(content []byte, uri protocol.URI) {
+func (methods *Methods) updateOrbFile(content []byte, uri uri.URI) {
 	isOrb, orbId := methods.isOrb(uri)
 	if isOrb {
 		parsedOrbSource, err := parser2.ParseFromContent([]byte(content), methods.Settings, uri, protocol.Position{})
@@ -178,9 +189,9 @@ func (methods *Methods) updateOrbFile(content []byte, uri protocol.URI) {
 	}
 }
 
-func (methods *Methods) isOrb(uri protocol.URI) (bool, string) {
-	namespace := path.Base((path.Dir(uri.Filename())))
-	orb := path.Base(uri.Filename())
+func (methods *Methods) isOrb(uri uri.URI) (bool, string) {
+	namespace := path.Base((path.Dir(uri.FsPath())))
+	orb := path.Base(uri.FsPath())
 	orbId := strings.TrimRight(path.Join(namespace, orb), ".yml")
 
 	isOrb := methods.Cache.OrbCache.HasOrb(orbId)

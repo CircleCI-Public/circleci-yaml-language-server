@@ -9,6 +9,7 @@ import (
 	"gotest.tools/v3/assert/cmp"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/fakes"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/testHelpers"
 )
@@ -45,7 +46,7 @@ func TestValidateExecutorNamespace(t *testing.T) {
 		diagnostics := validateNamespaceAgainst(fake, "nope")
 		assert.Assert(t, cmp.Len(diagnostics, 1))
 
-		assert.Check(t, cmp.Equal(diagnostics[0].Message, `Namespace "nope" does not exist`))
+		assert.Check(t, cmp.Equal(diagnostic.MessageText(diagnostics[0]), `Namespace "nope" does not exist`))
 		assert.Check(t, cmp.Equal(diagnostics[0].Severity, protocol.DiagnosticSeverityError))
 	})
 

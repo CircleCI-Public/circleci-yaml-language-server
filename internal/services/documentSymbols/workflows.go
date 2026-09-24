@@ -121,7 +121,7 @@ func workflowTriggersSymbols(triggers []ast.WorkflowTrigger) []protocol.Document
 
 		symbols = append(symbols, protocol.DocumentSymbol{
 			Name:           name,
-			Detail:         detail,
+			Detail:         unlessZero(detail),
 			Children:       children,
 			Range:          trigger.Range,
 			SelectionRange: trigger.Range,
@@ -153,7 +153,7 @@ func branchesFiltersSymbols(branchesFilters ast.BranchesFilter) protocol.Documen
 	if len(branchesFilters.Ignore) > 0 {
 		children = append(children, protocol.DocumentSymbol{
 			Name:           "Ignore",
-			Detail:         fmt.Sprintf("%d total", len(branchesFilters.Ignore)),
+			Detail:         unlessZero(fmt.Sprintf("%d total", len(branchesFilters.Ignore))),
 			Kind:           protocol.SymbolKind(BranchSymbol),
 			Range:          branchesFilters.IgnoreRange,
 			SelectionRange: branchesFilters.IgnoreRange,
@@ -163,7 +163,7 @@ func branchesFiltersSymbols(branchesFilters ast.BranchesFilter) protocol.Documen
 	if len(branchesFilters.Only) > 0 {
 		children = append(children, protocol.DocumentSymbol{
 			Name:           "Only",
-			Detail:         fmt.Sprintf("%d total", len(branchesFilters.Only)),
+			Detail:         unlessZero(fmt.Sprintf("%d total", len(branchesFilters.Only))),
 			Kind:           protocol.SymbolKind(BranchSymbol),
 			Range:          branchesFilters.OnlyRange,
 			SelectionRange: branchesFilters.OnlyRange,

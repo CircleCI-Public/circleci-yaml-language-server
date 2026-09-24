@@ -11,6 +11,7 @@ import (
 	"gotest.tools/v3/assert/cmp"
 
 	schema "github.com/CircleCI-Public/circleci-yaml-language-server"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/expect"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/testHelpers"
 )
@@ -71,7 +72,7 @@ test:
 			End:   protocol.Position{Line: 2, Character: 20},
 		},
 		Severity: protocol.DiagnosticSeverityError,
-		Message:  "yaml: unknown anchor 'unknownAnchor' referenced",
+		Message:  protocol.String("yaml: unknown anchor 'unknownAnchor' referenced"),
 	}
 
 	expect.DiagnosticList(t, diagnostics).To.Include(expected)
@@ -318,7 +319,7 @@ jobs:
 				if tc.expectErrorContains != "" {
 					found := false
 					for _, d := range diagnostics {
-						if strings.Contains(strings.ToLower(d.Message), strings.ToLower(tc.expectErrorContains)) {
+						if strings.Contains(strings.ToLower(diagnostic.MessageText(d)), strings.ToLower(tc.expectErrorContains)) {
 							found = true
 							break
 						}

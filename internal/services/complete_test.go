@@ -2,13 +2,14 @@ package languageservice
 
 import (
 	"os"
-	"path"
+	"path/filepath"
 	"reflect"
 	"sort"
 	"testing"
 
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
+	"gotest.tools/v3/assert"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
@@ -35,8 +36,11 @@ func TestComplete(t *testing.T) {
 		},
 	})
 
+	orbPath, err := filepath.Abs("./testdata/orb.yaml")
+	assert.NilError(t, err)
+
 	parsedOrb, err := parser.ParseFromURI(
-		uri.File(path.Join("./testdata/orb.yaml")),
+		uri.File(orbPath),
 		context,
 	)
 	if err != nil {
@@ -47,15 +51,15 @@ func TestComplete(t *testing.T) {
 	for _, env := range complete.BUILT_IN_ENV {
 		builtInEnvsComplete = append(builtInEnvsComplete, protocol.CompletionItem{
 			Label:    env,
-			Detail:   "Built-in environment variable",
-			SortText: "C",
+			Detail:   protocol.NewOptional("Built-in environment variable"),
+			SortText: protocol.NewOptional("C"),
 		})
 	}
 
 	c.OrbCache.SetOrb(&ast.OrbInfo{
 		OrbParsedAttributes: parsedOrb.ToOrbParsedAttributes(),
 		RemoteInfo: ast.RemoteOrbInfo{
-			FilePath: uri.File(path.Join("./testdata/orb.yaml")).Filename(),
+			FilePath: uri.File(orbPath).FsPath(),
 		},
 	}, "superorb/superfunc@1.2.3")
 
@@ -114,37 +118,37 @@ func TestComplete(t *testing.T) {
 			want: []protocol.CompletionItem{
 				{
 					Label:      "description",
-					InsertText: "description: ",
+					InsertText: protocol.NewOptional("description: "),
 					Kind:       protocol.CompletionItemKindProperty,
 				},
 				{
 					Label:      "executor",
-					InsertText: "executor: ",
+					InsertText: protocol.NewOptional("executor: "),
 					Kind:       protocol.CompletionItemKindProperty,
 				},
 				{
 					Label:      "resource_class",
-					InsertText: "resource_class: ",
+					InsertText: protocol.NewOptional("resource_class: "),
 					Kind:       protocol.CompletionItemKindProperty,
 				},
 				{
 					Label:      "shell",
-					InsertText: "shell: ",
+					InsertText: protocol.NewOptional("shell: "),
 					Kind:       protocol.CompletionItemKindProperty,
 				},
 				{
 					Label:      "type",
-					InsertText: "type: ",
+					InsertText: protocol.NewOptional("type: "),
 					Kind:       protocol.CompletionItemKindProperty,
 				},
 				{
 					Label:      "plan_name",
-					InsertText: "plan_name: ",
+					InsertText: protocol.NewOptional("plan_name: "),
 					Kind:       protocol.CompletionItemKindProperty,
 				},
 				{
 					Label:      "key",
-					InsertText: "key: ",
+					InsertText: protocol.NewOptional("key: "),
 					Kind:       protocol.CompletionItemKindProperty,
 				},
 			},
@@ -225,15 +229,15 @@ func TestComplete(t *testing.T) {
 			want: []protocol.CompletionItem{
 				{
 					Label:      "docker",
-					InsertText: "docker: ",
+					InsertText: protocol.NewOptional("docker: "),
 				},
 				{
 					Label:      "macos",
-					InsertText: "macos: ",
+					InsertText: protocol.NewOptional("macos: "),
 				},
 				{
 					Label:      "machine",
-					InsertText: "machine: ",
+					InsertText: protocol.NewOptional("machine: "),
 				},
 			},
 		},
@@ -292,11 +296,11 @@ func TestComplete(t *testing.T) {
 			want: []protocol.CompletionItem{
 				{
 					Label:      "steps",
-					InsertText: "steps: ",
+					InsertText: protocol.NewOptional("steps: "),
 				},
 				{
 					Label:      "description",
-					InsertText: "description: ",
+					InsertText: protocol.NewOptional("description: "),
 				},
 			},
 		},

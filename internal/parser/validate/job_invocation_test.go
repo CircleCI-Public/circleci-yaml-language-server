@@ -5,6 +5,7 @@ import (
 
 	"go.lsp.dev/protocol"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/codeaction"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 )
 
@@ -316,9 +317,9 @@ workflows:
 				t.Fatal("Expected diagnostic to have code actions")
 			}
 
-			codeActions, ok := diag.Data.([]protocol.CodeAction)
-			if !ok {
-				t.Fatalf("Expected Data to be []protocol.CodeAction, got %T", diag.Data)
+			codeActions, err := codeaction.FromData(diag.Data)
+			if err != nil {
+				t.Fatalf("Expected Data to be code actions: %v", err)
 			}
 
 			if len(codeActions) == 0 {
@@ -338,11 +339,11 @@ workflows:
 				t.Fatal("Expected 'Simplify these statuses to 'terminal'' code action")
 			}
 
-			if terminalAction.Kind != "quickfix" {
-				t.Errorf("Expected kind 'quickfix', got %s", terminalAction.Kind)
+			if terminalAction.Kind == nil || *terminalAction.Kind != protocol.CodeActionKindQuickFix {
+				t.Errorf("Expected kind 'quickfix', got %v", terminalAction.Kind)
 			}
 
-			if !terminalAction.IsPreferred {
+			if terminalAction.IsPreferred == nil || !*terminalAction.IsPreferred {
 				t.Error("Expected IsPreferred to be true")
 			}
 
@@ -565,9 +566,9 @@ workflows:
 						End:   protocol.Position{Line: 15, Character: 17},
 					},
 					Severity: protocol.DiagnosticSeverityError,
-					Source:   "cci-language-server",
-					Message:  `Job group "my-group2" cannot reference job group "my-group1" -- nesting is not supported`,
-					Data:     []protocol.CodeAction{},
+					Source:   protocol.NewOptional("cci-language-server"),
+					Message:  protocol.String(`Job group "my-group2" cannot reference job group "my-group1" -- nesting is not supported`),
+					Data:     codeaction.Data([]protocol.CodeAction{}),
 				},
 			},
 		},
@@ -594,9 +595,9 @@ workflows:
 						End:   protocol.Position{Line: 5, Character: 20},
 					},
 					Severity: protocol.DiagnosticSeverityError,
-					Source:   "cci-language-server",
-					Message:  "Cannot find declaration for job \"my-ghost-job\"",
-					Data:     []protocol.CodeAction{},
+					Source:   protocol.NewOptional("cci-language-server"),
+					Message:  protocol.String("Cannot find declaration for job \"my-ghost-job\""),
+					Data:     codeaction.Data([]protocol.CodeAction{}),
 				},
 			},
 		},
@@ -616,9 +617,9 @@ workflows:
 						End:   protocol.Position{Line: 5, Character: 27},
 					},
 					Severity: protocol.DiagnosticSeverityError,
-					Source:   "cci-language-server",
-					Message:  "Cannot find declaration for job \"my-orb/my-ghost-job\"",
-					Data:     []protocol.CodeAction{},
+					Source:   protocol.NewOptional("cci-language-server"),
+					Message:  protocol.String("Cannot find declaration for job \"my-orb/my-ghost-job\""),
+					Data:     codeaction.Data([]protocol.CodeAction{}),
 				},
 			},
 		},

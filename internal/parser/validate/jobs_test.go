@@ -11,6 +11,7 @@ import (
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/parser"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/session"
 )
@@ -45,7 +46,7 @@ func validateYAML(t *testing.T, yamlData string) *[]protocol.Diagnostic {
 func diagnosticMessages(diags *[]protocol.Diagnostic) []string {
 	msgs := make([]string, len(*diags))
 	for i, d := range *diags {
-		msgs[i] = d.Message
+		msgs[i] = diagnostic.MessageText(d)
 	}
 	return msgs
 }
@@ -495,7 +496,7 @@ func TestJobTypeValidation(t *testing.T) {
 					End:   protocol.Position{Line: 2, Character: 15},
 				},
 				Severity: protocol.DiagnosticSeverityHint,
-				Message:  "If no `type:` key is specified, the job will default to `type: build`.",
+				Message:  protocol.String("If no `type:` key is specified, the job will default to `type: build`."),
 			},
 		},
 		{
@@ -510,7 +511,7 @@ func TestJobTypeValidation(t *testing.T) {
 					End:   protocol.Position{Line: 2, Character: 18},
 				},
 				Severity: protocol.DiagnosticSeverityError,
-				Message:  "Invalid job type 'bad-type'. Allowed types: approval, build, no-op, release, lock, unlock",
+				Message:  protocol.String("Invalid job type 'bad-type'. Allowed types: approval, build, no-op, release, lock, unlock"),
 			},
 		},
 		{
@@ -526,7 +527,7 @@ func TestJobTypeValidation(t *testing.T) {
 					End:   protocol.Position{Line: 4, Character: 16},
 				},
 				Severity: protocol.DiagnosticSeverityWarning,
-				Message:  "Steps only exist in `build` jobs. Steps here will be ignored.",
+				Message:  protocol.String("Steps only exist in `build` jobs. Steps here will be ignored."),
 			},
 		},
 	}

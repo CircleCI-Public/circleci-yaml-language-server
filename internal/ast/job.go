@@ -64,6 +64,6 @@ func (job *Job) AddCompletionItem(label string, commitCharacters []string) {
 	*job.CompletionItem = append(*job.CompletionItem, protocol.CompletionItem{
 		Label:      label,
 		Kind:       protocol.CompletionItemKindProperty,
-		InsertText: label + strings.Join(commitCharacters, ""),
+		InsertText: protocol.NewOptional(label + strings.Join(commitCharacters, "")),
 	})
 }

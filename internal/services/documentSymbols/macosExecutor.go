@@ -11,6 +11,6 @@ func macosExecutorSymbols(macos ast.MacOSExecutor) protocol.DocumentSymbol {
 		Name:           "xcode",
 		Range:          macos.GetRange(),
 		SelectionRange: macos.GetRange(),
-		Detail:         macos.Xcode,
+		Detail:         unlessZero(macos.Xcode),
 	}
 }

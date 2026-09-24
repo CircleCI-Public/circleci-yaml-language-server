@@ -1,106 +1,88 @@
 package methods
 
 import (
-	"fmt"
-
-	"github.com/segmentio/encoding/json"
 	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/protocol"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/version"
 )
 
-type SemanticTokensOptions struct {
-	WorkDoneProgress bool                          `json:"workDoneProgress,omitempty"`
-	Legend           protocol.SemanticTokensLegend `json:"legend,omitempty"`
-	Range            bool                          `json:"range,omitempty"`
-	Full             bool                          `json:"full,omitempty"`
+var TokenTypes = []string{
+	string(protocol.SemanticTokenTypesKeyword),
+	string(protocol.SemanticTokenTypesNamespace),
+	string(protocol.SemanticTokenTypesClass),
+	string(protocol.SemanticTokenTypesComment),
+	string(protocol.SemanticTokenTypesFunction),
 }
 
-var TokenTypes = []protocol.SemanticTokenTypes{
-	protocol.SemanticTokenKeyword,
-	protocol.SemanticTokenNamespace,
-	protocol.SemanticTokenClass,
-	protocol.SemanticTokenComment,
-	protocol.SemanticTokenFunction,
+var TokenModifiers = []string{
+	string(protocol.SemanticTokenModifiersDeclaration),
+	string(protocol.SemanticTokenModifiersAbstract),
 }
 
-var TokenModifiers = []protocol.SemanticTokenModifiers{
-	protocol.SemanticTokenModifierDeclaration,
-	protocol.SemanticTokenModifierAbstract,
-}
-
-func (methods *Methods) Initialize(reply jsonrpc2.Replier, req jsonrpc2.Request) error {
-	params := protocol.InitializeParams{}
-	if err := json.Unmarshal(req.Params(), &params); err != nil {
-		return reply(methods.Ctx, nil, fmt.Errorf("%s: %w", jsonrpc2.ErrParse, err))
+func (methods *Methods) Initialize(raw jsonrpc2.RawMessage) (any, error) {
+	params, err := decode[protocol.InitializeParams](raw)
+	if err != nil {
+		return nil, err
 	}
 
-	if params.InitializationOptions != nil {
-		isCciExtension, ok := params.InitializationOptions.(map[string]interface{})["isCciExtension"]
-		if ok && isCciExtension == true {
-			methods.Settings.IsCciExtension = true
-		}
-		userAgent, ok := params.InitializationOptions.(map[string]interface{})["userAgent"]
-		if ok {
-			userAgentString, ok := userAgent.(string)
-			if ok {
-				version.UserAgent += " " + userAgentString
-			}
-		}
+	options := map[string]interface{}{}
+	if len(params.InitializationOptions) > 0 {
+		// Options that are not an object carry nothing we read.
+		_ = protocol.Unmarshal(params.InitializationOptions, &options)
 	}
+	if isCciExtension, ok := options["isCciExtension"]; ok && isCciExtension == true {
+		methods.Settings.IsCciExtension = true
+	}
+	if userAgent, ok := options["userAgent"].(string); ok {
+		version.UserAgent += " " + userAgent
+	}
+
+	yes := true
+	incremental := protocol.TextDocumentSyncKindIncremental
+	workDoneProgress := protocol.WorkDoneProgressOptions{WorkDoneProgress: &yes}
 
 	v := protocol.InitializeResult{
 		Capabilities: protocol.ServerCapabilities{
-			RenameProvider: false,
-			TextDocumentSync: protocol.TextDocumentSyncOptions{
-				OpenClose: true,
-				Change:    protocol.TextDocumentSyncKindIncremental,
+			RenameProvider: protocol.Boolean(false),
+			TextDocumentSync: &protocol.TextDocumentSyncOptions{
+				OpenClose: &yes,
+				Change:    &incremental,
 			},
-			SemanticTokensProvider: SemanticTokensOptions{
+			SemanticTokensProvider: &protocol.SemanticTokensOptions{
 				Legend: protocol.SemanticTokensLegend{
 					TokenTypes:     TokenTypes,
 					TokenModifiers: TokenModifiers,
 				},
-				Full:  true,
-				Range: false,
+				Full: protocol.Boolean(true),
 			},
-			DefinitionProvider: protocol.DefinitionOptions{
-				WorkDoneProgressOptions: protocol.WorkDoneProgressOptions{
-					WorkDoneProgress: true,
-				},
+			DefinitionProvider: &protocol.DefinitionOptions{
+				WorkDoneProgressOptions: workDoneProgress,
 			},
-			ReferencesProvider: protocol.ReferenceOptions{
-				WorkDoneProgressOptions: protocol.WorkDoneProgressOptions{
-					WorkDoneProgress: true,
-				},
+			ReferencesProvider: &protocol.ReferenceOptions{
+				WorkDoneProgressOptions: workDoneProgress,
 			},
 			CompletionProvider: &protocol.CompletionOptions{
-				ResolveProvider: false,
 				// TriggerCharacters: []string{":"},
 			},
 			HoverProvider: &protocol.HoverOptions{
-				WorkDoneProgressOptions: protocol.WorkDoneProgressOptions{
-					WorkDoneProgress: true,
-				},
+				WorkDoneProgressOptions: workDoneProgress,
 			},
-			ExecuteCommandProvider: &protocol.ExecuteCommandOptions{
+			ExecuteCommandProvider: protocol.ExecuteCommandOptions{
 				Commands: []string{"setToken"},
 			},
-			CodeActionProvider: &protocol.CodeActionRegistrationOptions{
-				CodeActionOptions: protocol.CodeActionOptions{
-					CodeActionKinds: []protocol.CodeActionKind{
-						"quickfix",
-					},
-					ResolveProvider: true,
+			CodeActionProvider: &protocol.CodeActionOptions{
+				CodeActionKinds: []protocol.CodeActionKind{
+					protocol.CodeActionKindQuickFix,
 				},
+				ResolveProvider: &yes,
 			},
-			DocumentSymbolProvider: true,
+			DocumentSymbolProvider: protocol.Boolean(true),
 		},
-		ServerInfo: &protocol.ServerInfo{
+		ServerInfo: protocol.ServerInfo{
 			Name:    "circleci-language-server",
-			Version: version.Server,
+			Version: protocol.NewOptional(version.Server),
 		},
 	}
-	return reply(methods.Ctx, v, nil)
+	return v, nil
 }

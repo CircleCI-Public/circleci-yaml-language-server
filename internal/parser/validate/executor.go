@@ -341,7 +341,7 @@ func (val Validate) validateExecutorReference(executor string, rng protocol.Rang
 				val.addDiagnostic(
 					protocol.Diagnostic{
 						Range:    rng,
-						Message:  fmt.Sprintf("Cannot find orb \"%s\". Looking for executor named \"%s\".", possibleOrbName, executor),
+						Message:  protocol.String(fmt.Sprintf("Cannot find orb \"%s\". Looking for executor named \"%s\".", possibleOrbName, executor)),
 						Severity: protocol.DiagnosticSeverityError,
 					},
 				)
@@ -349,7 +349,7 @@ func (val Validate) validateExecutorReference(executor string, rng protocol.Rang
 				val.addDiagnostic(
 					protocol.Diagnostic{
 						Range:    rng,
-						Message:  fmt.Sprintf("Executor \"%s\" does not exist", executor),
+						Message:  protocol.String(fmt.Sprintf("Executor \"%s\" does not exist", executor)),
 						Severity: protocol.DiagnosticSeverityError,
 					},
 				)

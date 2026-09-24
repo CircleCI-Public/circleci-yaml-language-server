@@ -51,7 +51,7 @@ func singleJobSymbols(job ast2.Job) protocol.DocumentSymbol {
 			SelectionRange: job.StepsRange,
 			Children:       stepsSymbols(job.Steps),
 			Kind:           protocol.SymbolKind(ListSymbol),
-			Detail:         fmt.Sprintf("%d total", len(job.Steps)),
+			Detail:         unlessZero(fmt.Sprintf("%d total", len(job.Steps))),
 		})
 	}
 
@@ -95,7 +95,7 @@ func singleJobSymbols(job ast2.Job) protocol.DocumentSymbol {
 			Children: []protocol.DocumentSymbol{
 				{
 					Name:           "xcode",
-					Detail:         job.MacOS.Xcode,
+					Detail:         unlessZero(job.MacOS.Xcode),
 					Range:          job.MacOS.Range,
 					SelectionRange: job.MacOS.Range,
 				},
