@@ -44,6 +44,13 @@ func (val Validate) checkIfParamAssigned(params map[string]ast2.ParameterValue, 
 }
 
 func (val Validate) checkParamSimpleType(param ast2.ParameterValue, stepName string, definedParam ast2.Parameter) {
+	if value, ok := param.Value.(string); ok && param.Type == "string" {
+		if name, ok := paramref.OnlyPipelineValue(value); ok {
+			val.checkPipelineValueType(param, name, stepName, definedParam)
+			return
+		}
+	}
+
 	switch definedParam.GetType() {
 	case "string", "boolean", "integer":
 		checkParamType(definedParam.GetType(), val, param, stepName, definedParam)
@@ -95,6 +102,43 @@ func (val Validate) checkParamSimpleType(param ast2.ParameterValue, stepName str
 		}
 		// TODO: check if POSIX_REGEX is valid
 	}
+}
+
+// pipelineValueTypes are the types of the pipeline values, as far as they
+// are known. See https://circleci.com/docs/pipeline-variables/
+var pipelineValueTypes = map[string]string{
+	"pipeline.id":                    "string",
+	"pipeline.number":                "integer",
+	"pipeline.project.git_url":       "string",
+	"pipeline.project.type":          "string",
+	"pipeline.git.tag":               "string",
+	"pipeline.git.branch":            "string",
+	"pipeline.git.branch.is_default": "boolean",
+	"pipeline.git.revision":          "string",
+	"pipeline.git.base_revision":     "string",
+	"pipeline.in_setup":              "boolean",
+	"pipeline.trigger_source":        "string",
+	"pipeline.schedule.name":         "string",
+	"pipeline.schedule.id":           "string",
+}
+
+// checkPipelineValueType checks a parameter given a pipeline value, such as
+// << pipeline.number >>, against the type that value will have. Any value can
+// be written into a string, and the other types are checked only once the
+// config is compiled, so only booleans and integers are checked. A pipeline
+// value this does not know is accepted rather than guessed at.
+func (val Validate) checkPipelineValueType(param ast2.ParameterValue, name string, stepName string, definedParam ast2.Parameter) {
+	wanted := definedParam.GetType()
+	if wanted != "boolean" && wanted != "integer" {
+		return
+	}
+
+	valueType, known := pipelineValueTypes[name]
+	if !known || valueType == wanted {
+		return
+	}
+
+	val.createParameterError(param, stepName, wanted)
 }
 
 func checkParamType(paramType string, val Validate, param ast2.ParameterValue, stepName string, definedParam ast2.Parameter) {

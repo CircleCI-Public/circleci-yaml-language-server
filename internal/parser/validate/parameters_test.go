@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"go.lsp.dev/protocol"
+	"gotest.tools/v3/assert"
+	"gotest.tools/v3/assert/cmp"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 )
@@ -286,4 +288,75 @@ workflows:
 	}
 
 	CheckYamlErrors(t, testCases)
+}
+
+func TestPipelineValuesAsParameters(t *testing.T) {
+	// requiredParams defines a command and a job, each taking one parameter
+	// of every type a pipeline value might be given to.
+	const requiredParams = `
+      count:
+        type: integer
+        default: 1
+      flag:
+        type: boolean
+        default: false
+      text:
+        type: string
+        default: ""
+      choice:
+        type: enum
+        enum: [main, other]
+        default: main
+`
+	config := func(values string) string {
+		return `version: 2.1
+
+commands:
+  cmd:
+    parameters:` + requiredParams + `    steps:
+      - run: echo
+
+jobs:
+  j:
+    parameters:` + requiredParams + `    docker:
+      - image: cimg/base:stable
+    steps:
+      - cmd:` + values + `
+
+workflows:
+  w:
+    jobs:
+      - j:` + values + `
+`
+	}
+
+	testCases := []ValidateTestCase{
+		{
+			Name: "Pipeline values are given the type they will have",
+			YamlContent: config(`
+          count: << pipeline.number >>
+          flag: << pipeline.git.branch.is_default >>
+          text: << pipeline.number >>
+          choice: << pipeline.git.branch >>`),
+			OnlyErrors: true,
+		},
+		{
+			Name: "A pipeline value that is not known is accepted",
+			YamlContent: config(`
+          count: << pipeline.not_yet_documented >>`),
+			OnlyErrors: true,
+		},
+	}
+
+	CheckYamlErrors(t, testCases)
+
+	t.Run("A pipeline value of the wrong type is still an error", func(t *testing.T) {
+		val := CreateValidateFromYAML(config(`
+          count: << pipeline.id >>`))
+		val.Validate()
+
+		said := getDiagnosticMessages(val.Diagnostics)
+		assert.Check(t, cmp.Contains(said, "Parameter count for cmd must be a integer"))
+		assert.Check(t, cmp.Contains(said, "Parameter count for j must be a integer"))
+	})
 }
