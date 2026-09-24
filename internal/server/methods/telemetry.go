@@ -3,7 +3,6 @@ package methods
 import (
 	"log/slog"
 
-	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/protocol"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/version"
@@ -30,21 +29,21 @@ func (methods *Methods) SendTelemetryEvent(event TelemetryEvent) {
 		event.TriggerType = "frontend_interaction"
 	}
 	event.Properties["lspVersion"] = version.Server
-	methods.notify(protocol.MethodTelemetryEvent, event)
-}
 
-// notify sends a notification to the client. There is no one to report a
-// failure to, so it is logged.
-//
-// The params are encoded here, with the protocol's own codec, as the
-// connection's codec may not be it.
-func (methods *Methods) notify(method string, params any) {
-	encoded, err := protocol.Marshal(params)
+	encoded, err := protocol.Marshal(event)
 	if err != nil {
-		slog.Warn("encoding notification", "method", method, "err", err)
+		slog.Warn("encoding notification", "method", protocol.MethodTelemetryEvent, "err", err)
 		return
 	}
-	if err := methods.Conn.Notify(methods.Ctx, method, jsonrpc2.RawMessage(encoded)); err != nil {
-		slog.Warn("sending notification", "method", method, "err", err)
+	if err := methods.Client.Telemetry(methods.Ctx, encoded); err != nil {
+		slog.Warn("sending notification", "method", protocol.MethodTelemetryEvent, "err", err)
+	}
+}
+
+// publishDiagnostics and the telemetry below send notifications to the
+// client. There is no one to report a failure to, so it is logged.
+func (methods *Methods) publishDiagnostics(params protocol.PublishDiagnosticsParams) {
+	if err := methods.Client.PublishDiagnostics(methods.Ctx, &params); err != nil {
+		slog.Warn("sending notification", "method", protocol.MethodTextDocumentPublishDiagnostics, "err", err)
 	}
 }

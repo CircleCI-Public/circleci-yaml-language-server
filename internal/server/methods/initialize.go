@@ -1,7 +1,8 @@
 package methods
 
 import (
-	"go.lsp.dev/jsonrpc2"
+	"context"
+
 	"go.lsp.dev/protocol"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/version"
@@ -20,12 +21,7 @@ var TokenModifiers = []string{
 	string(protocol.SemanticTokenModifiersAbstract),
 }
 
-func (methods *Methods) Initialize(raw jsonrpc2.RawMessage) (any, error) {
-	params, err := decode[protocol.InitializeParams](raw)
-	if err != nil {
-		return nil, err
-	}
-
+func (methods *Methods) Initialize(_ context.Context, params *protocol.InitializeParams) (*protocol.InitializeResult, error) {
 	options := map[string]interface{}{}
 	if len(params.InitializationOptions) > 0 {
 		// Options that are not an object carry nothing we read.
@@ -42,7 +38,7 @@ func (methods *Methods) Initialize(raw jsonrpc2.RawMessage) (any, error) {
 	incremental := protocol.TextDocumentSyncKindIncremental
 	workDoneProgress := protocol.WorkDoneProgressOptions{WorkDoneProgress: &yes}
 
-	v := protocol.InitializeResult{
+	v := &protocol.InitializeResult{
 		Capabilities: protocol.ServerCapabilities{
 			RenameProvider: protocol.Boolean(false),
 			TextDocumentSync: &protocol.TextDocumentSyncOptions{

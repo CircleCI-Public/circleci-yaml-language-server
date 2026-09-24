@@ -31,8 +31,8 @@ const (
 // rocketMethods builds a Methods over a fake serving acme/rocket with the env
 // vars named, and a cache holding one open config file of that project.
 //
-// Conn and Ctx are left zero: nothing on this path touches them, and a nil
-// connection is a louder failure than a stub if that ever stops being true.
+// Client and Ctx are left zero: nothing on this path touches them, and a nil
+// client is a louder failure than a stub if that ever stops being true.
 func rocketMethods(t *testing.T, token string, envVarNames ...string) (*Methods, *fakes.CircleCI) {
 	t.Helper()
 

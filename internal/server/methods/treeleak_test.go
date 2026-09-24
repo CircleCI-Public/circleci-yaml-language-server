@@ -73,13 +73,15 @@ func TestMethodsCloseTheTreesTheyParse(t *testing.T) {
 	t.Run("listing workflows for a command", func(t *testing.T) {
 		leaked := tsalloc.Track(t)
 
-		params, err := protocol.Marshal(map[string]any{
-			"command":   "getWorkflows",
-			"arguments": []any{leakConfig, configURI.FsPath()},
-		})
+		content, err := protocol.Marshal(leakConfig)
+		assert.NilError(t, err)
+		path, err := protocol.Marshal(configURI.FsPath())
 		assert.NilError(t, err)
 
-		_, err = methods.ExecuteCommand(params)
+		_, err = methods.ExecuteCommand(context.Background(), &protocol.ExecuteCommandParams{
+			Command:   "getWorkflows",
+			Arguments: []protocol.LSPAny{content, path},
+		})
 		assert.NilError(t, err)
 
 		assert.Check(t, cmp.Equal(leaked(), int64(0)), "tree-sitter allocations left open")
