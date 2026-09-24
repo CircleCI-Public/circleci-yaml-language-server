@@ -3,6 +3,7 @@ package validate
 import (
 	"os"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -500,4 +501,91 @@ workflows:
 	}
 
 	CheckYamlErrors(t, testCases)
+}
+
+// Inside an inline orb, its own jobs and commands call its commands by their
+// bare names.
+func TestLocalOrbCommandUsedWithinTheOrb(t *testing.T) {
+	unusedWarnings := func(t *testing.T, yamlContent string) []string {
+		t.Helper()
+
+		val := CreateValidateFromYAML(yamlContent)
+		val.Validate()
+
+		warnings := []string{}
+		for _, message := range getDiagnosticMessages(val.Diagnostics) {
+			if strings.HasSuffix(message, "is unused") {
+				warnings = append(warnings, message)
+			}
+		}
+
+		return warnings
+	}
+
+	t.Run("a command used by the orb's own job", func(t *testing.T) {
+		assert.Check(t, cmp.Len(unusedWarnings(t, `version: 2.1
+orbs:
+  inline:
+    commands:
+      greet:
+        steps:
+          - run: echo hi
+    jobs:
+      hello:
+        docker:
+          - image: cimg/base:stable
+        steps:
+          - greet
+workflows:
+  w:
+    jobs:
+      - inline/hello
+`), 0))
+	})
+
+	t.Run("a command used by another of the orb's commands", func(t *testing.T) {
+		assert.Check(t, cmp.Len(unusedWarnings(t, `version: 2.1
+orbs:
+  inline:
+    commands:
+      greet:
+        steps:
+          - run: echo hi
+      greet-twice:
+        steps:
+          - greet
+          - greet
+jobs:
+  j:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - inline/greet-twice
+workflows:
+  w:
+    jobs:
+      - j
+`), 0))
+	})
+
+	t.Run("a command the orb does not use is still reported", func(t *testing.T) {
+		assert.Check(t, cmp.DeepEqual(unusedWarnings(t, `version: 2.1
+orbs:
+  inline:
+    commands:
+      greet:
+        steps:
+          - run: echo hi
+    jobs:
+      hello:
+        docker:
+          - image: cimg/base:stable
+        steps:
+          - run: echo
+workflows:
+  w:
+    jobs:
+      - inline/hello
+`), []string{"Command is unused"}))
+	})
 }
