@@ -2,29 +2,35 @@ package methods
 
 import (
 	"context"
-	"fmt"
+	"os"
 
-	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/protocol"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/session"
 )
 
+// Methods is the language server: protocol.ServerHandler decodes each request
+// and calls the method for it. A request the server does not handle is left to
+// UnimplementedServer, which answers method-not-found, or ignores it if it is
+// a notification.
 type Methods struct {
+	protocol.UnimplementedServer
+
 	Ctx            context.Context
-	Conn           jsonrpc2.Conn
+	Client         protocol.Client
 	Cache          *cache.Cache
 	Settings       *session.Settings
 	SchemaLocation string
 }
 
-// decode reads a request's params into the protocol type T. The codec is the
-// protocol's own, which is what reads its union and optional fields.
-func decode[T any](raw jsonrpc2.RawMessage) (T, error) {
-	var params T
-	if err := protocol.Unmarshal(raw, &params); err != nil {
-		return params, fmt.Errorf("%s: %w", jsonrpc2.ErrParse, err)
-	}
-	return params, nil
+var _ protocol.Server = (*Methods)(nil)
+
+func (methods *Methods) Shutdown(context.Context) error {
+	return nil
+}
+
+func (methods *Methods) Exit(context.Context) error {
+	os.Exit(0)
+	return nil
 }

@@ -16,6 +16,7 @@ import (
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/lspcodec"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/server/methods"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/session"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/version"
@@ -23,111 +24,36 @@ import (
 
 type JSONRPCServer struct {
 	ctx            context.Context
-	conn           jsonrpc2.Conn
-	methods        methods.Methods
-	cache          *cache.Cache
 	lsContext      *session.Settings
 	SchemaLocation string
 }
 
-func (server JSONRPCServer) commandHandler(_ context.Context, req *jsonrpc2.Request) (any, error) {
-	slog.Debug("called method", "method", req.Method())
-
-	params := req.Params()
-
-	switch req.Method() {
-
-	case protocol.MethodInitialize:
-		return server.methods.Initialize(params)
-
-	case protocol.MethodWorkspaceExecuteCommand:
-		return server.methods.ExecuteCommand(params)
-
-	case protocol.MethodTextDocumentDidOpen:
-		server.methods.DidOpen(params)
-		return nil, nil
-
-	case protocol.MethodTextDocumentDidClose:
-		server.methods.DidClose(params)
-		return nil, nil
-
-	case protocol.MethodTextDocumentDidChange:
-		server.methods.DidChange(params)
-		return nil, nil
-
-	case protocol.MethodTextDocumentHover:
-		return server.methods.Hover(params)
-
-	case protocol.MethodTextDocumentSemanticTokensFull:
-		return server.methods.SemanticTokens(params)
-
-	case protocol.MethodTextDocumentDefinition:
-		return server.methods.Definition(params)
-
-	case protocol.MethodTextDocumentReferences:
-		return server.methods.References(params)
-
-	case protocol.MethodTextDocumentCompletion:
-		return server.methods.Complete(params)
-
-	case protocol.MethodTextDocumentCodeAction:
-		return server.methods.CodeAction(params)
-
-	case protocol.MethodShutdown:
-		return nil, nil
-
-	case protocol.MethodTextDocumentDocumentSymbol:
-		return server.methods.DocumentSymbols(params)
-
-	case protocol.MethodExit:
-		os.Exit(0)
-		return nil, nil
-
-	default:
-		// A notification we do not handle is dropped: an error from one
-		// closes the connection.
-		if !req.IsCall() {
-			return nil, nil
-		}
-		return nil, jsonrpc2.ErrMethodNotFound
-	}
-}
-
-// encodeResults encodes what a handler answers with using the protocol's own
-// codec, which is what writes its union and optional fields. It is done here
-// rather than by the connection's codec because a connection jsonrpc2.Serve
-// accepts always has the default one.
-func encodeResults(handler jsonrpc2.Handler) jsonrpc2.Handler {
-	return func(ctx context.Context, req *jsonrpc2.Request) (any, error) {
-		result, err := handler(ctx, req)
-		if err != nil || result == nil {
-			return nil, err
-		}
-		encoded, err := protocol.Marshal(result)
-		if err != nil {
-			return nil, jsonrpc2.Errorf(jsonrpc2.InternalError, "%s: encoding result: %v", req.Method(), err)
-		}
-		return jsonrpc2.RawMessage(encoded), nil
-	}
-}
-
-func (server JSONRPCServer) ServeStream(_ context.Context, conn jsonrpc2.Conn) error {
+// serve runs a session with one client over stream, until the client goes.
+// Requests are handled one at a time, in the order they arrive.
+func (server JSONRPCServer) serve(stream jsonrpc2.Stream) error {
 	defer rollbar.Close()
 	slog.Info("new client connection")
 
-	server.conn = conn
-	server.cache = cache.New()
-	server.methods = methods.Methods{
+	conn := jsonrpc2.NewConn(stream, jsonrpc2.WithCodec(lspcodec.Codec{}))
+	lsp := &methods.Methods{
 		Ctx:            server.ctx,
-		Conn:           server.conn,
-		Cache:          server.cache,
+		Client:         protocol.ClientDispatcher(conn),
+		Cache:          cache.New(),
 		Settings:       server.lsContext,
 		SchemaLocation: server.SchemaLocation,
 	}
-	conn.Go(server.ctx, recoverPanics(encodeResults(server.commandHandler)))
+	handler := protocol.ServerHandler(lsp, jsonrpc2.MethodNotFoundHandler)
+	conn.Go(server.ctx, recoverPanics(dropFailedNotifications(logMethods(handler))))
 	<-conn.Done()
 
 	return conn.Err()
+}
+
+func logMethods(handler jsonrpc2.Handler) jsonrpc2.Handler {
+	return func(ctx context.Context, req *jsonrpc2.Request) (any, error) {
+		slog.Debug("called method", "method", req.Method())
+		return handler(ctx, req)
+	}
 }
 
 func StartServer(port int, host string, schemaLocation string) {
@@ -166,10 +92,20 @@ func StartServer(port int, host string, schemaLocation string) {
 		}
 	}()
 
-	err = jsonrpc2.Serve(ctx, ln, server, 0)
-
-	if err != nil {
-		panic(err)
+	// jsonrpc2.Serve would build each connection itself, with a codec that
+	// cannot write the protocol's types, so connections are accepted here.
+	for {
+		netConn, err := ln.Accept()
+		if err != nil {
+			panic(err)
+		}
+		go func() {
+			stream := jsonrpc2.NewStream(netConn)
+			if err := server.serve(stream); err != nil {
+				slog.Info("client connection closed", "err", err)
+			}
+			_ = stream.Close()
+		}()
 	}
 }
 
@@ -184,10 +120,9 @@ func StartServerStdio(schemaLocation string) {
 	ctx := context.Background()
 
 	stdioStream := jsonrpc2.NewStream(&StdioReadWriteCloser{os.Stdin, os.Stdout})
-	stdioConn := jsonrpc2.NewConn(stdioStream)
 	server := getJsonRpcServer(ctx, schemaLocation)
 
-	if err := server.ServeStream(ctx, stdioConn); err != nil {
+	if err := server.serve(stdioStream); err != nil {
 		panic(err)
 	}
 }

@@ -1,6 +1,8 @@
 package methods
 
 import (
+	"context"
+
 	"github.com/rollbar/rollbar-go"
 	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/protocol"
@@ -10,12 +12,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/parser"
 )
 
-func (methods *Methods) ExecuteCommand(raw jsonrpc2.RawMessage) (any, error) {
-	params := protocol.ExecuteCommandParams{}
-	if err := protocol.Unmarshal(raw, &params); err != nil {
-		return nil, jsonrpc2.NewError(jsonrpc2.ParseError, err.Error())
-	}
-
+func (methods *Methods) ExecuteCommand(_ context.Context, params *protocol.ExecuteCommandParams) (protocol.LSPAny, error) {
 	arguments := params.Arguments
 
 	switch params.Command {
@@ -58,7 +55,11 @@ func (methods *Methods) ExecuteCommand(raw jsonrpc2.RawMessage) (any, error) {
 		}
 		defer parsedFile.Close()
 
-		return parsedFile.GetWorkflows(), nil
+		workflows, err := protocol.Marshal(parsedFile.GetWorkflows())
+		if err != nil {
+			return nil, jsonrpc2.NewError(jsonrpc2.InternalError, "unable to encode workflows")
+		}
+		return workflows, nil
 
 	case "setRollbarInformation":
 		parameters, ok := argument[map[string]interface{}](arguments, 0)

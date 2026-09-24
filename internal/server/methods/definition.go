@@ -1,26 +1,22 @@
 package methods
 
 import (
-	"go.lsp.dev/jsonrpc2"
+	"context"
+
 	"go.lsp.dev/protocol"
 
 	languageservice "github.com/CircleCI-Public/circleci-yaml-language-server/internal/services"
 )
 
-func (methods *Methods) Definition(raw jsonrpc2.RawMessage) (any, error) {
-	params, err := decode[protocol.DefinitionParams](raw)
+func (methods *Methods) Definition(_ context.Context, params *protocol.DefinitionParams) (protocol.DefinitionResult, error) {
+	res, err := languageservice.Definition(*params, methods.Cache, methods.Settings)
 	if err != nil {
 		return nil, err
 	}
-
-	res, err := languageservice.Definition(params, methods.Cache, methods.Settings)
-	if err != nil {
-		return nil, err
-	}
-	// Nothing found has always been answered with null; encoded as it is, the
-	// nil slice would go out as [].
+	// Nothing found has always been answered with null; as a slice, even a
+	// nil one would go out as [].
 	if res == nil {
 		return nil, nil
 	}
-	return res, nil
+	return protocol.LocationSlice(res), nil
 }

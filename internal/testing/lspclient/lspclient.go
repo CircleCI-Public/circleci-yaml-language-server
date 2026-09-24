@@ -22,6 +22,8 @@ import (
 	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
+
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/lspcodec"
 )
 
 // DefaultTimeout bounds a request, and a wait for diagnostics.
@@ -56,7 +58,7 @@ func New(t *testing.T, ctx context.Context, stream io.ReadWriteCloser) *Client {
 
 	client := &Client{
 		ctx:       ctx,
-		conn:      jsonrpc2.NewConn(jsonrpc2.NewStream(stream), jsonrpc2.WithCodec(codec{})),
+		conn:      jsonrpc2.NewConn(jsonrpc2.NewStream(stream), jsonrpc2.WithCodec(lspcodec.Codec{})),
 		timeout:   DefaultTimeout,
 		published: map[uri.URI]publication{},
 		consumed:  map[uri.URI]int{},
@@ -305,19 +307,4 @@ func (c *Client) recordDiagnostics(params protocol.PublishDiagnosticsParams) {
 		count: previous.count + 1,
 		items: params.Diagnostics,
 	}
-}
-
-// codec encodes payloads with the protocol's own codec, which is what reads and
-// writes its union and optional fields.
-type codec struct{}
-
-func (codec) Marshal(v any) ([]byte, error) {
-	if raw, ok := v.(jsonrpc2.RawMessage); ok {
-		return raw, nil
-	}
-	return protocol.Marshal(v)
-}
-
-func (codec) Unmarshal(data []byte, v any) error {
-	return protocol.Unmarshal(data, v)
 }

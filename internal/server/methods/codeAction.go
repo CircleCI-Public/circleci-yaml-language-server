@@ -1,19 +1,15 @@
 package methods
 
 import (
-	"go.lsp.dev/jsonrpc2"
+	"context"
+
 	"go.lsp.dev/protocol"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/codeaction"
 )
 
-func (methods *Methods) CodeAction(raw jsonrpc2.RawMessage) (any, error) {
-	params, err := decode[protocol.CodeActionParams](raw)
-	if err != nil {
-		return nil, err
-	}
-
-	res := []protocol.CodeAction{}
+func (methods *Methods) CodeAction(_ context.Context, params *protocol.CodeActionParams) ([]protocol.CommandOrCodeAction, error) {
+	res := []protocol.CommandOrCodeAction{}
 	for _, diagnostic := range params.Context.Diagnostics {
 		// The fixes for a diagnostic travel in its data, and come back here
 		// when the client asks for them.
@@ -21,7 +17,9 @@ func (methods *Methods) CodeAction(raw jsonrpc2.RawMessage) (any, error) {
 		if err != nil {
 			continue
 		}
-		res = append(res, codeActions...)
+		for i := range codeActions {
+			res = append(res, &codeActions[i])
+		}
 	}
 
 	return res, nil

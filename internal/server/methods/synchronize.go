@@ -2,13 +2,12 @@ package methods
 
 import (
 	"bytes"
-	"log/slog"
+	"context"
 	"path"
 	"strings"
 	"time"
 
 	"github.com/bep/debounce"
-	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 
@@ -27,29 +26,13 @@ func (methods *Methods) setChangeInFileCache(textDocument protocol.TextDocumentI
 	}
 }
 
-// Notifications have no reply to carry an error, and an error returned from
-// one closes the connection, so one that does not decode is logged and dropped.
-func decodeNotification[T any](method string, raw jsonrpc2.RawMessage) (T, bool) {
-	params, err := decode[T](raw)
-	if err != nil {
-		slog.Warn("dropping notification", "method", method, "err", err)
-		return params, false
-	}
-	return params, true
-}
-
-func (methods *Methods) DidOpen(raw jsonrpc2.RawMessage) {
-	params, ok := decodeNotification[protocol.DidOpenTextDocumentParams](protocol.MethodTextDocumentDidOpen, raw)
-	if !ok {
-		return
-	}
-
+func (methods *Methods) DidOpen(_ context.Context, params *protocol.DidOpenTextDocumentParams) error {
 	methods.setChangeInFileCache(params.TextDocument)
 	methods.parsingMethods(params.TextDocument)
 	methods.updateOrbFile([]byte(params.TextDocument.Text), params.TextDocument.URI)
 	go (func() {
 		methods.notificationMethods(params.TextDocument)
-		methods.SetResourceClassOfFile(params)
+		methods.SetResourceClassOfFile(*params)
 		methods.SendTelemetryEvent(TelemetryEvent{
 			Action: "opened_file",
 			Properties: map[string]interface{}{
@@ -59,6 +42,7 @@ func (methods *Methods) DidOpen(raw jsonrpc2.RawMessage) {
 			Object:      "lsp",
 		})
 	})()
+	return nil
 }
 
 var debounceUpdateCachedFile = debounce.New(1000 * time.Millisecond)
@@ -75,11 +59,7 @@ func (methods *Methods) updateAllCachedFiles() {
 
 var debounceInnerChange = debounce.New(1000 * time.Millisecond)
 
-func (methods *Methods) DidChange(raw jsonrpc2.RawMessage) {
-	params, ok := decodeNotification[protocol.DidChangeTextDocumentParams](protocol.MethodTextDocumentDidChange, raw)
-	if !ok {
-		return
-	}
+func (methods *Methods) DidChange(_ context.Context, params *protocol.DidChangeTextDocumentParams) error {
 	newText := methods.applyIncrementalChanges(params.TextDocument.URI, params.ContentChanges)
 	textDocument := protocol.TextDocumentItem{
 		URI:     params.TextDocument.URI,
@@ -93,26 +73,20 @@ func (methods *Methods) DidChange(raw jsonrpc2.RawMessage) {
 		methods.parsingMethods(textDocument)
 		go methods.notificationMethods(textDocument)
 	})
+	return nil
 }
 
-func (methods *Methods) DidClose(raw jsonrpc2.RawMessage) {
-	params, ok := decodeNotification[protocol.DidCloseTextDocumentParams](protocol.MethodTextDocumentDidClose, raw)
-	if !ok {
-		return
-	}
-
+func (methods *Methods) DidClose(_ context.Context, params *protocol.DidCloseTextDocumentParams) error {
 	// removed due to a bug in remote orbs
 	isOrb, _ := methods.isOrb(params.TextDocument.URI)
 	if isOrb {
 		methods.Cache.FileCache.RemoveFile(params.TextDocument.URI)
-		defer methods.notify(
-			protocol.MethodTextDocumentPublishDiagnostics,
-			protocol.PublishDiagnosticsParams{
-				URI:         params.TextDocument.URI,
-				Diagnostics: []protocol.Diagnostic{},
-			},
-		)
+		defer methods.publishDiagnostics(protocol.PublishDiagnosticsParams{
+			URI:         params.TextDocument.URI,
+			Diagnostics: []protocol.Diagnostic{},
+		})
 	}
+	return nil
 }
 
 func (methods *Methods) notificationMethods(textDocument protocol.TextDocumentItem) {
@@ -128,10 +102,7 @@ func (methods *Methods) notificationMethods(textDocument protocol.TextDocumentIt
 	// Compare the version
 	// To avoid notifying based on an older version document
 	if original != nil && original.TextDocument.Version == textDocument.Version {
-		methods.notify(
-			protocol.MethodTextDocumentPublishDiagnostics,
-			diagnostics,
-		)
+		methods.publishDiagnostics(diagnostics)
 
 		methods.SendTelemetryEvent(TelemetryEvent{
 			Object:      "lsp",
