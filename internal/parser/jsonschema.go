@@ -3,6 +3,7 @@ package parser
 import (
 	"net/url"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -212,24 +213,46 @@ func (validator *JSONSchemaValidator) ValidateWithJSONSchema(rootNode *sitter.No
 	jsonSchemaDiags := []protocol.Diagnostic{}
 
 	if !result.Valid() {
+		// A value that is only a reference, such as << parameters.flag >>, is
+		// a string until the config is compiled, so the schema rejects it
+		// wherever it wants anything else. Those errors are dropped, along
+		// with the combinator errors (oneOf, if/then/else) they caused.
+		var combinators []protocol.Diagnostic
+		var referenced []protocol.Range
+
 		for _, resErr := range result.Errors() {
 			fields := strings.Split(resErr.Field(), ".")
 			if len(fields) == 1 && fields[0] == "(root)" {
 				diag := diagnostic.ErrorFromNode(rootNode, resErr.Description())
 				jsonSchemaDiags = append(jsonSchemaDiags, diag)
-			} else {
-				node, err := FindDeepestNode(rootNode, content, fields)
-				if err != nil {
-					continue
-				}
-
-				if validator.doesNodeUseParameter(node) {
-					continue
-				}
-
-				diag := diagnostic.ErrorFromNode(node, resErr.Description())
-				jsonSchemaDiags = append(jsonSchemaDiags, diag)
+				continue
 			}
+
+			node, err := FindDeepestNode(rootNode, content, fields)
+			if err != nil {
+				continue
+			}
+
+			if validator.doesNodeUseParameter(node) {
+				referenced = append(referenced, validator.Doc.NodeToRange(node))
+				continue
+			}
+
+			diag := diagnostic.ErrorFromNode(node, resErr.Description())
+			if isCombinatorError(resErr) {
+				combinators = append(combinators, diag)
+				continue
+			}
+
+			jsonSchemaDiags = append(jsonSchemaDiags, diag)
+		}
+
+		for _, combinator := range combinators {
+			if onlyContainsReferences(combinator, referenced, jsonSchemaDiags) {
+				continue
+			}
+
+			jsonSchemaDiags = append(jsonSchemaDiags, combinator)
 		}
 	}
 
@@ -239,8 +262,36 @@ func (validator *JSONSchemaValidator) ValidateWithJSONSchema(rootNode *sitter.No
 	return diagnostics
 }
 
-// Keys that can have only a parameter inside it,
-// and therefore the JSON Schema validation is not necessary for these keys.
+// isCombinatorError reports whether err only says that a value failed one
+// of several schemas, the actual failure being reported beside it.
+func isCombinatorError(err gojsonschema.ResultError) bool {
+	switch err.Type() {
+	case "number_one_of", "number_any_of", "number_all_of", "condition_then", "condition_else":
+		return true
+	}
+
+	return false
+}
+
+// onlyContainsReferences reports whether every failure inside the combinator
+// error is one of the referenced values: there is one of those in its range,
+// and no other error is.
+func onlyContainsReferences(combinator protocol.Diagnostic, referenced []protocol.Range, others []protocol.Diagnostic) bool {
+	containsReference := slices.ContainsFunc(referenced, func(rng protocol.Range) bool {
+		return position.InRange(combinator.Range, rng.Start)
+	})
+	if !containsReference {
+		return false
+	}
+
+	return !slices.ContainsFunc(others, func(other protocol.Diagnostic) bool {
+		return position.InRange(combinator.Range, other.Range.Start)
+	})
+}
+
+// doesNodeUseParameter reports whether the node's value is only a reference,
+// such as << parameters.my_param >> or << pipeline.number >>, whose value the
+// schema cannot check before the config is compiled.
 //
 // Example:
 //
@@ -249,20 +300,16 @@ func (validator *JSONSchemaValidator) ValidateWithJSONSchema(rootNode *sitter.No
 //	But in the JSON Schema, the `when` key is defined as an object, so the validation
 //	will fail if we don't ignore it.
 func (validator *JSONSchemaValidator) doesNodeUseParameter(node *sitter.Node) bool {
-	if node.Kind() == "block_mapping_pair" {
-		keyNode, valueNode := validator.Doc.GetKeyValueNodes(node)
-		if keyNode == nil || valueNode == nil {
+	if node.Kind() == "block_mapping_pair" || node.Kind() == "flow_pair" {
+		_, valueNode := validator.Doc.GetKeyValueNodes(node)
+		if valueNode == nil {
 			return false
 		}
-		key := validator.Doc.GetNodeText(keyNode)
-		value := validator.Doc.GetNodeText(valueNode)
 
-		if key == "when" && paramref.IsOnlyParameter(value) {
-			return true
-		}
+		return paramref.IsOnlyReference(validator.Doc.GetNodeText(valueNode))
 	}
 
-	return false
+	return paramref.IsOnlyReference(validator.Doc.GetNodeText(node))
 }
 
 func removeUselessMustValidateError(diags []protocol.Diagnostic) []protocol.Diagnostic {

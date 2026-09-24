@@ -384,3 +384,86 @@ func Test_HandleYamlError_UnknownAnchorWhereTheTreeHasNoNode(t *testing.T) {
 
 	assert.Check(t, cmp.Len(diagnostics, 0))
 }
+
+// schemaMessages is what validating content against the embedded schema says.
+func schemaMessages(t *testing.T, content string) []string {
+	t.Helper()
+
+	yamlDocument, err := ParseFromContent([]byte(content), testHelpers.DefaultSettings(), uri.File(""), protocol.Position{})
+	assert.NilError(t, err)
+	t.Cleanup(yamlDocument.Close)
+
+	validator := JSONSchemaValidator{Doc: yamlDocument}
+	assert.NilError(t, validator.LoadEmbeddedJsonSchema())
+
+	said := []string{}
+	for _, d := range validator.ValidateWithJSONSchema(yamlDocument.RootNode, yamlDocument.Content) {
+		said = append(said, diagnostic.MessageText(d))
+	}
+
+	return said
+}
+
+// A value that is only a reference is a string until the config is compiled,
+// so the schema cannot say whether it is right.
+func Test_ReferencesAreNotCheckedByTheSchema(t *testing.T) {
+	job := func(body string) string {
+		return `
+version: 2.1
+jobs:
+  j:
+    parameters:
+      flag:
+        type: boolean
+        default: false
+    docker:
+      - image: cimg/base:stable
+` + body + `
+workflows:
+  w:
+    jobs:
+      - j
+`
+	}
+
+	t.Run("a boolean parameter where the schema wants a boolean", func(t *testing.T) {
+		said := schemaMessages(t, job(`
+    circleci_ip_ranges: << parameters.flag >>
+    steps:
+      - run: echo`))
+		assert.Check(t, cmp.Len(said, 0))
+	})
+
+	t.Run("a parameter as the condition of a built-in step", func(t *testing.T) {
+		said := schemaMessages(t, job(`
+    steps:
+      - checkout:
+          when: << parameters.flag >>`))
+		assert.Check(t, cmp.Len(said, 0))
+	})
+
+	t.Run("a pipeline value where the schema wants an integer", func(t *testing.T) {
+		said := schemaMessages(t, job(`
+    parallelism: << pipeline.number >>
+    steps:
+      - run: echo`))
+		assert.Check(t, cmp.Len(said, 0))
+	})
+
+	t.Run("a wrong value beside a reference is still reported", func(t *testing.T) {
+		said := schemaMessages(t, job(`
+    circleci_ip_ranges: << parameters.flag >>
+    parallelism: lots
+    steps:
+      - run: echo`))
+		assert.Check(t, len(said) != 0, "a string parallelism must be rejected")
+	})
+
+	t.Run("a wrong literal value is still reported", func(t *testing.T) {
+		said := schemaMessages(t, job(`
+    circleci_ip_ranges: "yes"
+    steps:
+      - run: echo`))
+		assert.Check(t, len(said) != 0, "a string circleci_ip_ranges must be rejected")
+	})
+}

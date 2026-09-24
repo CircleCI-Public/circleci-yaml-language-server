@@ -114,6 +114,38 @@ func IsOnlyParameter(content string) bool {
 	return onlyParamRegex.MatchString(content)
 }
 
+var onlyReferenceRegex = regexp.MustCompile(`^<<\s*[A-Za-z][A-Za-z0-9_.-]*\s*>>$`)
+
+// IsOnlyReference reports whether content is nothing but a single `<< ... >>`
+// reference of any kind: a parameter, a pipeline value or a matrix value.
+// What such a value will be is only known once the config is compiled.
+func IsOnlyReference(content string) bool {
+	return onlyReferenceRegex.MatchString(unquote(content))
+}
+
+var onlyPipelineValueRegex = regexp.MustCompile(`^<<\s*(pipeline\.[A-Za-z0-9_.-]+)\s*>>$`)
+
+// OnlyPipelineValue returns the name of the pipeline value, such as
+// pipeline.number, that content is nothing but a reference to. Pipeline
+// parameters are declared in the config, so they are not pipeline values.
+func OnlyPipelineValue(content string) (string, bool) {
+	match := onlyPipelineValueRegex.FindStringSubmatch(unquote(content))
+	if match == nil || strings.HasPrefix(match[1], "pipeline.parameters.") {
+		return "", false
+	}
+
+	return match[1], true
+}
+
+func unquote(content string) string {
+	content = strings.TrimSpace(content)
+	if len(content) >= 2 && (content[0] == '"' || content[0] == '\'') && content[len(content)-1] == content[0] {
+		return content[1 : len(content)-1]
+	}
+
+	return content
+}
+
 var partialParamRegex = regexp.MustCompile(`<<\s*(parameters|pipeline.parameters|pipeline.git)\.\s*>?>?`)
 
 func IsPartiallyReferenced(content string) (bool, bool) {
