@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## [0.40.4](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.40.3...0.40.4) (2026-09-24)
+
+
+### Bug Fixes
+
+* accept the orb placeholder that orb-tools fills in ([#509](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/509)) ([833c905](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/833c90593afb2df96a32b98a82b6fdf3269a5a5f))
+* check a step against the command, not a same-named job ([#506](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/506)) ([fae34c5](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/fae34c5ca7c65068125d2c72cacfdf4ddfda56fd))
+* count orbs and commands passed as steps to a step as used ([#507](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/507)) ([c05804d](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/c05804d3caf76a92dcf2aaca917522428ce886a0))
+* stop caching lookup failures and serving stale orb sources ([#504](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/504)) ([e2b7f07](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/e2b7f07f4b2ce99b87f188188a90bbf77179f764))
+* stop checking parameter and pipeline references as strings ([#508](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/508)) ([b1a6e05](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/b1a6e05e1944ff70caef4193a7e15c18d1b84ebc))
+
 ## [0.40.3](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.40.2...0.40.3) (2026-09-24)
 
 

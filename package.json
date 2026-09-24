@@ -1,6 +1,6 @@
 {
     "name": "yaml-language-server",
-    "version": "0.40.3",
+    "version": "0.40.4",
     "description": "",
     "main": "index.js",
     "scripts": {},
