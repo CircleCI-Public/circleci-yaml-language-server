@@ -2,6 +2,7 @@ package validate
 
 import (
 	"os"
+	"slices"
 	"testing"
 
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -14,6 +15,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/dockerhub"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/parser"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/fakes"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/testHelpers"
 )
 
@@ -328,4 +330,139 @@ func TestLocalOrbUnusedPartsFalseNegative(t *testing.T) {
 		// The three warnings are independent, so their order is incidental.
 		cmpopts.SortSlices(func(a, b string) bool { return a < b }),
 	))
+}
+
+// A step can take other steps as a parameter, as aws-ecr/build_and_push_image
+// takes its auth steps. Whatever is passed there is used.
+func TestStepsPassedToAStepAreUsed(t *testing.T) {
+	const wrapper = `
+commands:
+  wrap:
+    parameters:
+      inner:
+        type: steps
+    steps:
+      - steps: << parameters.inner >>
+  run-it:
+    steps:
+      - run: echo hi
+`
+
+	t.Run("an orb used only in a step's steps parameter", func(t *testing.T) {
+		isolateOrbSources(t)
+
+		fake := fakes.NewCircleCI(t)
+		fake.AddNamespace("ns-acme", "acme")
+		fake.AddOrbPackage("orb-in-param", "ns-acme", "acme", "in-param", false, true)
+		fake.AddOrbVersion("ver-in-param-1", "orb-in-param", "acme/in-param", "1.0.0", orbSource, "")
+
+		diagnostics := orbDiagnostics(t, fake, `version: 2.1
+orbs:
+  helper: acme/in-param@1.0.0
+`+wrapper+`
+jobs:
+  j:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - wrap:
+          inner:
+            - helper/greet
+`)
+		assert.Check(t, !slices.Contains(getDiagnosticMessages(&diagnostics), "Orb is unused"), "diagnostics: %v", getDiagnosticMessages(&diagnostics))
+	})
+
+	t.Run("an orb used, with arguments, in a steps parameter nested in another", func(t *testing.T) {
+		isolateOrbSources(t)
+
+		fake := fakes.NewCircleCI(t)
+		fake.AddNamespace("ns-acme", "acme")
+		fake.AddOrbPackage("orb-nested", "ns-acme", "acme", "nested", false, true)
+		fake.AddOrbVersion("ver-nested-1", "orb-nested", "acme/nested", "1.0.0", orbSource, "")
+
+		diagnostics := orbDiagnostics(t, fake, `version: 2.1
+orbs:
+  helper: acme/nested@1.0.0
+`+wrapper+`
+jobs:
+  j:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - wrap:
+          inner:
+            - wrap:
+                inner:
+                  - helper/greet:
+                      name: with arguments
+`)
+		assert.Check(t, !slices.Contains(getDiagnosticMessages(&diagnostics), "Orb is unused"), "diagnostics: %v", getDiagnosticMessages(&diagnostics))
+	})
+
+	commandUnused := func(t *testing.T, yamlContent string) bool {
+		t.Helper()
+
+		val := CreateValidateFromYAML(yamlContent)
+		val.Validate()
+
+		return slices.Contains(getDiagnosticMessages(val.Diagnostics), "Command is unused")
+	}
+
+	t.Run("a command used only in a step's steps parameter", func(t *testing.T) {
+		assert.Check(t, !commandUnused(t, `version: 2.1
+`+wrapper+`
+jobs:
+  j:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - wrap:
+          inner:
+            - run-it
+workflows:
+  w:
+    jobs:
+      - j
+`))
+	})
+
+	t.Run("a command used only in a job invocation's steps parameter", func(t *testing.T) {
+		assert.Check(t, !commandUnused(t, `version: 2.1
+`+wrapper+`
+jobs:
+  j:
+    parameters:
+      inner:
+        type: steps
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - wrap:
+          inner: << parameters.inner >>
+workflows:
+  w:
+    jobs:
+      - j:
+          inner:
+            - run-it
+`))
+	})
+
+	t.Run("a command that is not used anywhere is still reported", func(t *testing.T) {
+		assert.Check(t, commandUnused(t, `version: 2.1
+`+wrapper+`
+jobs:
+  j:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - wrap:
+          inner:
+            - run: echo
+workflows:
+  w:
+    jobs:
+      - j
+`))
+	})
 }

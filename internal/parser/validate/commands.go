@@ -50,6 +50,10 @@ func (val Validate) checkIfCommandIsUsed(command ast.Command) bool {
 			if val.checkIfStepsContainStep(steps, command.Name) {
 				return true
 			}
+
+			if anyParamStep(jobInvocation.Parameters, func(step ast.Step) bool { return step.GetName() == command.Name }) {
+				return true
+			}
 		}
 	}
 

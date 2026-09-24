@@ -256,20 +256,35 @@ func (val Validate) validateCheckout(step ast2.Checkout) {
 }
 
 func (val Validate) checkIfStepsContainStep(steps []ast2.Step, stepName string) bool {
-	for _, step := range steps {
-		if step.GetName() == stepName {
-			return true
-		}
-	}
-
-	return false
+	return anyStep(steps, func(step ast2.Step) bool {
+		return step.GetName() == stepName
+	})
 }
 
 func (val Validate) checkIfStepsContainOrb(steps []ast2.Step, orbName string) bool {
-	for _, step := range steps {
-		isOrb := val.Doc.IsOrbReference(step.GetName())
+	return anyStep(steps, val.isStepFromOrb(orbName))
+}
 
-		if isOrb && strings.Split(step.GetName(), "/")[0] == orbName {
+func (val Validate) checkIfJobParamContainOrb(params map[string]ast2.ParameterValue, orbName string) bool {
+	return anyParamStep(params, val.isStepFromOrb(orbName))
+}
+
+func (val Validate) isStepFromOrb(orbName string) func(ast2.Step) bool {
+	return func(step ast2.Step) bool {
+		name := step.GetName()
+		return val.Doc.IsOrbReference(name) && strings.Split(name, "/")[0] == orbName
+	}
+}
+
+// anyStep reports whether matches holds for any of steps, or for any step
+// passed to one of them in a steps parameter, however deeply nested.
+func anyStep(steps []ast2.Step, matches func(ast2.Step) bool) bool {
+	for _, step := range steps {
+		if matches(step) {
+			return true
+		}
+
+		if named, ok := step.(ast2.NamedStep); ok && anyParamStep(named.Parameters, matches) {
 			return true
 		}
 	}
@@ -277,35 +292,37 @@ func (val Validate) checkIfStepsContainOrb(steps []ast2.Step, orbName string) bo
 	return false
 }
 
-func (val Validate) checkIfJobParamContainOrb(params map[string]ast2.ParameterValue, orbName string) bool {
-	for _, p := range params {
-		array, ok := p.Value.([]ast2.ParameterValue)
+// anyParamStep is anyStep for the steps passed as parameters, to a step or to
+// a job invocation.
+//
+// Which parameters are steps is only known from the definition, so the
+// parser marks a list item as steps only when it has arguments; a bare
+// `- name` item comes out as a string. Counting a string as a step name can
+// only ever find a use that is not one, which at worst hides an unused
+// warning.
+func anyParamStep(params map[string]ast2.ParameterValue, matches func(ast2.Step) bool) bool {
+	for _, param := range params {
+		values, ok := param.Value.([]ast2.ParameterValue)
 		if !ok {
 			continue
 		}
 
-		for _, value := range array {
-			if value.Type != "steps" {
-				break
-			}
-
-			steps, ok := value.Value.([]ast2.Step)
-			if !ok {
-				continue
-			}
-
-			for _, step := range steps {
-				name := step.GetName()
-				split := strings.Split(name, "/")
-				if len(split) != 2 {
-					continue
+		for _, value := range values {
+			switch value.Type {
+			case "steps":
+				steps, ok := value.Value.([]ast2.Step)
+				if ok && anyStep(steps, matches) {
+					return true
 				}
-				if split[0] == orbName {
+			case "string":
+				name, ok := value.Value.(string)
+				if ok && matches(ast2.NamedStep{Name: name}) {
 					return true
 				}
 			}
 		}
 	}
+
 	return false
 }
 
