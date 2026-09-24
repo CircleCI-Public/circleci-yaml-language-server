@@ -303,6 +303,10 @@ func (doc *YamlDocument) IsFromUnfetchableOrb(name string) bool {
 		return false
 	}
 
+	if orb.IsPlaceholder {
+		return true
+	}
+
 	hasParamInTag, _ := paramref.IsPartiallyReferenced(orb.Url.Version)
 	return hasParamInTag
 }

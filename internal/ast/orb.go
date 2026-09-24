@@ -19,6 +19,10 @@ type Orb struct {
 	// declared in, and is freed with it. It must not be kept past that
 	// document: nothing that is cached may hold it.
 	ValueNode *sitter.Node
+	// IsPlaceholder is set for an orb declared as `{}`, a site that tooling
+	// such as orb-tools/continue fills with an orb's source before the
+	// config is run. What it will declare is not known.
+	IsPlaceholder bool
 }
 
 type OrbURL struct {

@@ -97,6 +97,10 @@ func (doc *YamlDocument) parseSingleOrb(orbNode *sitter.Node) (*ast.Orb, *LocalO
 
 	switch orbContent.Kind() {
 	case "flow_node":
+		if isEmptyFlowMapping(orbContent) {
+			return doc.placeholderOrb(orbName, orbNode, orbNameNode, orbContent), nil
+		}
+
 		orbUrl := doc.getOrbURL(doc.GetNodeText(orbContent))
 		orb := ast.Orb{
 			Url:          orbUrl,
@@ -133,6 +137,41 @@ func (doc *YamlDocument) parseSingleOrb(orbNode *sitter.Node) (*ast.Orb, *LocalO
 	default:
 		return nil, nil
 	}
+}
+
+// placeholderOrb is an orb declared as `{}`, which is filled in before the
+// config is run, as orb-tools/continue does with the orb under test. It is
+// taken as a local orb that declares nothing, so that nothing is fetched for
+// it, and references into it are not checked.
+func (doc *YamlDocument) placeholderOrb(orbName string, orbNode, orbNameNode, orbContent *sitter.Node) *ast.Orb {
+	doc.LocalOrbInfo[orbName] = &ast.OrbInfo{
+		IsLocal: true,
+		OrbParsedAttributes: ast.OrbParsedAttributes{
+			URI:       doc.URI,
+			Name:      orbName,
+			Commands:  map[string]ast.Command{},
+			Jobs:      map[string]ast.Job{},
+			Executors: map[string]ast.Executor{},
+		},
+	}
+
+	return &ast.Orb{
+		Url: ast.OrbURL{
+			Name:    orbName,
+			IsLocal: true,
+		},
+		Name:          orbName,
+		Range:         doc.NodeToRange(orbNode),
+		NameRange:     doc.NodeToRange(orbNameNode),
+		ValueNode:     orbContent,
+		ValueRange:    doc.NodeToRange(orbContent),
+		IsPlaceholder: true,
+	}
+}
+
+func isEmptyFlowMapping(flowNode *sitter.Node) bool {
+	child := GetFirstChild(flowNode)
+	return child != nil && child.Kind() == "flow_mapping" && child.NamedChildCount() == 0
 }
 
 func (doc *YamlDocument) getOrbURL(orbUrl string) ast.OrbURL {
