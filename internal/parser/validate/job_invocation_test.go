@@ -1606,3 +1606,45 @@ workflows:
 		"my-orb/greet is a command, not a job: a workflow runs jobs",
 	}, anyOrder))
 }
+
+func TestOrbJobInvocationParameters(t *testing.T) {
+	val := CreateValidateFromYAML(`version: 2.1
+
+orbs:
+  my-orb:
+    jobs:
+      deploy:
+        parameters:
+          env:
+            type: enum
+            enum: [staging, production]
+        docker:
+          - image: cimg/base:stable
+        steps:
+          - run: echo << parameters.env >>
+
+workflows:
+  w:
+    jobs:
+      - my-orb/deploy:
+          name: staging
+          env: staging
+      - my-orb/deploy:
+          name: missing
+      - my-orb/deploy:
+          name: wrong
+          env: prod
+          nosuch: 1
+`)
+	val.Validate()
+
+	errors := []string{}
+	for _, d := range getErrorDiagnostic(val.Diagnostics) {
+		errors = append(errors, diagnostic.MessageText(d))
+	}
+	assert.Check(t, cmp.DeepEqual(errors, []string{
+		"Parameter env is required for my-orb/deploy",
+		"Parameter nosuch is not defined in my-orb/deploy",
+		"Parameter prod is not a valid value for env",
+	}, anyOrder))
+}
