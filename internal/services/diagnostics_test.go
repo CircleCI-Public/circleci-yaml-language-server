@@ -724,6 +724,23 @@ workflows:
       - build
 `,
 		},
+		{
+			name: "experimental without notify",
+			content: `version: 2.1
+experimental:
+  observability: {}
+jobs:
+  build:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - checkout
+workflows:
+  main:
+    jobs:
+      - build
+`,
+		},
 	}
 
 	for _, tt := range tests {
