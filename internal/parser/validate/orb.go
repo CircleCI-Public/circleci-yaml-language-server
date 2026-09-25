@@ -38,6 +38,15 @@ func (val Validate) validateSingleOrb(orb ast.Orb) {
 		return
 	}
 
+	if orb.Url.IsURL {
+		val.addDiagnostic(diagnostic.Warning(
+			orb.ValueRange,
+			"Orbs referenced by URL are not fetched, so nothing used from this orb is checked.",
+		))
+
+		return
+	}
+
 	if !orb.Url.IsLocal && !val.Doc.DoesOrbExist(orb, val.Cache) {
 		message := fmt.Sprintf("Orb %s does not exist or is private.", orb.Url.Name)
 

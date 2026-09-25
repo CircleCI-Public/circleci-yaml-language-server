@@ -589,3 +589,47 @@ workflows:
 `), []string{"Command is unused"}))
 	})
 }
+
+// The compiler fetches an orb referenced by URL from the prefixes an
+// organization allows, which the server can't see.
+func TestURLOrb(t *testing.T) {
+	yamlContent := `version: 2.1
+
+orbs:
+  bp-go: https://raw.githubusercontent.com/circleci/backplane-cicd/refs/heads/main/orbs/go.yml
+
+jobs:
+  build:
+    executor: bp-go/default
+    steps:
+      - bp-go/private-mod-init:
+          private-modules: github.com/circleci/*
+
+workflows:
+  main:
+    jobs:
+      - build
+      - bp-go/lint:
+          name: lint
+          context: org-global
+`
+
+	t.Run("nothing referenced from the orb is reported", func(t *testing.T) {
+		CheckYamlErrors(t, []ValidateTestCase{{
+			Name:        "no errors",
+			YamlContent: yamlContent,
+			OnlyErrors:  true,
+		}})
+	})
+
+	t.Run("the orb gets one warning", func(t *testing.T) {
+		val := CreateValidateFromYAML(yamlContent)
+		val.ValidateOrbs()
+
+		assert.Assert(t, cmp.Len(*val.Diagnostics, 1))
+		diag := (*val.Diagnostics)[0]
+		assert.Check(t, cmp.Equal(diag.Severity, protocol.DiagnosticSeverityWarning))
+		assert.Check(t, cmp.Contains(diag.Message, "not fetched"))
+		assert.Check(t, cmp.Equal(diag.Range.Start, protocol.Position{Line: 3, Character: 9}))
+	})
+}

@@ -47,7 +47,7 @@ func GetOrbInfo(orbVersionCode string, cache *cache.Cache, context *session.Sett
 // hand by the time the config is validated.
 func ParseRemoteOrbs(orbs map[string]ast.Orb, cache *cache.Cache, context *session.Settings) {
 	for _, orb := range orbs {
-		if orb.Url.IsLocal {
+		if orb.Url.IsLocal || orb.Url.IsURL {
 			continue
 		}
 

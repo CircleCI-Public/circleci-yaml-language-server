@@ -303,7 +303,7 @@ func (doc *YamlDocument) IsFromUnfetchableOrb(name string) bool {
 		return false
 	}
 
-	if orb.IsPlaceholder {
+	if orb.IsPlaceholder || orb.Url.IsURL {
 		return true
 	}
 

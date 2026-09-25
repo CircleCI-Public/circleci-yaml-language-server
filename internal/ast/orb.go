@@ -27,6 +27,10 @@ type Orb struct {
 
 type OrbURL struct {
 	IsLocal bool
+	// IsURL is set for an orb referenced by the URL of its source, such as
+	// `https://example.com/orbs/go.yml`, which the compiler fetches from an
+	// organization's allow-list. Name holds the URL, and there is no version.
+	IsURL   bool
 	Name    string
 	Version string
 }
@@ -38,7 +42,7 @@ type OrbURLDefinition struct {
 }
 
 func (orb *OrbURL) GetOrbID() string {
-	if orb.IsLocal {
+	if orb.IsLocal || orb.IsURL {
 		return orb.Name
 	}
 	return fmt.Sprintf("%s@%s", orb.Name, orb.Version)
