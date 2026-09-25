@@ -333,8 +333,12 @@ func (doc *YamlDocument) parseSetupRemoteDockerStep(setupRemoteDockerNode *sitte
 			switch keyName {
 			case "docker_layer_caching":
 				res.DockerLayerCaching = (doc.GetNodeText(valueNode) == "true")
+			case "prefer_same_region":
+				res.PreferSameRegion = (doc.GetNodeText(valueNode) == "true")
 			case "version":
 				res.Version = doc.GetNodeText(valueNode)
+			case "resource_class":
+				res.ResourceClass = ast.TextAndRange{Text: doc.GetNodeText(valueNode), Range: doc.NodeToRange(child)}
 			}
 		})
 		return res

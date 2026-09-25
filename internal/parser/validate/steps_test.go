@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"go.lsp.dev/protocol"
+
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 )
 
 var (
@@ -79,6 +81,31 @@ workflows:
 `,
 			OnlyErrors:  true,
 			Diagnostics: []protocol.Diagnostic{},
+		},
+		{
+			Name: "setup_remote_docker ignores a resource_class",
+			YamlContent: `version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - setup_remote_docker:
+          resource_class: large
+          prefer_same_region: true
+
+workflows:
+  main:
+    jobs:
+      - build
+`,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Warning(protocol.Range{
+					Start: protocol.Position{Line: 8, Character: 10},
+					End:   protocol.Position{Line: 8, Character: 31},
+				}, "setup_remote_docker has no resource_class option, so this is ignored."),
+			},
 		},
 	}
 

@@ -40,7 +40,18 @@ func (val Validate) validateSteps(steps []ast2.Step, name string, jobOrCommandPa
 			val.validateStepSteps(step, name)
 		case ast2.Checkout:
 			val.validateCheckout(step)
+		case ast2.SetupRemoteDocker:
+			val.validateSetupRemoteDocker(step)
 		}
+	}
+}
+
+func (val Validate) validateSetupRemoteDocker(step ast2.SetupRemoteDocker) {
+	if step.ResourceClass.Text != "" {
+		val.addDiagnostic(diagnostic.Warning(
+			step.ResourceClass.Range,
+			"setup_remote_docker has no resource_class option, so this is ignored.",
+		))
 	}
 }
 

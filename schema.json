@@ -1410,23 +1410,19 @@
                                             "default": false,
                                             "markdownDescription": "When `docker_layer_caching` is set to `true`, CircleCI will try to reuse Docker Images (layers) built during a previous job or workflow (Paid feature)"
                                         },
+                                        "prefer_same_region": {
+                                            "type": "boolean",
+                                            "default": false,
+                                            "markdownDescription": "Set this to `true` to pull images from the same region as the VM where possible. If the pull fails, CircleCI falls back to the image's original region"
+                                        },
                                         "version": {
-                                            "markdownDescription": "If your build requires a specific docker image, you can set it as an image attribute",
+                                            "markdownDescription": "Version string of Docker you would like to use, or `default` (default: `24.0.9`)",
                                             "anyOf": [
                                                 {
                                                     "type": "string",
                                                     "enum": [
-                                                        "20.10.24",
-                                                        "20.10.23",
-                                                        "20.10.18",
-                                                        "20.10.17",
-                                                        "20.10.14",
-                                                        "20.10.12",
-                                                        "20.10.11",
-                                                        "20.10.7",
-                                                        "20.10.6",
-                                                        "20.10.2",
-                                                        "19.03.13"
+                                                        "default",
+                                                        "24.0.9"
                                                     ]
                                                 },
                                                 {
@@ -1436,6 +1432,10 @@
                                         },
                                         "when": {
                                             "$ref": "#/definitions/stepWhen"
+                                        },
+                                        "resource_class": {
+                                            "type": "string",
+                                            "markdownDescription": "Not a `setup_remote_docker` option. It is accepted, and ignored."
                                         }
                                     },
                                     "additionalProperties": false
