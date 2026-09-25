@@ -52,23 +52,31 @@ func (ch *CompletionHandler) GetCompletionItems() {
 
 		if ch.Doc.IsYamlAliasPosition(ch.Params.Position) {
 			ch.completeAnchors()
-		} else if position.InRange(ch.Doc.WorkflowRange, ch.Params.Position) {
-			ch.completeWorkflows()
-		} else if position.InRange(ch.Doc.JobsRange, ch.Params.Position) {
-			ch.completeJobs()
-		} else if position.InRange(ch.Doc.JobGroupsRange, ch.Params.Position) {
-			ch.completeJobGroups()
-		} else if position.InRange(ch.Doc.CommandsRange, ch.Params.Position) {
-			ch.completeCommands()
-		} else if position.InRange(ch.Doc.ExecutorsRange, ch.Params.Position) {
-			ch.completeExecutors()
-		} else if position.InRange(ch.Doc.OrbsRange, ch.Params.Position) {
-			ch.completeOrbs()
+		} else if !ch.completeTopLevel() {
+			ch.completeSection()
 		}
 
 		if len(ch.Items) > 0 {
 			break
 		}
+	}
+}
+
+// completeSection completes in the top-level section the cursor is in.
+func (ch *CompletionHandler) completeSection() {
+	switch pos := ch.Params.Position; {
+	case position.InRange(ch.Doc.WorkflowRange, pos):
+		ch.completeWorkflows()
+	case position.InRange(ch.Doc.JobsRange, pos):
+		ch.completeJobs()
+	case position.InRange(ch.Doc.JobGroupsRange, pos):
+		ch.completeJobGroups()
+	case position.InRange(ch.Doc.CommandsRange, pos):
+		ch.completeCommands()
+	case position.InRange(ch.Doc.ExecutorsRange, pos):
+		ch.completeExecutors()
+	case position.InRange(ch.Doc.OrbsRange, pos):
+		ch.completeOrbs()
 	}
 }
 
