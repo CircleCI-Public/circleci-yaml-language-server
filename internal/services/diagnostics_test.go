@@ -834,6 +834,10 @@ workflows:
                 key: deps
                 paths: [vendor]`),
 		},
+		{
+			name:    "a setup config",
+			content: "setup: true\n" + job(`      - checkout`),
+		},
 	}
 
 	for _, tt := range tests {

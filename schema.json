@@ -3456,6 +3456,16 @@
             ],
             "markdownDescription": "The version field is intended to be used in order to issue warnings for deprecation or breaking changes."
         },
+        "setup": {
+            "type": "boolean",
+            "markdownDescription": "https://circleci.com/docs/dynamic-config\n\nMakes this a setup config: its workflow computes the config to continue the pipeline with, using the continuation orb or API."
+        },
+        "functions": {
+            "markdownDescription": "Names the functions this config's steps can run, each as `host.tld/org/name@vX.Y.Z`. A step then runs one as `name` or `name/command`, with its flags under `with`.",
+            "additionalProperties": {
+                "markdownDescription": "A function, as `host.tld/org/name@vX.Y.Z`, for example `github.com/circleci-functions/setup-go@v0.5.1`"
+            }
+        },
         "parameters": {
             "type": [
                 "object",
