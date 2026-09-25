@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -77,7 +78,7 @@ func (doc *YamlDocument) GetNodeTextWithRange(node *sitter.Node) ast.TextAndRang
 		return ast.TextAndRange{Text: "", Range: protocol.Range{}}
 	}
 
-	res := doc.GetRawNodeText(node)
+	res := doc.GetRawNodeText(doc.scalarOf(node, 0))
 
 	if strings.HasPrefix(res, "\"") && strings.HasSuffix(res, "\"") {
 		res = strings.Trim(res, "\"")
@@ -94,6 +95,43 @@ func (doc *YamlDocument) GetNodeTextWithRange(node *sitter.Node) ast.TextAndRang
 		Text:  res,
 		Range: doc.NodeToRange(node),
 	}
+}
+
+var scalarKinds = []string{"plain_scalar", "double_quote_scalar", "single_quote_scalar", "block_scalar"}
+
+// scalarOf returns the scalar a value node holds, without the anchor or tag
+// written before it, and the anchored scalar an alias names. Any other node is
+// returned as it is.
+func (doc *YamlDocument) scalarOf(node *sitter.Node, depth int) *sitter.Node {
+	if node.Kind() != "flow_node" && node.Kind() != "block_node" {
+		return node
+	}
+
+	var scalar, alias *sitter.Node
+	for i := uint(0); i < node.NamedChildCount(); i++ {
+		child := node.NamedChild(i)
+		switch {
+		case child.Kind() == "alias":
+			alias = child
+		case slices.Contains(scalarKinds, child.Kind()):
+			scalar = child
+		case child.Kind() != "anchor" && child.Kind() != "tag" && child.Kind() != "comment":
+			return node
+		}
+	}
+
+	if scalar != nil {
+		return scalar
+	}
+	if alias != nil && depth < 10 {
+		anchor, ok := doc.YamlAnchors[strings.TrimPrefix(doc.GetRawNodeText(alias), "*")]
+		if ok && anchor.ValueNode != nil {
+			if resolved := doc.scalarOf(anchor.ValueNode, depth+1); slices.Contains(scalarKinds, resolved.Kind()) {
+				return resolved
+			}
+		}
+	}
+	return node
 }
 
 func (doc *YamlDocument) GetNodeText(node *sitter.Node) string {

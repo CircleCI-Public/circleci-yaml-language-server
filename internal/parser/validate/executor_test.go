@@ -75,6 +75,21 @@ executors:
 			Diagnostics: []protocol.Diagnostic{},
 		},
 		{
+			Name: "Xcode version from an anchor and its alias",
+			YamlContent: `version: 2.1
+
+executors:
+  first:
+    macos:
+      xcode: &xcode "26.5.0"
+    resource_class: m4pro.medium
+  second:
+    macos:
+      xcode: *xcode
+    resource_class: m4pro.large`,
+			Diagnostics: []protocol.Diagnostic{},
+		},
+		{
 			Name: "Executor name built from a parameter",
 			YamlContent: `version: 2.1
 
