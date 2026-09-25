@@ -23,6 +23,7 @@ func (val Validate) validateSingleJob(job ast2.Job) {
 	val.validateJobType(job)
 
 	val.validateSteps(job.Steps, job.Name, job.Parameters)
+	val.validateRemoteDockerOnce(job)
 
 	if job.Steps != nil && job.Type != "" && job.Type != "build" {
 		val.addDiagnostic(
@@ -132,6 +133,33 @@ func (val Validate) validateSingleJob(job ast2.Job) {
 		val.validateMacOSExecutor(job.MacOS)
 	} else if job.Machine.Image != "" {
 		val.validateMachineExecutor(job.Machine)
+	} else {
+		// Such as `machine: true` on a self-hosted runner, which the executor
+		// checks don't see.
+		val.validateRunnerResourceClass(job.ResourceClass, job.ResourceClassRange)
+	}
+}
+
+// validateRemoteDockerOnce reports each setup_remote_docker after a job's
+// first, which the compiler rejects.
+func (val Validate) validateRemoteDockerOnce(job ast2.Job) {
+	seen := false
+	for _, step := range job.Steps {
+		isRemoteDocker := false
+		switch step := step.(type) {
+		case ast2.SetupRemoteDocker:
+			isRemoteDocker = true
+		case ast2.NamedStep:
+			isRemoteDocker = step.Name == "setup_remote_docker"
+		}
+		if !isRemoteDocker {
+			continue
+		}
+		if seen {
+			val.addDiagnostic(diagnostic.Error(step.GetRange(), fmt.Sprintf(
+				"More than one setup_remote_docker is not valid, please adjust in job %s.", job.Name)))
+		}
+		seen = true
 	}
 }
 

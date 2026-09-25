@@ -808,7 +808,6 @@ workflows:
 			content: job(`      - setup_remote_docker:
           version: default
           prefer_same_region: true
-      - setup_remote_docker:
           resource_class: large`),
 		},
 		{
@@ -1066,5 +1065,90 @@ workflows:
     resource_class: large
 `, "    executor: box\n    shell: /bin/bash\n"))
 		assert.Check(t, cmp.DeepEqual(warnings, []string{}))
+	})
+}
+
+// Checks the compiler makes after its schema, with its messages.
+func TestCompilerChecks(t *testing.T) {
+	fake := fakes.NewCircleCI(t)
+	lockJob := func(job string) string {
+		return `version: 2.1
+jobs:
+  lock-it:
+` + job + `workflows:
+  main:
+    jobs:
+      - lock-it
+`
+	}
+
+	t.Run("one setup_remote_docker per job", func(t *testing.T) {
+		errors := configErrors(t, fake, jobWithSteps(`      - setup_remote_docker
+      - setup_remote_docker:
+          version: default`))
+		assert.Check(t, cmp.DeepEqual(errors, []string{
+			"More than one setup_remote_docker is not valid, please adjust in job build.",
+		}))
+	})
+
+	t.Run("a runner resource class is namespace/name", func(t *testing.T) {
+		errors := configErrors(t, fake, `version: 2.1
+jobs:
+  build:
+    machine: true
+    resource_class: my-namespace/my class
+    steps:
+      - checkout
+workflows:
+  main:
+    jobs:
+      - build
+`)
+		assert.Check(t, cmp.Contains(errors, "Invalid format in resource class or classes: my-namespace/my class."))
+	})
+
+	t.Run("setup workflows need 2.1", func(t *testing.T) {
+		errors := configErrors(t, fake, `version: 2
+setup: true
+jobs:
+  build:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - checkout
+workflows:
+  version: 2
+  main:
+    jobs:
+      - build
+`)
+		assert.Check(t, cmp.DeepEqual(errors, []string{"Version 2.1 is required for Setup workflows"}))
+	})
+
+	t.Run("a lock job has only a type and a key", func(t *testing.T) {
+		errors := configErrors(t, fake, lockJob(`    type: lock
+    key: deploy
+    steps:
+      - checkout
+`))
+		assert.Check(t, cmp.Contains(errors, "Additional property steps is not allowed"))
+	})
+
+	t.Run("a lock key's characters", func(t *testing.T) {
+		errors := configErrors(t, fake, lockJob(`    type: lock
+    key: "deploy prod!"
+`))
+		assert.Check(t, len(errors) != 0)
+	})
+
+	t.Run("a lock job's key from a parameter", func(t *testing.T) {
+		errors := configErrors(t, fake, lockJob(`    parameters:
+      key:
+        type: string
+        default: deploy
+    type: lock
+    key: << parameters.key >>
+`))
+		assert.Check(t, cmp.DeepEqual(errors, []string{}))
 	})
 }

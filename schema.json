@@ -144,12 +144,31 @@
                                 "key"
                             ],
                             "properties": {
+                                "type": {
+                                    "enum": [
+                                        "lock",
+                                        "unlock"
+                                    ]
+                                },
                                 "key": {
-                                    "type": "string",
-                                    "markdownDescription": "Required key for lock/unlock jobs."
+                                    "markdownDescription": "Required key for lock/unlock jobs. At most 512 characters: letters, digits, `.`, `:`, `/`, `_` and `-`.",
+                                    "anyOf": [
+                                        {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 512,
+                                            "pattern": "^[A-Za-z\\d.:/_-]*$"
+                                        },
+                                        {
+                                            "$ref": "#/definitions/expression"
+                                        }
+                                    ]
+                                },
+                                "parameters": {
+                                    "$ref": "#/definitions/jobParameters"
                                 }
                             },
-                            "additionalProperties": true
+                            "additionalProperties": false
                         },
                         "else": {
                             "if": {
@@ -573,62 +592,7 @@
                                             ]
                                         },
                                         "parameters": {
-                                            "markdownDescription": "https://circleci.com/docs/reusing-config#using-the-parameters-declaration\n\nA map of parameter keys.",
-                                            "type": "object",
-                                            "additionalProperties": {
-                                                "type": "object",
-                                                "properties": {
-                                                    "type": {
-                                                        "type": "string",
-                                                        "enum": [
-                                                            "boolean",
-                                                            "string",
-                                                            "steps",
-                                                            "enum",
-                                                            "executor",
-                                                            "integer",
-                                                            "env_var_name"
-                                                        ],
-                                                        "markdownDescription": "The parameter type. See [Parameter Types](https://circleci.com/docs/reusing-config#parameter-syntax) for details:\n- `boolean`: A boolean parameter\n- `string`: A string parameter  \n- `integer`: An integer parameter\n- `enum`: An enum parameter (list of allowed string values)\n- `executor`: An executor parameter (allows job to choose executor)\n- `steps`: A steps parameter (allows mixing predefined and user-defined steps)\n- `env_var_name`: An environment variable name parameter (must match POSIX_NAME regexp)"
-                                                    },
-                                                    "default": {
-                                                        "oneOf": [
-                                                            {
-                                                                "type": "string"
-                                                            },
-                                                            {
-                                                                "type": "boolean"
-                                                            },
-                                                            {
-                                                                "type": "integer"
-                                                            },
-                                                            {
-                                                                "type": "array",
-                                                                "items": {
-                                                                    "$ref": "#/definitions/step"
-                                                                }
-                                                            }
-                                                        ]
-                                                    },
-                                                    "description": {
-                                                        "type": "string",
-                                                        "markdownDescription": "A description of the parameter"
-                                                    },
-                                                    "enum": {
-                                                        "type": "array",
-                                                        "items": {
-                                                            "type": "string"
-                                                        },
-                                                        "minItems": 1,
-                                                        "markdownDescription": "List of allowed values for an `enum` type parameter"
-                                                    }
-                                                },
-                                                "additionalProperties": false,
-                                                "required": [
-                                                    "type"
-                                                ]
-                                            },
-                                            "minProperties": 1
+                                            "$ref": "#/definitions/jobParameters"
                                         }
                                     },
                                     "required": [
@@ -2234,6 +2198,64 @@
                     }
                 }
             ]
+        },
+        "jobParameters": {
+            "markdownDescription": "https://circleci.com/docs/reusing-config#using-the-parameters-declaration\n\nA map of parameter keys.",
+            "type": "object",
+            "additionalProperties": {
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "boolean",
+                            "string",
+                            "steps",
+                            "enum",
+                            "executor",
+                            "integer",
+                            "env_var_name"
+                        ],
+                        "markdownDescription": "The parameter type. See [Parameter Types](https://circleci.com/docs/reusing-config#parameter-syntax) for details:\n- `boolean`: A boolean parameter\n- `string`: A string parameter  \n- `integer`: An integer parameter\n- `enum`: An enum parameter (list of allowed string values)\n- `executor`: An executor parameter (allows job to choose executor)\n- `steps`: A steps parameter (allows mixing predefined and user-defined steps)\n- `env_var_name`: An environment variable name parameter (must match POSIX_NAME regexp)"
+                    },
+                    "default": {
+                        "oneOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "boolean"
+                            },
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/definitions/step"
+                                }
+                            }
+                        ]
+                    },
+                    "description": {
+                        "type": "string",
+                        "markdownDescription": "A description of the parameter"
+                    },
+                    "enum": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "minItems": 1,
+                        "markdownDescription": "List of allowed values for an `enum` type parameter"
+                    }
+                },
+                "additionalProperties": false,
+                "required": [
+                    "type"
+                ]
+            },
+            "minProperties": 1
         }
     },
     "type": "object",

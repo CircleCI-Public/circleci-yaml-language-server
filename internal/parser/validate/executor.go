@@ -3,6 +3,7 @@ package validate
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"slices"
 	"strings"
 
@@ -312,10 +313,29 @@ func (val Validate) checkIfValidResourceClass(
 	}
 
 	if circleci.IsSelfHostedRunner(resourceClass) {
+		if !val.validateRunnerResourceClass(resourceClass, resourceClassRange) {
+			return
+		}
 		namespace := strings.Split(resourceClass, "/")[0]
 		val.validateExecutorNamespace(namespace, resourceClassRange)
 	}
 }
+
+// validateRunnerResourceClass reports a self-hosted runner's resource class
+// that isn't namespace/name, returning whether it is.
+func (val Validate) validateRunnerResourceClass(resourceClass string, resourceClassRange protocol.Range) bool {
+	if !circleci.IsSelfHostedRunner(resourceClass) || paramref.ContainsReference(resourceClass) ||
+		runnerResourceClassRegex.MatchString(resourceClass) {
+		return true
+	}
+	val.addDiagnostic(diagnostic.Error(resourceClassRange,
+		fmt.Sprintf("Invalid format in resource class or classes: %s.", resourceClass)))
+	return false
+}
+
+// runnerResourceClassRegex is the compiler's format for a self-hosted runner's
+// resource class, namespace/name.
+var runnerResourceClassRegex = regexp.MustCompile(`^[a-z0-9_\-]+/[a-zA-Z0-9:_\-+]+$`)
 
 func (val Validate) validateExecutorNamespace(resourceClass string, resourceClassRange protocol.Range) {
 	exists, err := val.Cache.NamespaceCache.Exists(resourceClass, func() (bool, error) {
