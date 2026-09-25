@@ -84,9 +84,9 @@ func (val Validate) checkParamSimpleType(param ast2.ParameterValue, stepName str
 		for _, value := range values {
 			if value.Type == "string" {
 				commandName := value.Value.(string)
-				_, commandExists := val.Doc.Commands[commandName]
+				_, _, isFunction := val.Doc.FunctionForStep(commandName)
 
-				if !commandExists {
+				if !val.isKnownStep(commandName) && !isFunction {
 					val.addDiagnostic(
 						diagnostic.Error(
 							value.Range,
