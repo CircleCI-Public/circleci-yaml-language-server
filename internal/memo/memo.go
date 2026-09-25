@@ -75,8 +75,16 @@ func New[V any](lifetime func(V) time.Duration, clock otter.Clock) *Memo[V] {
 // Get returns the value remembered for key, calling fetch for it when there
 // is none.
 func (m *Memo[V]) Get(key string, fetch func() (V, error)) (V, error) {
-	return m.entries.Load().Get(context.Background(), key, otter.LoaderFunc[string, V](
+	entries := m.entries.Load()
+	return entries.Get(context.Background(), key, otter.LoaderFunc[string, V](
 		func(context.Context, string) (V, error) {
+			// otter shares a load only between callers that find it in
+			// flight. One that missed the value just before another's load
+			// stored it can start a load of its own once that one has
+			// finished, and by then the value is there.
+			if value, ok := entries.GetIfPresent(key); ok {
+				return value, nil
+			}
 			return fetch()
 		},
 	))
