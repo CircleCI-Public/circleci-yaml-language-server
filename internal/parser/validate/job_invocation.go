@@ -280,7 +280,7 @@ func (val Validate) validateSingleJobInvocation(jobInvocation ast2.JobInvocation
 		return
 	}
 
-	if !val.Doc.IsOrbReference(jobInvocation.JobName) && !val.Doc.IsBuiltIn(jobInvocation.JobName) {
+	if !val.Doc.IsBuiltIn(jobInvocation.JobName) {
 		val.validateJobInvocationParameters(jobInvocation)
 	}
 
