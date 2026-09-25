@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"go.lsp.dev/protocol"
+	"gotest.tools/v3/assert"
+	"gotest.tools/v3/assert/cmp"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
 	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/internal/parser"
@@ -118,4 +120,46 @@ func TestAddJobGroupsCompletion(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCompleteJobGroupInvocations(t *testing.T) {
+	const config = `version: 2.1
+
+jobs:
+  greet:
+    parameters:
+      who:
+        type: string
+      loud:
+        type: boolean
+        default: false
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo hi << parameters.who >>
+
+job-groups:
+  greetings:
+    jobs:
+      - greet:
+          who: me
+          
+      - greet:
+          name: greet-loud
+          loud: t
+`
+	t.Run("a job group's job is offered its keys and the parameters it isn't given", func(t *testing.T) {
+		pos := positionBelow(t, config, "who: me", 10)
+		got := completionLabels(t, config, pos)
+		assert.Check(t, cmp.DeepEqual(got, []string{
+			"requires", "context", "filters", "matrix", "name", "type",
+			"pre-steps", "post-steps", "serial-group", "override-with", "loud",
+		}))
+	})
+
+	t.Run("its parameters are offered their values", func(t *testing.T) {
+		pos := positionBelow(t, config, "name: greet-loud", 17)
+		got := completionLabels(t, config, pos)
+		assert.Check(t, cmp.DeepEqual(got, []string{"true", "false"}))
+	})
 }

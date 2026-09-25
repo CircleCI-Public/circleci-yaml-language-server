@@ -22,45 +22,54 @@ func (ch *CompletionHandler) completeWorkflows() {
 		return
 	}
 
-	if ch.completeContextName(wf.JobInvocations) {
-		return
-	}
-
-	if ch.completeRequiredStatus() {
-		return
-	}
-
-	// Add all the job/job-group invocations in the current workflow as completion items for "requires"
-	if isInRequires(ch.Params.Position, wf.JobInvocations) {
-		ch.addExistingJobInvocations(wf.JobInvocations)
-		return
-	}
-
-	if isInPreOrPostSteps(ch.Params.Position, wf.JobInvocations) {
-		ch.completeStepList(ch.nodeToComplete())
-		return
-	}
-
-	if key, lines, parent := ch.valueAt(); parent != -1 && stepWithBody.MatchString(lines[parent]) {
-		if invocation := invocationNamedOn(parent, wf.JobInvocations); invocation != nil {
-			params := ch.Doc.GetDefinedParams(invocation.JobName, yamlparser.JobEntity, ch.Cache)
-			if param, ok := params[key]; ok {
-				ch.addParameterValues(param)
-			}
-			return
-		}
-	}
-
-	if ch.completeInvocationMapping(wf.JobInvocations) {
-		return
-	}
-
-	if invocation, nameLine := ch.jobInvocationBodyAt(wf.JobInvocations); invocation != nil {
-		ch.completeJobInvocationBody(invocation, nameLine)
+	if ch.completeInJobInvocations(wf.JobInvocations) {
 		return
 	}
 
 	ch.addWorkflowKeys(wf)
+}
+
+// completeInJobInvocations completes inside the body of one of a workflow's
+// or job group's job invocations, and says whether the cursor was in one.
+func (ch *CompletionHandler) completeInJobInvocations(invocations []ast.JobInvocation) bool {
+	if ch.completeContextName(invocations) {
+		return true
+	}
+
+	if ch.completeRequiredStatus() {
+		return true
+	}
+
+	if isInRequires(ch.Params.Position, invocations) {
+		ch.addExistingJobInvocations(invocations)
+		return true
+	}
+
+	if isInPreOrPostSteps(ch.Params.Position, invocations) {
+		ch.completeStepList(ch.nodeToComplete())
+		return true
+	}
+
+	if key, lines, parent := ch.valueAt(); parent != -1 && stepWithBody.MatchString(lines[parent]) {
+		if invocation := invocationNamedOn(parent, invocations); invocation != nil {
+			params := ch.Doc.GetDefinedParams(invocation.JobName, yamlparser.JobEntity, ch.Cache)
+			if param, ok := params[key]; ok {
+				ch.addParameterValues(param)
+			}
+			return true
+		}
+	}
+
+	if ch.completeInvocationMapping(invocations) {
+		return true
+	}
+
+	if invocation, nameLine := ch.jobInvocationBodyAt(invocations); invocation != nil {
+		ch.completeJobInvocationBody(invocation, nameLine)
+		return true
+	}
+
+	return false
 }
 
 // addWorkflowKeys offers the keys a workflow doesn't have yet, when the

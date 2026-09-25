@@ -26,14 +26,9 @@ func (ch *CompletionHandler) completeJobGroups() {
 		return
 	}
 
-	// Add all the job invocations in the current job-group as completion items for "requires"
-	// NOTE: Since this is called inside the top-level job-group key, this function will incorrectly suggest the user can
-	// use other job-group invocations that are used within this group as valid options for requires.
-	// This is acceptable as we have another error diagnostic indicating nested job-groups are not allowed.
-	if isInRequires(ch.Params.Position, jobGroup.JobInvocations) {
-		ch.addExistingJobInvocations(jobGroup.JobInvocations)
-		return
-	}
+	// For requires, this offers job-group invocations used within this group
+	// too, though nested job groups are reported as not allowed.
+	ch.completeInJobInvocations(jobGroup.JobInvocations)
 }
 
 func findJobGroup(pos protocol.Position, doc yamlparser.YamlDocument) (ast.JobGroup, error) {
