@@ -31,6 +31,10 @@ func (val Validate) validateSteps(steps []ast2.Step, name string, jobOrCommandPa
 		case ast2.Run:
 			val.validateRunCommand(step, jobOrCommandParameters)
 		case ast2.NamedStep:
+			// Function steps are checked by ValidateFunctions.
+			if _, _, ok := val.Doc.FunctionForStep(step.Name); ok {
+				continue
+			}
 			val.validateNamedStep(step, jobOrCommandParameters)
 		case ast2.Steps:
 			val.validateStepSteps(step, name)
