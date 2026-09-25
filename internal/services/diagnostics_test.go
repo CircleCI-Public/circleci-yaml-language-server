@@ -498,6 +498,17 @@ run: gotestsum -- ./...
 // .circleci/config.yml, against a fake CircleCI.
 func configErrors(t *testing.T, fake *fakes.CircleCI, content string) []string {
 	t.Helper()
+	return configMessages(t, fake, content, protocol.DiagnosticSeverityError)
+}
+
+// configWarnings is configErrors for warnings.
+func configWarnings(t *testing.T, fake *fakes.CircleCI, content string) []string {
+	t.Helper()
+	return configMessages(t, fake, content, protocol.DiagnosticSeverityWarning)
+}
+
+func configMessages(t *testing.T, fake *fakes.CircleCI, content string, severity protocol.DiagnosticSeverity) []string {
+	t.Helper()
 
 	fileURI := uri.File(filepath.Join(t.TempDir(), ".circleci", "config.yml"))
 	c := cache.New()
@@ -510,7 +521,7 @@ func configErrors(t *testing.T, fake *fakes.CircleCI, content string) []string {
 
 	messages := []string{}
 	for _, d := range diagnostics {
-		if d.Severity == protocol.DiagnosticSeverityError {
+		if d.Severity == severity {
 			messages = append(messages, diagnostic.MessageText(d))
 		}
 	}
@@ -889,6 +900,33 @@ func TestTeardownSchema(t *testing.T) {
                 command: make clean
                 background: true`))
 		assert.Check(t, len(errors) != 0)
+	})
+}
+
+func TestUnknownStepOptions(t *testing.T) {
+	fake := fakes.NewCircleCI(t)
+
+	t.Run("an unknown option on a built-in step is ignored", func(t *testing.T) {
+		content := jobWithSteps(`      - store_artifacts:
+          path: dist
+          prefix: build
+      - run:
+          command: make
+          timeout: 5m`)
+		assert.Check(t, cmp.DeepEqual(configErrors(t, fake, content), []string{}))
+		assert.Check(t, cmp.DeepEqual(configWarnings(t, fake, content), []string{
+			"store_artifacts has no prefix option, so this is ignored.",
+			"run has no timeout option, so this is ignored.",
+		}))
+	})
+
+	t.Run("an unknown option on with_tool_cache is an error", func(t *testing.T) {
+		errors := configErrors(t, fake, jobWithSteps(`      - with_tool_cache:
+          tool: gradle
+          cache: true
+          steps:
+            - checkout`))
+		assert.Check(t, cmp.Contains(errors, "Additional property cache is not allowed"))
 	})
 }
 

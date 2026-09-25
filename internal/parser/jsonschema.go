@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"net/url"
 	"regexp"
 	"slices"
@@ -238,6 +239,15 @@ func (validator *JSONSchemaValidator) ValidateWithJSONSchema(rootNode *sitter.No
 				continue
 			}
 
+			if step, property, ok := ignoredStepProperty(resErr, fields); ok {
+				if propertyNode, err := FindDeepestNode(node, content, []string{property}); err == nil {
+					node = propertyNode.ChildByFieldName("key")
+				}
+				jsonSchemaDiags = append(jsonSchemaDiags, diagnostic.WarningFromNode(node,
+					fmt.Sprintf("%s has no %s option, so this is ignored.", step, property)))
+				continue
+			}
+
 			diag := diagnostic.ErrorFromNode(node, resErr.Description())
 			if isCombinatorError(resErr) {
 				combinators = append(combinators, diag)
@@ -264,6 +274,38 @@ func (validator *JSONSchemaValidator) ValidateWithJSONSchema(rootNode *sitter.No
 	diagnostics = append(diagnostics, jsonSchemaDiags...)
 
 	return diagnostics
+}
+
+// openSteps are the built-in steps whose options the compiler doesn't close,
+// so it passes any it doesn't know on to be ignored.
+var openSteps = map[string]bool{
+	"run":                  true,
+	"checkout":             true,
+	"attach_workspace":     true,
+	"persist_to_workspace": true,
+	"save_cache":           true,
+	"restore_cache":        true,
+	"store_artifacts":      true,
+	"store_test_results":   true,
+	"add_ssh_keys":         true,
+	"setup_remote_docker":  true,
+	"deploy":               true,
+}
+
+// ignoredStepProperty reports whether err is an option the schema doesn't
+// know on one of the openSteps, returning the step and the option.
+func ignoredStepProperty(err gojsonschema.ResultError, fields []string) (step, property string, ok bool) {
+	if err.Type() != "additional_property_not_allowed" || len(fields) < 2 {
+		return "", "", false
+	}
+
+	step = fields[len(fields)-1]
+	if _, isIndex := strconv.Atoi(fields[len(fields)-2]); isIndex != nil || !openSteps[step] {
+		return "", "", false
+	}
+
+	property, ok = err.Details()["property"].(string)
+	return step, property, ok
 }
 
 // isCombinatorError reports whether err only says that a value failed one
