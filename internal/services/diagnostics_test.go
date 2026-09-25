@@ -707,6 +707,23 @@ workflows:
       - build
 `,
 		},
+		{
+			name: "caches kept for 30 days",
+			content: `version: 2.1
+jobs:
+  build:
+    docker:
+      - image: cimg/base:current
+    retention:
+      caches: 30d
+    steps:
+      - checkout
+workflows:
+  main:
+    jobs:
+      - build
+`,
+		},
 	}
 
 	for _, tt := range tests {
