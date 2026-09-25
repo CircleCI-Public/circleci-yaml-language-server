@@ -1885,7 +1885,7 @@
                                 "additionalProperties": false
                             },
                             "resource_class": {
-                                "oneOf": [
+                                "anyOf": [
                                     {
                                         "type": "string",
                                         "default": "medium",
@@ -1916,9 +1916,8 @@
                                         ]
                                     },
                                     {
-                                        "title": "Self-hosted runner",
-                                        "type": "string",
-                                        "pattern": "^[a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+$"
+                                        "title": "Any other resource class, a self-hosted runner, or a parameter",
+                                        "type": "string"
                                     }
                                 ],
                                 "markdownDescription": "https://circleci.com/docs/reference/configuration-reference/#resourceclass\n\nResource class for the job. Can be either a predefined resource class (e.g., `medium`, `large`) or a self-hosted runner in the format `<namespace>/<runner-name>`."
