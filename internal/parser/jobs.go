@@ -59,9 +59,16 @@ func (doc *YamlDocument) parseSingleJob(jobNode *sitter.Node) ast2.Job {
 	machineNode := &sitter.Node{}
 	machineNodeFound := false
 
+	// keys are the job's keys, including those with no value yet, for
+	// completion to leave out.
+	keys := map[string]bool{}
+
 	doc.iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
 		if child.Kind() == "block_mapping_pair" || child.Kind() == "flow_pair" {
 			keyNode, valueNode := doc.GetKeyValueNodes(child)
+			if keyNode != nil {
+				keys[doc.GetNodeText(keyNode)] = true
+			}
 			if keyNode == nil || valueNode == nil {
 				return
 			}
@@ -144,43 +151,48 @@ func (doc *YamlDocument) parseSingleJob(jobNode *sitter.Node) ast2.Job {
 	if machineNodeFound {
 		doc.addedMachineTrueDeprecatedDiag(machineNode, res.ResourceClass)
 	}
-	doc.jobCompletionItem(res)
+	doc.jobCompletionItem(res, keys)
 
 	return res
 }
 
-func (doc *YamlDocument) jobCompletionItem(job ast2.Job) {
-	if job.Steps == nil {
-		job.AddCompletionItem("steps", []string{":", "\n", "\t"})
-	}
-	if job.Description == "" {
-		job.AddCompletionItem("description", []string{":", " "})
-	}
-	if job.Executor == "" {
-		job.AddCompletionItem("executor", []string{":", " "})
-		if job.ResourceClass == "" {
-			job.AddCompletionItem("resource_class", []string{":", " "})
-		}
-		if job.Shell == "" {
-			job.AddCompletionItem("shell", []string{":", " "})
-		}
-		if job.WorkingDirectory == "" {
-			job.AddCompletionItem("working_directory", []string{":", " "})
+// jobCompletionItem sets the keys completion offers in a job: those its type
+// allows that it doesn't have.
+func (doc *YamlDocument) jobCompletionItem(job ast2.Job, has map[string]bool) {
+	block := []string{":", "\n", "\t"}
+	scalar := []string{":", " "}
+	offer := func(key string, commitCharacters []string) {
+		if !has[key] {
+			job.AddCompletionItem(key, commitCharacters)
 		}
 	}
-	if job.Parameters == nil {
-		job.AddCompletionItem("parameters", []string{":", "\n", " "})
+
+	switch job.Type {
+	case "release":
+		offer("plan_name", scalar)
+	case "lock", "unlock":
+		offer("key", scalar)
+		offer("parameters", block)
+	case "approval", "no-op":
+	case "", "build":
+		offer("steps", block)
+		offer("description", scalar)
+		// A job runs on one executor, named or given in place.
+		if !has["executor"] && !has["docker"] && !has["machine"] && !has["macos"] {
+			offer("executor", scalar)
+			offer("docker", block)
+			offer("machine", block)
+			offer("macos", block)
+		}
+		offer("resource_class", scalar)
+		offer("shell", scalar)
+		offer("working_directory", scalar)
+		offer("environment", block)
+		offer("parameters", block)
+		offer("parallelism", scalar)
+		offer("circleci_ip_ranges", scalar)
+		offer("retention", block)
 	}
-	if job.Parallelism == 0 {
-		job.AddCompletionItem("parallelism", []string{":", " "})
-	}
-	if job.Type == "" {
-		job.AddCompletionItem("type", []string{":", " "})
-	}
-	if job.PlanName == "" {
-		job.AddCompletionItem("plan_name", []string{":", " "})
-	}
-	if job.Key == "" {
-		job.AddCompletionItem("key", []string{":", " "})
-	}
+
+	offer("type", scalar)
 }

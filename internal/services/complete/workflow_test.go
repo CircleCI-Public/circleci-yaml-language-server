@@ -2,8 +2,10 @@ package complete
 
 import (
 	"slices"
+	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 	"gotest.tools/v3/assert"
@@ -127,5 +129,45 @@ workflows:
 		labels := completionLabels(t, config, protocol.Position{Line: 14, Character: 19})
 		assert.Check(t, !slices.Contains(labels, "triggers"), "%q", labels)
 		assert.Check(t, !slices.Contains(labels, "trigger"), "%q", labels)
+	})
+}
+
+func TestCompleteJobKeys(t *testing.T) {
+	jobKeys := func(t *testing.T, body string) []string {
+		t.Helper()
+		// The cursor is on the job's last line, which is left blank.
+		config := "version: 2.1\n\njobs:\n  j:\n" + body + "    \n"
+		line := uint32(4 + strings.Count(body, "\n"))
+		return completionLabels(t, config, protocol.Position{Line: line, Character: 4})
+	}
+	anyOrder := cmpopts.SortSlices(func(a, b string) bool { return a < b })
+
+	t.Run("a job with no executor is offered each kind", func(t *testing.T) {
+		assert.Check(t, cmp.DeepEqual(jobKeys(t, "    steps:\n      - checkout\n"), []string{
+			"description", "executor", "docker", "machine", "macos", "resource_class", "shell",
+			"working_directory", "environment", "parameters", "parallelism", "circleci_ip_ranges",
+			"retention", "type",
+		}, anyOrder))
+	})
+
+	t.Run("a job with an executor isn't offered another", func(t *testing.T) {
+		labels := jobKeys(t, "    docker:\n      - image: cimg/base:stable\n")
+		for _, key := range []string{"executor", "docker", "machine", "macos"} {
+			assert.Check(t, !slices.Contains(labels, key), "%s offered: %q", key, labels)
+		}
+		assert.Check(t, cmp.Contains(labels, "parameters"))
+		assert.Check(t, cmp.Contains(labels, "parallelism"))
+	})
+
+	t.Run("a release job is offered its plan", func(t *testing.T) {
+		assert.Check(t, cmp.DeepEqual(jobKeys(t, "    type: release\n"), []string{"plan_name"}))
+	})
+
+	t.Run("a lock job is offered its key and parameters", func(t *testing.T) {
+		assert.Check(t, cmp.DeepEqual(jobKeys(t, "    type: lock\n"), []string{"key", "parameters"}, anyOrder))
+	})
+
+	t.Run("an approval job is offered nothing", func(t *testing.T) {
+		assert.Check(t, cmp.Len(jobKeys(t, "    type: approval\n"), 0))
 	})
 }
