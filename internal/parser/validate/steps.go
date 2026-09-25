@@ -73,7 +73,7 @@ func (val Validate) validateRunCommand(step ast2.Run, jobOrCommandParameters map
 	}
 
 	// Validate that max_auto_reruns is between 1 and 5
-	if step.MaxAutoReruns != "" {
+	if step.MaxAutoReruns != "" && !paramref.ContainsReference(step.MaxAutoReruns) {
 		rerunCount, err := strconv.Atoi(step.MaxAutoReruns)
 		if err != nil || rerunCount <= 0 || rerunCount > 5 {
 			val.addDiagnostic(protocol.Diagnostic{
@@ -85,7 +85,7 @@ func (val Validate) validateRunCommand(step ast2.Run, jobOrCommandParameters map
 	}
 
 	// Validate that auto_rerun_delay conforms to the specific format and duration limits
-	if step.AutoRerunDelay != "" {
+	if step.AutoRerunDelay != "" && !paramref.ContainsReference(step.AutoRerunDelay) {
 		// First check if it's a valid duration
 		duration, err := time.ParseDuration(step.AutoRerunDelay)
 		if err != nil {

@@ -102,6 +102,14 @@ func ReferencesInRange(content []byte, paramName string, rng protocol.Range) ([]
 	return allRef, nil
 }
 
+var referenceRegex = regexp.MustCompile(`<<.*?>>`)
+
+// ContainsReference reports whether content holds a `<< ... >>` reference of
+// any kind, so that its value is only known once the config is compiled.
+func ContainsReference(content string) bool {
+	return referenceRegex.MatchString(content)
+}
+
 var onlyParamRegex = regexp.MustCompile(`^<<\s*(parameters|pipeline.parameters)\.([A-Za-z0-9-_]*)\s*>>$`)
 
 // Returns true if the string is *only* a parameter
