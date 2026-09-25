@@ -33,6 +33,16 @@ func (ch *CompletionHandler) completeWorkflows() {
 		return
 	}
 
+	if key, lines, parent := ch.valueAt(); parent != -1 && stepWithBody.MatchString(lines[parent]) {
+		if invocation := invocationNamedOn(parent, wf.JobInvocations); invocation != nil {
+			params := ch.Doc.GetDefinedParams(invocation.JobName, yamlparser.JobEntity, ch.Cache)
+			if param, ok := params[key]; ok {
+				ch.addParameterValues(param)
+			}
+			return
+		}
+	}
+
 	if invocation, nameLine := ch.jobInvocationBodyAt(wf.JobInvocations); invocation != nil {
 		ch.completeJobInvocationBody(invocation, nameLine)
 		return
