@@ -1547,6 +1547,12 @@
                                                     }
                                                 }
                                             }
+                                        },
+                                        "pwd": {
+                                            "type": "string"
+                                        },
+                                        "path": {
+                                            "type": "string"
                                         }
                                     },
                                     "required": [
@@ -1564,7 +1570,8 @@
                                         "required": [
                                             "max_auto_reruns"
                                         ]
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
                             ]
                         },
