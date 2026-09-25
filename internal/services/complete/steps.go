@@ -37,6 +37,7 @@ func (ch *CompletionHandler) builtInSteps() {
 		"persist_to_workspace",
 		"attach_workspace",
 		"add_ssh_keys",
+		"install_signing_bundle",
 		"unless",
 		"when",
 	}

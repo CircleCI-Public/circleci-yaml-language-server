@@ -787,6 +787,24 @@ workflows:
       - 2-stage-build
 `,
 		},
+		{
+			name: "install_signing_bundle, as a string and as a map",
+			content: `version: 2.1
+jobs:
+  sign:
+    machine:
+      image: ubuntu-2204:current
+      code_signing:
+        - release-bundle
+    steps:
+      - install_signing_bundle
+      - install_signing_bundle: {}
+workflows:
+  main:
+    jobs:
+      - sign
+`,
+		},
 	}
 
 	for _, tt := range tests {

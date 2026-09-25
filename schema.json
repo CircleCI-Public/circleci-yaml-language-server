@@ -1644,6 +1644,13 @@
                                     "additionalProperties": false
                                 }
                             ]
+                        },
+                        "install_signing_bundle": {
+                            "markdownDescription": "Installs the code signing bundles named in the executor's `code_signing` list. macOS and machine executors only.",
+                            "type": [
+                                "object",
+                                "null"
+                            ]
                         }
                     },
                     "additionalProperties": {
