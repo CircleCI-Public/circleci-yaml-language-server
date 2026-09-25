@@ -783,3 +783,65 @@ func TestURLOrb(t *testing.T) {
 		})
 	}
 }
+
+func TestOrbExecutorLookUp(t *testing.T) {
+	diagnosticsFor := func(t *testing.T, executor string) []string {
+		t.Helper()
+
+		val := CreateValidateFromYAML(`version: 2.1
+
+orbs:
+  local:
+    executors:
+      localexec:
+        docker:
+          - image: cimg/base:stable
+  unfetched: http://example.com/orbs/go.yml
+
+jobs:
+  build:
+    executor: ` + executor + `
+    steps:
+      - checkout
+  param:
+    parameters:
+      exec:
+        type: executor
+        default: ` + executor + `
+    executor: << parameters.exec >>
+    steps:
+      - checkout
+
+workflows:
+  w:
+    jobs:
+      - build
+      - param
+`)
+		val.Cache.MachineOfferingsCache.Set(testMachineOfferings())
+		val.Validate()
+
+		said := []string{}
+		for _, d := range *val.Diagnostics {
+			if d.Range.Start.Line >= 10 && d.Severity <= protocol.DiagnosticSeverityWarning {
+				said = append(said, diagnostic.MessageText(d))
+			}
+		}
+		return said
+	}
+
+	t.Run("an inline orb's executor resolves", func(t *testing.T) {
+		assert.Check(t, cmp.DeepEqual(diagnosticsFor(t, "local/localexec"), []string{}))
+	})
+
+	t.Run("an executor an inline orb doesn't declare is an error", func(t *testing.T) {
+		assert.Check(t, cmp.DeepEqual(diagnosticsFor(t, "local/nosuch"), []string{
+			"Cannot find executor nosuch in orb local",
+			"Parameter is used as executor but executor `local/nosuch` does not exist.",
+		}, anyOrder))
+	})
+
+	t.Run("an executor from an orb that can't be fetched isn't checked", func(t *testing.T) {
+		assert.Check(t, cmp.DeepEqual(diagnosticsFor(t, "unfetched/default"), []string{}))
+	})
+}
