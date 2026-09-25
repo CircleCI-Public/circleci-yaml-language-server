@@ -2,6 +2,7 @@ package validate
 
 import (
 	"fmt"
+	"maps"
 	"slices"
 	"sort"
 	"strings"
@@ -13,6 +14,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/paramref"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/parser"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 )
 
 // InvocationKind distinguishes where a job invocation appears.
@@ -246,13 +248,26 @@ func (val Validate) validateSingleJobInvocation(jobInvocation ast2.JobInvocation
 		return
 	}
 
+	if jobInvocation.MatrixIsSingleCombination {
+		matrixKey := protocol.Range{Start: jobInvocation.MatrixRange.Start, End: jobInvocation.MatrixRange.Start}
+		matrixKey.End.Character += uint32(len("matrix"))
+		val.addDiagnostic(diagnostic.Warning(matrixKey,
+			"This matrix is declared with a single value for every parameter, so it always "+
+				"produces exactly one job. Consider not using a matrix here."))
+	}
+
+	if jobInvocation.Type == "approval" {
+		val.validateApprovalInvocation(jobInvocation)
+		val.validateInvocationContexts(jobInvocation)
+		return
+	}
+
 	// This orb check is not needed for job-groups because we don't support job-groups in orbs.
 	if val.Doc.IsFromUnfetchableOrb(jobInvocation.JobName) {
 		return
 	}
 
-	if jobInvocation.Type != "approval" && // Special case: if the job is defined inline via `type: approval`, then it must exist
-		!val.Doc.DoesJobExist(jobInvocation.JobName) &&
+	if !val.Doc.DoesJobExist(jobInvocation.JobName) &&
 		(!val.Doc.IsOrbReference(jobInvocation.JobName) || (!val.Doc.IsOrbCommand(jobInvocation.JobName, val.Cache) && !val.Doc.IsOrbJob(jobInvocation.JobName, val.Cache))) {
 		val.addDiagnostic(diagnostic.Error(
 			jobInvocation.JobInvocationRange,
@@ -264,6 +279,12 @@ func (val Validate) validateSingleJobInvocation(jobInvocation ast2.JobInvocation
 		val.validateJobInvocationParameters(jobInvocation)
 	}
 
+	val.validateInvocationContexts(jobInvocation)
+}
+
+// validateInvocationContexts checks that each context exists, when the
+// organization's contexts are known.
+func (val Validate) validateInvocationContexts(jobInvocation ast2.JobInvocation) {
 	if cachedFile := val.Cache.FileCache.GetFile(val.Doc.URI); val.Context.Api.Token != "" &&
 		cachedFile != nil && cachedFile.Project.OrganizationName != "" &&
 		val.Cache.ContextCache.IsOrganizationContextListLoaded(cachedFile.Project.OrganizationId) {
@@ -279,7 +300,32 @@ func (val Validate) validateSingleJobInvocation(jobInvocation ast2.JobInvocation
 			}
 		}
 	}
+}
 
+// validateApprovalInvocation checks an invocation with `type: approval`, which
+// defines an approval job there and then. An approval job has no parameters,
+// so any other key is ignored.
+func (val Validate) validateApprovalInvocation(jobInvocation ast2.JobInvocation) {
+	if val.Doc.DoesJobExist(jobInvocation.JobName) {
+		val.addDiagnostic(diagnostic.Warning(jobInvocation.JobNameRange, fmt.Sprintf(
+			"'%s' is invoked here with type: approval, which shadows the job definition of the same name; "+
+				"its own steps will not run for this invocation", jobInvocation.JobName)))
+	}
+
+	ignored := map[string]protocol.Range{}
+	for name, parameter := range jobInvocation.Parameters {
+		ignored[name] = parameter.Range
+	}
+	if !position.IsDefaultRange(jobInvocation.PreStepsRange) {
+		ignored["pre-steps"] = jobInvocation.PreStepsRange
+	}
+	if !position.IsDefaultRange(jobInvocation.PostStepsRange) {
+		ignored["post-steps"] = jobInvocation.PostStepsRange
+	}
+	for _, name := range slices.Sorted(maps.Keys(ignored)) {
+		val.addDiagnostic(diagnostic.Warning(ignored[name], fmt.Sprintf(
+			"Job <local>/%s: '%s' is not a recognized approval key and is ignored", jobInvocation.JobName, name)))
+	}
 }
 
 // Validates the structure of an invocation of a job-group, which

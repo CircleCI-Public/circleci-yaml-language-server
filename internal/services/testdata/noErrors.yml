@@ -104,7 +104,7 @@ workflows:
           matrix:
             alias: "build-single"
             parameters:
-              myparam: ["Hello There"]
+              myparam: ["Hello There", "General Kenobi"]
           pre-steps:
             - compass/notify_deployment:
                 token_name: atoken
