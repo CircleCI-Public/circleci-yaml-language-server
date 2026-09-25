@@ -566,6 +566,48 @@ workflows:
 			content: job(`      - add_ssh_keys:
           fingerprints: "SHA256:abc"`),
 		},
+		{
+			name: "an executor resource class the schema doesn't list",
+			content: `version: 2.1
+executors:
+  gen3:
+    docker:
+      - image: cimg/base:current
+    resource_class: large.gen3
+jobs:
+  build:
+    executor: gen3
+    steps:
+      - checkout
+workflows:
+  main:
+    jobs:
+      - build
+`,
+		},
+		{
+			name: "an executor resource class from a parameter",
+			content: `version: 2.1
+executors:
+  sized:
+    parameters:
+      resource_class:
+        type: string
+        default: medium
+    docker:
+      - image: cimg/base:current
+    resource_class: <<parameters.resource_class>>
+jobs:
+  build:
+    executor: sized
+    steps:
+      - checkout
+workflows:
+  main:
+    jobs:
+      - build
+`,
+		},
 	}
 
 	for _, tt := range tests {
