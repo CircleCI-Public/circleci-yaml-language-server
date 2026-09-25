@@ -20,6 +20,7 @@ var referenceHovers = []func(parser.YamlDocument, *cache.Cache, protocol.Positio
 	hover.Executor,
 	hover.FunctionStep,
 	hover.FunctionDeclaration,
+	hover.OrbDeclaration,
 }
 
 func Hover(params protocol.HoverParams, cache *cache.Cache, context *session.Settings) (protocol.Hover, error) {
