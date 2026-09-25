@@ -393,7 +393,7 @@ func TestRetention(t *testing.T) {
 			yamlData: `jobs:
   test:
     retention:
-      caches: 16d
+      caches: 31d
     steps:
       - checkout`,
 			expectedDiag: protocol.Diagnostic{
