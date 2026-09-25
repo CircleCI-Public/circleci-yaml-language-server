@@ -1334,6 +1334,168 @@
                                                 }
                                             ],
                                             "markdownDescription": "Delay before automatic rerun of this step"
+                                        },
+                                        "teardown": {
+                                            "type": "array",
+                                            "markdownDescription": "Steps to run at the end of the job, in reverse order, whether or not it succeeded: `run`, `save_cache`, `persist_to_workspace`, `store_artifacts` and `store_test_results`.",
+                                            "items": {
+                                                "type": "object",
+                                                "minProperties": 1,
+                                                "maxProperties": 1,
+                                                "additionalProperties": false,
+                                                "properties": {
+                                                    "run": {
+                                                        "oneOf": [
+                                                            {
+                                                                "type": "string"
+                                                            },
+                                                            {
+                                                                "type": "object",
+                                                                "required": [
+                                                                    "command"
+                                                                ],
+                                                                "properties": {
+                                                                    "command": {
+                                                                        "type": "string",
+                                                                        "markdownDescription": "Command to run via the shell"
+                                                                    },
+                                                                    "name": {
+                                                                        "type": "string",
+                                                                        "markdownDescription": "Title of the step to be shown in the CircleCI UI (default: full `command`)"
+                                                                    },
+                                                                    "when": {
+                                                                        "$ref": "#/definitions/stepWhen"
+                                                                    },
+                                                                    "background": {
+                                                                        "enum": [
+                                                                            false
+                                                                        ],
+                                                                        "markdownDescription": "A teardown step can't run in the background: it would be cancelled as soon as it started."
+                                                                    }
+                                                                },
+                                                                "not": {
+                                                                    "required": [
+                                                                        "teardown"
+                                                                    ]
+                                                                }
+                                                            }
+                                                        ]
+                                                    },
+                                                    "save_cache": {
+                                                        "markdownDescription": "https://circleci.com/docs/configuration-reference#save_cache\n\nGenerates and stores a cache of a file or directory of files such as dependencies or source code in our object storage. Later jobs can restore this cache using the `restore_cache` step.",
+                                                        "type": "object",
+                                                        "required": [
+                                                            "paths",
+                                                            "key"
+                                                        ],
+                                                        "properties": {
+                                                            "paths": {
+                                                                "$ref": "#/definitions/stringOrList",
+                                                                "markdownDescription": "List of directories which should be added to the cache"
+                                                            },
+                                                            "key": {
+                                                                "type": "string",
+                                                                "markdownDescription": "Unique identifier for this cache"
+                                                            },
+                                                            "name": {
+                                                                "type": "string",
+                                                                "markdownDescription": "Title of the step to be shown in the CircleCI UI (default: 'Saving Cache')"
+                                                            },
+                                                            "when": {
+                                                                "$ref": "#/definitions/stepWhen"
+                                                            }
+                                                        },
+                                                        "additionalProperties": false
+                                                    },
+                                                    "persist_to_workspace": {
+                                                        "markdownDescription": "https://circleci.com/docs/configuration-reference#persist_to_workspace\n\nSpecial step used to persist a temporary file to be used by another job in the workflow",
+                                                        "type": "object",
+                                                        "required": [
+                                                            "root"
+                                                        ],
+                                                        "oneOf": [
+                                                            {
+                                                                "required": [
+                                                                    "paths"
+                                                                ]
+                                                            },
+                                                            {
+                                                                "required": [
+                                                                    "path"
+                                                                ]
+                                                            }
+                                                        ],
+                                                        "properties": {
+                                                            "root": {
+                                                                "type": "string",
+                                                                "markdownDescription": "Either an absolute path or a path relative to `working_directory`"
+                                                            },
+                                                            "paths": {
+                                                                "$ref": "#/definitions/stringOrList",
+                                                                "markdownDescription": "Glob identifying file(s), or a non-glob path to a directory to add to the shared workspace. Interpreted as relative to the workspace root. Must not be the workspace root itself."
+                                                            },
+                                                            "path": {
+                                                                "type": "string",
+                                                                "markdownDescription": "A single glob or path to add to the shared workspace, instead of `paths`"
+                                                            },
+                                                            "name": {
+                                                                "type": "string",
+                                                                "markdownDescription": "Title of the step to be shown in the CircleCI UI"
+                                                            },
+                                                            "when": {
+                                                                "$ref": "#/definitions/stepWhen"
+                                                            }
+                                                        },
+                                                        "additionalProperties": false
+                                                    },
+                                                    "store_artifacts": {
+                                                        "markdownDescription": "https://circleci.com/docs/configuration-reference#store_artifacts\n\nStep to store artifacts (for example logs, binaries, etc) to be available in the web app or through the API.",
+                                                        "type": "object",
+                                                        "required": [
+                                                            "path"
+                                                        ],
+                                                        "properties": {
+                                                            "path": {
+                                                                "type": "string",
+                                                                "markdownDescription": "Directory in the primary container to save as job artifacts"
+                                                            },
+                                                            "destination": {
+                                                                "type": "string",
+                                                                "markdownDescription": "Prefix added to the artifact paths in the artifacts API (default: the directory of the file specified in `path`)"
+                                                            },
+                                                            "name": {
+                                                                "type": "string",
+                                                                "markdownDescription": "Title of the step to be shown in the CircleCI UI"
+                                                            },
+                                                            "when": {
+                                                                "$ref": "#/definitions/stepWhen"
+                                                            }
+                                                        },
+                                                        "additionalProperties": false
+                                                    },
+                                                    "store_test_results": {
+                                                        "markdownDescription": "https://circleci.com/docs/configuration-reference#storetestresults\n\nSpecial step used to upload test results so they display in builds' Test Summary section and can be used for timing analysis. To also see test result as build artifacts, please use the `store_artifacts` step.",
+                                                        "type": "object",
+                                                        "required": [
+                                                            "path"
+                                                        ],
+                                                        "properties": {
+                                                            "path": {
+                                                                "type": "string",
+                                                                "markdownDescription": "Path (absolute, or relative to your `working_directory`) to directory containing subdirectories of JUnit XML or Cucumber JSON test metadata files"
+                                                            },
+                                                            "name": {
+                                                                "type": "string",
+                                                                "markdownDescription": "Title of the step to be shown in the CircleCI UI"
+                                                            },
+                                                            "when": {
+                                                                "$ref": "#/definitions/stepWhen"
+                                                            }
+                                                        },
+                                                        "additionalProperties": false
+                                                    }
+                                                }
+                                            }
                                         }
                                     },
                                     "required": [

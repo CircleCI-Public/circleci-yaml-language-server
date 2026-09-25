@@ -494,33 +494,32 @@ run: gotestsum -- ./...
 	})
 }
 
-// Each case is config the compiler accepts, so the schema mustn't flag it.
-func TestSchemaAcceptsWhatTheCompilerAccepts(t *testing.T) {
-	fake := fakes.NewCircleCI(t)
+// configErrors returns the messages of the errors reported for content, as
+// .circleci/config.yml, against a fake CircleCI.
+func configErrors(t *testing.T, fake *fakes.CircleCI, content string) []string {
+	t.Helper()
 
-	errors := func(t *testing.T, content string) []string {
-		t.Helper()
+	fileURI := uri.File(filepath.Join(t.TempDir(), ".circleci", "config.yml"))
+	c := cache.New()
+	c.FileCache.SetFile(cache.File{
+		TextDocument: protocol.TextDocumentItem{URI: fileURI, Text: content},
+	})
 
-		fileURI := uri.File(filepath.Join(t.TempDir(), ".circleci", "config.yml"))
-		c := cache.New()
-		c.FileCache.SetFile(cache.File{
-			TextDocument: protocol.TextDocumentItem{URI: fileURI, Text: content},
-		})
+	diagnostics, err := DiagnosticFile(fileURI, c, testHelpers.SettingsForHost(fake.URL()), "")
+	assert.NilError(t, err)
 
-		diagnostics, err := DiagnosticFile(fileURI, c, testHelpers.SettingsForHost(fake.URL()), "")
-		assert.NilError(t, err)
-
-		messages := []string{}
-		for _, d := range diagnostics {
-			if d.Severity == protocol.DiagnosticSeverityError {
-				messages = append(messages, diagnostic.MessageText(d))
-			}
+	messages := []string{}
+	for _, d := range diagnostics {
+		if d.Severity == protocol.DiagnosticSeverityError {
+			messages = append(messages, diagnostic.MessageText(d))
 		}
-		return messages
 	}
+	return messages
+}
 
-	job := func(steps string) string {
-		return `version: 2.1
+// jobWithSteps is a config with one docker job, running steps.
+func jobWithSteps(steps string) string {
+	return `version: 2.1
 jobs:
   build:
     docker:
@@ -532,7 +531,16 @@ workflows:
     jobs:
       - build
 `
+}
+
+// Each case is config the compiler accepts, so the schema mustn't flag it.
+func TestSchemaAcceptsWhatTheCompilerAccepts(t *testing.T) {
+	fake := fakes.NewCircleCI(t)
+	errors := func(t *testing.T, content string) []string {
+		t.Helper()
+		return configErrors(t, fake, content)
 	}
+	job := jobWithSteps
 
 	tests := []struct {
 		name    string
@@ -813,6 +821,19 @@ workflows:
             - checkout
             - run: ./gradlew build`),
 		},
+		{
+			name: "teardown steps on a run",
+			content: job(`      - run:
+          command: make test
+          teardown:
+            - run: make clean
+            - store_test_results:
+                path: test-results
+                when: always
+            - save_cache:
+                key: deps
+                paths: [vendor]`),
+		},
 	}
 
 	for _, tt := range tests {
@@ -820,4 +841,27 @@ workflows:
 			assert.Check(t, cmp.DeepEqual(errors(t, tt.content), []string{}))
 		})
 	}
+}
+
+func TestTeardownSchema(t *testing.T) {
+	fake := fakes.NewCircleCI(t)
+
+	t.Run("a step that restores something isn't a teardown step", func(t *testing.T) {
+		errors := configErrors(t, fake, jobWithSteps(`      - run:
+          command: make test
+          teardown:
+            - restore_cache:
+                key: deps`))
+		assert.Check(t, cmp.Contains(errors, "Additional property restore_cache is not allowed"))
+	})
+
+	t.Run("a teardown run can't run in the background", func(t *testing.T) {
+		errors := configErrors(t, fake, jobWithSteps(`      - run:
+          command: make test
+          teardown:
+            - run:
+                command: make clean
+                background: true`))
+		assert.Check(t, len(errors) != 0)
+	})
 }
