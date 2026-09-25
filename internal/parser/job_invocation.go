@@ -83,6 +83,9 @@ func (doc *YamlDocument) parseSingleJobInvocation(jobInvocationNode *sitter.Node
 		res.StepName = doc.GetNodeText(key)
 		blockMappingNode = GetChildOfType(value, "block_mapping")
 
+		var matrixNode *sitter.Node
+		name := ""
+
 		doc.iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
 			if child != nil {
 				keyNode, valueNode := doc.GetKeyValueNodes(child)
@@ -101,6 +104,7 @@ func (doc *YamlDocument) parseSingleJobInvocation(jobInvocationNode *sitter.Node
 				case "name":
 					res.StepNameRange = doc.NodeToRange(valueNode)
 					res.StepName = doc.GetNodeText(GetFirstChild(valueNode))
+					name = unquoteScalar(res.StepName)
 				case "context":
 					res.Context = doc.parseContext(valueNode)
 				case "filters":
@@ -114,6 +118,8 @@ func (doc *YamlDocument) parseSingleJobInvocation(jobInvocationNode *sitter.Node
 					if alias != "" {
 						res.StepName = alias
 					}
+					res.MatrixAlias = alias
+					matrixNode = valueNode
 				case "serial-group":
 					res.SerialGroup = doc.GetNodeText(valueNode)
 					res.SerialGroupRange = doc.NodeToRange(valueNode)
@@ -138,6 +144,13 @@ func (doc *YamlDocument) parseSingleJobInvocation(jobInvocationNode *sitter.Node
 				}
 			}
 		})
+
+		if matrixNode != nil {
+			if res.MatrixAlias == "" {
+				res.MatrixAlias = res.JobName
+			}
+			res.MatrixNames = doc.matrixMemberNames(matrixNode, res.JobName, name)
+		}
 		return res
 	}
 }

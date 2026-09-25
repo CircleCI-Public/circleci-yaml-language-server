@@ -1451,3 +1451,83 @@ workflows:
 
 	CheckYamlErrors(t, testCases)
 }
+
+func TestJobInvocationRequiresMatrixMembers(t *testing.T) {
+	testCases := []ValidateTestCase{
+		{
+			Name: "Requires names matrix members, a templated member, and an alias",
+			YamlContent: `version: 2.1
+
+jobs:
+  test:
+    parameters:
+      os:
+        type: string
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "<< parameters.os >>"
+
+workflows:
+  test-workflow:
+    jobs:
+      - test:
+          matrix:
+            parameters:
+              os: [go, windows]
+      - test:
+          name: acceptance-<< matrix.os >>
+          matrix:
+            alias: acceptance
+            parameters:
+              os: [linux]
+      - test:
+          name: publish
+          os: linux
+          requires:
+            - test-go
+            - test-windows
+            - acceptance-linux
+            - acceptance
+            - test`,
+			OnlyErrors:  true,
+			Diagnostics: []protocol.Diagnostic{},
+		},
+		{
+			Name: "Requires a matrix member that isn't generated",
+			YamlContent: `version: 2.1
+
+jobs:
+  test:
+    parameters:
+      os:
+        type: string
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "<< parameters.os >>"
+
+workflows:
+  test-workflow:
+    jobs:
+      - test:
+          matrix:
+            parameters:
+              os: [go, windows]
+      - test:
+          name: publish
+          os: linux
+          requires:
+            - test-macos`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(protocol.Range{
+					Start: protocol.Position{Line: 23, Character: 14},
+					End:   protocol.Position{Line: 23, Character: 24},
+				}, "Cannot find declaration for job invocation \"test-macos\""),
+			},
+		},
+	}
+
+	CheckYamlErrors(t, testCases)
+}
