@@ -94,28 +94,47 @@ func describe(name, kind, description string, params map[string]ast.Parameter) s
 // writeParameters lists the parameters by name, each with its type, its
 // default or that it's required, and its description.
 func writeParameters(b *strings.Builder, params map[string]ast.Parameter) {
-	if len(params) == 0 {
+	inputs := make([]input, 0, len(params))
+	for name, param := range params {
+		value, hasDefault := defaultOf(param)
+		inputs = append(inputs, input{
+			name:        name,
+			kind:        param.GetType(),
+			value:       value,
+			hasDefault:  hasDefault,
+			required:    !param.IsOptional(),
+			description: param.GetDescription(),
+		})
+	}
+	writeInputs(b, "Parameters", inputs)
+}
+
+// input is a parameter, or a function's flag, as a hover lists it.
+type input struct {
+	name, kind, value, description string
+	hasDefault, required           bool
+}
+
+// writeInputs lists the inputs under a heading, sorted by name.
+func writeInputs(b *strings.Builder, heading string, inputs []input) {
+	if len(inputs) == 0 {
 		return
 	}
+	slices.SortFunc(inputs, func(a, b input) int { return strings.Compare(a.name, b.name) })
 
-	names := make([]string, 0, len(params))
-	for name := range params {
-		names = append(names, name)
-	}
-	slices.Sort(names)
-
-	b.WriteString("\n\nParameters:\n")
-	for _, name := range names {
-		param := params[name]
-		fmt.Fprintf(b, "\n- `%s` (%s", name, param.GetType())
-		if value, ok := defaultOf(param); ok {
-			fmt.Fprintf(b, ", default `%s`", value)
-		} else if !param.IsOptional() {
+	fmt.Fprintf(b, "\n\n%s:\n", heading)
+	for _, in := range inputs {
+		fmt.Fprintf(b, "\n- `%s` (%s", in.name, in.kind)
+		if in.hasDefault {
+			fmt.Fprintf(b, ", default `%s`", in.value)
+		} else if in.required {
 			b.WriteString(", required")
 		}
 		b.WriteString(")")
-		if description := param.GetDescription(); description != "" {
-			fmt.Fprintf(b, ": %s", description)
+		if in.description != "" {
+			// Indented, so that a description of several lines stays in its
+			// list item.
+			fmt.Fprintf(b, ": %s", strings.ReplaceAll(in.description, "\n", "\n  "))
 		}
 	}
 }
