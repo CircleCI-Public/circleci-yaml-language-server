@@ -760,6 +760,14 @@ workflows:
       - build
 `,
 		},
+		{
+			name: "setup_remote_docker options the schema didn't know",
+			content: job(`      - setup_remote_docker:
+          version: default
+          prefer_same_region: true
+      - setup_remote_docker:
+          resource_class: large`),
+		},
 	}
 
 	for _, tt := range tests {
