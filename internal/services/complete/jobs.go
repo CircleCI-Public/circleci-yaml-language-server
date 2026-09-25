@@ -2,6 +2,9 @@ package complete
 
 import (
 	"fmt"
+	"regexp"
+	"slices"
+	"strings"
 
 	"go.lsp.dev/protocol"
 
@@ -13,6 +16,12 @@ import (
 func (ch *CompletionHandler) completeJobs() {
 	job, err := findJob(ch.Params.Position, ch.Doc)
 	if err != nil {
+		return
+	}
+
+	if lines, parent := ch.keyParent(); parent != -1 && !position.IsDefaultRange(job.ExecutorRange) &&
+		parent == int(job.ExecutorRange.Start.Line) && executorMapping.MatchString(lines[parent]) {
+		ch.completeExecutorMapping(job.Executor, parent)
 		return
 	}
 
@@ -66,6 +75,48 @@ func (ch *CompletionHandler) addExecutorsCompletion() {
 			ch.addCompletionItem(fmt.Sprintf("%s/%s", orb.Name, executor.GetName()))
 		}
 	}
+}
+
+var executorMapping = regexp.MustCompile(`^\s*executor\s*:\s*$`)
+
+// completeExecutorMapping offers the keys an executor given as a mapping
+// doesn't have yet: its name, and the parameters the executor declares.
+func (ch *CompletionHandler) completeExecutorMapping(name string, executorLine int) {
+	keys := []string{"name"}
+	params := []string{}
+	for param := range ch.executorParameters(name) {
+		params = append(params, param)
+	}
+	slices.Sort(params)
+	keys = append(keys, params...)
+
+	present := ch.stepBodyKeys(executorLine)
+	for _, key := range keys {
+		if !present[key] {
+			ch.addCompletionItemField(key)
+		}
+	}
+}
+
+// executorParameters are the parameters a local, inline-orb or orb executor
+// declares.
+func (ch *CompletionHandler) executorParameters(name string) map[string]ast2.Parameter {
+	if executor, ok := ch.Doc.Executors[name]; ok {
+		return executor.GetParameters()
+	}
+
+	orbName, executorName, ok := strings.Cut(name, "/")
+	if !ok {
+		return nil
+	}
+	orbInfo, err := ch.Doc.GetOrbInfoFromName(orbName, ch.Cache)
+	if err != nil || orbInfo == nil {
+		return nil
+	}
+	if executor, ok := orbInfo.Executors[executorName]; ok {
+		return executor.GetParameters()
+	}
+	return nil
 }
 
 func findJob(pos protocol.Position, doc yamlparser.YamlDocument) (ast2.Job, error) {
