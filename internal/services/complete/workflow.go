@@ -28,6 +28,11 @@ func (ch *CompletionHandler) completeWorkflows() {
 		return
 	}
 
+	if invocation, nameLine := ch.jobInvocationBodyAt(wf.JobInvocations); invocation != nil {
+		ch.completeJobInvocationBody(invocation, nameLine)
+		return
+	}
+
 	ch.addWorkflowKeys(wf)
 }
 

@@ -114,8 +114,8 @@ func (ch *CompletionHandler) completeStepBody(name string, nameLine int) {
 	}
 }
 
-// stepBodyKeys are the keys at the top of the body of the step named on a
-// line: the lines after it indented deeper than it, at the shallowest of
+// stepBodyKeys are the keys at the top of the body of the step or job
+// invocation named on a line: the lines after it indented deeper than it, at the shallowest of
 // their indentations.
 func (ch *CompletionHandler) stepBodyKeys(nameLine int) map[string]bool {
 	lines := strings.Split(string(ch.Doc.Content), "\n")

@@ -1,9 +1,12 @@
 package complete
 
 import (
+	"slices"
+
 	"go.lsp.dev/protocol"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
+	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/internal/parser"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 )
 
@@ -49,5 +52,48 @@ func (ch *CompletionHandler) addJobsAndOrbsCompletion() {
 func (ch *CompletionHandler) addJobsCompletion() {
 	for _, job := range ch.Doc.Jobs {
 		ch.addCompletionItem(job.Name)
+	}
+}
+
+// jobInvocationKeys are the keys a workflow's job invocation takes.
+var jobInvocationKeys = []string{
+	"requires", "context", "filters", "matrix", "name", "type",
+	"pre-steps", "post-steps", "serial-group", "override-with",
+}
+
+// jobInvocationBodyAt is the invocation whose body the cursor is at a key
+// of, and the line its name is on.
+func (ch *CompletionHandler) jobInvocationBodyAt(invocations []ast.JobInvocation) (*ast.JobInvocation, int) {
+	lines, parent := ch.keyParent()
+	if parent == -1 || !stepWithBody.MatchString(lines[parent]) {
+		return nil, 0
+	}
+	for i := range invocations {
+		if int(invocations[i].JobNameRange.Start.Line) == parent {
+			return &invocations[i], parent
+		}
+	}
+	return nil, 0
+}
+
+// completeJobInvocationBody offers the keys an invocation doesn't have yet:
+// an invocation's own keys, and the parameters of the job it runs.
+func (ch *CompletionHandler) completeJobInvocationBody(invocation *ast.JobInvocation, nameLine int) {
+	keys := slices.Clone(jobInvocationKeys)
+
+	if invocation.Type != "approval" {
+		var params []string
+		for param := range ch.Doc.GetDefinedParams(invocation.JobName, yamlparser.JobEntity, ch.Cache) {
+			params = append(params, param)
+		}
+		slices.Sort(params)
+		keys = append(keys, params...)
+	}
+
+	present := ch.stepBodyKeys(nameLine)
+	for _, key := range keys {
+		if !present[key] {
+			ch.addCompletionItemField(key)
+		}
 	}
 }

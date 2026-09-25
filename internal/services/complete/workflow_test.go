@@ -99,6 +99,17 @@ func completionLabels(t *testing.T, config string, pos protocol.Position) []stri
 	return labels
 }
 
+// positionBelow is the position on the line after the one whose text,
+// trimmed, is the given text, at the given column.
+func positionBelow(t *testing.T, config, text string, column uint32) protocol.Position {
+	t.Helper()
+	line := slices.IndexFunc(strings.Split(config, "\n"), func(l string) bool {
+		return strings.TrimSpace(l) == text
+	})
+	assert.Assert(t, line != -1, "no line %q", text)
+	return protocol.Position{Line: uint32(line + 1), Character: column}
+}
+
 func TestCompleteWorkflowKeys(t *testing.T) {
 	const config = `version: 2.1
 
@@ -169,5 +180,58 @@ func TestCompleteJobKeys(t *testing.T) {
 
 	t.Run("an approval job is offered nothing", func(t *testing.T) {
 		assert.Check(t, cmp.Len(jobKeys(t, "    type: approval\n"), 0))
+	})
+}
+
+func TestCompleteJobInvocationBody(t *testing.T) {
+	const config = `version: 2.1
+
+jobs:
+  greet:
+    parameters:
+      who:
+        type: string
+      loud:
+        type: boolean
+        default: false
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo hi << parameters.who >>
+
+workflows:
+  main:
+    jobs:
+      - greet:
+          who: me
+          
+      - hold:
+          type: approval
+          
+      - greet:
+          name: greet-again
+          filters:
+            
+`
+	below := func(text string, column uint32) protocol.Position {
+		return positionBelow(t, config, text, column)
+	}
+
+	t.Run("a job's invocation is offered its keys and the parameters it isn't given", func(t *testing.T) {
+		assert.Check(t, cmp.DeepEqual(completionLabels(t, config, below("who: me", 10)), []string{
+			"requires", "context", "filters", "matrix", "name", "type",
+			"pre-steps", "post-steps", "serial-group", "override-with", "loud",
+		}))
+	})
+
+	t.Run("an approval job is offered no parameters", func(t *testing.T) {
+		assert.Check(t, cmp.DeepEqual(completionLabels(t, config, below("type: approval", 10)), []string{
+			"requires", "context", "filters", "matrix", "name",
+			"pre-steps", "post-steps", "serial-group", "override-with",
+		}))
+	})
+
+	t.Run("nothing is offered inside one of the invocation's keys", func(t *testing.T) {
+		assert.Check(t, cmp.Len(completionLabels(t, config, below("filters:", 12)), 0))
 	})
 }
