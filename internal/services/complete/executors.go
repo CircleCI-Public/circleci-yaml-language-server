@@ -26,6 +26,10 @@ func (ch *CompletionHandler) completeExecutors() {
 		return
 	}
 
+	if ch.completeDockerEntry() {
+		return
+	}
+
 	if _, parent := ch.keyParent(); parent != -1 && parent == int(executor.GetRange().Start.Line) {
 		present := ch.stepBodyKeys(parent)
 		for _, key := range executorKeys {
