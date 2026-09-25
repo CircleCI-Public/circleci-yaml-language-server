@@ -1980,6 +1980,12 @@
                     "additionalProperties": {
                         "type": "object",
                         "properties": {
+                            "name": {
+                                "type": "string",
+                                "minLength": 1,
+                                "pattern": ".*[^ ].*$",
+                                "markdownDescription": "The name of this job in the workflow, in place of the job's own. Needed to invoke the same job more than once. In a matrix, `<< matrix.x >>` in it is filled in for each member."
+                            },
                             "requires": {
                                 "type": "array",
                                 "markdownDescription": "Jobs are run in parallel by default, so you must explicitly require any dependencies by their job name.",
@@ -2118,7 +2124,11 @@
                                         }
                                     },
                                     {
-                                        "type": "string"
+                                        "type": "string",
+                                        "not": {
+                                            "pattern": "<<.*>>"
+                                        },
+                                        "markdownDescription": "An expression deciding whether the job runs. It refers to pipeline values without `<< >>`, as in `pipeline.git.branch == \"main\"`."
                                     }
                                 ]
                             },
@@ -2184,7 +2194,9 @@
                             "serial-group": {
                                 "markdownDescription": "`serial-group` allows a group of jobs to run in series, rather than concurrently, across an organization. Serial groups control the orchestration of jobs across an organization, not just within projects and pipelines.\nSee <https://circleci.com/docs/reference/configuration-reference/#serial-group> for more details.",
                                 "type": "string",
-                                "minLength": 1
+                                "minLength": 1,
+                                "maxLength": 512,
+                                "pattern": ".*[^ ].*$"
                             },
                             "override-with": {
                                 "type": "string"

@@ -891,3 +891,39 @@ func TestTeardownSchema(t *testing.T) {
 		assert.Check(t, len(errors) != 0)
 	})
 }
+
+func TestWorkflowJobSchema(t *testing.T) {
+	fake := fakes.NewCircleCI(t)
+
+	workflowJob := func(attributes string) string {
+		return `version: 2.1
+jobs:
+  build:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - checkout
+workflows:
+  main:
+    jobs:
+      - build:
+` + attributes + "\n"
+	}
+
+	t.Run("a name, a serial group and a filters expression", func(t *testing.T) {
+		errors := configErrors(t, fake, workflowJob(`          name: build-main
+          serial-group: deploys/main
+          filters: pipeline.git.branch == "main"`))
+		assert.Check(t, cmp.DeepEqual(errors, []string{}))
+	})
+
+	t.Run("a name that is only spaces", func(t *testing.T) {
+		errors := configErrors(t, fake, workflowJob(`          name: "   "`))
+		assert.Check(t, len(errors) != 0)
+	})
+
+	t.Run("a filters expression with << >> in it", func(t *testing.T) {
+		errors := configErrors(t, fake, workflowJob(`          filters: << pipeline.git.branch >> == "main"`))
+		assert.Check(t, len(errors) != 0)
+	})
+}
