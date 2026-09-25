@@ -52,6 +52,11 @@ type JobInvocation struct {
 	HasMatrix    bool
 	MatrixRange  protocol.Range
 	MatrixParams map[string][]ParameterValue
+	// MatrixAlias names the whole matrix in a `requires`. It is the job name
+	// unless the matrix sets `alias`.
+	MatrixAlias string
+	// MatrixNames are the names of the jobs the matrix expands to.
+	MatrixNames []string
 }
 
 type Require struct {

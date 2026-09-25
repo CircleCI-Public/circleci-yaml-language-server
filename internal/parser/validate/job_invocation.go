@@ -2,6 +2,7 @@ package validate
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 
@@ -36,6 +37,9 @@ type InvocationContext struct {
 func (val Validate) doesJobInvocationExist(jobInvocations []ast2.JobInvocation, requireName string) bool {
 	for _, jobInvocation := range jobInvocations {
 		if jobInvocation.JobName == requireName || jobInvocation.StepName == requireName {
+			return true
+		}
+		if jobInvocation.MatrixAlias == requireName || slices.Contains(jobInvocation.MatrixNames, requireName) {
 			return true
 		}
 	}
