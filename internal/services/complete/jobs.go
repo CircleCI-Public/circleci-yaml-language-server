@@ -33,6 +33,10 @@ func (ch *CompletionHandler) completeJobs() {
 		return
 	}
 
+	if ch.completeJobExecutor(job) {
+		return
+	}
+
 	switch true {
 	case position.InRange(job.ExecutorRange, ch.Params.Position):
 		ch.addExecutorsCompletion()

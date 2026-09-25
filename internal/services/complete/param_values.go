@@ -7,7 +7,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
 )
 
-var valueBeingWritten = regexp.MustCompile(`^(\s*)([A-Za-z_][\w-]*)\s*:\s*[\w.-]*$`)
+var valueBeingWritten = regexp.MustCompile(`^(\s*)([A-Za-z_][\w-]*)\s*:\s*[\w./:-]*$`)
 
 // valueAt is the key whose value the cursor is at, on the key's own line,
 // with the line of the mapping key or list item whose body the key is in.
@@ -25,15 +25,11 @@ func (ch *CompletionHandler) valueAt() (string, []string, int) {
 		return "", lines, -1
 	}
 
-	indent := len(match[1])
-	for parent := int(pos.Line) - 1; parent >= 0; parent-- {
-		text := lines[parent]
-		if strings.TrimSpace(text) != "" && len(text)-len(strings.TrimLeft(text, " ")) < indent {
-			return match[2], lines, parent
-		}
+	parent := lineAbove(lines, int(pos.Line), len(match[1]))
+	if parent == -1 {
+		return "", lines, -1
 	}
-
-	return "", lines, -1
+	return match[2], lines, parent
 }
 
 // addParameterValues offers the values an enum or boolean parameter takes.
