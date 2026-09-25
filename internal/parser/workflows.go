@@ -91,6 +91,8 @@ func (doc *YamlDocument) parseSingleWorkflow(workflowNode *sitter.Node) ast.Work
 			res.JobsRange = doc.NodeToRange(child)
 			res.JobInvocations = doc.parseJobInvocations(valueNode)
 			res.JobsDAG = doc.buildJobsDAG(res.JobInvocations)
+		case "when", "unless":
+			doc.addCondition(valueNode)
 		case "triggers":
 			res.HasTrigger = true
 			res.TriggersRange = doc.NodeToRange(child)
@@ -333,4 +335,16 @@ func (doc *YamlDocument) sequenceToStrings(node *sitter.Node) []string {
 	}
 
 	return strs
+}
+
+// addCondition records a condition written as a string. A logic statement,
+// such as `equal:`, is a mapping, and isn't recorded.
+func (doc *YamlDocument) addCondition(valueNode *sitter.Node) {
+	if valueNode == nil || valueNode.Kind() != "flow_node" {
+		return
+	}
+	doc.Conditions = append(doc.Conditions, ast.TextAndRange{
+		Text:  unquoteScalar(doc.GetNodeText(valueNode)),
+		Range: doc.NodeToRange(valueNode),
+	})
 }

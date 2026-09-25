@@ -34,6 +34,7 @@ func (val *Validate) Validate() {
 		val.ValidatePipelineParameters()
 		val.ValidateLocalOrbs()
 		val.ValidateFunctions()
+		val.ValidateConditions()
 	}
 	val.ValidateJobs()
 	val.ValidateCommands()

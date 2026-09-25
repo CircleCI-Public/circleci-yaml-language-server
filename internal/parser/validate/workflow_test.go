@@ -267,3 +267,80 @@ workflows:
 		},
 	})
 }
+
+func TestAlwaysTrueConditions(t *testing.T) {
+	const warning = "A << >> template makes this condition a logic statement that is always true, " +
+		"so the comparison is not evaluated. Use a logic statement such as `equal:` " +
+		"to compare a parameter value."
+
+	CheckYamlErrors(t, []ValidateTestCase{
+		{
+			Name: "A template compared outside the template",
+			YamlContent: `version: 2.1
+
+parameters:
+  env:
+    type: string
+    default: prod
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - when:
+          condition: << pipeline.parameters.env >> == "prod"
+          steps:
+            - checkout
+
+workflows:
+  main:
+    when: << pipeline.parameters.env >> != "dev"
+    jobs:
+      - build
+`,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Warning(protocol.Range{
+					Start: protocol.Position{Line: 13, Character: 21},
+					End:   protocol.Position{Line: 13, Character: 60},
+				}, warning),
+				diagnostic.Warning(protocol.Range{
+					Start: protocol.Position{Line: 19, Character: 10},
+					End:   protocol.Position{Line: 19, Character: 48},
+				}, warning),
+			},
+		},
+		{
+			Name: "An expression, a template alone and a logic statement",
+			YamlContent: `version: 2.1
+
+parameters:
+  deploy:
+    type: boolean
+    default: false
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - when:
+          condition: << pipeline.parameters.deploy >>
+          steps:
+            - checkout
+      - when:
+          condition:
+            equal: [main, << pipeline.git.branch >>]
+          steps:
+            - checkout
+
+workflows:
+  main:
+    when: pipeline.git.branch == "main"
+    jobs:
+      - build
+`,
+			Diagnostics: []protocol.Diagnostic{},
+		},
+	})
+}
