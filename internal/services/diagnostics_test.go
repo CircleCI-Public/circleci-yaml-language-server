@@ -15,6 +15,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/fakes"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/testHelpers"
 )
 
@@ -491,4 +492,85 @@ run: gotestsum -- ./...
 	t.Run("a file with a pipeline key is validated", func(t *testing.T) {
 		assert.Check(t, len(diagnose(t, "continue.yml", "jobs:\n  build: {}\n")) != 0)
 	})
+}
+
+// Each case is config the compiler accepts, so the schema mustn't flag it.
+func TestSchemaAcceptsWhatTheCompilerAccepts(t *testing.T) {
+	fake := fakes.NewCircleCI(t)
+
+	errors := func(t *testing.T, content string) []string {
+		t.Helper()
+
+		fileURI := uri.File(filepath.Join(t.TempDir(), ".circleci", "config.yml"))
+		c := cache.New()
+		c.FileCache.SetFile(cache.File{
+			TextDocument: protocol.TextDocumentItem{URI: fileURI, Text: content},
+		})
+
+		diagnostics, err := DiagnosticFile(fileURI, c, testHelpers.SettingsForHost(fake.URL()), "")
+		assert.NilError(t, err)
+
+		messages := []string{}
+		for _, d := range diagnostics {
+			if d.Severity == protocol.DiagnosticSeverityError {
+				messages = append(messages, diagnostic.MessageText(d))
+			}
+		}
+		return messages
+	}
+
+	job := func(steps string) string {
+		return `version: 2.1
+jobs:
+  build:
+    docker:
+      - image: cimg/base:current
+    steps:
+` + steps + `
+workflows:
+  main:
+    jobs:
+      - build
+`
+	}
+
+	tests := []struct {
+		name    string
+		content string
+	}{
+		{
+			name: "save_cache paths as a string",
+			content: job(`      - save_cache:
+          key: deps
+          paths: /virtualenvs`),
+		},
+		{
+			name: "restore_cache keys as a string",
+			content: job(`      - restore_cache:
+          keys: deps`),
+		},
+		{
+			name: "persist_to_workspace paths as a string",
+			content: job(`      - persist_to_workspace:
+          root: .
+          paths: bin`),
+		},
+		{
+			name: "persist_to_workspace with a single path",
+			content: job(`      - persist_to_workspace:
+          root: .
+          path: bin`),
+		},
+		{
+			name: "add_ssh_keys fingerprints as a string",
+			content: job(`      - add_ssh_keys:
+          fingerprints: "SHA256:abc"`),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Check(t, cmp.DeepEqual(errors(t, tt.content), []string{}))
+		})
+	}
 }
