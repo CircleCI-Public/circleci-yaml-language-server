@@ -176,6 +176,15 @@
                                                 },
                                                 "shell": {
                                                     "type": "string"
+                                                },
+                                                "code_signing": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "pattern": "^[A-Za-z0-9-]+$",
+                                                        "maxLength": 50
+                                                    },
+                                                    "markdownDescription": "Names of the code signing bundles the job may install with the `install_signing_bundle` step"
                                                 }
                                             },
                                             "required": [
@@ -411,6 +420,15 @@
                                                         },
                                                         "shell": {
                                                             "type": "string"
+                                                        },
+                                                        "code_signing": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "type": "string",
+                                                                "pattern": "^[A-Za-z0-9-]+$",
+                                                                "maxLength": 50
+                                                            },
+                                                            "markdownDescription": "Names of the code signing bundles the job may install with the `install_signing_bundle` step"
                                                         }
                                                     },
                                                     "additionalProperties": false
@@ -717,6 +735,15 @@
                                                     },
                                                     "shell": {
                                                         "type": "string"
+                                                    },
+                                                    "code_signing": {
+                                                        "type": "array",
+                                                        "items": {
+                                                            "type": "string",
+                                                            "pattern": "^[A-Za-z0-9-]+$",
+                                                            "maxLength": 50
+                                                        },
+                                                        "markdownDescription": "Names of the code signing bundles the job may install with the `install_signing_bundle` step"
                                                     }
                                                 },
                                                 "required": [
@@ -924,6 +951,15 @@
                                                             },
                                                             "shell": {
                                                                 "type": "string"
+                                                            },
+                                                            "code_signing": {
+                                                                "type": "array",
+                                                                "items": {
+                                                                    "type": "string",
+                                                                    "pattern": "^[A-Za-z0-9-]+$",
+                                                                    "maxLength": 50
+                                                                },
+                                                                "markdownDescription": "Names of the code signing bundles the job may install with the `install_signing_bundle` step"
                                                             }
                                                         },
                                                         "additionalProperties": false
@@ -1904,6 +1940,15 @@
                                     },
                                     "shell": {
                                         "type": "string"
+                                    },
+                                    "code_signing": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "pattern": "^[A-Za-z0-9-]+$",
+                                            "maxLength": 50
+                                        },
+                                        "markdownDescription": "Names of the code signing bundles the job may install with the `install_signing_bundle` step"
                                     }
                                 },
                                 "required": [
@@ -2156,6 +2201,15 @@
                                             },
                                             "shell": {
                                                 "type": "string"
+                                            },
+                                            "code_signing": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "string",
+                                                    "pattern": "^[A-Za-z0-9-]+$",
+                                                    "maxLength": 50
+                                                },
+                                                "markdownDescription": "Names of the code signing bundles the job may install with the `install_signing_bundle` step"
                                             }
                                         },
                                         "additionalProperties": false
@@ -2642,6 +2696,15 @@
                                                         },
                                                         "shell": {
                                                             "type": "string"
+                                                        },
+                                                        "code_signing": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "type": "string",
+                                                                "pattern": "^[A-Za-z0-9-]+$",
+                                                                "maxLength": 50
+                                                            },
+                                                            "markdownDescription": "Names of the code signing bundles the job may install with the `install_signing_bundle` step"
                                                         }
                                                     },
                                                     "required": [
@@ -2849,6 +2912,15 @@
                                                                 },
                                                                 "shell": {
                                                                     "type": "string"
+                                                                },
+                                                                "code_signing": {
+                                                                    "type": "array",
+                                                                    "items": {
+                                                                        "type": "string",
+                                                                        "pattern": "^[A-Za-z0-9-]+$",
+                                                                        "maxLength": 50
+                                                                    },
+                                                                    "markdownDescription": "Names of the code signing bundles the job may install with the `install_signing_bundle` step"
                                                                 }
                                                             },
                                                             "additionalProperties": false
