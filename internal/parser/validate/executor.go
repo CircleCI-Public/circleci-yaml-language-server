@@ -63,7 +63,9 @@ func (val Validate) validateMacOSExecutor(executor ast.MacOSExecutor) {
 			fmt.Sprintf("Xcode version \"%s\" is deprecated", executor.Xcode),
 		))
 	} else {
-		val.addDiagnostic(diagnostic.Error(
+		// The compiler doesn't check Xcode versions, and the catalog can lag
+		// behind what can be scheduled, so a missing one is only a warning.
+		val.addDiagnostic(diagnostic.Warning(
 			executor.XcodeRange,
 			fmt.Sprintf("Unknown Xcode version \"%s\"", executor.Xcode),
 		))
@@ -91,7 +93,7 @@ func (val Validate) validateMachineExecutor(executor ast.MachineExecutor) {
 			!rcParam &&
 			!slices.Contains(val.Cache.Offerings(val.Context.Api).MachineResourceClasses(), executor.ResourceClass) {
 
-			val.addDiagnostic(diagnostic.Error(
+			val.addDiagnostic(diagnostic.Warning(
 				executor.ResourceClassRange,
 				fmt.Sprintf("Unknown resource class \"%s\"", executor.ResourceClass),
 			))
@@ -131,8 +133,11 @@ func (val Validate) validateMachineExecutor(executor ast.MachineExecutor) {
 		}
 	}
 
+	// The compiler checks neither resource classes nor images, and the catalog
+	// can lag behind what can be scheduled (canary tags, for one), so one the
+	// catalog lacks is only a warning. A pair it rules out is an error.
 	if !validResourceClass {
-		val.addDiagnostic(diagnostic.Error(
+		val.addDiagnostic(diagnostic.Warning(
 			executor.ResourceClassRange,
 			fmt.Sprintf(
 				"Unknown resource class \"%s\"",
@@ -151,7 +156,7 @@ func (val Validate) validateMachineExecutor(executor ast.MachineExecutor) {
 				),
 			))
 		} else {
-			val.addDiagnostic(diagnostic.Error(
+			val.addDiagnostic(diagnostic.Warning(
 				executor.ImageRange,
 				fmt.Sprintf(
 					"Unknown machine image \"%s\"",

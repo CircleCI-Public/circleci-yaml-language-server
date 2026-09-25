@@ -42,8 +42,7 @@ orbs:
 			Diagnostics: []protocol.Diagnostic{},
 		},
 		{
-			Name:       "Local mac orb executor should give well located errors",
-			OnlyErrors: true,
+			Name: "Local mac orb executor should give well located diagnostics",
 			YamlContent: `version: 2.1
 
 orbs:
@@ -53,7 +52,11 @@ orbs:
         macos:
           xcode: 12.5`,
 			Diagnostics: []protocol.Diagnostic{
-				diagnostic.Error(protocol.Range{
+				diagnostic.Warning(protocol.Range{
+					Start: protocol.Position{Line: 3, Character: 2},
+					End:   protocol.Position{Line: 7, Character: 21},
+				}, "Orb is unused"),
+				diagnostic.Warning(protocol.Range{
 					Start: protocol.Position{Line: 7, Character: 10},
 					End:   protocol.Position{Line: 7, Character: 21},
 				},

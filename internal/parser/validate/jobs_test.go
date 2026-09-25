@@ -309,7 +309,7 @@ func TestResourceClass(t *testing.T) {
 			},
 		},
 		{
-			label: "docker resource_class",
+			label: "machine resource_class",
 			yamlData: `jobs:
   test:
     machine:
@@ -322,7 +322,7 @@ func TestResourceClass(t *testing.T) {
 					Start: protocol.Position{Line: 4, Character: 4},
 					End:   protocol.Position{Line: 4, Character: 24},
 				},
-				Severity: protocol.DiagnosticSeverityError,
+				Severity: protocol.DiagnosticSeverityWarning,
 			},
 		},
 		{
