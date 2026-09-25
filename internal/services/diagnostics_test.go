@@ -741,6 +741,25 @@ workflows:
       - build
 `,
 		},
+		{
+			name: "an image pulled with GCP OIDC",
+			content: `version: 2.1
+jobs:
+  build:
+    docker:
+      - image: us-docker.pkg.dev/my-project/images/builder:1.0
+        gcp_auth:
+          oidc_service_account: builder@my-project.iam.gserviceaccount.com
+          workload_identity_pool: circleci
+          workload_identity_provider: circleci-oidc
+    steps:
+      - checkout
+workflows:
+  main:
+    jobs:
+      - build
+`,
+		},
 	}
 
 	for _, tt := range tests {

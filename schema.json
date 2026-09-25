@@ -298,6 +298,27 @@
                                                             }
                                                         ]
                                                     },
+                                                    "gcp_auth": {
+                                                        "type": "object",
+                                                        "markdownDescription": "Authenticate to Google Artifact Registry with OIDC",
+                                                        "properties": {
+                                                            "oidc_service_account": {
+                                                                "type": "string"
+                                                            },
+                                                            "workload_identity_pool": {
+                                                                "type": "string"
+                                                            },
+                                                            "workload_identity_provider": {
+                                                                "type": "string"
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "oidc_service_account",
+                                                            "workload_identity_pool",
+                                                            "workload_identity_provider"
+                                                        ],
+                                                        "additionalProperties": false
+                                                    },
                                                     "auth": {
                                                         "type": "object",
                                                         "properties": {
@@ -856,6 +877,27 @@
                                                                     "additionalProperties": false
                                                                 }
                                                             ]
+                                                        },
+                                                        "gcp_auth": {
+                                                            "type": "object",
+                                                            "markdownDescription": "Authenticate to Google Artifact Registry with OIDC",
+                                                            "properties": {
+                                                                "oidc_service_account": {
+                                                                    "type": "string"
+                                                                },
+                                                                "workload_identity_pool": {
+                                                                    "type": "string"
+                                                                },
+                                                                "workload_identity_provider": {
+                                                                    "type": "string"
+                                                                }
+                                                            },
+                                                            "required": [
+                                                                "oidc_service_account",
+                                                                "workload_identity_pool",
+                                                                "workload_identity_provider"
+                                                            ],
+                                                            "additionalProperties": false
                                                         },
                                                         "auth": {
                                                             "type": "object",
@@ -2104,6 +2146,27 @@
                                             ],
                                             "markdownDescription": "Authentication for AWS EC2 Container Registry (ECR). You can use the access/secret keys or OIDC."
                                         },
+                                        "gcp_auth": {
+                                            "type": "object",
+                                            "markdownDescription": "Authenticate to Google Artifact Registry with OIDC",
+                                            "properties": {
+                                                "oidc_service_account": {
+                                                    "type": "string"
+                                                },
+                                                "workload_identity_pool": {
+                                                    "type": "string"
+                                                },
+                                                "workload_identity_provider": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "oidc_service_account",
+                                                "workload_identity_pool",
+                                                "workload_identity_provider"
+                                            ],
+                                            "additionalProperties": false
+                                        },
                                         "auth": {
                                             "type": "object",
                                             "properties": {
@@ -2817,6 +2880,27 @@
                                                                         "additionalProperties": false
                                                                     }
                                                                 ]
+                                                            },
+                                                            "gcp_auth": {
+                                                                "type": "object",
+                                                                "markdownDescription": "Authenticate to Google Artifact Registry with OIDC",
+                                                                "properties": {
+                                                                    "oidc_service_account": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "workload_identity_pool": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "workload_identity_provider": {
+                                                                        "type": "string"
+                                                                    }
+                                                                },
+                                                                "required": [
+                                                                    "oidc_service_account",
+                                                                    "workload_identity_pool",
+                                                                    "workload_identity_provider"
+                                                                ],
+                                                                "additionalProperties": false
                                                             },
                                                             "auth": {
                                                                 "type": "object",
