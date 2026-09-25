@@ -81,3 +81,59 @@ func TestCompleteSteps(t *testing.T) {
 		}
 	})
 }
+
+func TestCompleteStepBody(t *testing.T) {
+	const config = `version: 2.1
+
+commands:
+  greet:
+    parameters:
+      who:
+        type: string
+      loud:
+        type: boolean
+        default: false
+    steps:
+      - run: echo hi << parameters.who >>
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run:
+          command: echo
+          
+      - greet:
+          who: me
+          
+      - when:
+          condition: true
+          
+      - run:
+          environment:
+            
+`
+	at := func(line uint32) []string {
+		return completionLabels(t, config, protocol.Position{Line: line, Character: 10})
+	}
+
+	t.Run("a built-in step is offered the keys it doesn't have", func(t *testing.T) {
+		assert.Check(t, cmp.DeepEqual(at(20), []string{
+			"name", "shell", "environment", "background", "working_directory",
+			"no_output_timeout", "when", "max_auto_reruns", "auto_rerun_delay", "teardown",
+		}))
+	})
+
+	t.Run("a command step is offered the parameters it isn't given", func(t *testing.T) {
+		assert.Check(t, cmp.DeepEqual(at(23), []string{"loud"}))
+	})
+
+	t.Run("a when step is offered its steps", func(t *testing.T) {
+		assert.Check(t, cmp.DeepEqual(at(26), []string{"steps"}))
+	})
+
+	t.Run("nothing is offered in a value of a step's body", func(t *testing.T) {
+		assert.Check(t, cmp.Len(completionLabels(t, config, protocol.Position{Line: 29, Character: 12}), 0))
+	})
+}
