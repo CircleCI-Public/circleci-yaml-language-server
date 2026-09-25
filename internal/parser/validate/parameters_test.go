@@ -460,3 +460,62 @@ workflows:
 
 	CheckYamlErrors(t, testCases)
 }
+
+func TestParametersUnderUnreadTopLevelKeys(t *testing.T) {
+	testCases := []ValidateTestCase{
+		{
+			Name: "Steps kept under an unread key for their anchors",
+			YamlContent: `version: 2.1
+
+post-steps:
+  - run: &check-version
+      name: Check the version
+      command: gcloud --version | grep -q "<< parameters.version >>"
+
+jobs:
+  check:
+    parameters:
+      version:
+        type: string
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: *check-version
+
+workflows:
+  main:
+    jobs:
+      - check:
+          version: "1.0"
+`,
+			OnlyErrors:  true,
+			Diagnostics: []protocol.Diagnostic{},
+		},
+		{
+			Name: "A parameter used under jobs is still checked",
+			YamlContent: `version: 2.1
+
+jobs:
+  check:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo << parameters.version >>
+
+workflows:
+  main:
+    jobs:
+      - check
+`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(protocol.Range{
+					Start: protocol.Position{Line: 7, Character: 18},
+					End:   protocol.Position{Line: 7, Character: 42},
+				}, "Parameter version is not defined"),
+			},
+		},
+	}
+
+	CheckYamlErrors(t, testCases)
+}

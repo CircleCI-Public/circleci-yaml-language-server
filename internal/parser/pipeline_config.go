@@ -48,3 +48,24 @@ func (doc *YamlDocument) IsPipelineConfig() bool {
 
 	return found
 }
+
+// IsUnderUnreadTopLevelKey reports whether node sits under a top-level key
+// the compiler doesn't read, such as one that only holds anchors for use
+// elsewhere. The compiler only reads that content where an alias brings it
+// into a job or a command.
+func (doc *YamlDocument) IsUnderUnreadTopLevelKey(node *sitter.Node) bool {
+	rootMapping := GetBlockMappingNode(doc.RootNode)
+	if rootMapping == nil {
+		return false
+	}
+
+	for n := node; n != nil; n = n.Parent() {
+		parent := n.Parent()
+		if n.Kind() == "block_mapping_pair" && parent != nil && parent.Id() == rootMapping.Id() {
+			keyNode, _ := doc.GetKeyValueNodes(n)
+			return keyNode != nil && !pipelineConfigKeys[doc.GetNodeText(keyNode)]
+		}
+	}
+
+	return false
+}
