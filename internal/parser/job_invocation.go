@@ -18,9 +18,23 @@ func (doc *YamlDocument) parseJobInvocations(jobsInvocationsNode *sitter.Node) [
 	}
 
 	iterateOnBlockSequence(blockSequenceNode, func(child *sitter.Node) {
-		jobInvocations = append(jobInvocations, doc.parseSingleJobInvocation(child))
+		// A flow sequence, `jobs: [build, test]`, also holds its brackets and
+		// commas.
+		if child.Kind() == "block_sequence_item" || child.Kind() == "flow_node" {
+			jobInvocations = append(jobInvocations, doc.parseSingleJobInvocation(child))
+		}
 	})
 	return jobInvocations
+}
+
+// parseJobInvocationName reads an invocation that is only a job's name.
+func (doc *YamlDocument) parseJobInvocationName(res ast2.JobInvocation, element *sitter.Node) ast2.JobInvocation {
+	name := GetChildOfType(element, "plain_scalar")
+	res.JobName = doc.GetNodeText(name)
+	res.JobNameRange = doc.NodeToRange(element)
+	res.StepName = res.JobName
+	res.StepNameRange = res.JobNameRange
+	return res
 }
 
 func (doc *YamlDocument) parseSingleJobInvocation(jobInvocationNode *sitter.Node) ast2.JobInvocation {
@@ -29,6 +43,9 @@ func (doc *YamlDocument) parseSingleJobInvocation(jobInvocationNode *sitter.Node
 		return res
 	}
 	res.JobInvocationRange = doc.NodeToRange(jobInvocationNode)
+	if jobInvocationNode.Kind() == "flow_node" {
+		return doc.parseJobInvocationName(res, jobInvocationNode)
+	}
 	if jobInvocationNode.Kind() != "block_sequence_item" {
 		return res
 	}
@@ -63,12 +80,7 @@ func (doc *YamlDocument) parseSingleJobInvocation(jobInvocationNode *sitter.Node
 	}
 
 	if element != nil && element.Kind() == "flow_node" {
-		name := GetChildOfType(element, "plain_scalar")
-		res.JobName = doc.GetNodeText(name)
-		res.JobNameRange = doc.NodeToRange(element)
-		res.StepName = res.JobName
-		res.StepNameRange = res.JobNameRange
-		return res
+		return doc.parseJobInvocationName(res, element)
 	} else { // block_node
 		blockMappingNode := GetChildOfType(element, "block_mapping")
 		blockMappingPair := GetChildOfType(blockMappingNode, "block_mapping_pair")

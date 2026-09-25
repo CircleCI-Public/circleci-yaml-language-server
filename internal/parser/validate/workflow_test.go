@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/codeaction"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"go.lsp.dev/protocol"
 )
 
@@ -159,4 +160,32 @@ workflows:
 	}
 
 	CheckYamlErrors(t, testCases)
+}
+
+func TestWorkflowJobsAsAFlowSequence(t *testing.T) {
+	CheckYamlErrors(t, []ValidateTestCase{
+		{
+			Name: "Each name in a flow sequence is an invocation",
+			YamlContent: `version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - checkout
+
+workflows:
+  main:
+    jobs: [build, missing]
+`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(protocol.Range{
+					Start: protocol.Position{Line: 11, Character: 18},
+					End:   protocol.Position{Line: 11, Character: 25},
+				}, `Cannot find declaration for job "missing"`),
+			},
+		},
+	})
 }
