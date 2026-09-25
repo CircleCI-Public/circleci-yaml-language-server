@@ -10,6 +10,19 @@
             ],
             "markdownDescription": "Specify when to enable or disable the step. Takes the following values: `always`, `on_success`, `on_fail` (default: `on_success`)"
         },
+        "stringOrList": {
+            "oneOf": [
+                {
+                    "type": "string"
+                },
+                {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            ]
+        },
         "jobInvocation": {
             "oneOf": [
                 {
@@ -1333,10 +1346,7 @@
                             ],
                             "properties": {
                                 "paths": {
-                                    "type": "array",
-                                    "items": {
-                                        "type": "string"
-                                    },
+                                    "$ref": "#/definitions/stringOrList",
                                     "markdownDescription": "List of directories which should be added to the cache"
                                 },
                                 "key": {
@@ -1383,10 +1393,7 @@
                                     ],
                                     "properties": {
                                         "keys": {
-                                            "type": "array",
-                                            "items": {
-                                                "type": "string"
-                                            },
+                                            "$ref": "#/definitions/stringOrList",
                                             "markdownDescription": "List of cache keys to lookup for a cache to restore. Only first existing key will be restored."
                                         },
                                         "name": {
@@ -1451,8 +1458,19 @@
                             "markdownDescription": "https://circleci.com/docs/configuration-reference#persist_to_workspace\n\nSpecial step used to persist a temporary file to be used by another job in the workflow",
                             "type": "object",
                             "required": [
-                                "root",
-                                "paths"
+                                "root"
+                            ],
+                            "oneOf": [
+                                {
+                                    "required": [
+                                        "paths"
+                                    ]
+                                },
+                                {
+                                    "required": [
+                                        "path"
+                                    ]
+                                }
                             ],
                             "properties": {
                                 "root": {
@@ -1460,11 +1478,12 @@
                                     "markdownDescription": "Either an absolute path or a path relative to `working_directory`"
                                 },
                                 "paths": {
-                                    "type": "array",
-                                    "items": {
-                                        "type": "string"
-                                    },
+                                    "$ref": "#/definitions/stringOrList",
                                     "markdownDescription": "Glob identifying file(s), or a non-glob path to a directory to add to the shared workspace. Interpreted as relative to the workspace root. Must not be the workspace root itself."
+                                },
+                                "path": {
+                                    "type": "string",
+                                    "markdownDescription": "A single glob or path to add to the shared workspace, instead of `paths`"
                                 },
                                 "name": {
                                     "type": "string",
@@ -1510,10 +1529,7 @@
                                     "type": "object",
                                     "properties": {
                                         "fingerprints": {
-                                            "type": "array",
-                                            "items": {
-                                                "type": "string"
-                                            },
+                                            "$ref": "#/definitions/stringOrList",
                                             "markdownDescription": "List of fingerprints corresponding to the keys to be added"
                                         },
                                         "when": {
