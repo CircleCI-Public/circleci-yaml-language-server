@@ -14,6 +14,7 @@ require (
 	github.com/rollbar/rollbar-go v1.4.8
 	github.com/tree-sitter-grammars/tree-sitter-yaml v0.7.2
 	github.com/tree-sitter/go-tree-sitter v0.24.1-0.20251112183152-c9492002f76e
+	github.com/ulikunitz/xz v0.5.15
 	github.com/xeipuuv/gojsonschema v1.2.0
 	go.lsp.dev/jsonrpc2 v1.0.1
 	go.lsp.dev/protocol v1.0.1

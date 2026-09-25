@@ -1,0 +1,101 @@
+# Builds and packages the language server. It doesn't publish: CI runs
+# `goreleaser release --snapshot` with VERSION set (see `task ci:build`), and
+# the release jobs in .circleci/config.yml upload what it leaves in dist/.
+#
+# The server needs cgo (go-tree-sitter compiles its C parser in), so every
+# target is cross-compiled from Linux with Zig as the C compiler.
+
+version: 2
+
+project_name: circleci-yaml-language-server
+
+snapshot:
+  version_template: '{{ .Env.VERSION }}'
+
+builds:
+  - binary: circleci-yaml-lsp
+    main: ./cmd/server
+    env:
+      - CGO_ENABLED=1
+    flags:
+      - -trimpath
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      # Anchored so the overrides, which replace the list, can repeat it.
+      - &ldflags -s -w -X github.com/CircleCI-Public/circleci-yaml-language-server/internal/version.Server={{ .Version }}
+    overrides:
+      # Static musl, so the binary runs on any distribution, old glibc (#266)
+      # and Alpine included.
+      - goos: linux
+        goarch: amd64
+        env: ['CC={{ .Env.ZIG }} cc -target x86_64-linux-musl']
+        tags: [netgo, osusergo]
+        ldflags: [*ldflags, "-linkmode=external '-extldflags=-static -s'"]
+      - goos: linux
+        goarch: arm64
+        env: ['CC={{ .Env.ZIG }} cc -target aarch64-linux-musl']
+        tags: [netgo, osusergo]
+        ldflags: [*ldflags, "-linkmode=external '-extldflags=-static -s'"]
+      # Zig can compile for macOS but not link (it has no Apple SDK), so Go's
+      # own linker does the link. netgo keeps the resolver off libresolv.
+      - goos: darwin
+        goarch: amd64
+        env: ['CC={{ .Env.ZIG }} cc -target x86_64-macos']
+        tags: [netgo]
+        ldflags: [*ldflags, -linkmode=internal]
+      - goos: darwin
+        goarch: arm64
+        env: ['CC={{ .Env.ZIG }} cc -target aarch64-macos']
+        tags: [netgo]
+        ldflags: [*ldflags, -linkmode=internal]
+      - goos: windows
+        goarch: amd64
+        env: ['CC={{ .Env.ZIG }} cc -target x86_64-windows-gnu']
+      - goos: windows
+        goarch: arm64
+        env: ['CC={{ .Env.ZIG }} cc -target aarch64-windows-gnu']
+
+# Signs and notarises the darwin binaries with quill, which runs on Linux.
+# Skipped when the macos-codesigning context isn't attached (branch builds).
+notarize:
+  macos:
+    - enabled: '{{ isEnvSet "QUILL_SIGN_P12" }}'
+      sign:
+        certificate: '{{ envOrDefault "QUILL_SIGN_P12" "" }}'
+      notarize:
+        issuer_id: '{{ envOrDefault "QUILL_NOTARY_ISSUER" "" }}'
+        key_id: '{{ envOrDefault "QUILL_NOTARY_KEY_ID" "" }}'
+        key: '{{ envOrDefault "QUILL_NOTARY_KEY" "" }}'
+
+archives:
+  - id: archive
+    files:
+      - LICENSE.md
+      - CREDITS.md
+      - schema.json
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+
+  # The bare binaries under the names every release has had, which the VS Code
+  # extension and circleci-yaml-mode.el download: {os}-{arch}-lsp[.exe].
+  # `task ci:build` copies them out of dist/, since goreleaser only renames
+  # them when it uploads.
+  - id: binary
+    formats: [binary]
+    name_template: '{{ .Os }}-{{ .Arch }}-lsp'
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  disable: true
+
+release:
+  disable: true

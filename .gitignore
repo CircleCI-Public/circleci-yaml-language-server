@@ -8,6 +8,7 @@ __pycache__
 node_modules
 coverage
 /reports
+/dist
 __debug_bin
 report.xml
 .idea

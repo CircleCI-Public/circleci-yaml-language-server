@@ -3,6 +3,11 @@ version: "3"
 vars:
   RESULTS_DIR: test-reports
   LINT_REPORT: test-reports/lint.xml
+  # Where `task snapshot` leaves the release, under its published names.
+  RELEASE_DIR: dist/release
+  # The release CI builds is in ~/version, written by its `Create version
+  # file` job. Branch builds have none.
+  VERSION_CMD: cat "$HOME/version" 2>/dev/null || echo 0.0.0-dev
 
 tasks:
   build:
@@ -41,6 +46,29 @@ tasks:
   licenses:
     - go-licenses csv ./cmd/server >licenses.csv 2>licenses.errors
 
+  zig:
+    desc: Install the pinned Zig into bin/zig, and print its path
+    cmds:
+      - go run ./cmd/ci/install_zig
+
+  release-check:
+    desc: Check the goreleaser config
+    cmds:
+      - go tool -modfile tools/go.mod goreleaser check
+
+  snapshot:
+    desc: Build and package every release target into dist/ (set VERSION=x.y.z)
+    vars:
+      VERSION: '{{default "0.0.0-dev" .VERSION}}'
+      ZIG:
+        sh: go run ./cmd/ci/install_zig
+    env:
+      VERSION: '{{.VERSION}}'
+      ZIG: '{{.ZIG}}'
+    cmds:
+      - go tool -modfile tools/go.mod goreleaser release --snapshot --clean
+      - go run ./cmd/ci/stage_release -out {{.RELEASE_DIR}}
+
   lint:
     desc: Run golangci-lint
     vars:
@@ -73,6 +101,7 @@ tasks:
       - task: mod-tidy
         vars:
           CLI_ARGS: -diff
+      - task: release-check
 
   fix:
     desc: Auto-fix static checks
@@ -127,9 +156,16 @@ tasks:
 
   ci:test:
     desc: Run tests with JUnit output
+    vars:
+      SUITE: '{{if eq OS "windows"}}windows tests{{else}}ci tests{{end}}'
+      # Windows has no C compiler for cgo, so it gets the pinned Zig.
+      CC:
+        sh: '{{if eq OS "windows"}}echo "$(go run ./cmd/ci/install_zig) cc -target x86_64-windows-gnu"{{else}}go env CC{{end}}'
+    env:
+      CC: '{{.CC}}'
     cmds:
       - mkdir -p "{{.RESULTS_DIR}}"
-      - circleci testsuite run "ci tests"
+      - circleci testsuite run "{{.SUITE}}"
 
   ci:check:
     desc: Run all static checks, with JUnit output
@@ -141,3 +177,35 @@ tasks:
       - task: mod-tidy
         vars:
           CLI_ARGS: -diff
+      - task: release-check
+
+  ci:build:
+    desc: Build and package the release at the version in ~/version
+    cmds:
+      - task: snapshot
+        vars:
+          VERSION:
+            sh: '{{.VERSION_CMD}}'
+
+  ci:smoke-test:
+    desc: Check the staged binaries run here and report the version being released
+    vars:
+      VERSION:
+        sh: '{{.VERSION_CMD}}'
+      BINARY: '{{.RELEASE_DIR}}/{{OS}}-{{ARCH}}-lsp{{exeExt}}'
+      # The oldest glibc anyone asked for (#266), and musl.
+      IMAGES: centos:7 amazonlinux:2 ubuntu:20.04 alpine:3.20
+    cmds:
+      - |
+        got="$("{{.BINARY}}" --version)"
+        echo "{{.BINARY}}: $got"
+        test "$got" = "{{.VERSION}}"
+      - for:
+          var: IMAGES
+          split: ' '
+        platforms: [linux]
+        cmd: |
+          got="$(docker run --rm --volume "$PWD/{{.RELEASE_DIR}}:/release" {{.ITEM}} /release/linux-{{ARCH}}-lsp --version)"
+          echo "{{.ITEM}}: $got"
+          test "$got" = "{{.VERSION}}"
+
