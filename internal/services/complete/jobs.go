@@ -19,6 +19,14 @@ func (ch *CompletionHandler) completeJobs() {
 		return
 	}
 
+	if key, lines, parent := ch.valueAt(); parent != -1 && !position.IsDefaultRange(job.ExecutorRange) &&
+		parent == int(job.ExecutorRange.Start.Line) && executorMapping.MatchString(lines[parent]) {
+		if param, ok := ch.executorParameters(job.Executor)[key]; ok {
+			ch.addParameterValues(param)
+			return
+		}
+	}
+
 	if lines, parent := ch.keyParent(); parent != -1 && !position.IsDefaultRange(job.ExecutorRange) &&
 		parent == int(job.ExecutorRange.Start.Line) && executorMapping.MatchString(lines[parent]) {
 		ch.completeExecutorMapping(job.Executor, parent)

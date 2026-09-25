@@ -81,12 +81,20 @@ func (ch *CompletionHandler) jobInvocationBodyAt(invocations []ast.JobInvocation
 	if parent == -1 || !stepWithBody.MatchString(lines[parent]) {
 		return nil, 0
 	}
-	for i := range invocations {
-		if int(invocations[i].JobNameRange.Start.Line) == parent {
-			return &invocations[i], parent
-		}
+	if invocation := invocationNamedOn(parent, invocations); invocation != nil {
+		return invocation, parent
 	}
 	return nil, 0
+}
+
+// invocationNamedOn is the invocation whose job's name is on a line.
+func invocationNamedOn(line int, invocations []ast.JobInvocation) *ast.JobInvocation {
+	for i := range invocations {
+		if int(invocations[i].JobNameRange.Start.Line) == line {
+			return &invocations[i]
+		}
+	}
+	return nil
 }
 
 // completeJobInvocationBody offers the keys an invocation doesn't have yet:

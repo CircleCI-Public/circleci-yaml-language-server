@@ -4,6 +4,7 @@ import (
 	sitter "github.com/tree-sitter/go-tree-sitter"
 
 	ast2 "github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
+	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/internal/parser"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 )
 
@@ -23,6 +24,16 @@ func (ch *CompletionHandler) completeSteps(entityName string, inJob bool, comple
 // completeStepList offers the steps of a list of steps, or the keys of the
 // step whose body the cursor is in.
 func (ch *CompletionHandler) completeStepList(completionNode *sitter.Node) {
+	if key, lines, parent := ch.valueAt(); parent != -1 {
+		if match := stepWithBody.FindStringSubmatch(lines[parent]); match != nil {
+			params := ch.Doc.GetDefinedParams(match[2], yamlparser.CommandEntity, ch.Cache)
+			if param, ok := params[key]; ok {
+				ch.addParameterValues(param)
+			}
+		}
+		return
+	}
+
 	switch where, name, nameLine := ch.stepAt(); where {
 	case inStepBody:
 		ch.completeStepBody(name, nameLine)
