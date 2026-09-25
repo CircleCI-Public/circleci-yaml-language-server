@@ -59,6 +59,21 @@ executors:
 				}, "Invalid resource class \"large\" for Xcode version \"26.5.0\""),
 			},
 		},
+		{
+			Name: "Xcode version from a parameter",
+			YamlContent: `version: 2.1
+
+executors:
+  macos-ios-executor:
+    parameters:
+      xcode:
+        type: string
+        default: 26.5.0
+    macos:
+      xcode: << parameters.xcode >>
+    resource_class: m4pro.medium`,
+			Diagnostics: []protocol.Diagnostic{},
+		},
 	}
 
 	CheckYamlErrors(t, testCases)

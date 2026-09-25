@@ -40,6 +40,11 @@ func (val Validate) ValidateExecutors() {
 // MacOSExecutor
 
 func (val Validate) validateMacOSExecutor(executor ast.MacOSExecutor) {
+	// A version from a parameter is only known once the config is compiled.
+	if paramref.ContainsReference(executor.Xcode) {
+		return
+	}
+
 	xcodeVersions := val.Cache.Offerings(val.Context.Api).XcodeVersions()
 	if xcodeVersions == nil {
 		return
