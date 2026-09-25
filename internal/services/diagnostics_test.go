@@ -805,6 +805,14 @@ workflows:
       - sign
 `,
 		},
+		{
+			name: "with_tool_cache wrapping steps",
+			content: job(`      - with_tool_cache:
+          tool: gradle
+          steps:
+            - checkout
+            - run: ./gradlew build`),
+		},
 	}
 
 	for _, tt := range tests {

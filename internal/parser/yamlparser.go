@@ -275,6 +275,7 @@ func (doc *YamlDocument) IsBuiltIn(commandName string) bool {
 		"deploy",
 		"when",   // Has nothing to do here, tech debt to resolve
 		"unless", // Has nothing to do here, tech debt to resolve
+		"with_tool_cache",
 	}
 
 	return slices.Contains(builtInCommands, commandName)

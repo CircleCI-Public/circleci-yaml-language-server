@@ -271,3 +271,38 @@ workflows:
 
 	CheckYamlErrors(t, testCases)
 }
+
+func TestWithToolCache(t *testing.T) {
+	testCases := []ValidateTestCase{
+		{
+			Name: "Steps inside with_tool_cache are checked",
+			YamlContent: `version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - with_tool_cache:
+          tool: gradle
+          steps:
+            - checkout
+            - missing-command
+
+workflows:
+  main:
+    jobs:
+      - build
+`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(protocol.Range{
+					Start: protocol.Position{Line: 11, Character: 14},
+					End:   protocol.Position{Line: 11, Character: 29},
+				}, "Cannot find declaration for step missing-command"),
+			},
+		},
+	}
+
+	CheckYamlErrors(t, testCases)
+}
