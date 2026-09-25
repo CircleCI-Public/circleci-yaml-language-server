@@ -39,6 +39,7 @@ func ParseFile(content []byte, context *session.Settings) YamlDocument {
 		Workflows:          make(map[string]ast2.Workflow),
 		Executors:          make(map[string]ast2.Executor),
 		PipelineParameters: make(map[string]ast2.Parameter),
+		Functions:          make(map[string]ast2.Function),
 		Diagnostics:        &[]protocol.Diagnostic{},
 
 		LocalOrbInfo: make(map[string]*ast2.OrbInfo),
@@ -122,6 +123,14 @@ func (doc *YamlDocument) ParseYAML(context *session.Settings, offset protocol.Po
 			} else {
 				doc.ExecutorsRange = doc.NodeToRange(child)
 			}
+
+		case "functions":
+			if valueNode == nil {
+				break
+			}
+
+			doc.FunctionsRange = doc.NodeToRange(valueNode)
+			doc.parseFunctions(valueNode)
 
 		case "description":
 			if valueNode == nil {
@@ -227,6 +236,7 @@ type YamlDocument struct {
 	JobGroups          map[string]ast2.JobGroup
 	Workflows          map[string]ast2.Workflow
 	PipelineParameters map[string]ast2.Parameter
+	Functions          map[string]ast2.Function
 	YamlAnchors        map[string]YamlAnchor
 
 	SetupRange              protocol.Range
@@ -237,6 +247,7 @@ type YamlDocument struct {
 	JobGroupsRange          protocol.Range
 	WorkflowRange           protocol.Range
 	PipelineParametersRange protocol.Range
+	FunctionsRange          protocol.Range
 	VersionRange            protocol.Range
 
 	LocalOrbInfo map[string]*ast2.OrbInfo

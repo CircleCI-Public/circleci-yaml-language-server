@@ -33,6 +33,7 @@ func (val *Validate) Validate() {
 		val.CheckNames()
 		val.ValidatePipelineParameters()
 		val.ValidateLocalOrbs()
+		val.ValidateFunctions()
 	}
 	val.ValidateJobs()
 	val.ValidateCommands()
