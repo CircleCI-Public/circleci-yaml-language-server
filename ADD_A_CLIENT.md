@@ -55,3 +55,23 @@ await lsClient.sendRequest(`workspace/executeCommand`, {
   arguments: ['<self-hosted-url>'],
 });
 ```
+
+##### `setGitHubToken`
+
+An orb can be referenced by the URL of its source, such as
+`https://raw.githubusercontent.com/acme/orbs/main/go.yml`. The language server
+fetches it, and when the file is on GitHub and can't be fetched without
+credentials, as in a private repository, it tries again with this GitHub token.
+The token is only ever sent to `raw.githubusercontent.com` and `github.com`.
+
+Without this command, the language server uses `GH_TOKEN` or `GITHUB_TOKEN`
+from its environment, if either is set.
+
+Example Typescript usage:
+
+```typescript
+await lsClient.sendRequest(`workspace/executeCommand`, {
+  command: 'setGitHubToken',
+  arguments: ['<github-token>'],
+});
+```
