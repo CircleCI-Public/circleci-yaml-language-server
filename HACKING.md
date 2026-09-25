@@ -107,6 +107,25 @@ schedule is where they belong eventually, which is what the exit codes above
 are for, and Docker Hub's rate limit on anonymous callers is a reason to keep
 any such schedule infrequent.
 
+## Config survey
+
+`cmd/dev/survey` runs the diagnostics over the CircleCI configs of whole GitHub
+organizations, `circleci` and `CircleCI-Public` by default. It's how to
+measure what a change does to real configs: which errors it removes, and
+whether it adds any.
+
+```bash
+$ GH_TOKEN=$(gh auth token) task survey -- fetch -since 2024-09-01   # into bin/survey
+$ GH_TOKEN=$(gh auth token) task survey -- diagnose > before.jsonl
+$ # ... make the change ...
+$ GH_TOKEN=$(gh auth token) task survey -- diagnose > after.jsonl
+$ task survey -- compare before.jsonl after.jsonl
+```
+
+The configs come from private repositories too, so they're kept under `bin/`,
+which git ignores, and must not be committed. When a false error is fixed, a
+minimal config that reproduces it belongs in the tests instead.
+
 ## Managing Dependencies
 
 We use Go 1.19 Modules for managing our dependencies.

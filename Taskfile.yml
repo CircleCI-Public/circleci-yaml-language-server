@@ -141,6 +141,11 @@ tasks:
     cmds:
       - go run ./cmd/dev/dockerhub {{.CLI_ARGS}}
 
+  survey:
+    desc: Survey real configs (pass fetch, diagnose or compare with --; see cmd/dev/survey)
+    cmds:
+      - go run ./cmd/dev/survey {{.CLI_ARGS}}
+
   # CI tasks
 
   ci:lint:
