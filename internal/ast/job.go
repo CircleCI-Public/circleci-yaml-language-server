@@ -13,6 +13,7 @@ type Job struct {
 	NameRange protocol.Range
 
 	Shell            string
+	ShellRange       protocol.Range
 	WorkingDirectory string
 	Parallelism      int
 	ParallelismRange protocol.Range

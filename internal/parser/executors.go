@@ -75,6 +75,11 @@ func (doc *YamlDocument) parseSingleExecutor(executorNode *sitter.Node) {
 		doc.parseBaseExecutor(&baseExecutor, executorNameNode, blockMappingNode, func(node *sitter.Node) {}, "dummy")
 		baseExecutor.Uncomplete = true
 		doc.Executors[executorName] = baseExecutor
+
+		doc.addDiagnostic(diagnostic.Warning(doc.NodeToRange(executorNameNode),
+			"An executor with no declared \"docker\", \"machine\", or \"macos\" key is "+
+				"undocumented, and support for it may be removed at a future date. See "+
+				"https://circleci.com/docs/reference/configuration-reference/#executors"))
 	}
 }
 
@@ -165,6 +170,21 @@ func (doc *YamlDocument) parseSingleExecutorMachine(nameNode *sitter.Node, value
 			case "resource_class":
 				res.ResourceClassRange = doc.NodeToRange(child)
 				res.ResourceClass = doc.GetNodeText(valueNode)
+				doc.addDiagnostic(diagnostic.Warning(doc.NodeToRange(keyNode),
+					"Setting `resource_class` inside the `machine` map is undocumented; set it "+
+						"as a sibling of `machine` instead. See "+
+						"https://circleci.com/docs/reference/configuration-reference/#executors"))
+
+			case "shell":
+				doc.addDiagnostic(diagnostic.Warning(doc.NodeToRange(keyNode),
+					"Setting `shell` inside the `machine` map is undocumented; set it "+
+						"as a sibling of `machine` instead. See "+
+						"https://circleci.com/docs/reference/configuration-reference/#executors"))
+
+			case "enabled":
+				doc.addDiagnostic(diagnostic.Deprecated(doc.NodeToRange(keyNode),
+					"The `enabled` machine key is deprecated and should be removed. See "+
+						"https://circleci.com/docs/reference/configuration-reference/#machine"))
 			}
 		})
 	}

@@ -530,7 +530,12 @@ func (doc *YamlDocument) ModifyTextForAutocomplete(pos protocol.Position) []Modi
 		if err != nil {
 			continue
 		}
-		if !candidate.keep || len(*edited.Diagnostics) != 0 {
+		// The parser's own warnings, such as for the executor with no type
+		// that inserting a key makes, don't mean the edit broke the parse.
+		hasError := slices.ContainsFunc(*edited.Diagnostics, func(d protocol.Diagnostic) bool {
+			return d.Severity == protocol.DiagnosticSeverityError
+		})
+		if !candidate.keep || hasError {
 			edited.Close()
 			continue
 		}

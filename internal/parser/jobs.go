@@ -70,6 +70,7 @@ func (doc *YamlDocument) parseSingleJob(jobNode *sitter.Node) ast2.Job {
 			switch keyName {
 			case "shell":
 				res.Shell = doc.GetNodeText(valueNode)
+				res.ShellRange = doc.NodeToRange(keyNode)
 
 			case "working_directory":
 				res.WorkingDirectory = doc.GetNodeText(valueNode)
@@ -91,6 +92,7 @@ func (doc *YamlDocument) parseSingleJob(jobNode *sitter.Node) ast2.Job {
 				res.ParallelismRange = doc.NodeToRange(child)
 			case "resource_class":
 				res.ResourceClass = doc.GetNodeText(valueNode)
+				res.ResourceClassRange = doc.NodeToRange(keyNode)
 
 			case "steps":
 				res.StepsRange = doc.NodeToRange(child)

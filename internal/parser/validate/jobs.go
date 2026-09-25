@@ -102,6 +102,7 @@ func (val Validate) validateSingleJob(job ast2.Job) {
 				executor.GetParameters(),
 				job.Parameters,
 			)
+			val.validateExecutorOverrides(job, executor)
 		}
 	}
 
@@ -131,6 +132,24 @@ func (val Validate) validateSingleJob(job ast2.Job) {
 		val.validateMacOSExecutor(job.MacOS)
 	} else if job.Machine.Image != "" {
 		val.validateMachineExecutor(job.Machine)
+	}
+}
+
+// validateExecutorOverrides warns about a setting given both on the job and on
+// its executor, where the job's silently wins.
+func (val Validate) validateExecutorOverrides(job ast2.Job, executor ast2.Executor) {
+	if job.ResourceClass != "" && executor.GetResourceClass() != "" {
+		val.addDiagnostic(diagnostic.Warning(job.ResourceClassRange,
+			"resource_class is set both on the job and on the executor; the job's "+
+				"value is used and the executor's is ignored. See "+
+				"https://circleci.com/docs/reference/configuration-reference/#executors"))
+	}
+
+	if job.Shell != "" && executor.GetShell() != "" {
+		val.addDiagnostic(diagnostic.Warning(job.ShellRange,
+			"shell is set both on the job and on the executor; the job's value is "+
+				"used and the executor's is ignored. See "+
+				"https://circleci.com/docs/reference/configuration-reference/#executors"))
 	}
 }
 
