@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"go.lsp.dev/protocol"
+	"gotest.tools/v3/assert"
+	"gotest.tools/v3/assert/cmp"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/codeaction"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
@@ -1570,4 +1572,37 @@ workflows:
 	}
 
 	CheckYamlErrors(t, testCases)
+}
+
+func TestCommandAsWorkflowJob(t *testing.T) {
+	val := CreateValidateFromYAML(`version: 2.1
+
+orbs:
+  my-orb:
+    commands:
+      greet:
+        steps:
+          - run: echo hello
+
+commands:
+  hello:
+    steps:
+      - my-orb/greet
+
+workflows:
+  w:
+    jobs:
+      - hello
+      - my-orb/greet
+`)
+	val.Validate()
+
+	errors := []string{}
+	for _, d := range getErrorDiagnostic(val.Diagnostics) {
+		errors = append(errors, diagnostic.MessageText(d))
+	}
+	assert.Check(t, cmp.DeepEqual(errors, []string{
+		"hello is a command, not a job: a workflow runs jobs",
+		"my-orb/greet is a command, not a job: a workflow runs jobs",
+	}, anyOrder))
 }
