@@ -116,14 +116,11 @@ func TestComplete(t *testing.T) {
 				},
 			},
 			want: []protocol.CompletionItem{
+				// The job has executor, parameters, working_directory and steps
+				// already, and the keys of other job types are left out.
 				{
 					Label:      "description",
 					InsertText: protocol.NewOptional("description: "),
-					Kind:       protocol.CompletionItemKindProperty,
-				},
-				{
-					Label:      "executor",
-					InsertText: protocol.NewOptional("executor: "),
 					Kind:       protocol.CompletionItemKindProperty,
 				},
 				{
@@ -137,18 +134,28 @@ func TestComplete(t *testing.T) {
 					Kind:       protocol.CompletionItemKindProperty,
 				},
 				{
+					Label:      "environment",
+					InsertText: protocol.NewOptional("environment:\n\t"),
+					Kind:       protocol.CompletionItemKindProperty,
+				},
+				{
+					Label:      "parallelism",
+					InsertText: protocol.NewOptional("parallelism: "),
+					Kind:       protocol.CompletionItemKindProperty,
+				},
+				{
+					Label:      "circleci_ip_ranges",
+					InsertText: protocol.NewOptional("circleci_ip_ranges: "),
+					Kind:       protocol.CompletionItemKindProperty,
+				},
+				{
+					Label:      "retention",
+					InsertText: protocol.NewOptional("retention:\n\t"),
+					Kind:       protocol.CompletionItemKindProperty,
+				},
+				{
 					Label:      "type",
 					InsertText: protocol.NewOptional("type: "),
-					Kind:       protocol.CompletionItemKindProperty,
-				},
-				{
-					Label:      "plan_name",
-					InsertText: protocol.NewOptional("plan_name: "),
-					Kind:       protocol.CompletionItemKindProperty,
-				},
-				{
-					Label:      "key",
-					InsertText: protocol.NewOptional("key: "),
 					Kind:       protocol.CompletionItemKindProperty,
 				},
 			},
