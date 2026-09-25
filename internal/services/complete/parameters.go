@@ -10,17 +10,25 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 )
 
+var parameterTypes = []string{"string", "boolean", "integer", "enum", "executor", "steps", "env_var_name"}
+
+// pipelineParameterTypes leaves out executor, steps and env_var_name, which
+// only mean something inside a job, a command or an executor.
+var pipelineParameterTypes = []string{"string", "boolean", "integer", "enum"}
+
 func (ch *CompletionHandler) addParametersDefinitionCompletion(parameters map[string]ast.Parameter) {
+	ch.completeParameterDefinitions(parameters, parameterTypes)
+}
+
+// completeParameterDefinitions completes in the definition of one of the
+// parameters, whose type is one of types.
+func (ch *CompletionHandler) completeParameterDefinitions(parameters map[string]ast.Parameter, types []string) {
 	for _, param := range parameters {
 		if position.InRange(param.GetRange(), ch.Params.Position) {
 			if position.InRange(param.GetTypeRange(), ch.Params.Position) {
-				ch.addCompletionItem("string")
-				ch.addCompletionItem("boolean")
-				ch.addCompletionItem("integer")
-				ch.addCompletionItem("enum")
-				ch.addCompletionItem("executor")
-				ch.addCompletionItem("steps")
-				ch.addCompletionItem("env_var_name")
+				for _, paramType := range types {
+					ch.addCompletionItem(paramType)
+				}
 				return
 			}
 			if param.GetType() == "enum" && position.InRange(param.GetDefaultRange(), ch.Params.Position) {
@@ -55,6 +63,9 @@ func (ch *CompletionHandler) addParametersDefinitionCompletion(parameters map[st
 				}
 				if param.GetDescription() == "" {
 					ch.addCompletionItemField("description")
+				}
+				if enum, ok := param.(ast.EnumParameter); ok && len(enum.Enum) == 0 {
+					ch.addCompletionItemField("enum")
 				}
 			}
 		}

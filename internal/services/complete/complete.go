@@ -77,6 +77,8 @@ func (ch *CompletionHandler) completeSection() {
 		ch.completeExecutors()
 	case position.InRange(ch.Doc.OrbsRange, pos):
 		ch.completeOrbs()
+	case position.InRange(ch.Doc.PipelineParametersRange, pos):
+		ch.completeParameterDefinitions(ch.Doc.PipelineParameters, pipelineParameterTypes)
 	}
 }
 
