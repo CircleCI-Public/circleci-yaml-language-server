@@ -143,7 +143,7 @@ func (doc *YamlDocument) parseStringParameter(paramName string, paramNode *sitte
 			stringParam.Default = doc.GetNodeText(GetFirstChild(valueNode))
 			stringParam.HasDefault = true
 		case "description":
-			stringParam.Description = doc.GetNodeText(valueNode)
+			stringParam.Description = doc.parseDescription(valueNode)
 		}
 	})
 
@@ -163,7 +163,7 @@ func (doc *YamlDocument) parseBooleanParameter(paramName string, paramNode *sitt
 			boolParam.Default = yamlbool.Value(doc.GetNodeText(valueNode))
 			boolParam.HasDefault = true
 		case "description":
-			boolParam.Description = doc.GetNodeText(valueNode)
+			boolParam.Description = doc.parseDescription(valueNode)
 		}
 	})
 
@@ -187,7 +187,7 @@ func (doc *YamlDocument) parseIntegerParameter(paramName string, paramNode *sitt
 			intParam.Default = int
 			intParam.HasDefault = true
 		case "description":
-			intParam.Description = doc.GetNodeText(valueNode)
+			intParam.Description = doc.parseDescription(valueNode)
 		}
 	})
 
@@ -207,7 +207,7 @@ func (doc *YamlDocument) parseEnumParameter(paramName string, paramNode *sitter.
 			enumParam.Default = doc.GetNodeText(GetFirstChild(valueNode))
 			enumParam.HasDefault = true
 		case "description":
-			enumParam.Description = doc.GetNodeText(valueNode)
+			enumParam.Description = doc.parseDescription(valueNode)
 		case "enum":
 			enumParam.Enum = doc.getNodeTextArray(valueNode)
 		}
@@ -233,7 +233,7 @@ func (doc *YamlDocument) parseExecutorParameter(paramName string, paramNode *sit
 			executorParam.Default = doc.GetNodeText(GetFirstChild(valueNode))
 			executorParam.HasDefault = true
 		case "description":
-			executorParam.Description = doc.GetNodeText(valueNode)
+			executorParam.Description = doc.parseDescription(valueNode)
 		}
 	})
 
@@ -264,7 +264,7 @@ func (doc *YamlDocument) parseStepsParameter(paramName string, paramNode *sitter
 				}
 			}
 		case "description":
-			stepsParam.Description = doc.GetNodeText(valueNode)
+			stepsParam.Description = doc.parseDescription(valueNode)
 		}
 	})
 
@@ -284,7 +284,7 @@ func (doc *YamlDocument) parseEnvVariableParameter(paramName string, paramNode *
 			envVariable.Default = doc.GetNodeText(GetFirstChild(valueNode))
 			envVariable.HasDefault = true
 		case "description":
-			envVariable.Description = doc.GetNodeText(valueNode)
+			envVariable.Description = doc.parseDescription(valueNode)
 		}
 	})
 

@@ -8,6 +8,7 @@ import (
 
 	sitter "github.com/tree-sitter/go-tree-sitter"
 	"go.lsp.dev/protocol"
+	"gopkg.in/yaml.v3"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
@@ -223,8 +224,19 @@ func (doc *YamlDocument) parseDictionary(valueNode *sitter.Node) map[string]stri
 	return dictionary
 }
 
+// parseDescription is a description's text, as YAML reads it: without the
+// quotes of a quoted string, and with a block scalar's indentation and folding
+// applied. When YAML can't read it as text, it's the text GetNodeText gives.
 func (doc *YamlDocument) parseDescription(descriptionNode *sitter.Node) string {
-	return doc.GetNodeText(descriptionNode)
+	if descriptionNode == nil {
+		return ""
+	}
+
+	var text string
+	if err := yaml.Unmarshal([]byte(doc.GetRawNodeText(doc.scalarOf(descriptionNode, 0))), &text); err != nil {
+		return doc.GetNodeText(descriptionNode)
+	}
+	return strings.TrimRight(text, "\n")
 }
 
 func (doc *YamlDocument) GetKeyValueNodes(node *sitter.Node) (keyNode *sitter.Node, valueNode *sitter.Node) {

@@ -87,7 +87,7 @@ func (doc *YamlDocument) parseSingleJob(jobNode *sitter.Node) ast2.Job {
 				res.Retention = doc.parseRetention(valueNode)
 
 			case "description":
-				res.Description = doc.GetNodeText(valueNode)
+				res.Description = doc.parseDescription(valueNode)
 
 			case "parallelism":
 				parsedInt, err := strconv.ParseInt(doc.GetNodeText(valueNode), 10, 8)

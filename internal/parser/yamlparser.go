@@ -137,7 +137,7 @@ func (doc *YamlDocument) ParseYAML(context *session.Settings, offset protocol.Po
 				break
 			}
 
-			doc.Description = doc.GetNodeText(valueNode)
+			doc.Description = doc.parseDescription(valueNode)
 
 		case "parameters":
 			if valueNode != nil {
