@@ -9,8 +9,8 @@
 // log and fault injection every route shares, and the rendering the handlers
 // answer through. One file per domain holds that domain's state, builders and
 // handlers: circleci_orbs.go, circleci_graphql.go, circleci_account.go,
-// circleci_projects.go, circleci_contexts.go, circleci_catalog.go and
-// circleci_runner.go.
+// circleci_projects.go, circleci_contexts.go, circleci_catalog.go,
+// circleci_runner.go and circleci_functions.go.
 //
 // Requests are served anonymously by default because the language server
 // resolves public orbs for users who have not logged in. Call RequireToken to
@@ -44,13 +44,14 @@ type CircleCI struct {
 
 	// One field per domain of the API. Each is guarded by the mutex above and
 	// is served by the handlers in the file named against it.
-	orbs     orbState      // circleci_orbs.go
-	graphql  graphqlState  // circleci_graphql.go
-	account  accountState  // circleci_account.go
-	projects projectsState // circleci_projects.go
-	contexts contextsState // circleci_contexts.go
-	catalog  catalogState  // circleci_catalog.go
-	runner   runnerState   // circleci_runner.go
+	orbs      orbState       // circleci_orbs.go
+	graphql   graphqlState   // circleci_graphql.go
+	account   accountState   // circleci_account.go
+	projects  projectsState  // circleci_projects.go
+	contexts  contextsState  // circleci_contexts.go
+	catalog   catalogState   // circleci_catalog.go
+	runner    runnerState    // circleci_runner.go
+	functions functionsState // circleci_functions.go
 }
 
 // failAfter defers a failure until a route has been hit a number of times, so
@@ -118,6 +119,10 @@ func NewCircleCI(t testing.TB) *CircleCI {
 
 	// The machine catalog — circleci_catalog.go.
 	mux.HandleFunc("GET /api/v3/catalog/offerings", fake.handleGetOfferings)
+
+	// The functions catalog — circleci_functions.go.
+	mux.HandleFunc("GET /api/v3/function/packages", fake.handleListFunctionPackages)
+	mux.HandleFunc("GET /api/v3/function/versions/{id}", fake.handleGetFunctionVersion)
 
 	// Self-hosted runner resource classes — circleci_runner.go. The /api/v3
 	// here is the runner service's own versioning, not the CircleCI V3 API

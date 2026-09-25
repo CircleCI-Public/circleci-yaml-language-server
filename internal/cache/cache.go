@@ -22,6 +22,7 @@ type Cache struct {
 	FileCache             Files
 	OrbCache              Orbs
 	OrbPackages           OrbPackages
+	Functions             Functions
 	DockerCache           DockerImages
 	DockerTagsCache       DockerTags
 	ResourceClassCache    ResourceClasses
@@ -77,6 +78,8 @@ func (c *Cache) init() {
 	c.OrbCache.orbs = memo.New(memo.Fixed[*ast.OrbInfo](memo.FoundLifetime), nil)
 	c.OrbPackages.packages = memo.New(orbPackageLifetime, nil)
 	c.OrbPackages.namespaces = memo.New(namespaceOrbsLifetime, nil)
+	c.Functions.packages = memo.New(functionPackageLifetime, nil)
+	c.Functions.descriptors = memo.New(memo.Fixed[*circleci.FunctionDescriptor](memo.FoundLifetime), nil)
 
 	c.DockerCache.images = memo.New(memo.Existence, nil)
 	c.DockerTagsCache.lists = memo.New(memo.Fixed[ImageTags](memo.FoundLifetime), nil)
@@ -267,6 +270,8 @@ func (cache *Cache) ClearHostData() {
 	cache.orbSources.remove()
 	cache.OrbPackages.packages.Clear()
 	cache.OrbPackages.namespaces.Clear()
+	cache.Functions.packages.Clear()
+	cache.Functions.descriptors.Clear()
 	cache.ContextCache.orgs.Clear()
 	cache.NamespaceCache.namespaces.Clear()
 	cache.MachineOfferingsCache.catalog.Clear()
