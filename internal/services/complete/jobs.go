@@ -33,7 +33,7 @@ func (ch *CompletionHandler) completeJobs() {
 		return
 	}
 
-	if ch.completeJobExecutor(job) {
+	if ch.completeJobExecutor(job) || ch.completeDockerEntry() {
 		return
 	}
 
