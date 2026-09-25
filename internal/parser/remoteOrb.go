@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/url"
+	"path"
+	"strings"
 
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
@@ -12,6 +15,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/orburl"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/session"
 )
 
@@ -47,14 +51,72 @@ func GetOrbInfo(orbVersionCode string, cache *cache.Cache, context *session.Sett
 // hand by the time the config is validated.
 func ParseRemoteOrbs(orbs map[string]ast.Orb, cache *cache.Cache, context *session.Settings) {
 	for _, orb := range orbs {
-		if orb.Url.IsLocal || orb.Url.IsURL {
+		if orb.Url.IsLocal {
 			continue
 		}
 
-		if _, err := GetOrbInfo(orb.Url.GetOrbID(), cache, context); err != nil {
+		var err error
+		if orb.Url.IsURL {
+			_, err = GetURLOrbInfo(orb.Url.Name, cache, context)
+		} else {
+			_, err = GetOrbInfo(orb.Url.GetOrbID(), cache, context)
+		}
+		if err != nil {
 			slog.Warn("fetching remote orb", "orb", orb.Url.GetOrbID(), "err", err)
 		}
 	}
+}
+
+// GetURLOrbInfo returns the orb at a URL, fetching it only when the cache has
+// no answer for it, or nil when the host says there is nothing there it will
+// serve, which is what a private orb gets too. Concurrent callers for the same
+// URL share one fetch.
+func GetURLOrbInfo(address string, cache *cache.Cache, settings *session.Settings) (*ast.OrbInfo, error) {
+	return cache.OrbCache.Load(address, func() (*ast.OrbInfo, error) {
+		return fetchURLOrbInfo(address, cache, settings)
+	})
+}
+
+func fetchURLOrbInfo(address string, cache *cache.Cache, settings *session.Settings) (*ast.OrbInfo, error) {
+	source, found, err := orburl.Fetch(context.Background(), settings.OrbURLs, address)
+	if err != nil || !found {
+		return nil, err
+	}
+
+	parsedOrbSource, err := ParseFromContent([]byte(source), settings, uri.File(""), protocol.Position{})
+	if err != nil {
+		return nil, err
+	}
+	defer parsedOrbSource.Close()
+
+	// Go-to-definition into the orb needs a file to open.
+	filePath, err := cache.WriteOrbSource(urlOrbSourceID(address), source)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ast.OrbInfo{
+		OrbParsedAttributes: parsedOrbSource.ToOrbParsedAttributes(),
+		Description:         parsedOrbSource.Description,
+		Source:              source,
+		RemoteInfo: ast.RemoteOrbInfo{
+			FilePath: filePath,
+		},
+	}, nil
+}
+
+// urlOrbSourceID is where under the orb sources directory the source fetched
+// from an orb URL is written: "url/", the host, and the URL's path. The path
+// is cleaned as a rooted path, so that no ".." in it can reach outside the
+// directory, and a port's colon, which Windows doesn't allow in a file name,
+// is replaced.
+func urlOrbSourceID(address string) string {
+	parsed, err := url.Parse(address)
+	if err != nil {
+		return "url/invalid"
+	}
+
+	return "url/" + strings.ReplaceAll(parsed.Host, ":", "_") + path.Clean("/"+parsed.Path)
 }
 
 func fetchOrbInfo(orbVersionCode string, cache *cache.Cache, context *session.Settings) (*ast.OrbInfo, error) {

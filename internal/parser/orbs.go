@@ -34,9 +34,13 @@ func (doc *YamlDocument) GetOrFetchOrbInfo(orb ast.Orb, cache *cache.Cache) (*as
 		return orbInfo, nil
 	}
 
-	// What a URL orb declares is not known: it is not fetched.
+	// An orb at a URL that can't be fetched declares nothing that is known.
 	if orb.Url.IsURL {
-		return &ast.OrbInfo{}, nil
+		orbInfo, err := GetURLOrbInfo(orb.Url.Name, cache, doc.Context)
+		if orbInfo == nil {
+			return &ast.OrbInfo{}, err
+		}
+		return orbInfo, nil
 	}
 
 	orbId := orb.Url.GetOrbID()

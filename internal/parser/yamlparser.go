@@ -309,8 +309,9 @@ func (doc *YamlDocument) CouldBeOrbReference(orbReference string) (string, bool)
 	return splittedCommand[0], true
 }
 
-// Takes the name of anything that may be in an orb and returns if it is inside an orb that we can not use
-func (doc *YamlDocument) IsFromUnfetchableOrb(name string) bool {
+// Takes the name of anything that may be in an orb and returns if it is inside an orb that we can not use.
+// An orb referenced by URL is fetched to find out.
+func (doc *YamlDocument) IsFromUnfetchableOrb(name string, cache *cache.Cache) bool {
 	components := strings.Split(name, "/")
 	if len(components) != 2 {
 		return false
@@ -321,8 +322,13 @@ func (doc *YamlDocument) IsFromUnfetchableOrb(name string) bool {
 		return false
 	}
 
-	if orb.IsPlaceholder || orb.Url.IsURL {
+	if orb.IsPlaceholder {
 		return true
+	}
+
+	if orb.Url.IsURL {
+		orbInfo, err := GetURLOrbInfo(orb.Url.Name, cache, doc.Context)
+		return orbInfo == nil || err != nil
 	}
 
 	hasParamInTag, _ := paramref.IsPartiallyReferenced(orb.Url.Version)

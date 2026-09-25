@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/memo"
@@ -15,10 +16,18 @@ import (
 // version or to volatile resolves to whatever is newest, so even a pinned
 // reference is asked about again after that long rather than kept for good.
 //
+// An orb referenced by URL is remembered by its URL, and nil is remembered for
+// one whose host says there is nothing there it will serve, for
+// memo.NotFoundLifetime.
+//
 // An orb is shared between callers, so it is never changed once cached: it is
 // replaced.
 type Orbs struct {
 	orbs *memo.Memo[*ast.OrbInfo]
+}
+
+func orbLifetime(orb *ast.OrbInfo) time.Duration {
+	return memo.Existence(orb != nil)
 }
 
 // Load returns the orb a reference names, calling fetch only when none is
