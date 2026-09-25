@@ -13,7 +13,6 @@ import (
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 
-	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/memo"
 )
@@ -75,7 +74,7 @@ func (c *Cache) init() {
 	c.FileCache.fileCache = make(map[uri.URI]File)
 	c.FileCache.cacheMutex = &sync.Mutex{}
 
-	c.OrbCache.orbs = memo.New(memo.Fixed[*ast.OrbInfo](memo.FoundLifetime), nil)
+	c.OrbCache.orbs = memo.New(orbLifetime, nil)
 	c.OrbPackages.packages = memo.New(orbPackageLifetime, nil)
 	c.OrbPackages.namespaces = memo.New(namespaceOrbsLifetime, nil)
 	c.Functions.packages = memo.New(functionPackageLifetime, nil)

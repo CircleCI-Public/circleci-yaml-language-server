@@ -267,7 +267,7 @@ func (val Validate) validateSingleJobInvocation(jobInvocation ast2.JobInvocation
 	}
 
 	// This orb check is not needed for job-groups because we don't support job-groups in orbs.
-	if val.Doc.IsFromUnfetchableOrb(jobInvocation.JobName) {
+	if val.Doc.IsFromUnfetchableOrb(jobInvocation.JobName, val.Cache) {
 		return
 	}
 

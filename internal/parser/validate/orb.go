@@ -1,6 +1,7 @@
 package validate
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -8,6 +9,7 @@ import (
 	"golang.org/x/mod/semver"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/orburl"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/codeaction"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/paramref"
@@ -39,11 +41,7 @@ func (val Validate) validateSingleOrb(orb ast.Orb) {
 	}
 
 	if orb.Url.IsURL {
-		val.addDiagnostic(diagnostic.Warning(
-			orb.ValueRange,
-			"Orbs referenced by URL are not fetched, so nothing used from this orb is checked.",
-		))
-
+		val.validateURLOrb(orb)
 		return
 	}
 
@@ -116,6 +114,32 @@ func (val Validate) validateSingleOrb(orb ast.Orb) {
 			),
 		)
 	}
+}
+
+// validateURLOrb warns about an orb referenced by URL that can't be fetched.
+// That isn't an error: the compiler fetches it with the credential its
+// organization's URL orb allow-list gives the URL's prefix, which the server
+// has no way to read. Nothing used from the orb can be checked, so its
+// components are skipped (IsFromUnfetchableOrb).
+func (val Validate) validateURLOrb(orb ast.Orb) {
+	orbInfo, err := parser.GetURLOrbInfo(orb.Url.Name, val.Cache, val.Context)
+
+	var reason string
+	switch {
+	case errors.Is(err, orburl.ErrNotHTTPS):
+		reason = "Orbs are only fetched over https"
+	case err != nil:
+		reason = fmt.Sprintf("Could not fetch this orb (%s)", err)
+	case orbInfo == nil:
+		reason = "This orb could not be fetched: it doesn't exist, or it is private"
+	default:
+		return
+	}
+
+	val.addDiagnostic(diagnostic.Warning(
+		orb.ValueRange,
+		reason+", so nothing used from it is checked.",
+	))
 }
 
 type OrbVersionCodeActionCreator struct {
@@ -204,7 +228,7 @@ func (val Validate) orbIsUnused(orb ast.Orb) {
 }
 
 func (val Validate) validateOrbExecutor(executorName string, executorRange protocol.Range) {
-	if val.Doc.IsFromUnfetchableOrb(executorName) {
+	if val.Doc.IsFromUnfetchableOrb(executorName, val.Cache) {
 		return
 	}
 

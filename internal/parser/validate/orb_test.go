@@ -1,6 +1,8 @@
 package validate
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"slices"
 	"strings"
@@ -593,46 +595,156 @@ workflows:
 	})
 }
 
-// The compiler fetches an orb referenced by URL from the prefixes an
-// organization allows, which the server can't see.
-func TestURLOrb(t *testing.T) {
+// urlOrbSource is an orb served from a URL, as backplane-cicd serves its go
+// orb.
+const urlOrbSource = `version: 2.1
+
+commands:
+  private-mod-init:
+    parameters:
+      private-modules:
+        type: string
+    steps:
+      - run: echo << parameters.private-modules >>
+
+executors:
+  default:
+    docker:
+      - image: cimg/go:1.23
+
+jobs:
+  lint:
+    executor: default
+    steps:
+      - checkout
+`
+
+// urlOrbHost is an https host serving urlOrbSource at /orbs/go.yml, and
+// answering 404 for anything else, as GitHub does for a file in a private
+// repository.
+func urlOrbHost(t *testing.T) *httptest.Server {
+	t.Helper()
+
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/orbs/go.yml" {
+			http.NotFound(w, r)
+			return
+		}
+		_, _ = w.Write([]byte(urlOrbSource))
+	}))
+	t.Cleanup(srv.Close)
+
+	return srv
+}
+
+// validateWithURLOrb validates a config whose `bp-go` orb is at orbURL, with
+// orb URLs fetched from srv.
+func validateWithURLOrb(t *testing.T, srv *httptest.Server, orbURL string, steps string) []protocol.Diagnostic {
+	t.Helper()
+
 	yamlContent := `version: 2.1
 
 orbs:
-  bp-go: https://raw.githubusercontent.com/circleci/backplane-cicd/refs/heads/main/orbs/go.yml
+  bp-go: ` + orbURL + `
 
 jobs:
   build:
     executor: bp-go/default
     steps:
-      - bp-go/private-mod-init:
-          private-modules: github.com/circleci/*
-
+` + steps + `
 workflows:
   main:
     jobs:
       - build
       - bp-go/lint:
           name: lint
-          context: org-global
 `
 
-	t.Run("nothing referenced from the orb is reported", func(t *testing.T) {
-		CheckYamlErrors(t, []ValidateTestCase{{
-			Name:        "no errors",
-			YamlContent: yamlContent,
-			OnlyErrors:  true,
-		}})
+	settings := testHelpers.DefaultSettings()
+	settings.Api.Token = ""
+	settings.OrbURLs.Transport = srv.Client().Transport
+
+	doc, err := parser.ParseFromContent([]byte(yamlContent), settings, uri.File(""), protocol.Position{})
+	assert.NilError(t, err)
+
+	val := Validate{
+		APIs:        ValidateAPIs{DockerHub: DockerHubMock{}},
+		Diagnostics: &[]protocol.Diagnostic{},
+		Cache:       cache.New(),
+		Doc:         doc,
+		Context:     settings,
+	}
+	val.Validate()
+
+	return *val.Diagnostics
+}
+
+// orbWarnings is what the diagnostics on the orb's URL say.
+func orbWarnings(diags []protocol.Diagnostic) []string {
+	var said []string
+	for _, diag := range diags {
+		if diag.Range.Start.Line == 3 && diag.Severity == protocol.DiagnosticSeverityWarning {
+			said = append(said, diagnostic.MessageText(diag))
+		}
+	}
+	return said
+}
+
+// The compiler fetches an orb referenced by URL, with the credential its
+// organization's allow-list gives the URL's prefix. The server fetches it
+// without one.
+func TestURLOrb(t *testing.T) {
+	srv := urlOrbHost(t)
+
+	t.Run("an orb that can be fetched is checked", func(t *testing.T) {
+		orbURL := srv.URL + "/orbs/go.yml"
+
+		t.Run("what it declares resolves", func(t *testing.T) {
+			diags := validateWithURLOrb(t, srv, orbURL, `      - bp-go/private-mod-init:
+          private-modules: github.com/circleci/*
+`)
+			assert.Check(t, cmp.Len(getErrorDiagnostic(&diags), 0))
+			assert.Check(t, cmp.Len(orbWarnings(diags), 0))
+		})
+
+		t.Run("what it doesn't declare is reported", func(t *testing.T) {
+			diags := validateWithURLOrb(t, srv, orbURL, `      - bp-go/nosuch
+      - bp-go/private-mod-init:
+          nosuch: 1
+`)
+			var said []string
+			for _, diag := range getErrorDiagnostic(&diags) {
+				said = append(said, diagnostic.MessageText(diag))
+			}
+			assert.Check(t, cmp.DeepEqual(said, []string{
+				"Cannot find declaration for step bp-go/nosuch",
+				"Parameter private-modules is required for bp-go/private-mod-init",
+				"Parameter nosuch is not defined for bp-go/private-mod-init",
+			}, cmpopts.SortSlices(func(a, b string) bool { return a < b })))
+		})
 	})
 
-	t.Run("the orb gets one warning", func(t *testing.T) {
-		val := CreateValidateFromYAML(yamlContent)
-		val.ValidateOrbs()
-
-		assert.Assert(t, cmp.Len(*val.Diagnostics, 1))
-		diag := (*val.Diagnostics)[0]
-		assert.Check(t, cmp.Equal(diag.Severity, protocol.DiagnosticSeverityWarning))
-		assert.Check(t, cmp.Contains(diag.Message, "not fetched"))
-		assert.Check(t, cmp.Equal(diag.Range.Start, protocol.Position{Line: 3, Character: 9}))
-	})
+	cases := []struct {
+		name, orbURL, warning string
+	}{
+		{
+			name:    "a private or missing orb",
+			orbURL:  srv.URL + "/orbs/private.yml",
+			warning: "This orb could not be fetched: it doesn't exist, or it is private, so nothing used from it is checked.",
+		},
+		{
+			name:    "an orb not served over https",
+			orbURL:  "http://example.com/orbs/go.yml",
+			warning: "Orbs are only fetched over https, so nothing used from it is checked.",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name+" is not checked", func(t *testing.T) {
+			diags := validateWithURLOrb(t, srv, tc.orbURL, `      - bp-go/private-mod-init:
+          private-modules: github.com/circleci/*
+`)
+			assert.Check(t, cmp.Len(getErrorDiagnostic(&diags), 0))
+			assert.Check(t, cmp.DeepEqual(orbWarnings(diags), []string{tc.warning}))
+		})
+	}
 }

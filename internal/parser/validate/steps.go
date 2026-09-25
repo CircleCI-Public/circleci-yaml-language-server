@@ -198,11 +198,11 @@ func (val Validate) isKnownStep(name string) bool {
 		val.Doc.IsBuiltIn(name) ||
 		val.Doc.IsOrbCommand(name, val.Cache) ||
 		val.Doc.IsAlias(name) ||
-		val.Doc.IsFromUnfetchableOrb(name)
+		val.Doc.IsFromUnfetchableOrb(name, val.Cache)
 }
 
 func (val Validate) validateNamedStep(step ast2.NamedStep, usableParams map[string]ast2.Parameter) {
-	if val.Doc.IsFromUnfetchableOrb(step.Name) {
+	if val.Doc.IsFromUnfetchableOrb(step.Name, val.Cache) {
 		return
 	}
 
