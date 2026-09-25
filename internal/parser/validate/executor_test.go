@@ -74,6 +74,33 @@ executors:
     resource_class: m4pro.medium`,
 			Diagnostics: []protocol.Diagnostic{},
 		},
+		{
+			Name: "Executor name built from a parameter",
+			YamlContent: `version: 2.1
+
+executors:
+  smoke-jammy:
+    docker:
+      - image: cimg/base:stable
+
+jobs:
+  build:
+    parameters:
+      codename:
+        type: string
+        default: jammy
+    executor: smoke-<< parameters.codename >>
+    steps:
+      - checkout
+
+workflows:
+  main:
+    jobs:
+      - build
+`,
+			OnlyErrors:  true,
+			Diagnostics: []protocol.Diagnostic{},
+		},
 	}
 
 	CheckYamlErrors(t, testCases)

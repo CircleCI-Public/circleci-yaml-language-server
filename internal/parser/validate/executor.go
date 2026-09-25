@@ -337,6 +337,11 @@ func (val Validate) validateExecutorNamespace(resourceClass string, resourceClas
 }
 
 func (val Validate) validateExecutorReference(executor string, rng protocol.Range) {
+	// A name built from a reference is only known once the config is compiled.
+	if paramref.ContainsReference(executor) {
+		return
+	}
+
 	if !val.Doc.DoesExecutorExist(executor) {
 		if val.Doc.IsOrbReference(executor) {
 			val.validateOrbExecutor(executor, rng)
