@@ -229,7 +229,9 @@ func (val Validate) validateStepSteps(step ast2.Steps, name string) {
 }
 
 func (val Validate) validateCheckout(step ast2.Checkout) {
-	if step.Method == "" {
+	// A method from a parameter is only known once the config is compiled, and
+	// which depth is allowed depends on it.
+	if step.Method == "" || paramref.ContainsReference(step.Method) {
 		return
 	}
 
@@ -241,7 +243,7 @@ func (val Validate) validateCheckout(step ast2.Checkout) {
 		})
 	}
 
-	if step.Method == "shallow" {
+	if step.Method == "shallow" && !paramref.ContainsReference(step.Depth) {
 		depth, err := strconv.Atoi(step.Depth)
 		if err != nil {
 			val.addDiagnostic(protocol.Diagnostic{

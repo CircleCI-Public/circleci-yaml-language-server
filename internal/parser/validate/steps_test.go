@@ -160,6 +160,36 @@ func TestYamlDocument_parseCheckout(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name: "A checkout method and depth from parameters are not checked",
+			YamlContent: `version: 2.1
+
+jobs:
+  build:
+    parameters:
+      method:
+        type: string
+        default: full
+      depth:
+        type: integer
+        default: 1
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout:
+          method: << parameters.method >>
+          depth: << parameters.depth >>
+      - checkout:
+          method: shallow
+          depth: << parameters.depth >>
+
+workflows:
+  main:
+    jobs:
+      - build
+`,
+			Diagnostics: []protocol.Diagnostic{},
+		},
 	}
 	CheckYamlErrors(t, testCases)
 }
