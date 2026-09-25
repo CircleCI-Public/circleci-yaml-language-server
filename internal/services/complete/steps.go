@@ -7,7 +7,9 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 )
 
-func (ch *CompletionHandler) completeSteps(entityName string, inJob bool, includeJobSteps bool, completionNode *sitter.Node) {
+// completeSteps offers what a step can run: commands, built-in steps, orb
+// commands and declared functions. A job is not a step, so none is offered.
+func (ch *CompletionHandler) completeSteps(entityName string, inJob bool, completionNode *sitter.Node) {
 	if ch.isWritingAnEnvVariableInRunStep(entityName, inJob) {
 		return
 	}
@@ -15,14 +17,27 @@ func (ch *CompletionHandler) completeSteps(entityName string, inJob bool, includ
 		ch.addCheckoutMethodCompletion()
 		return
 	}
-	// We have two ifs to keep the order of the steps in the completion list.
 	ch.userDefinedCommands()
-	if includeJobSteps {
-		ch.userDefinedJobs()
-		ch.orbsJobs()
-	}
 	ch.builtInSteps()
 	ch.orbCommands(completionNode)
+	ch.functionSteps()
+}
+
+// functionSteps offers each declared function as a step, and each of its
+// commands as `alias/command` when its descriptor can be read from the
+// functions catalog.
+func (ch *CompletionHandler) functionSteps() {
+	for _, function := range ch.Doc.Functions {
+		ch.addCompletionItem(function.Alias)
+
+		_, descriptor, err := ch.Doc.LookUpFunction(function, ch.Cache)
+		if err != nil || descriptor == nil {
+			continue
+		}
+		for command := range descriptor.Commands {
+			ch.addCompletionItem(function.Alias + "/" + command)
+		}
+	}
 }
 
 func (ch *CompletionHandler) builtInSteps() {
