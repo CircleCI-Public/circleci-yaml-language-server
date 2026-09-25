@@ -270,6 +270,7 @@ func (doc *YamlDocument) IsBuiltIn(commandName string) bool {
 		"persist_to_workspace",
 		"attach_workspace",
 		"add_ssh_keys",
+		"install_signing_bundle",
 		"steps",
 		"deploy",
 		"when",   // Has nothing to do here, tech debt to resolve

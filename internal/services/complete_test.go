@@ -201,6 +201,9 @@ func TestComplete(t *testing.T) {
 					Label: "persist_to_workspace",
 				},
 				{
+					Label: "install_signing_bundle",
+				},
+				{
 					Label: "attach_workspace",
 				},
 				{

@@ -66,14 +66,15 @@ func hoverOrb(doc yamlparser.YamlDocument, stepName string, cache *cache.Cache) 
 }
 
 var commandsDescription map[string]string = map[string]string{
-	"checkout":             "A special step used to check out source code to the configured path",
-	"run":                  "Used for invoking all command-line programs, taking either a map of configuration values, or, when called in its short-form, a string that will be used as both the command and name. Run commands are executed using non-login shells by default, so you must explicitly source any dotfiles as part of the command.",
-	"setup_remote_docker":  "Creates a remote Docker environment configured to execute Docker commands.",
-	"save_cache":           "Generates and stores a cache of a file or directory of files such as dependencies or source code in our object storage.",
-	"restore_cache":        "Restores a previously saved cache based on a key. Cache needs to have been saved first for this key using save_cache step. ",
-	"store_artifacts":      "Step to store artifacts (for example logs, binaries, etc) to be available in the web app or through the API.",
-	"store_test_results":   "Special step used to upload and store test results for a build. Test results are visible on the CircleCI web application under each build's Test Summary section. Storing test results is useful for timing analysis of your test suites.",
-	"persist_to_workspace": "Special step used to persist a temporary file to be used by another job in the workflow.",
-	"attach_workspace":     "Special step used to attach the workflow's workspace to the current container. The full contents of the workspace are downloaded and copied into the directory the workspace is being attached at.",
-	"add_ssh_keys":         "Special step that adds SSH keys from a project's settings to a container. Also configures SSH to use these keys.",
+	"checkout":               "A special step used to check out source code to the configured path",
+	"run":                    "Used for invoking all command-line programs, taking either a map of configuration values, or, when called in its short-form, a string that will be used as both the command and name. Run commands are executed using non-login shells by default, so you must explicitly source any dotfiles as part of the command.",
+	"setup_remote_docker":    "Creates a remote Docker environment configured to execute Docker commands.",
+	"save_cache":             "Generates and stores a cache of a file or directory of files such as dependencies or source code in our object storage.",
+	"restore_cache":          "Restores a previously saved cache based on a key. Cache needs to have been saved first for this key using save_cache step. ",
+	"store_artifacts":        "Step to store artifacts (for example logs, binaries, etc) to be available in the web app or through the API.",
+	"store_test_results":     "Special step used to upload and store test results for a build. Test results are visible on the CircleCI web application under each build's Test Summary section. Storing test results is useful for timing analysis of your test suites.",
+	"persist_to_workspace":   "Special step used to persist a temporary file to be used by another job in the workflow.",
+	"attach_workspace":       "Special step used to attach the workflow's workspace to the current container. The full contents of the workspace are downloaded and copied into the directory the workspace is being attached at.",
+	"add_ssh_keys":           "Special step that adds SSH keys from a project's settings to a container. Also configures SSH to use these keys.",
+	"install_signing_bundle": "Installs the code signing bundles named in the executor's `code_signing` list. macOS and machine executors only.",
 }
