@@ -768,6 +768,25 @@ workflows:
       - setup_remote_docker:
           resource_class: large`),
 		},
+		{
+			name: "a job group whose name starts with a digit",
+			content: `version: 2.1
+jobs:
+  build:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - checkout
+job-groups:
+  2-stage-build:
+    jobs:
+      - build
+workflows:
+  main:
+    jobs:
+      - 2-stage-build
+`,
+		},
 	}
 
 	for _, tt := range tests {

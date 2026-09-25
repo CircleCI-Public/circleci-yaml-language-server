@@ -2585,7 +2585,7 @@
             "type": "object",
             "propertyNames": {
                 "type": "string",
-                "pattern": "^[A-Za-z][A-Za-z\\s\\d_-]*$"
+                "pattern": ".+"
             },
             "additionalProperties": {
                 "type": "object",
@@ -2601,8 +2601,7 @@
                             "$ref": "#/definitions/workflowJobInvocation"
                         }
                     }
-                },
-                "additionalProperties": false
+                }
             }
         },
         "orbs": {
