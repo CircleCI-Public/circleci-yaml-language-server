@@ -2,7 +2,7 @@
 package version
 
 // Server is the version of this build, stamped at build time by
-// scripts/ldflags.sh.
+// goreleaser (see .goreleaser.yml).
 var Server string = "<dev build>"
 
 // UserAgent is what the language server sends with every request it makes.
