@@ -134,12 +134,12 @@ tasks:
   probe:orb:
     desc: Probe the CircleCI orb registry (pass a reference with -- circleci/go@1.7)
     cmds:
-      - go run ./cmd/orb {{.CLI_ARGS}}
+      - go run ./cmd/dev/orb {{.CLI_ARGS}}
 
   probe:dockerhub:
     desc: Probe the Docker Hub API (pass a repository with -- cimg/go)
     cmds:
-      - go run ./cmd/dockerhub {{.CLI_ARGS}}
+      - go run ./cmd/dev/dockerhub {{.CLI_ARGS}}
 
   # CI tasks
 

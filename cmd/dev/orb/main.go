@@ -4,7 +4,7 @@
 //
 // Usage:
 //
-//	go run ./cmd/orb [orb-reference]
+//	go run ./cmd/dev/orb [orb-reference]
 //
 // The reference defaults to circleci/go@1.7.1. Environment:
 //

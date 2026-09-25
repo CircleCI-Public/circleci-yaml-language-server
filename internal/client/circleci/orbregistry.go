@@ -73,7 +73,7 @@ func NewOrbRegistry(hostUrl, token, userId string, debug bool) OrbRegistry {
 // The fallback cannot otherwise be exercised against real infrastructure
 // without a CircleCI Server instance, and circleci.com serves GraphQL as well
 // as V3 — so this makes the GraphQL path checkable against production. See
-// cmd/orb.
+// cmd/dev/orb.
 func NewGraphQLOrbRegistry(hostUrl, token, userId string, debug bool) OrbRegistry {
 	return graphqlOrbRegistry{
 		client: NewGraphQLClient(hostUrl, "graphql-unstable", token, debug),
