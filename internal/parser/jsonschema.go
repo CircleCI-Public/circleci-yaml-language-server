@@ -247,8 +247,12 @@ func (validator *JSONSchemaValidator) ValidateWithJSONSchema(rootNode *sitter.No
 			jsonSchemaDiags = append(jsonSchemaDiags, diag)
 		}
 
+		// A combinator error only says that some schema inside it failed. When
+		// that failure is reported within its range, it says nothing more.
+		leaves := slices.Clone(jsonSchemaDiags)
 		for _, combinator := range combinators {
-			if onlyContainsReferences(combinator, referenced, jsonSchemaDiags) {
+			if onlyContainsReferences(combinator, referenced, leaves) ||
+				hasAnotherDiagInsideRange(leaves, combinator.Range) {
 				continue
 			}
 

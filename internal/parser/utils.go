@@ -381,13 +381,21 @@ func iterateOnBlockSequence(blockSequenceNode *sitter.Node, fn func(child *sitte
 	}
 }
 
-// ExecQuery runs query over node, calling fn for each match. The query is a
-// constant pattern, so failing to compile it is a programming error and panics.
+// FindDeepestNode returns the node at the path toFind, of mapping keys and
+// sequence indexes, below rootNode.
 func FindDeepestNode(rootNode *sitter.Node, content []byte, toFind []string) (*sitter.Node, error) {
 	if len(toFind) == 0 {
 		return rootNode, nil
 	}
 
+	if child, err := findChildNode(rootNode, content, toFind[0]); err != nil {
+		return nil, err
+	} else if child != nil {
+		return FindDeepestNode(child, content, toFind[1:])
+	}
+
+	// A value merged in with `<<: *anchor` isn't below the key it's merged
+	// into, so fall back to the first match anywhere below.
 	for node := range yamltree.Walk(rootNode) {
 		if intValue, err := strconv.Atoi(toFind[0]); err == nil && intValue >= 0 {
 			if node.Kind() == "block_sequence" {
@@ -407,6 +415,42 @@ func FindDeepestNode(rootNode *sitter.Node, content []byte, toFind []string) (*s
 	}
 
 	return nil, fmt.Errorf("not found")
+}
+
+// findChildNode returns the pair for key, or the item at index key, of the
+// mapping or sequence that node holds. It doesn't look inside the other
+// pairs and items, whose own keys would otherwise be matched first when
+// they come earlier in the file, as a workflow's `jobs:` does before the
+// top-level one.
+func findChildNode(node *sitter.Node, content []byte, key string) (*sitter.Node, error) {
+	index, err := strconv.Atoi(key)
+	isIndex := err == nil && index >= 0
+
+	for i := uint(0); i < node.ChildCount(); i++ {
+		child := node.Child(i)
+		switch child.Kind() {
+		case "block_mapping_pair":
+			if keyNode := child.ChildByFieldName("key"); !isIndex && keyNode != nil &&
+				string(content[keyNode.StartByte():keyNode.EndByte()]) == key {
+				return child, nil
+			}
+			continue
+		case "block_sequence":
+			if !isIndex {
+				continue
+			}
+			if child.ChildCount() < uint(index+1) {
+				return nil, fmt.Errorf("index out of range: trying to access %d in array of size %d", index, child.ChildCount())
+			}
+			return child.Child(uint(index)), nil
+		}
+
+		if found, err := findChildNode(child, content, key); found != nil || err != nil {
+			return found, err
+		}
+	}
+
+	return nil, nil
 }
 
 func (doc *YamlDocument) NodeToRange(node *sitter.Node) protocol.Range {
