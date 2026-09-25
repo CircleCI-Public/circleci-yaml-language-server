@@ -26,6 +26,16 @@ func (ch *CompletionHandler) completeExecutors() {
 		return
 	}
 
+	if _, parent := ch.keyParent(); parent != -1 && parent == int(executor.GetRange().Start.Line) {
+		present := ch.stepBodyKeys(parent)
+		for _, key := range executorKeys {
+			if !present[key] {
+				ch.addCompletionItemField(key)
+			}
+		}
+		return
+	}
+
 	switch executor := executor.(type) {
 	case ast2.DockerExecutor:
 		ch.completeDockerExecutor(executor)
@@ -35,6 +45,9 @@ func (ch *CompletionHandler) completeExecutors() {
 		ch.completeMacOSExecutor(executor)
 	}
 }
+
+// executorKeys are the keys an executor takes besides its type.
+var executorKeys = []string{"resource_class", "environment", "shell", "working_directory", "parameters", "description"}
 
 func findExecutor(pos protocol.Position, doc parser.YamlDocument) (ast2.Executor, error) {
 	for _, executor := range doc.Executors {
