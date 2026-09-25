@@ -13,6 +13,12 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/session"
 )
 
+// referenceHovers describe what the name under the cursor refers to.
+var referenceHovers = []func(parser.YamlDocument, *cache.Cache, protocol.Position) (string, bool){
+	hover.Step,
+	hover.JobInvocation,
+}
+
 func Hover(params protocol.HoverParams, cache *cache.Cache, context *session.Settings) (protocol.Hover, error) {
 	doc, err := parser.ParseFromUriWithCache(params.TextDocument.URI, cache, context)
 	if err != nil {
@@ -29,10 +35,12 @@ func Hover(params protocol.HoverParams, cache *cache.Cache, context *session.Set
 		}, nil
 	}
 
-	if text, ok := hover.Step(doc, cache, params.Position); ok {
-		return protocol.Hover{
-			Contents: &protocol.MarkupContent{Kind: protocol.MarkupKindMarkdown, Value: text},
-		}, nil
+	for _, reference := range referenceHovers {
+		if text, ok := reference(doc, cache, params.Position); ok {
+			return protocol.Hover{
+				Contents: &protocol.MarkupContent{Kind: protocol.MarkupKindMarkdown, Value: text},
+			}, nil
+		}
 	}
 
 	return protocol.Hover{}, fmt.Errorf("no hover")
