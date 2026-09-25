@@ -608,6 +608,23 @@ workflows:
       - build
 `,
 		},
+		{
+			name: "an orb's development version at the commit being built",
+			content: `version: 2.1
+orbs:
+  shellcheck: circleci/shellcheck@dev:<<pipeline.git.revision>>
+jobs:
+  build:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - checkout
+workflows:
+  main:
+    jobs:
+      - build
+`,
+		},
 	}
 
 	for _, tt := range tests {
