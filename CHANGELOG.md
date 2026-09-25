@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [0.40.6](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.40.5...0.40.6) (2026-09-25)
+
+
+### Bug Fixes
+
+* build every release target with goreleaser, and Linux statically ([#512](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/512)) ([959b68a](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/959b68afd1a9964517d095556a8f43492818d612))
+
 ## [0.40.5](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.40.4...0.40.5) (2026-09-24)
 
 
