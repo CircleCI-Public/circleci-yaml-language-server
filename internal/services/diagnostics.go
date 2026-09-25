@@ -12,6 +12,7 @@ import (
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/codeaction"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/session"
 )
 
@@ -57,7 +58,12 @@ func DiagnosticString(content string, cache *cache.Cache, context *session.Setti
 
 func DiagnosticYAML(yamlDocument parser.YamlDocument, cache *cache.Cache, context *session.Settings) ([]protocol.Diagnostic, error) {
 	if yamlDocument.Version != 0 && yamlDocument.Version < 2.1 {
-		// TODO: Handle error
+		// Older configs aren't checked, but setup workflows need 2.1.
+		if yamlDocument.Setup {
+			return []protocol.Diagnostic{
+				diagnostic.Error(yamlDocument.SetupRange, "Version 2.1 is required for Setup workflows"),
+			}, nil
+		}
 		return []protocol.Diagnostic{}, nil
 	}
 
