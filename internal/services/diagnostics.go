@@ -61,6 +61,10 @@ func DiagnosticYAML(yamlDocument parser.YamlDocument, cache *cache.Cache, contex
 		return []protocol.Diagnostic{}, nil
 	}
 
+	if !yamlDocument.IsPipelineConfig() {
+		return []protocol.Diagnostic{}, nil
+	}
+
 	diag := DiagnosticType{
 		diagnostics:  &[]protocol.Diagnostic{},
 		yamlDocument: yamlDocument,

@@ -9,6 +9,8 @@ import (
 
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
+	"gotest.tools/v3/assert"
+	"gotest.tools/v3/assert/cmp"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
@@ -445,4 +447,48 @@ func TestStepWhenRejectsInvalidValue(t *testing.T) {
 			t.Errorf("DiagnosticFile() in file %s = %v, want a diagnostic containing %q", filePath, diagnostics, wanted)
 		})
 	}
+}
+
+func TestFilesThatAreNotPipelineConfig(t *testing.T) {
+	diagnose := func(t *testing.T, fileName, content string) []protocol.Diagnostic {
+		t.Helper()
+
+		fileURI := uri.File(filepath.Join(t.TempDir(), ".circleci", fileName))
+		c := cache.New()
+		c.FileCache.SetFile(cache.File{
+			TextDocument: protocol.TextDocumentItem{URI: fileURI, Text: content},
+		})
+		settings := testHelpers.DefaultSettings()
+		settings.Api.Token = ""
+
+		diagnostics, err := DiagnosticFile(fileURI, c, settings, "")
+		assert.NilError(t, err)
+		return diagnostics
+	}
+
+	testSuites := `name: ci tests
+discover: go list ./...
+run: gotestsum -- << test.atoms >>
+outputs:
+  junit: test-reports/tests.xml
+---
+name: windows
+run: gotestsum -- ./...
+`
+
+	t.Run("a Smarter Testing definition is not validated", func(t *testing.T) {
+		assert.Check(t, cmp.Len(diagnose(t, "test-suites.yml", testSuites), 0))
+	})
+
+	t.Run("a file for another tool is not validated", func(t *testing.T) {
+		assert.Check(t, cmp.Len(diagnose(t, "factory-bot.yml", "review:\n  enabled: true\n"), 0))
+	})
+
+	t.Run("config.yml is validated whatever it holds", func(t *testing.T) {
+		assert.Check(t, len(diagnose(t, "config.yml", "review:\n  enabled: true\n")) != 0)
+	})
+
+	t.Run("a file with a pipeline key is validated", func(t *testing.T) {
+		assert.Check(t, len(diagnose(t, "continue.yml", "jobs:\n  build: {}\n")) != 0)
+	})
 }
