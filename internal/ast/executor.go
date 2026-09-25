@@ -14,6 +14,7 @@ type Executor interface {
 
 	GetResourceClass() string
 	GetShell() string
+	GetDescription() string
 
 	GetParameters() map[string]Parameter
 	GetParametersRange() protocol.Range
@@ -62,6 +63,10 @@ func (e BaseExecutor) GetResourceClass() string {
 
 func (e BaseExecutor) GetShell() string {
 	return e.BuiltInParameters.Shell
+}
+
+func (e BaseExecutor) GetDescription() string {
+	return e.BuiltInParameters.Description
 }
 
 func (e BaseExecutor) GetParameters() map[string]Parameter {

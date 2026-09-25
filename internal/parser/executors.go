@@ -102,6 +102,8 @@ func (doc *YamlDocument) parseBaseExecutor(base *ast2.BaseExecutor, nameNode *si
 			base.BuiltInParameters.Shell = doc.GetNodeText(valueNode)
 		case "working_directory":
 			base.BuiltInParameters.WorkingDirectory = doc.GetNodeText(valueNode)
+		case "description":
+			base.BuiltInParameters.Description = doc.parseDescription(valueNode)
 		case "environment":
 			base.Environment = doc.parseEnvs(valueNode)
 		case "parameters":
