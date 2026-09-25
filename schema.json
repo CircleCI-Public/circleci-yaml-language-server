@@ -1651,6 +1651,34 @@
                                 "object",
                                 "null"
                             ]
+                        },
+                        "with_tool_cache": {
+                            "markdownDescription": "Runs `steps` with a cache kept for `tool` (beta).",
+                            "type": "object",
+                            "required": [
+                                "tool",
+                                "steps"
+                            ],
+                            "properties": {
+                                "tool": {
+                                    "enum": [
+                                        "gradle",
+                                        "bazel",
+                                        "turborepo",
+                                        "xcode"
+                                    ],
+                                    "markdownDescription": "The tool whose cache is kept"
+                                },
+                                "steps": {
+                                    "type": "array",
+                                    "minItems": 1,
+                                    "items": {
+                                        "$ref": "#/definitions/step"
+                                    },
+                                    "markdownDescription": "The steps to run with the cache"
+                                }
+                            },
+                            "additionalProperties": false
                         }
                     },
                     "additionalProperties": {

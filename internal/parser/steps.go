@@ -119,6 +119,9 @@ func (doc *YamlDocument) parseStep(blockMapping *sitter.Node) []ast.Step {
 		return doc.parseWhenUnlessStep(valueNode)
 	case "unless":
 		return doc.parseWhenUnlessStep(valueNode)
+	case "with_tool_cache":
+		// Like when and unless, it wraps a list of steps.
+		return doc.parseWhenUnlessStep(valueNode)
 	case "steps":
 		stepName := doc.GetNodeText(valueNode)
 		_, stepName = paramref.ExtractName(stepName)

@@ -76,5 +76,6 @@ var commandsDescription map[string]string = map[string]string{
 	"persist_to_workspace":   "Special step used to persist a temporary file to be used by another job in the workflow.",
 	"attach_workspace":       "Special step used to attach the workflow's workspace to the current container. The full contents of the workspace are downloaded and copied into the directory the workspace is being attached at.",
 	"add_ssh_keys":           "Special step that adds SSH keys from a project's settings to a container. Also configures SSH to use these keys.",
+	"with_tool_cache":        "Runs steps with a cache kept for a tool: gradle, bazel, turborepo or xcode (beta).",
 	"install_signing_bundle": "Installs the code signing bundles named in the executor's `code_signing` list. macOS and machine executors only.",
 }
