@@ -161,6 +161,10 @@ func (val Validate) validateInvocations(jobInvocations []ast2.JobInvocation, ctx
 
 		// Common features between invoking a job and a job-group
 
+		// Every job takes pre-steps and post-steps, as steps parameters.
+		val.validateSteps(jobInvocation.PreSteps, "", map[string]ast2.Parameter{})
+		val.validateSteps(jobInvocation.PostSteps, "", map[string]ast2.Parameter{})
+
 		for _, require := range jobInvocation.Requires {
 			if !val.doesJobInvocationExist(jobInvocations, require.Name) && !paramref.IsMatrixPartiallyReferenced(require.Name) {
 				// Check if the require references a job inside a job-group

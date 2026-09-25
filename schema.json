@@ -2150,22 +2150,44 @@
                                 "type": "string"
                             },
                             "pre-steps": {
-                                "steps": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/definitions/step"
-                                    },
-                                    "minItems": 1
-                                }
+                                "type": "array",
+                                "items": {
+                                    "anyOf": [
+                                        {
+                                            "$ref": "#/definitions/step"
+                                        },
+                                        {
+                                            "description": "The compiler doesn't check these steps' shape, and compiles a step given no arguments.",
+                                            "type": "object",
+                                            "minProperties": 1,
+                                            "maxProperties": 1,
+                                            "additionalProperties": {
+                                                "type": "null"
+                                            }
+                                        }
+                                    ]
+                                },
+                                "markdownDescription": "Steps to run before the job's own steps."
                             },
                             "post-steps": {
-                                "steps": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/definitions/step"
-                                    },
-                                    "minItems": 1
-                                }
+                                "type": "array",
+                                "items": {
+                                    "anyOf": [
+                                        {
+                                            "$ref": "#/definitions/step"
+                                        },
+                                        {
+                                            "description": "The compiler doesn't check these steps' shape, and compiles a step given no arguments.",
+                                            "type": "object",
+                                            "minProperties": 1,
+                                            "maxProperties": 1,
+                                            "additionalProperties": {
+                                                "type": "null"
+                                            }
+                                        }
+                                    ]
+                                },
+                                "markdownDescription": "Steps to run after the job's own steps."
                             },
                             "matrix": {
                                 "type": "object",

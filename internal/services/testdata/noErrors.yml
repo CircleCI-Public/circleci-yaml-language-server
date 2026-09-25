@@ -108,7 +108,7 @@ workflows:
           pre-steps:
             - compass/notify_deployment:
                 token_name: atoken
-                environment_type: something
+                environment_type: staging
                 environment: another thing
 
       - build:
@@ -116,7 +116,7 @@ workflows:
           post-steps:
             - other/notify_deployment:
                 token_name: atoken
-                environment_type: something
+                environment_type: staging
                 environment: another thing
 
       - dummyJobWithStepParam
