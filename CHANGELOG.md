@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [0.40.5](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.40.4...0.40.5) (2026-09-24)
+
+
+### Bug Fixes
+
+* count an inline orb's commands used by the orb itself ([#510](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/510)) ([6a58a86](https://github.com/CircleCI-Public/circleci-yaml-language-server/commit/6a58a869ea5dd7149af2b298776cfe3baa256dc4))
+
 ## [0.40.4](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.40.3...0.40.4) (2026-09-24)
 
 
