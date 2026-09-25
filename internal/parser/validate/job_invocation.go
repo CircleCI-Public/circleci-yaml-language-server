@@ -271,11 +271,12 @@ func (val Validate) validateSingleJobInvocation(jobInvocation ast2.JobInvocation
 		return
 	}
 
-	if !val.Doc.DoesJobExist(jobInvocation.JobName) &&
-		(!val.Doc.IsOrbReference(jobInvocation.JobName) || (!val.Doc.IsOrbCommand(jobInvocation.JobName, val.Cache) && !val.Doc.IsOrbJob(jobInvocation.JobName, val.Cache))) {
-		val.addDiagnostic(diagnostic.Error(
-			jobInvocation.JobInvocationRange,
-			fmt.Sprintf("Cannot find declaration for job \"%s\"", jobInvocation.JobName)))
+	if !val.Doc.DoesJobExist(jobInvocation.JobName) && !val.Doc.IsOrbJob(jobInvocation.JobName, val.Cache) {
+		message := fmt.Sprintf("Cannot find declaration for job \"%s\"", jobInvocation.JobName)
+		if val.Doc.DoesCommandExist(jobInvocation.JobName) || val.Doc.IsOrbCommand(jobInvocation.JobName, val.Cache) {
+			message = fmt.Sprintf("%s is a command, not a job: a workflow runs jobs", jobInvocation.JobName)
+		}
+		val.addDiagnostic(diagnostic.Error(jobInvocation.JobInvocationRange, message))
 		return
 	}
 
