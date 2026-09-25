@@ -136,10 +136,12 @@ func (val Validate) validateURLOrb(orb ast.Orb) {
 		return
 	}
 
-	val.addDiagnostic(diagnostic.Warning(
-		orb.ValueRange,
-		reason+", so nothing used from it is checked.",
-	))
+	message := reason + ", so nothing used from it is checked."
+	if orbInfo == nil && err == nil && orburl.NeedsGitHubToken(val.Context.OrbURLs, orb.Url.Name) {
+		message += " Set GH_TOKEN or GITHUB_TOKEN for the language server to fetch private orbs from GitHub."
+	}
+
+	val.addDiagnostic(diagnostic.Warning(orb.ValueRange, message))
 }
 
 type OrbVersionCodeActionCreator struct {

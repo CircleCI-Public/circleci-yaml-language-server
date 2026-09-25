@@ -25,6 +25,13 @@ func (methods *Methods) ExecuteCommand(_ context.Context, params *protocol.Execu
 		methods.setToken(param)
 		methods.updateAllCachedFiles()
 
+	case "setGitHubToken":
+		param, ok := argument[string](arguments, 0)
+		if !ok {
+			return nil, jsonrpc2.NewError(jsonrpc2.InvalidParams, "invalid method parameter: token")
+		}
+		methods.setGitHubToken(param)
+
 	case "setSelfHostedUrl":
 		param, ok := argument[string](arguments, 0)
 		if !ok {
@@ -120,6 +127,24 @@ func (methods *Methods) setToken(token string) {
 	}
 
 	methods.updateProjectsEnvVariables()
+}
+
+// setGitHubToken sets the token orbs referenced by a GitHub URL are fetched
+// with, when they can't be without one. An orb fetched, or found missing,
+// with the old token is forgotten.
+func (methods *Methods) setGitHubToken(token string) {
+	if methods.Settings().OrbURLs.GitHubToken == token {
+		return
+	}
+
+	methods.Cache.OrbCache.Clear()
+	methods.updateSettings(func(settings *session.Settings) {
+		settings.OrbURLs.GitHubToken = token
+	})
+
+	for _, file := range methods.Cache.FileCache.GetFiles() {
+		go methods.notificationMethods(file.TextDocument)
+	}
 }
 
 func (methods *Methods) setHostUrl(hostUrl string) {

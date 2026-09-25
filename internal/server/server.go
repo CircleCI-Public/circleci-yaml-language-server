@@ -16,6 +16,7 @@ import (
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/orburl"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/lspcodec"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/server/methods"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/session"
@@ -164,8 +165,19 @@ func getJsonRpcServer(ctx context.Context, schemaLocation string) JSONRPCServer 
 				// from the environment.
 				RunnerHost: os.Getenv("CIRCLECI_RUNNER_HOST"),
 			},
+			// An editor can set this over the protocol too (setGitHubToken).
+			OrbURLs:        orburl.Config{GitHubToken: gitHubTokenFromEnv()},
 			IsCciExtension: false,
 		},
 		SchemaLocation: schemaLocation,
 	}
+}
+
+// gitHubTokenFromEnv is the GitHub token in the environment, under the names
+// the GitHub CLI reads: GH_TOKEN, and then GITHUB_TOKEN.
+func gitHubTokenFromEnv() string {
+	if token := os.Getenv("GH_TOKEN"); token != "" {
+		return token
+	}
+	return os.Getenv("GITHUB_TOKEN")
 }

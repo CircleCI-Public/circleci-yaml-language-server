@@ -61,6 +61,11 @@ func (c *Orbs) UpdateOrbParsedAttributes(orbID string, parsedOrbAttributes ast.O
 	c.orbs.Put(orbID, &updated)
 }
 
+// Clear forgets every orb.
+func (c *Orbs) Clear() {
+	c.orbs.Clear()
+}
+
 func (c *Orbs) GetOrb(orbID string) *ast.OrbInfo {
 	orb, _ := c.orbs.Peek(orbID)
 	return orb

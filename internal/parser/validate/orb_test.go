@@ -16,6 +16,7 @@ import (
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/dockerhub"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/orburl"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/parser"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/fakes"
@@ -619,27 +620,40 @@ jobs:
       - checkout
 `
 
-// urlOrbHost is an https host serving urlOrbSource at /orbs/go.yml, and
-// answering 404 for anything else, as GitHub does for a file in a private
-// repository.
+// urlOrbHost is an https host serving urlOrbSource at /orbs/go.yml to
+// anyone, and at any path ending /private/go.yml to the GitHub token
+// "secret", and answering
+// 404 for anything else, as GitHub does for a file in a private repository.
 func urlOrbHost(t *testing.T) *httptest.Server {
 	t.Helper()
 
 	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/orbs/go.yml" {
+		switch {
+		case r.URL.Path == "/orbs/go.yml",
+			strings.HasSuffix(r.URL.Path, "/private/go.yml") && r.Header.Get("Authorization") == "token secret":
+			_, _ = w.Write([]byte(urlOrbSource))
+		default:
 			http.NotFound(w, r)
-			return
 		}
-		_, _ = w.Write([]byte(urlOrbSource))
 	}))
 	t.Cleanup(srv.Close)
 
 	return srv
 }
 
+// asGitHub sends every request to srv, as though srv were whichever host the
+// URL names, such as raw.githubusercontent.com.
+type asGitHub struct{ srv *httptest.Server }
+
+func (a asGitHub) RoundTrip(r *http.Request) (*http.Response, error) {
+	r = r.Clone(r.Context())
+	r.URL.Host = a.srv.Listener.Addr().String()
+	return a.srv.Client().Transport.RoundTrip(r)
+}
+
 // validateWithURLOrb validates a config whose `bp-go` orb is at orbURL, with
-// orb URLs fetched from srv.
-func validateWithURLOrb(t *testing.T, srv *httptest.Server, orbURL string, steps string) []protocol.Diagnostic {
+// orb URLs fetched as orbURLs says.
+func validateWithURLOrb(t *testing.T, orbURLs orburl.Config, orbURL string, steps string) []protocol.Diagnostic {
 	t.Helper()
 
 	yamlContent := `version: 2.1
@@ -662,7 +676,7 @@ workflows:
 
 	settings := testHelpers.DefaultSettings()
 	settings.Api.Token = ""
-	settings.OrbURLs.Transport = srv.Client().Transport
+	settings.OrbURLs = orbURLs
 
 	doc, err := parser.ParseFromContent([]byte(yamlContent), settings, uri.File(""), protocol.Position{})
 	assert.NilError(t, err)
@@ -695,12 +709,13 @@ func orbWarnings(diags []protocol.Diagnostic) []string {
 // without one.
 func TestURLOrb(t *testing.T) {
 	srv := urlOrbHost(t)
+	fromSrv := orburl.Config{Transport: srv.Client().Transport}
 
 	t.Run("an orb that can be fetched is checked", func(t *testing.T) {
 		orbURL := srv.URL + "/orbs/go.yml"
 
 		t.Run("what it declares resolves", func(t *testing.T) {
-			diags := validateWithURLOrb(t, srv, orbURL, `      - bp-go/private-mod-init:
+			diags := validateWithURLOrb(t, fromSrv, orbURL, `      - bp-go/private-mod-init:
           private-modules: github.com/circleci/*
 `)
 			assert.Check(t, cmp.Len(getErrorDiagnostic(&diags), 0))
@@ -708,7 +723,7 @@ func TestURLOrb(t *testing.T) {
 		})
 
 		t.Run("what it doesn't declare is reported", func(t *testing.T) {
-			diags := validateWithURLOrb(t, srv, orbURL, `      - bp-go/nosuch
+			diags := validateWithURLOrb(t, fromSrv, orbURL, `      - bp-go/nosuch
       - bp-go/private-mod-init:
           nosuch: 1
 `)
@@ -724,23 +739,43 @@ func TestURLOrb(t *testing.T) {
 		})
 	})
 
+	const onGitHub = "https://raw.githubusercontent.com/acme/orbs/main/private/go.yml"
+	asGitHubWithToken := orburl.Config{GitHubToken: "secret", Transport: asGitHub{srv}}
+
+	t.Run("a private orb on GitHub is fetched with a GitHub token", func(t *testing.T) {
+		diags := validateWithURLOrb(t, asGitHubWithToken, onGitHub, `      - bp-go/nosuch
+`)
+		assert.Check(t, cmp.Len(orbWarnings(diags), 0))
+		assert.Check(t, cmp.Len(getErrorDiagnostic(&diags), 1))
+	})
+
 	cases := []struct {
 		name, orbURL, warning string
+		orbURLs               orburl.Config
 	}{
 		{
 			name:    "a private or missing orb",
 			orbURL:  srv.URL + "/orbs/private.yml",
+			orbURLs: fromSrv,
 			warning: "This orb could not be fetched: it doesn't exist, or it is private, so nothing used from it is checked.",
+		},
+		{
+			name:    "a private orb on GitHub, without a GitHub token,",
+			orbURL:  onGitHub,
+			orbURLs: orburl.Config{Transport: asGitHub{srv}},
+			warning: "This orb could not be fetched: it doesn't exist, or it is private, so nothing used from it is checked." +
+				" Set GH_TOKEN or GITHUB_TOKEN for the language server to fetch private orbs from GitHub.",
 		},
 		{
 			name:    "an orb not served over https",
 			orbURL:  "http://example.com/orbs/go.yml",
+			orbURLs: fromSrv,
 			warning: "Orbs are only fetched over https, so nothing used from it is checked.",
 		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name+" is not checked", func(t *testing.T) {
-			diags := validateWithURLOrb(t, srv, tc.orbURL, `      - bp-go/private-mod-init:
+			diags := validateWithURLOrb(t, tc.orbURLs, tc.orbURL, `      - bp-go/private-mod-init:
           private-modules: github.com/circleci/*
 `)
 			assert.Check(t, cmp.Len(getErrorDiagnostic(&diags), 0))
