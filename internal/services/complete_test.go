@@ -167,14 +167,6 @@ func TestComplete(t *testing.T) {
 				{
 					Label: "dummyCommand",
 				},
-				// Itself (it can be called from itself)
-				{
-					Label: "terraform-init-plan",
-				},
-				// User defined job
-				{
-					Label: "dummyJob",
-				},
 				// Built-in steps
 				{
 					Label: "run",
@@ -217,9 +209,6 @@ func TestComplete(t *testing.T) {
 				},
 				{
 					Label: "with_tool_cache",
-				},
-				{
-					Label: "superOrb/supermethod",
 				},
 			},
 		},

@@ -29,7 +29,7 @@ func (ch *CompletionHandler) completeJobs() {
 			nodeToComplete = nodeToComplete.PrevSibling()
 		}
 
-		ch.completeSteps(job.Name, true, true, nodeToComplete)
+		ch.completeSteps(job.Name, true, nodeToComplete)
 		return
 	case position.InRange(job.DockerRange, ch.Params.Position):
 		ch.completeDockerExecutor(job.Docker)
@@ -52,12 +52,6 @@ func (ch *CompletionHandler) orbsJobs() {
 				ch.addCompletionItem(jobName)
 			}
 		}
-	}
-}
-
-func (ch *CompletionHandler) userDefinedJobs() {
-	for _, job := range ch.Doc.Jobs {
-		ch.addCompletionItem(job.Name)
 	}
 }
 

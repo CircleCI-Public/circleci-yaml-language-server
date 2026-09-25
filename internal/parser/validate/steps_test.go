@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"go.lsp.dev/protocol"
+	"gotest.tools/v3/assert"
+	"gotest.tools/v3/assert/cmp"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 )
@@ -424,4 +426,50 @@ workflows:
 	}
 
 	CheckYamlErrors(t, testCases)
+}
+
+// A job can't be run as a step: a step names a command. A local job and an
+// orb job are both reported as a job.
+func TestJobAsStep(t *testing.T) {
+	val := CreateValidateFromYAML(`version: 2.1
+
+orbs:
+  my-orb:
+    jobs:
+      lint:
+        docker:
+          - image: cimg/base:stable
+        steps:
+          - checkout
+
+jobs:
+  test:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+  build:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - test
+      - my-orb/lint
+
+workflows:
+  w:
+    jobs:
+      - build
+      - test
+`)
+	val.Cache.MachineOfferingsCache.Set(testMachineOfferings())
+	val.Validate()
+
+	errors := []string{}
+	for _, d := range getErrorDiagnostic(val.Diagnostics) {
+		errors = append(errors, diagnostic.MessageText(d))
+	}
+	assert.Check(t, cmp.DeepEqual(errors, []string{
+		"test is a job, not a command: a job can't be run as a step",
+		"my-orb/lint is a job, not a command: a job can't be run as a step",
+	}, anyOrder))
 }
