@@ -4,7 +4,7 @@
 //
 // Usage:
 //
-//	go run ./cmd/dockerhub [namespace/repository]
+//	go run ./cmd/dev/dockerhub [namespace/repository]
 //
 // The repository defaults to cimg/node.
 //
