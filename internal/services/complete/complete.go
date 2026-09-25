@@ -76,7 +76,9 @@ func (ch *CompletionHandler) completeSection() {
 	case position.InRange(ch.Doc.ExecutorsRange, pos):
 		ch.completeExecutors()
 	case position.InRange(ch.Doc.OrbsRange, pos):
-		ch.completeOrbs()
+		if !ch.completeInInlineOrb() {
+			ch.completeOrbs()
+		}
 	case position.InRange(ch.Doc.FunctionsRange, pos):
 		ch.completeFunctionVersion()
 	case position.InRange(ch.Doc.PipelineParametersRange, pos):
