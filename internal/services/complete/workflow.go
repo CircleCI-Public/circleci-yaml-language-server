@@ -43,6 +43,10 @@ func (ch *CompletionHandler) completeWorkflows() {
 		}
 	}
 
+	if ch.completeInvocationMapping(wf.JobInvocations) {
+		return
+	}
+
 	if invocation, nameLine := ch.jobInvocationBodyAt(wf.JobInvocations); invocation != nil {
 		ch.completeJobInvocationBody(invocation, nameLine)
 		return

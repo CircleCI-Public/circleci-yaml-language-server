@@ -210,7 +210,7 @@ workflows:
           
       - greet:
           name: greet-again
-          filters:
+          serial-group:
             
 `
 	below := func(text string, column uint32) protocol.Position {
@@ -232,7 +232,70 @@ workflows:
 	})
 
 	t.Run("nothing is offered inside one of the invocation's keys", func(t *testing.T) {
-		assert.Check(t, cmp.Len(completionLabels(t, config, below("filters:", 12)), 0))
+		assert.Check(t, cmp.Len(completionLabels(t, config, below("serial-group:", 12)), 0))
+	})
+}
+
+func TestCompleteInvocationMappings(t *testing.T) {
+	const config = `version: 2.1
+
+jobs:
+  greet:
+    parameters:
+      who:
+        type: string
+      loud:
+        type: boolean
+        default: false
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo hi << parameters.who >>
+
+workflows:
+  main:
+    jobs:
+      - greet:
+          filters:
+            tags:
+              only: /.*/
+            
+      - greet:
+          name: greet-branches
+          filters:
+            branches:
+              ignore: main
+              
+      - greet:
+          name: greet-matrix
+          matrix:
+            alias: greet-all
+            
+      - greet:
+          name: greet-each
+          matrix:
+            parameters:
+              loud: [true, false]
+              
+`
+	below := func(text string, column uint32) protocol.Position {
+		return positionBelow(t, config, text, column)
+	}
+
+	t.Run("filters are offered the kinds of ref they don't filter yet", func(t *testing.T) {
+		assert.Check(t, cmp.DeepEqual(completionLabels(t, config, below("only: /.*/", 12)), []string{"branches"}))
+	})
+
+	t.Run("a kind of ref is offered the filters it doesn't have", func(t *testing.T) {
+		assert.Check(t, cmp.DeepEqual(completionLabels(t, config, below("ignore: main", 14)), []string{"only"}))
+	})
+
+	t.Run("a matrix is offered the keys it doesn't have", func(t *testing.T) {
+		assert.Check(t, cmp.DeepEqual(completionLabels(t, config, below("alias: greet-all", 12)), []string{"parameters", "exclude"}))
+	})
+
+	t.Run("a matrix's parameters are offered the job's parameters they don't have", func(t *testing.T) {
+		assert.Check(t, cmp.DeepEqual(completionLabels(t, config, below("loud: [true, false]", 14)), []string{"who"}))
 	})
 }
 
