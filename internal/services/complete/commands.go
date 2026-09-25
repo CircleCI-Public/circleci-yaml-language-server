@@ -22,11 +22,7 @@ func (ch *CompletionHandler) completeCommands() {
 		ch.addParametersDefinitionCompletion(command.Parameters)
 		return
 	case position.InRange(command.StepsRange, ch.Params.Position):
-		nodeToComplete, _, _ := position.NodeAt(ch.Doc.RootNode, ch.Params.Position)
-		if nodeToComplete.Kind() == ":" {
-			nodeToComplete = nodeToComplete.PrevSibling()
-		}
-		ch.completeSteps(command.Name, false, nodeToComplete)
+		ch.completeSteps(command.Name, false, ch.nodeToComplete())
 		return
 	}
 

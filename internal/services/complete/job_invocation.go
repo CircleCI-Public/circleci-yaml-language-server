@@ -36,6 +36,19 @@ func isInRequires(pos protocol.Position, jobInvocations []ast.JobInvocation) boo
 	return false
 }
 
+// isInPreOrPostSteps says whether the position is in an invocation's
+// pre-steps or post-steps.
+func isInPreOrPostSteps(pos protocol.Position, jobInvocations []ast.JobInvocation) bool {
+	for _, jobInvocation := range jobInvocations {
+		for _, rng := range []protocol.Range{jobInvocation.PreStepsRange, jobInvocation.PostStepsRange} {
+			if !position.IsDefaultRange(rng) && position.InRange(rng, pos) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // addExistingJobInvocations adds a completion item for each invocation provided.
 // It uses the `name:` override, because that's how other jobs reference this invocation in requires.
 func (ch *CompletionHandler) addExistingJobInvocations(jobInvocations []ast.JobInvocation) {

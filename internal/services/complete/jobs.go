@@ -33,12 +33,7 @@ func (ch *CompletionHandler) completeJobs() {
 		ch.addParametersDefinitionCompletion(job.Parameters)
 		return
 	case position.InRange(job.StepsRange, ch.Params.Position):
-		nodeToComplete, _, _ := position.NodeAt(ch.Doc.RootNode, ch.Params.Position)
-		if nodeToComplete.Kind() == ":" {
-			nodeToComplete = nodeToComplete.PrevSibling()
-		}
-
-		ch.completeSteps(job.Name, true, nodeToComplete)
+		ch.completeSteps(job.Name, true, ch.nodeToComplete())
 		return
 	case position.InRange(job.DockerRange, ch.Params.Position):
 		ch.completeDockerExecutor(job.Docker)
