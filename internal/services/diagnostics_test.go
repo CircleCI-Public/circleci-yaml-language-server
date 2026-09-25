@@ -663,6 +663,30 @@ workflows:
               split: [2, 4]
 `,
 		},
+		{
+			name: "no_output_timeout as an integer or an expression",
+			content: `version: 2.1
+jobs:
+  build:
+    parameters:
+      timeout:
+        type: string
+        default: 20m
+    docker:
+      - image: cimg/base:current
+    steps:
+      - run:
+          command: make test
+          no_output_timeout: 600
+      - run:
+          command: make test
+          no_output_timeout: << parameters.timeout >>
+workflows:
+  main:
+    jobs:
+      - build
+`,
+		},
 	}
 
 	for _, tt := range tests {

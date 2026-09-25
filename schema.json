@@ -1214,8 +1214,18 @@
                                             "markdownDescription": "In which directory to run this step (default: `working_directory` of the job)"
                                         },
                                         "no_output_timeout": {
-                                            "type": "string",
-                                            "pattern": "\\d+(\\.\\d+)?[mhs]",
+                                            "anyOf": [
+                                                {
+                                                    "type": "string",
+                                                    "pattern": "\\d+(\\.\\d+)?[mhs]"
+                                                },
+                                                {
+                                                    "type": "integer"
+                                                },
+                                                {
+                                                    "$ref": "#/definitions/expression"
+                                                }
+                                            ],
                                             "default": "10m",
                                             "markdownDescription": "Elapsed time the command can run without output. The string is a decimal with unit suffix, such as \"20m\", \"1.25h\", \"5s\" (default: 10 minutes)"
                                         },
@@ -1239,7 +1249,7 @@
                                             "anyOf": [
                                                 {
                                                     "type": "string",
-                                                    "pattern": "^(10|[1-9])m|([1-9][0-9]*)s$"
+                                                    "pattern": "^((10|[1-9])m|([1-9][0-9]*)s)$"
                                                 },
                                                 {
                                                     "$ref": "#/definitions/expression"
