@@ -62,6 +62,6 @@ workflows:
           name: build-windows-<<matrix.py_version>>
           matrix:
             parameters:
-              py_version: ["3.8"]
+              py_version: ["3.8", "3.9"]
       - uselessJob:
           requires: [*usefulJob, build-windows-<<matrix.py_version>>]

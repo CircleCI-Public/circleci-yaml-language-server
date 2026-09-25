@@ -35,18 +35,20 @@ workflows:
 			YamlContent: `version: 2.1
 
 jobs:
-  hold:
+  build:
     docker:
       - image: cimg/base:stable
     steps:
-      - run: echo "hold"
+      - run: echo "build"
 
 workflows:
   test-workflow:
     max_auto_reruns: 3
     jobs:
       - hold:
-          type: approval`,
+          type: approval
+      - build:
+          requires: [hold]`,
 		},
 		{
 			Name: "Valid max_auto_reruns value 5",
@@ -186,6 +188,82 @@ workflows:
 					End:   protocol.Position{Line: 11, Character: 25},
 				}, `Cannot find declaration for job "missing"`),
 			},
+		},
+	})
+}
+
+func TestApprovalAndMatrixWarnings(t *testing.T) {
+	const deploy = `version: 2.1
+
+jobs:
+  deploy:
+    parameters:
+      env:
+        type: string
+        default: prod
+    docker:
+      - image: cimg/base:current
+    steps:
+      - checkout
+
+workflows:
+  main:
+    jobs:
+`
+	CheckYamlErrors(t, []ValidateTestCase{
+		{
+			Name: "An approval job ignores other keys",
+			YamlContent: deploy + `      - hold:
+          type: approval
+          env: prod
+      - deploy:
+          requires: [hold]
+`,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Warning(protocol.Range{
+					Start: protocol.Position{Line: 18, Character: 10},
+					End:   protocol.Position{Line: 18, Character: 19},
+				}, "Job <local>/hold: 'env' is not a recognized approval key and is ignored"),
+			},
+		},
+		{
+			Name: "An approval job named after a job shadows it",
+			YamlContent: deploy + `      - deploy:
+          type: approval
+`,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Warning(protocol.Range{
+					Start: protocol.Position{Line: 16, Character: 8},
+					End:   protocol.Position{Line: 16, Character: 14},
+				}, "'deploy' is invoked here with type: approval, which shadows the job definition of the same name; "+
+					"its own steps will not run for this invocation"),
+			},
+		},
+		{
+			Name: "A matrix with a single value for every parameter",
+			YamlContent: deploy + `      - deploy:
+          matrix:
+            parameters:
+              env: [prod]
+`,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Warning(protocol.Range{
+					Start: protocol.Position{Line: 17, Character: 10},
+					End:   protocol.Position{Line: 17, Character: 16},
+				}, "This matrix is declared with a single value for every parameter, so it always "+
+					"produces exactly one job. Consider not using a matrix here."),
+			},
+		},
+		{
+			Name: "A matrix brought down to one job by exclude",
+			YamlContent: deploy + `      - deploy:
+          matrix:
+            parameters:
+              env: [prod, staging]
+            exclude:
+              - env: staging
+`,
+			Diagnostics: []protocol.Diagnostic{},
 		},
 	})
 }

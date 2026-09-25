@@ -109,6 +109,23 @@ func (doc *YamlDocument) parseMatrixCombinations(matrixNode *sitter.Node) ([]mat
 	return parameters, excludes
 }
 
+// isSingleCombinationMatrix reports whether the matrix declares one value for
+// every parameter, and no exclude, so it always produces exactly one job. An
+// exclude can fairly bring a larger matrix down to one, so this looks at the
+// declaration, not the expansion.
+func (doc *YamlDocument) isSingleCombinationMatrix(matrixNode *sitter.Node) bool {
+	parameters, excludes := doc.parseMatrixCombinations(matrixNode)
+	if len(parameters) == 0 || len(excludes) != 0 {
+		return false
+	}
+	for _, parameter := range parameters {
+		if len(parameter.values) != 1 {
+			return false
+		}
+	}
+	return true
+}
+
 // matrixCartesianProduct returns every combination of the parameters'
 // values, the first parameter varying slowest. A parameter with no values
 // leaves no combinations.
