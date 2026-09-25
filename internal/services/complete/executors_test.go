@@ -1,6 +1,7 @@
 package complete
 
 import (
+	"slices"
 	"testing"
 
 	"go.lsp.dev/protocol"
@@ -97,5 +98,76 @@ func TestTypedImage(t *testing.T) {
 		typed, ok = typedImage(img, at(27))
 		assert.Check(t, ok)
 		assert.Check(t, cmp.Equal(typed, "cimg/n"))
+	})
+}
+
+func TestCompleteExecutorMapping(t *testing.T) {
+	const config = `version: 2.1
+
+orbs:
+  tools:
+    executors:
+      node:
+        parameters:
+          tag:
+            type: string
+        docker:
+          - image: cimg/node:<< parameters.tag >>
+
+executors:
+  base:
+    parameters:
+      tag:
+        type: string
+      size:
+        type: string
+        default: medium
+    docker:
+      - image: cimg/base:<< parameters.tag >>
+    resource_class: << parameters.size >>
+
+jobs:
+  local:
+    executor:
+      name: base
+      tag: stable
+      
+    steps:
+      - checkout
+  from-orb:
+    executor:
+      name: tools/node
+      
+    steps:
+      - checkout
+  unnamed:
+    executor:
+      
+    steps:
+      - checkout
+  by-name:
+    executor: base
+      
+`
+	at := func(text string) []string {
+		return completionLabels(t, config, positionBelow(t, config, text, 6))
+	}
+
+	t.Run("a local executor is offered the parameters it isn't given", func(t *testing.T) {
+		assert.Check(t, cmp.DeepEqual(at("tag: stable"), []string{"size"}))
+	})
+
+	t.Run("an orb executor is offered its parameters", func(t *testing.T) {
+		assert.Check(t, cmp.DeepEqual(at("name: tools/node"), []string{"tag"}))
+	})
+
+	t.Run("an executor with no name yet is offered name", func(t *testing.T) {
+		assert.Check(t, cmp.DeepEqual(at("executor:"), []string{"name"}))
+	})
+
+	t.Run("an executor given by name is offered no keys", func(t *testing.T) {
+		labels := at("executor: base")
+		assert.Check(t, !slices.Contains(labels, "name"), "%q", labels)
+		assert.Check(t, !slices.Contains(labels, "size"), "%q", labels)
 	})
 }
