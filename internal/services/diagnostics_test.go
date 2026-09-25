@@ -838,6 +838,28 @@ workflows:
 			name:    "a setup config",
 			content: "setup: true\n" + job(`      - checkout`),
 		},
+		{
+			name: "a release job with validation",
+			content: `version: 2.1
+jobs:
+  release:
+    type: release
+    plan_name: my-service
+    validation:
+      enabled: true
+      evaluation_time: 30m
+      auto_rollback_on_failure: true
+      webhooks:
+        - name: error_rate
+          provider: datadog
+          fail_when: 'criteria == "triggered"'
+          max_failures: 2
+workflows:
+  main:
+    jobs:
+      - release
+`,
+		},
 	}
 
 	for _, tt := range tests {

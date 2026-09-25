@@ -69,6 +69,57 @@
                             "plan_name": {
                                 "type": "string",
                                 "markdownDescription": "Required plan name for release jobs."
+                            },
+                            "validation": {
+                                "markdownDescription": "Turns on the release validation engine, which gates the release on signals from your monitoring tool and triggers your rollback pipeline when a release fails.",
+                                "properties": {
+                                    "enabled": {
+                                        "markdownDescription": "Turns on release validation for this release job (required)."
+                                    },
+                                    "evaluation_time": {
+                                        "default": "20m",
+                                        "markdownDescription": "How long the engine waits for validation signals before treating the release as successful, for example `30m` (default: `20m`)."
+                                    },
+                                    "auto_rollback_on_failure": {
+                                        "markdownDescription": "When `true`, the engine triggers your rollback pipeline if validation fails during the evaluation window."
+                                    },
+                                    "webhooks": {
+                                        "markdownDescription": "Webhook validation checks, each one named signal from a monitoring provider. When omitted, a catch-all check accepts any signal.",
+                                        "items": {
+                                            "properties": {
+                                                "name": {
+                                                    "markdownDescription": "Identifier for this check. Your monitoring tool must send a matching `signal_name` (required)."
+                                                },
+                                                "provider": {
+                                                    "anyOf": [
+                                                        {
+                                                            "enum": [
+                                                                "datadog",
+                                                                "prometheus",
+                                                                "grafana",
+                                                                "alertmanager",
+                                                                "custom"
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "string"
+                                                        }
+                                                    ],
+                                                    "markdownDescription": "One of `datadog`, `prometheus`, `grafana`, `alertmanager` or `custom` (required)."
+                                                },
+                                                "data_points": {
+                                                    "markdownDescription": "Maps fields in the incoming webhook payload to the values CircleCI matches on. Provider defaults apply to any key you omit."
+                                                },
+                                                "fail_when": {
+                                                    "markdownDescription": "Expression that decides when a webhook event counts as a failure. Provider defaults apply when you omit it."
+                                                },
+                                                "max_failures": {
+                                                    "markdownDescription": "Number of matching failures before this check fails."
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         },
                         "additionalProperties": true
