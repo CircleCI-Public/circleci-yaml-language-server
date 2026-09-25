@@ -248,10 +248,14 @@ func (val Validate) validateSingleJobInvocation(jobInvocation ast2.JobInvocation
 		return
 	}
 
+	if jobInvocation.MatrixJobCount > parser.MaxMatrixJobs {
+		val.addDiagnostic(diagnostic.Error(matrixKeyRange(jobInvocation), fmt.Sprintf(
+			"The %s build matrix expands to %d jobs. Matrices cannot generate more than %d jobs.",
+			jobInvocation.MatrixAlias, jobInvocation.MatrixJobCount, parser.MaxMatrixJobs)))
+	}
+
 	if jobInvocation.MatrixIsSingleCombination {
-		matrixKey := protocol.Range{Start: jobInvocation.MatrixRange.Start, End: jobInvocation.MatrixRange.Start}
-		matrixKey.End.Character += uint32(len("matrix"))
-		val.addDiagnostic(diagnostic.Warning(matrixKey,
+		val.addDiagnostic(diagnostic.Warning(matrixKeyRange(jobInvocation),
 			"This matrix is declared with a single value for every parameter, so it always "+
 				"produces exactly one job. Consider not using a matrix here."))
 	}
@@ -280,6 +284,13 @@ func (val Validate) validateSingleJobInvocation(jobInvocation ast2.JobInvocation
 	}
 
 	val.validateInvocationContexts(jobInvocation)
+}
+
+// matrixKeyRange is the range of an invocation's `matrix` key.
+func matrixKeyRange(jobInvocation ast2.JobInvocation) protocol.Range {
+	rng := protocol.Range{Start: jobInvocation.MatrixRange.Start, End: jobInvocation.MatrixRange.Start}
+	rng.End.Character += uint32(len("matrix"))
+	return rng
 }
 
 // validateInvocationContexts checks that each context exists, when the

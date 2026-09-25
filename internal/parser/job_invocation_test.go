@@ -277,9 +277,10 @@ func TestYamlDocument_parseSingleJobInvocation(t *testing.T) {
 						},
 					},
 				},
-				MatrixAlias: "test",
-				MatrixNames: []string{"test-1", "test-2"},
-				Parameters:  make(map[string]ast2.ParameterValue),
+				MatrixAlias:    "test",
+				MatrixNames:    []string{"test-1", "test-2"},
+				MatrixJobCount: 2,
+				Parameters:     make(map[string]ast2.ParameterValue),
 			},
 		},
 		{
