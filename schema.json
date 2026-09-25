@@ -2370,12 +2370,12 @@
                         "branches"
                     ],
                     "additionalProperties": false
+                },
+                "observability": {
+                    "type": "object"
                 }
             },
-            "additionalProperties": false,
-            "required": [
-                "notify"
-            ]
+            "additionalProperties": false
         },
         "workflows": {
             "type": "object",
