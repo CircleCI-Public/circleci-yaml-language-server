@@ -1000,3 +1000,71 @@ workflows:
 		assert.Check(t, len(errors) != 0)
 	})
 }
+
+func TestExecutorSettingWarnings(t *testing.T) {
+	fake := fakes.NewCircleCI(t)
+	const executorsURL = "https://circleci.com/docs/reference/configuration-reference/#executors"
+	withJob := func(executors, job string) string {
+		return "version: 2.1\nexecutors:\n" + executors + `jobs:
+  build:
+` + job + `    steps:
+      - checkout
+workflows:
+  main:
+    jobs:
+      - build
+`
+	}
+
+	t.Run("settings inside the machine map", func(t *testing.T) {
+		warnings := configWarnings(t, fake, withJob(`  vm:
+    machine:
+      image: ubuntu-2204:current
+      enabled: true
+      resource_class: large
+      shell: /bin/bash
+`, "    executor: vm\n"))
+		assert.Check(t, cmp.Contains(warnings, "The `enabled` machine key is deprecated and should be removed. See "+
+			"https://circleci.com/docs/reference/configuration-reference/#machine"))
+		assert.Check(t, cmp.Contains(warnings, "Setting `resource_class` inside the `machine` map is undocumented; set it "+
+			"as a sibling of `machine` instead. See "+executorsURL))
+		assert.Check(t, cmp.Contains(warnings, "Setting `shell` inside the `machine` map is undocumented; set it "+
+			"as a sibling of `machine` instead. See "+executorsURL))
+	})
+
+	t.Run("an executor with no type", func(t *testing.T) {
+		warnings := configWarnings(t, fake, withJob(`  sized:
+    resource_class: large
+`, `    executor: sized
+    docker:
+      - image: cimg/base:current
+`))
+		assert.Check(t, cmp.Contains(warnings, "An executor with no declared \"docker\", \"machine\", or \"macos\" key is "+
+			"undocumented, and support for it may be removed at a future date. See "+executorsURL))
+	})
+
+	t.Run("settings on both the job and its executor", func(t *testing.T) {
+		warnings := configWarnings(t, fake, withJob(`  box:
+    docker:
+      - image: cimg/base:current
+    resource_class: large
+    shell: /bin/sh
+`, `    executor: box
+    resource_class: xlarge
+    shell: /bin/bash
+`))
+		assert.Check(t, cmp.Contains(warnings, "resource_class is set both on the job and on the executor; the job's "+
+			"value is used and the executor's is ignored. See "+executorsURL))
+		assert.Check(t, cmp.Contains(warnings, "shell is set both on the job and on the executor; the job's value is "+
+			"used and the executor's is ignored. See "+executorsURL))
+	})
+
+	t.Run("nothing to warn about", func(t *testing.T) {
+		warnings := configWarnings(t, fake, withJob(`  box:
+    docker:
+      - image: cimg/base:current
+    resource_class: large
+`, "    executor: box\n    shell: /bin/bash\n"))
+		assert.Check(t, cmp.DeepEqual(warnings, []string{}))
+	})
+}

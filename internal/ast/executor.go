@@ -13,6 +13,7 @@ type Executor interface {
 	IsUncomplete() bool
 
 	GetResourceClass() string
+	GetShell() string
 
 	GetParameters() map[string]Parameter
 	GetParametersRange() protocol.Range
@@ -57,6 +58,10 @@ func (e BaseExecutor) IsUncomplete() bool {
 
 func (e BaseExecutor) GetResourceClass() string {
 	return e.ResourceClass
+}
+
+func (e BaseExecutor) GetShell() string {
+	return e.BuiltInParameters.Shell
 }
 
 func (e BaseExecutor) GetParameters() map[string]Parameter {
