@@ -360,3 +360,103 @@ workflows:
 		assert.Check(t, cmp.Contains(said, "Parameter count for j must be a integer"))
 	})
 }
+
+// A reference's value is only known once the config is compiled, so these
+// are checked by type, not by value.
+func TestReferencesAsParameters(t *testing.T) {
+	testCases := []ValidateTestCase{
+		{
+			Name: "A pipeline enum passed to a job's enum",
+			YamlContent: `version: 2.1
+
+parameters:
+  cluster:
+    type: enum
+    enum: [test, prod]
+    default: test
+
+jobs:
+  roll:
+    parameters:
+      cluster:
+        type: enum
+        enum: [test, prod]
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo << parameters.cluster >>
+
+workflows:
+  main:
+    jobs:
+      - roll:
+          cluster: << pipeline.parameters.cluster >>
+`,
+			OnlyErrors:  true,
+			Diagnostics: []protocol.Diagnostic{},
+		},
+		{
+			Name: "A string parameter passed to an env_var_name",
+			YamlContent: `version: 2.1
+
+commands:
+  notify:
+    parameters:
+      token:
+        type: env_var_name
+    steps:
+      - run: echo ${<< parameters.token >>}
+
+jobs:
+  deploy:
+    parameters:
+      token-var:
+        type: string
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - notify:
+          token: << parameters.token-var >>
+
+workflows:
+  main:
+    jobs:
+      - deploy:
+          token-var: ROLLBAR_TOKEN
+`,
+			OnlyErrors:  true,
+			Diagnostics: []protocol.Diagnostic{},
+		},
+		{
+			Name: "A pipeline enum written into a string",
+			YamlContent: `version: 2.1
+
+parameters:
+  driver:
+    type: enum
+    enum: [kubernetes, machine]
+    default: kubernetes
+
+jobs:
+  trigger:
+    parameters:
+      path:
+        type: string
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: cat << parameters.path >>
+
+workflows:
+  main:
+    jobs:
+      - trigger:
+          path: .circleci/config/<< pipeline.parameters.driver >>.yml
+`,
+			OnlyErrors:  true,
+			Diagnostics: []protocol.Diagnostic{},
+		},
+	}
+
+	CheckYamlErrors(t, testCases)
+}

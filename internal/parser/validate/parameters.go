@@ -61,6 +61,10 @@ func (val Validate) checkParamSimpleType(param ast2.ParameterValue, stepName str
 		}
 
 		value := param.Value.(string)
+		if paramref.IsOnlyParameter(value) {
+			checkParamType("enum", val, param, stepName, definedParam)
+			return
+		}
 		if !slices.Contains(definedParam.(ast2.EnumParameter).Enum, value) {
 			val.addDiagnostic(diagnostic.Error(
 				param.Range,
@@ -142,15 +146,37 @@ func (val Validate) checkPipelineValueType(param ast2.ParameterValue, name strin
 }
 
 func checkParamType(paramType string, val Validate, param ast2.ParameterValue, stepName string, definedParam ast2.Parameter) {
-	paramName, _ := paramref.NameUsedAtPos(val.Doc.Content, param.Range.End)
-	if paramName != "" {
+	value, isString := param.Value.(string)
+	if isString && paramref.IsOnlyParameter(value) {
+		paramName, _ := paramref.NameUsedAtPos(val.Doc.Content, param.Range.End)
 		pipelineParam, ok := val.Doc.PipelineParameters[paramName]
-		if ok && pipelineParam.GetType() != paramType {
+		if ok && !parameterTypesCompatible(paramType, pipelineParam.GetType()) {
 			val.createParameterError(param, stepName, definedParam.GetType())
 		}
-	} else if param.Type != paramType {
+		return
+	}
+
+	// A reference written into a longer string is still a string.
+	if paramType == "string" && isString && paramref.ContainsReference(value) {
+		return
+	}
+
+	if param.Type != paramType {
 		val.createParameterError(param, stepName, definedParam.GetType())
 	}
+}
+
+// parameterTypesCompatible reports whether a parameter of type valueType can
+// be passed on to one of type definedType. A string, enum or env_var_name
+// value can be passed to any of the three: whether the value itself fits is
+// only known once the config is compiled.
+func parameterTypesCompatible(definedType, valueType string) bool {
+	if definedType == valueType {
+		return true
+	}
+
+	textual := []string{"string", "enum", "env_var_name"}
+	return slices.Contains(textual, definedType) && slices.Contains(textual, valueType)
 }
 
 func (val Validate) checkParamUsedWithParam(param ast2.ParameterValue, stepName string, definedParam ast2.Parameter, parameters map[string]ast2.Parameter) {
@@ -168,9 +194,7 @@ func (val Validate) checkParamUsedWithParam(param ast2.ParameterValue, stepName 
 		// check already done before in `CheckIfParamsExist`
 		return
 	}
-	definedType := definedParam.GetType()
-	valueType := paramUsedAsValue.GetType()
-	if definedType != valueType && (definedType != "string" || valueType != "enum") { // String params can accept "string" or "enum"
+	if !parameterTypesCompatible(definedParam.GetType(), paramUsedAsValue.GetType()) {
 		val.createParameterError(param, stepName, definedParam.GetType())
 	}
 }
