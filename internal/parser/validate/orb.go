@@ -230,10 +230,6 @@ func (val Validate) orbIsUnused(orb ast.Orb) {
 }
 
 func (val Validate) validateOrbExecutor(executorName string, executorRange protocol.Range) {
-	if val.Doc.IsFromUnfetchableOrb(executorName, val.Cache) {
-		return
-	}
-
 	orbExecutorExist, err := val.doesOrbExecutorExist(executorName, executorRange)
 	if !orbExecutorExist && err == nil {
 		splittedName := strings.Split(executorName, "/")
@@ -244,12 +240,19 @@ func (val Validate) validateOrbExecutor(executorName string, executorRange proto
 	}
 }
 
+// doesOrbExecutorExist reports whether an orb declares an executor, which
+// may be a local, inline or URL orb. An executor from an orb that can't be
+// fetched is taken to exist: what it declares isn't known.
 func (val Validate) doesOrbExecutorExist(executorName string, executorRange protocol.Range) (bool, error) {
 	splittedName := strings.Split(executorName, "/")
 
 	if len(splittedName) != 2 {
 		// Not an orb
 		return false, nil
+	}
+
+	if val.Doc.IsFromUnfetchableOrb(executorName, val.Cache) {
+		return true, nil
 	}
 
 	orb, ok := val.Doc.Orbs[splittedName[0]]
@@ -262,7 +265,7 @@ func (val Validate) doesOrbExecutorExist(executorName string, executorRange prot
 		return false, err
 	}
 
-	remoteOrb, err := parser.GetOrbInfo(orb.Url.GetOrbID(), val.Cache, val.Context)
+	remoteOrb, err := val.Doc.GetOrFetchOrbInfo(orb, val.Cache)
 	if err != nil {
 		val.addDiagnostic(diagnostic.Warning(
 			executorRange,
