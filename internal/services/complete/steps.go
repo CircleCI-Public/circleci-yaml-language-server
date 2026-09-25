@@ -17,6 +17,14 @@ func (ch *CompletionHandler) completeSteps(entityName string, inJob bool, comple
 		ch.addCheckoutMethodCompletion()
 		return
 	}
+	switch where, name, nameLine := ch.stepAt(); where {
+	case inStepBody:
+		ch.completeStepBody(name, nameLine)
+		return
+	case elsewhere:
+		return
+	}
+
 	ch.userDefinedCommands()
 	ch.builtInSteps()
 	ch.orbCommands(completionNode)
