@@ -22,6 +22,10 @@ func (ch *CompletionHandler) completeWorkflows() {
 		return
 	}
 
+	if ch.completeContextName(wf.JobInvocations) {
+		return
+	}
+
 	if ch.completeRequiredStatus() {
 		return
 	}

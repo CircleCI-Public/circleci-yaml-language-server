@@ -13,7 +13,9 @@ import (
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
 	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/internal/parser"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/fakes"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/testHelpers"
 )
 
@@ -76,6 +78,13 @@ func TestFindWorkflowEmptyDoc(t *testing.T) {
 // completionLabels are the labels completion offers at a position in a config.
 func completionLabels(t *testing.T, config string, pos protocol.Position) []string {
 	t.Helper()
+	return completionLabelsWithCache(t, cache.New(), config, pos)
+}
+
+// completionLabelsWithCache are the labels completion offers at a position
+// in a config at /config.yml, with what a cache remembers.
+func completionLabelsWithCache(t *testing.T, c *cache.Cache, config string, pos protocol.Position) []string {
+	t.Helper()
 
 	settings := testHelpers.DefaultSettings()
 	doc, err := yamlparser.ParseFromContent([]byte(config), settings, uri.File("/config.yml"), protocol.Position{})
@@ -87,7 +96,7 @@ func completionLabels(t *testing.T, config string, pos protocol.Position) []stri
 			TextDocumentPositionParams: protocol.TextDocumentPositionParams{Position: pos},
 		},
 		Doc:     doc,
-		Cache:   cache.New(),
+		Cache:   c,
 		Context: settings,
 	}
 	ch.GetCompletionItems()
@@ -341,6 +350,67 @@ workflows:
 		assert.Check(t, cmp.DeepEqual(completionLabels(t, config, inList), []string{
 			"success", "failed", "canceled", "not_run", "unauthorized",
 		}))
+	})
+}
+
+func TestCompleteContextName(t *testing.T) {
+	const orgID = "11111111-2222-3333-4444-555555555555"
+	const config = `version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+
+workflows:
+  main:
+    jobs:
+      - build:
+          context: acme/
+      - build:
+          name: build-list
+          context:
+            - acme/build
+            - ac
+      - build:
+          name: build-flow
+          context: [acme/build, ac]
+`
+	fake := fakes.NewCircleCI(t)
+	fake.AddContext(orgID, "ctx-deploy", "acme/deploy")
+	fake.AddContext(orgID, "ctx-build", "acme/build")
+
+	c := cache.New()
+	t.Run("remember the organization's contexts", func(t *testing.T) {
+		assert.NilError(t, c.LoadContexts(testHelpers.SettingsForHost(fake.URL()).Api, orgID))
+		c.FileCache.SetFile(cache.File{TextDocument: protocol.TextDocumentItem{URI: uri.File("/config.yml")}})
+		c.FileCache.AddProjectSlugToFile(uri.File("/config.yml"), circleci.Project{Slug: "gh/acme/rocket", OrganizationId: orgID})
+	})
+
+	lines := strings.Split(config, "\n")
+	at := func(text string, fromEnd uint32) protocol.Position {
+		line := slices.IndexFunc(lines, func(l string) bool { return strings.TrimSpace(l) == text })
+		assert.Assert(t, line != -1, "no line %q", text)
+		return protocol.Position{Line: uint32(line), Character: uint32(len(lines[line])) - fromEnd}
+	}
+	want := []string{"acme/build", "acme/deploy"}
+
+	t.Run("a context is offered the organization's contexts", func(t *testing.T) {
+		assert.Check(t, cmp.DeepEqual(completionLabelsWithCache(t, c, config, at("context: acme/", 0)), want))
+	})
+
+	t.Run("so is an item of a list of contexts", func(t *testing.T) {
+		assert.Check(t, cmp.DeepEqual(completionLabelsWithCache(t, c, config, at("- ac", 0)), want))
+	})
+
+	t.Run("and of a flow list of them", func(t *testing.T) {
+		assert.Check(t, cmp.DeepEqual(completionLabelsWithCache(t, c, config, at("context: [acme/build, ac]", 1)), want))
+	})
+
+	t.Run("nothing is offered without the organization's contexts", func(t *testing.T) {
+		assert.Check(t, cmp.Len(completionLabels(t, config, at("context: acme/", 0)), 0))
 	})
 }
 

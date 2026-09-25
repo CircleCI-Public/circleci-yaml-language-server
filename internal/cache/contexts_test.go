@@ -153,3 +153,17 @@ func TestContextEnvVariables(t *testing.T) {
 		assert.Check(t, cmp.Len(envVars, 0))
 	})
 }
+
+func TestContextNames(t *testing.T) {
+	c := New()
+	err := c.LoadContexts(configFor(contextFake(t).URL()), acmeOrgID)
+	assert.NilError(t, err)
+
+	t.Run("are the full names, not the short ones they are also found by", func(t *testing.T) {
+		assert.Check(t, cmp.DeepEqual(c.ContextCache.ContextNames(acmeOrgID), []string{"acme/build", "acme/deploy"}))
+	})
+
+	t.Run("are none for an organization whose contexts aren't remembered", func(t *testing.T) {
+		assert.Check(t, cmp.Len(c.ContextCache.ContextNames("another-org"), 0))
+	})
+}

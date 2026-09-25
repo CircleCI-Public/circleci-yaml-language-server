@@ -2,6 +2,7 @@ package cache
 
 import (
 	"net/http"
+	"slices"
 	"strings"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
@@ -100,6 +101,24 @@ func (c *Cache) LoadContexts(api circleci.Config, orgID string) error {
 func (c *Contexts) IsOrganizationContextListLoaded(organizationId string) bool {
 	_, ok := c.orgs.Peek(organizationId)
 	return ok
+}
+
+// ContextNames are the sorted full names of the remembered contexts of an
+// organization.
+func (c *Contexts) ContextNames(organizationId string) []string {
+	org, ok := c.orgs.Peek(organizationId)
+	if !ok {
+		return nil
+	}
+
+	var names []string
+	for name, ctx := range org.byName {
+		if name == ctx.Name {
+			names = append(names, name)
+		}
+	}
+	slices.Sort(names)
+	return names
 }
 
 // ResolveWorkflowContext looks up a context as referenced in config: exact key, then common
