@@ -34,6 +34,11 @@ func (doc *YamlDocument) GetOrFetchOrbInfo(orb ast.Orb, cache *cache.Cache) (*as
 		return orbInfo, nil
 	}
 
+	// What a URL orb declares is not known: it is not fetched.
+	if orb.Url.IsURL {
+		return &ast.OrbInfo{}, nil
+	}
+
 	orbId := orb.Url.GetOrbID()
 
 	// Searching within remote orbs
@@ -175,6 +180,10 @@ func isEmptyFlowMapping(flowNode *sitter.Node) bool {
 }
 
 func (doc *YamlDocument) getOrbURL(orbUrl string) ast.OrbURL {
+	if isURLOrbReference(orbUrl) {
+		return ast.OrbURL{Name: orbUrl, IsURL: true}
+	}
+
 	splittedOrb := strings.Split((orbUrl), "@")
 
 	if len(splittedOrb) > 1 {
@@ -184,8 +193,18 @@ func (doc *YamlDocument) getOrbURL(orbUrl string) ast.OrbURL {
 	return ast.OrbURL{Name: splittedOrb[0], Version: "volatile", IsLocal: false}
 }
 
+// isURLOrbReference reports whether an orb is referenced by a URL rather than
+// as namespace/name@version. The compiler takes any reference that parses as a
+// URL, and only fetches it if the organization allows its prefix.
+func isURLOrbReference(reference string) bool {
+	return strings.Contains(reference, "://")
+}
+
 func (doc *YamlDocument) getOrbVersionRange(orbNode *sitter.Node) protocol.Range {
 	orbNodeText := doc.GetRawNodeText(orbNode)
+	if isURLOrbReference(orbNodeText) {
+		return protocol.Range{}
+	}
 	orbRange := doc.NodeToRange(orbNode)
 	atIndex := strings.Index(orbNodeText, "@")
 	if atIndex == -1 {
