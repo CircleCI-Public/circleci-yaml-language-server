@@ -22,6 +22,10 @@ func (ch *CompletionHandler) completeWorkflows() {
 		return
 	}
 
+	if ch.completeRequiredStatus() {
+		return
+	}
+
 	// Add all the job/job-group invocations in the current workflow as completion items for "requires"
 	if isInRequires(ch.Params.Position, wf.JobInvocations) {
 		ch.addExistingJobInvocations(wf.JobInvocations)

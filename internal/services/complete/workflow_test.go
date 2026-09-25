@@ -299,6 +299,51 @@ workflows:
 	})
 }
 
+func TestCompleteRequiredStatus(t *testing.T) {
+	const config = `version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+
+workflows:
+  main:
+    jobs:
+      - build
+      - build:
+          name: after-build
+          requires:
+            - build: fa
+      - build:
+          name: after-both
+          requires:
+            - build: [success, can]
+`
+	at := func(text string) protocol.Position {
+		lines := strings.Split(config, "\n")
+		line := slices.IndexFunc(lines, func(l string) bool { return strings.TrimSpace(l) == text })
+		assert.Assert(t, line != -1, "no line %q", text)
+		return protocol.Position{Line: uint32(line), Character: uint32(len(lines[line]))}
+	}
+
+	t.Run("a required job is offered the statuses it can be required to have", func(t *testing.T) {
+		assert.Check(t, cmp.DeepEqual(completionLabels(t, config, at("- build: fa")), []string{
+			"success", "failed", "canceled", "not_run", "unauthorized", "terminal",
+		}))
+	})
+
+	t.Run("a list of statuses is offered each status but terminal", func(t *testing.T) {
+		inList := at("- build: [success, can]")
+		inList.Character--
+		assert.Check(t, cmp.DeepEqual(completionLabels(t, config, inList), []string{
+			"success", "failed", "canceled", "not_run", "unauthorized",
+		}))
+	})
+}
+
 func TestCompletePreAndPostSteps(t *testing.T) {
 	const config = `version: 2.1
 
