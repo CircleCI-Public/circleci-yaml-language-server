@@ -171,3 +171,30 @@ jobs:
 		assert.Check(t, !slices.Contains(labels, "size"), "%q", labels)
 	})
 }
+
+func TestCompleteExecutorKeys(t *testing.T) {
+	const config = `version: 2.1
+
+executors:
+  node:
+    docker:
+      - image: cimg/node:lts
+    resource_class: large
+    
+  mac:
+    macos:
+      xcode: 16.0.0
+    
+`
+	t.Run("an executor is offered the keys it doesn't have besides its type", func(t *testing.T) {
+		assert.Check(t, cmp.DeepEqual(completionLabels(t, config, positionBelow(t, config, "resource_class: large", 4)), []string{
+			"environment", "shell", "working_directory", "parameters", "description",
+		}))
+	})
+
+	t.Run("whatever its type", func(t *testing.T) {
+		assert.Check(t, cmp.DeepEqual(completionLabels(t, config, positionBelow(t, config, "xcode: 16.0.0", 4)), []string{
+			"resource_class", "environment", "shell", "working_directory", "parameters", "description",
+		}))
+	})
+}
