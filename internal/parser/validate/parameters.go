@@ -203,6 +203,9 @@ func (val Validate) CheckIfParamsExist() {
 	checkOnNode := func(match *sitter.QueryMatch) {
 		for _, capture := range match.Captures {
 			node := &capture.Node
+			if val.Doc.IsUnderUnreadTopLevelKey(node) {
+				continue
+			}
 			content := val.Doc.GetRawNodeText(node)
 			params, err := paramref.InString(content)
 			if err != nil {
