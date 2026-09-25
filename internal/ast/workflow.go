@@ -60,6 +60,9 @@ type JobInvocation struct {
 	// MatrixIsSingleCombination is set when the matrix declares one value for
 	// every parameter, and no exclude.
 	MatrixIsSingleCombination bool
+	// MatrixJobCount is the number of jobs the matrix declares, before
+	// exclude.
+	MatrixJobCount int
 }
 
 type Require struct {

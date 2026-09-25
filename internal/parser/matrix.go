@@ -8,8 +8,9 @@ import (
 	sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
-// maxMatrixJobs is the compiler's limit on the jobs one matrix expands to.
-const maxMatrixJobs = 10000
+// MaxMatrixJobs is the compiler's limit on the jobs one matrix expands to,
+// before exclude.
+const MaxMatrixJobs = 128
 
 var matrixReferenceRegex = regexp.MustCompile(`<<\s*matrix\.([A-Za-z0-9_-]+)\s*>>`)
 
@@ -109,6 +110,16 @@ func (doc *YamlDocument) parseMatrixCombinations(matrixNode *sitter.Node) ([]mat
 	return parameters, excludes
 }
 
+// matrixJobCount returns how many jobs the matrix declares, before exclude.
+func (doc *YamlDocument) matrixJobCount(matrixNode *sitter.Node) int {
+	parameters, _ := doc.parseMatrixCombinations(matrixNode)
+	count := 1
+	for _, parameter := range parameters {
+		count *= len(parameter.values)
+	}
+	return count
+}
+
 // isSingleCombinationMatrix reports whether the matrix declares one value for
 // every parameter, and no exclude, so it always produces exactly one job. An
 // exclude can fairly bring a larger matrix down to one, so this looks at the
@@ -133,7 +144,7 @@ func matrixCartesianProduct(parameters []matrixParameter) []map[string]string {
 	count := 1
 	for _, parameter := range parameters {
 		count *= len(parameter.values)
-		if count > maxMatrixJobs {
+		if count > MaxMatrixJobs {
 			return nil
 		}
 	}

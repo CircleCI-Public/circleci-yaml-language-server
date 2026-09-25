@@ -1,6 +1,8 @@
 package validate
 
 import (
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/codeaction"
@@ -341,6 +343,61 @@ workflows:
       - build
 `,
 			Diagnostics: []protocol.Diagnostic{},
+		},
+	})
+}
+
+func TestMatrixJobLimit(t *testing.T) {
+	values := func(n int) string {
+		items := make([]string, n)
+		for i := range items {
+			items[i] = "v" + strconv.Itoa(i)
+		}
+		return "[" + strings.Join(items, ", ") + "]"
+	}
+	config := func(a, b int) string {
+		return `version: 2.1
+
+jobs:
+  test:
+    parameters:
+      a:
+        type: string
+      b:
+        type: string
+    docker:
+      - image: cimg/base:current
+    steps:
+      - run: echo << parameters.a >> << parameters.b >>
+
+workflows:
+  main:
+    jobs:
+      - test:
+          matrix:
+            parameters:
+              a: ` + values(a) + `
+              b: ` + values(b) + `
+`
+	}
+
+	CheckYamlErrors(t, []ValidateTestCase{
+		{
+			Name:        "At the limit",
+			YamlContent: config(16, 8),
+			OnlyErrors:  true,
+			Diagnostics: []protocol.Diagnostic{},
+		},
+		{
+			Name:        "Over the limit",
+			YamlContent: config(16, 9),
+			OnlyErrors:  true,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(protocol.Range{
+					Start: protocol.Position{Line: 18, Character: 10},
+					End:   protocol.Position{Line: 18, Character: 16},
+				}, "The test build matrix expands to 144 jobs. Matrices cannot generate more than 128 jobs."),
+			},
 		},
 	})
 }
