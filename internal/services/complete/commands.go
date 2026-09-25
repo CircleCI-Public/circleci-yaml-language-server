@@ -29,6 +29,9 @@ func (ch *CompletionHandler) completeCommands() {
 	if command.Description == "" {
 		ch.addCompletionItemField("description")
 	}
+	if position.IsDefaultRange(command.ParametersRange) {
+		ch.addCompletionItemField("parameters")
+	}
 	if len(command.Steps) == 0 {
 		ch.addCompletionItemField("steps")
 	}

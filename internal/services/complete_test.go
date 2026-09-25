@@ -304,6 +304,10 @@ func TestComplete(t *testing.T) {
 					Label:      "description",
 					InsertText: protocol.NewOptional("description: "),
 				},
+				{
+					Label:      "parameters",
+					InsertText: protocol.NewOptional("parameters: "),
+				},
 			},
 		},
 		{
