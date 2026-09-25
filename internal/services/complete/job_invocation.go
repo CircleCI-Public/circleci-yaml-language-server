@@ -100,16 +100,7 @@ func invocationNamedOn(line int, invocations []ast.JobInvocation) *ast.JobInvoca
 // completeJobInvocationBody offers the keys an invocation doesn't have yet:
 // an invocation's own keys, and the parameters of the job it runs.
 func (ch *CompletionHandler) completeJobInvocationBody(invocation *ast.JobInvocation, nameLine int) {
-	keys := slices.Clone(jobInvocationKeys)
-
-	if invocation.Type != "approval" {
-		var params []string
-		for param := range ch.Doc.GetDefinedParams(invocation.JobName, yamlparser.JobEntity, ch.Cache) {
-			params = append(params, param)
-		}
-		slices.Sort(params)
-		keys = append(keys, params...)
-	}
+	keys := append(slices.Clone(jobInvocationKeys), ch.jobParameterNames(invocation)...)
 
 	present := ch.stepBodyKeys(nameLine)
 	for _, key := range keys {
@@ -117,4 +108,19 @@ func (ch *CompletionHandler) completeJobInvocationBody(invocation *ast.JobInvoca
 			ch.addCompletionItemField(key)
 		}
 	}
+}
+
+// jobParameterNames are the sorted names of the parameters of the job an
+// invocation runs, of which an approval job has none.
+func (ch *CompletionHandler) jobParameterNames(invocation *ast.JobInvocation) []string {
+	if invocation.Type == "approval" {
+		return nil
+	}
+
+	var params []string
+	for param := range ch.Doc.GetDefinedParams(invocation.JobName, yamlparser.JobEntity, ch.Cache) {
+		params = append(params, param)
+	}
+	slices.Sort(params)
+	return params
 }

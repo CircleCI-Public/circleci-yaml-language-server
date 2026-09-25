@@ -24,13 +24,26 @@ func (ch *CompletionHandler) keyParent() ([]string, int) {
 		return lines, -1
 	}
 
-	indent := len(before) - len(strings.TrimLeft(before, " "))
-	for parent := int(pos.Line) - 1; parent >= 0; parent-- {
-		text := lines[parent]
-		if strings.TrimSpace(text) != "" && len(text)-len(strings.TrimLeft(text, " ")) < indent {
-			return lines, parent
+	return lines, lineAbove(lines, int(pos.Line), indentation(before))
+}
+
+// parentLine is the line of the key or list item a line is in the body of,
+// or -1 when it is at the top level.
+func parentLine(lines []string, line int) int {
+	return lineAbove(lines, line, indentation(lines[line]))
+}
+
+// lineAbove is the nearest line above one that isn't blank and is indented
+// less than indent, or -1.
+func lineAbove(lines []string, line, indent int) int {
+	for above := line - 1; above >= 0; above-- {
+		if strings.TrimSpace(lines[above]) != "" && indentation(lines[above]) < indent {
+			return above
 		}
 	}
+	return -1
+}
 
-	return lines, -1
+func indentation(text string) int {
+	return len(text) - len(strings.TrimLeft(text, " "))
 }
