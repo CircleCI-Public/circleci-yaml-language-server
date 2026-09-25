@@ -238,6 +238,9 @@ type YamlDocument struct {
 	PipelineParameters map[string]ast2.Parameter
 	Functions          map[string]ast2.Function
 	YamlAnchors        map[string]YamlAnchor
+	// FlattenedSteps are the ranges of steps whose parameters are indented
+	// level with the step's name. See NamedStep.Siblings.
+	FlattenedSteps []protocol.Range
 
 	SetupRange              protocol.Range
 	OrbsRange               protocol.Range

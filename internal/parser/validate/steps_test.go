@@ -272,6 +272,125 @@ workflows:
 	CheckYamlErrors(t, testCases)
 }
 
+func TestStepShapeWarnings(t *testing.T) {
+	const greet = `version: 2.1
+
+commands:
+  greet:
+    parameters:
+      who:
+        type: string
+        default: world
+    steps:
+      - run: echo << parameters.who >>
+
+`
+	testCases := []ValidateTestCase{
+		{
+			Name: "Parameters indented level with the step name are ignored",
+			YamlContent: greet + `jobs:
+  build:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - greet:
+        who: me
+
+workflows:
+  main:
+    jobs:
+      - build
+`,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Warning(protocol.Range{
+					Start: protocol.Position{Line: 16, Character: 8},
+					End:   protocol.Position{Line: 16, Character: 13},
+				}, "Step 'greet' has 1 sibling key(s) at the same indentation (who). Keeping 'greet' "+
+					"as a no-argument step and ignoring the rest; this usually means the step's "+
+					"parameters are indented to the same level as the step name."),
+			},
+		},
+		{
+			Name: "A flattened step is still looked up",
+			YamlContent: `version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - missing:
+        who: me
+
+workflows:
+  main:
+    jobs:
+      - build
+`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(protocol.Range{
+					Start: protocol.Position{Line: 7, Character: 8},
+					End:   protocol.Position{Line: 7, Character: 15},
+				}, "Cannot find declaration for step missing"),
+			},
+		},
+		{
+			Name: "A step with a null body in pre-steps is a bare invocation",
+			YamlContent: greet + `jobs:
+  build:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - greet
+
+workflows:
+  main:
+    jobs:
+      - build:
+          pre-steps:
+            - greet:
+`,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Warning(protocol.Range{
+					Start: protocol.Position{Line: 23, Character: 14},
+					End:   protocol.Position{Line: 23, Character: 19},
+				}, "Step 'greet' has a null body; treating as a no-argument invocation. Write `- greet` instead."),
+			},
+		},
+		{
+			Name: "A command named after a built-in step shadows it",
+			YamlContent: `version: 2.1
+
+commands:
+  checkout:
+    steps:
+      - run: git clone "$CIRCLE_REPOSITORY_URL" .
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - checkout
+
+workflows:
+  main:
+    jobs:
+      - build
+`,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Warning(protocol.Range{
+					Start: protocol.Position{Line: 3, Character: 2},
+					End:   protocol.Position{Line: 3, Character: 10},
+				}, "Command 'checkout' in commands.checkout shadows built-in CircleCI command 'checkout'"),
+			},
+		},
+	}
+
+	CheckYamlErrors(t, testCases)
+}
+
 func TestWithToolCache(t *testing.T) {
 	testCases := []ValidateTestCase{
 		{

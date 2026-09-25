@@ -22,6 +22,12 @@ type NamedStep struct {
 	Parameters      map[string]ParameterValue // Handle more values than just strings
 	ParametersRange protocol.Range
 	Range           protocol.Range
+	// NullBody is set for a step written `- name:`, with nothing after the
+	// colon.
+	NullBody bool
+	// Siblings are the keys indented level with the step's name, usually
+	// meant as its parameters. The compiler ignores them.
+	Siblings []string
 }
 
 func (step NamedStep) GetRange() protocol.Range {

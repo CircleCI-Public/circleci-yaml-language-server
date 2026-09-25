@@ -164,6 +164,8 @@ func (val Validate) validateInvocations(jobInvocations []ast2.JobInvocation, ctx
 		// Every job takes pre-steps and post-steps, as steps parameters.
 		val.validateSteps(jobInvocation.PreSteps, "", map[string]ast2.Parameter{})
 		val.validateSteps(jobInvocation.PostSteps, "", map[string]ast2.Parameter{})
+		val.warnNullBodySteps(jobInvocation.PreSteps)
+		val.warnNullBodySteps(jobInvocation.PostSteps)
 
 		for _, require := range jobInvocation.Requires {
 			if !val.doesJobInvocationExist(jobInvocations, require.Name) && !paramref.IsMatrixPartiallyReferenced(require.Name) {

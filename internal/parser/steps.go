@@ -90,7 +90,7 @@ func (doc *YamlDocument) parseStep(blockMapping *sitter.Node) []ast.Step {
 	keyNode, valueNode := doc.GetKeyValueNodes(blockMappingPair)
 	keyName := doc.GetNodeText(keyNode)
 	if valueNode == nil {
-		return nil
+		return doc.parseNullBodyStep(blockMapping, keyNode)
 	}
 	switch keyName {
 	case "deploy":
@@ -131,6 +131,38 @@ func (doc *YamlDocument) parseStep(blockMapping *sitter.Node) []ast.Step {
 	default:
 		return []ast.Step{doc.parseNamedStepWithParameters(keyName, valueNode)}
 	}
+}
+
+// parseNullBodyStep reads a step whose first key has no value. The compiler
+// takes a command or job name written that way as a bare invocation, keeping
+// it and ignoring any other keys, which are usually its parameters indented
+// level with it. A built-in step written that way is an error, left to the
+// schema.
+func (doc *YamlDocument) parseNullBodyStep(blockMapping *sitter.Node, keyNode *sitter.Node) []ast.Step {
+	name := doc.GetNodeText(keyNode)
+	if keyNode == nil || name == "<<" || doc.IsBuiltIn(name) {
+		return nil
+	}
+
+	siblings := []string{}
+	doc.iterateOnBlockMapping(blockMapping, func(child *sitter.Node) {
+		if key, _ := doc.GetKeyValueNodes(child); key != nil && key.Id() != keyNode.Id() {
+			siblings = append(siblings, doc.GetNodeText(key))
+		}
+	})
+
+	step := ast.NamedStep{Name: name, Range: doc.NodeToRange(keyNode)}
+	if len(siblings) == 0 {
+		step.NullBody = true
+	} else {
+		step.Siblings = siblings
+		item := blockMapping
+		for item.Parent() != nil && item.Kind() != "block_sequence_item" {
+			item = item.Parent()
+		}
+		doc.FlattenedSteps = append(doc.FlattenedSteps, doc.NodeToRange(item))
+	}
+	return []ast.Step{step}
 }
 
 func (doc *YamlDocument) parseAnchorStep(blockNode *sitter.Node) []ast.Step {

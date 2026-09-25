@@ -1,6 +1,9 @@
 package validate
 
 import (
+	"fmt"
+	"slices"
+
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
@@ -20,8 +23,35 @@ func (val Validate) ValidateCommands() {
 	}
 }
 
+// primitiveSteps are the built-in steps a command can be named after, taking
+// their place.
+var primitiveSteps = []string{
+	"run",
+	"checkout",
+	"setup_remote_docker",
+	"save_cache",
+	"restore_cache",
+	"deploy",
+	"store_artifacts",
+	"store_test_results",
+	"persist_to_workspace",
+	"attach_workspace",
+	"add_ssh_keys",
+	"install_signing_bundle",
+}
+
 func (val Validate) validateSingleCommand(command ast.Command) {
 	val.validateSteps(command.Steps, command.Name, command.Parameters)
+
+	if slices.Contains(primitiveSteps, command.Name) {
+		path := "commands"
+		if val.Doc.LocalOrbName != "" {
+			path = "orbs." + val.Doc.LocalOrbName + ".commands"
+		}
+		val.addDiagnostic(diagnostic.Warning(command.NameRange, fmt.Sprintf(
+			"Command '%s' in %s.%s shadows built-in CircleCI command '%s'",
+			command.Name, path, command.Name, command.Name)))
+	}
 
 	// Local orbs do not need unused checks because those checks collides with the overall YAML unused checks
 	if !val.IsLocalOrb && !val.checkIfCommandIsUsed(command) {
