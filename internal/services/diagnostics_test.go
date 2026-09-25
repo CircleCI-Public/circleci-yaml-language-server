@@ -687,6 +687,26 @@ workflows:
       - build
 `,
 		},
+		{
+			name: "code signing bundles on a machine executor",
+			content: `version: 2.1
+executors:
+  signing:
+    machine:
+      image: ubuntu-2204:current
+      code_signing:
+        - release-bundle
+jobs:
+  build:
+    executor: signing
+    steps:
+      - checkout
+workflows:
+  main:
+    jobs:
+      - build
+`,
+		},
 	}
 
 	for _, tt := range tests {
