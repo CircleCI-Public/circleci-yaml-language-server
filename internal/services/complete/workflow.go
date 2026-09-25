@@ -28,6 +28,11 @@ func (ch *CompletionHandler) completeWorkflows() {
 		return
 	}
 
+	if isInPreOrPostSteps(ch.Params.Position, wf.JobInvocations) {
+		ch.completeStepList(ch.nodeToComplete())
+		return
+	}
+
 	if invocation, nameLine := ch.jobInvocationBodyAt(wf.JobInvocations); invocation != nil {
 		ch.completeJobInvocationBody(invocation, nameLine)
 		return

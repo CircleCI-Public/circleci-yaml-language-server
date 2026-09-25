@@ -235,3 +235,50 @@ workflows:
 		assert.Check(t, cmp.Len(completionLabels(t, config, below("filters:", 12)), 0))
 	})
 }
+
+func TestCompletePreAndPostSteps(t *testing.T) {
+	const config = `version: 2.1
+
+commands:
+  greet:
+    parameters:
+      who:
+        type: string
+      loud:
+        type: boolean
+        default: false
+    steps:
+      - run: echo hi << parameters.who >>
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+
+workflows:
+  main:
+    jobs:
+      - build:
+          pre-steps:
+            - run: echo before
+            - 
+          post-steps:
+            - greet:
+                who: me
+                
+`
+	t.Run("pre-steps are offered steps", func(t *testing.T) {
+		labels := completionLabels(t, config, positionBelow(t, config, "- run: echo before", 14))
+		for _, want := range []string{"greet", "run", "checkout"} {
+			assert.Check(t, cmp.Contains(labels, want))
+		}
+		assert.Check(t, !slices.Contains(labels, "build"), "a job offered as a step: %q", labels)
+	})
+
+	t.Run("a post-step is offered the parameters it isn't given", func(t *testing.T) {
+		labels := completionLabels(t, config, positionBelow(t, config, "who: me", 16))
+		assert.Check(t, cmp.DeepEqual(labels, []string{"loud"}))
+	})
+}

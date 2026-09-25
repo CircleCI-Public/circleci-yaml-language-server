@@ -17,6 +17,12 @@ func (ch *CompletionHandler) completeSteps(entityName string, inJob bool, comple
 		ch.addCheckoutMethodCompletion()
 		return
 	}
+	ch.completeStepList(completionNode)
+}
+
+// completeStepList offers the steps of a list of steps, or the keys of the
+// step whose body the cursor is in.
+func (ch *CompletionHandler) completeStepList(completionNode *sitter.Node) {
 	switch where, name, nameLine := ch.stepAt(); where {
 	case inStepBody:
 		ch.completeStepBody(name, nameLine)
@@ -29,6 +35,16 @@ func (ch *CompletionHandler) completeSteps(entityName string, inJob bool, comple
 	ch.builtInSteps()
 	ch.orbCommands(completionNode)
 	ch.functionSteps()
+}
+
+// nodeToComplete is the node at the cursor, or the key before it when the
+// cursor is on a key's colon.
+func (ch *CompletionHandler) nodeToComplete() *sitter.Node {
+	node, _, _ := position.NodeAt(ch.Doc.RootNode, ch.Params.Position)
+	if node.Kind() == ":" {
+		node = node.PrevSibling()
+	}
+	return node
 }
 
 // functionSteps offers each declared function as a step, and each of its
