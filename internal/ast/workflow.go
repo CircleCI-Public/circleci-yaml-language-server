@@ -17,6 +17,11 @@ type Workflow struct {
 	MaxAutoReruns      int
 	MaxAutoRerunsRange protocol.Range
 	HasMaxAutoReruns   bool
+
+	// WhenRange and UnlessRange are the ranges of the `when` and `unless`
+	// keys and their values, when the workflow has them.
+	WhenRange   protocol.Range
+	UnlessRange protocol.Range
 }
 
 // A JobInvocation represents a job as it is orchestrated within a workflow.

@@ -16,10 +16,6 @@ func (ch *CompletionHandler) completeWorkflows() {
 		return
 	}
 
-	if wf.JobInvocations == nil {
-		ch.addCompletionItemFieldWithNewLine("jobs")
-	}
-
 	if isJobInvocation(ch.Params.Position, wf.JobInvocations) {
 		ch.addJobsAndOrbsCompletion()
 		ch.addJobGroupsCompletion()
@@ -32,8 +28,33 @@ func (ch *CompletionHandler) completeWorkflows() {
 		return
 	}
 
+	ch.addWorkflowKeys(wf)
+}
+
+// addWorkflowKeys offers the keys a workflow doesn't have yet, when the
+// cursor is at a workflow's own keys rather than inside one of them.
+func (ch *CompletionHandler) addWorkflowKeys(wf ast.Workflow) {
+	pos := ch.Params.Position
+	for _, rng := range []protocol.Range{wf.NameRange, wf.JobsRange, wf.TriggersRange, wf.WhenRange, wf.UnlessRange, wf.MaxAutoRerunsRange} {
+		if !position.IsDefaultRange(rng) && position.InRange(rng, pos) {
+			return
+		}
+	}
+
+	if position.IsDefaultRange(wf.JobsRange) {
+		ch.addCompletionItemFieldWithNewLine("jobs")
+	}
 	if !wf.HasTrigger {
-		ch.addCompletionItemFieldWithNewLine("trigger")
+		ch.addCompletionItemFieldWithNewLine("triggers")
+	}
+	if position.IsDefaultRange(wf.WhenRange) {
+		ch.addCompletionItemField("when")
+	}
+	if position.IsDefaultRange(wf.UnlessRange) {
+		ch.addCompletionItemField("unless")
+	}
+	if position.IsDefaultRange(wf.MaxAutoRerunsRange) {
+		ch.addCompletionItemField("max_auto_reruns")
 	}
 }
 

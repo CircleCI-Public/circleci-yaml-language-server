@@ -91,7 +91,11 @@ func (doc *YamlDocument) parseSingleWorkflow(workflowNode *sitter.Node) ast.Work
 			res.JobsRange = doc.NodeToRange(child)
 			res.JobInvocations = doc.parseJobInvocations(valueNode)
 			res.JobsDAG = doc.buildJobsDAG(res.JobInvocations)
-		case "when", "unless":
+		case "when":
+			res.WhenRange = doc.NodeToRange(child)
+			doc.addCondition(valueNode)
+		case "unless":
+			res.UnlessRange = doc.NodeToRange(child)
 			doc.addCondition(valueNode)
 		case "triggers":
 			res.HasTrigger = true
