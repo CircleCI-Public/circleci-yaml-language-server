@@ -23,6 +23,11 @@
                 }
             ]
         },
+        "expression": {
+            "type": "string",
+            "pattern": "<<.*>>",
+            "markdownDescription": "An expression such as `<< parameters.name >>`, filled in when the config is compiled"
+        },
         "jobInvocation": {
             "oneOf": [
                 {
@@ -147,22 +152,13 @@
                                             "markdownDescription": "The job type. If not specified, defaults to build."
                                         },
                                         "parallelism": {
-                                            "markdownDescription": "A integer or a parameter evaluating to a integer",
+                                            "markdownDescription": "An integer, or an expression that evaluates to one",
                                             "anyOf": [
                                                 {
-                                                    "oneOf": [
-                                                        {
-                                                            "type": "string",
-                                                            "pattern": " *<< *parameters.([^ ]+) *>> *"
-                                                        },
-                                                        {
-                                                            "type": "string",
-                                                            "pattern": " *<< *pipeline.parameters.([^ ]+) *>> *"
-                                                        }
-                                                    ]
+                                                    "type": "integer"
                                                 },
                                                 {
-                                                    "type": "integer"
+                                                    "$ref": "#/definitions/expression"
                                                 }
                                             ]
                                         },
@@ -338,7 +334,14 @@
                                             "additionalProperties": false
                                         },
                                         "circleci_ip_ranges": {
-                                            "type": "boolean",
+                                            "anyOf": [
+                                                {
+                                                    "type": "boolean"
+                                                },
+                                                {
+                                                    "$ref": "#/definitions/expression"
+                                                }
+                                            ],
                                             "markdownDescription": "Enable running jobs with a set of well-defined IP address ranges."
                                         },
                                         "machine": {
@@ -1220,14 +1223,28 @@
                                             "$ref": "#/definitions/stepWhen"
                                         },
                                         "max_auto_reruns": {
-                                            "type": "integer",
-                                            "minimum": 1,
-                                            "maximum": 5,
+                                            "anyOf": [
+                                                {
+                                                    "type": "integer",
+                                                    "minimum": 1,
+                                                    "maximum": 5
+                                                },
+                                                {
+                                                    "$ref": "#/definitions/expression"
+                                                }
+                                            ],
                                             "markdownDescription": "Maximum number of automatic reruns for this step"
                                         },
                                         "auto_rerun_delay": {
-                                            "type": "string",
-                                            "pattern": "^(10|[1-9])m|([1-9][0-9]*)s$",
+                                            "anyOf": [
+                                                {
+                                                    "type": "string",
+                                                    "pattern": "^(10|[1-9])m|([1-9][0-9]*)s$"
+                                                },
+                                                {
+                                                    "$ref": "#/definitions/expression"
+                                                }
+                                            ],
                                             "markdownDescription": "Delay before automatic rerun of this step"
                                         }
                                     },
@@ -2376,9 +2393,16 @@
                         "markdownDescription": "Specifies which triggers will cause this workflow to be executed. Default behavior is to trigger the workflow when pushing to a branch."
                     },
                     "max_auto_reruns": {
-                        "type": "integer",
-                        "minimum": 1,
-                        "maximum": 5,
+                        "anyOf": [
+                            {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 5
+                            },
+                            {
+                                "$ref": "#/definitions/expression"
+                            }
+                        ],
                         "markdownDescription": "The maximum number of times a workflow will be automatically rerun if it fails"
                     },
                     "when": {

@@ -625,6 +625,44 @@ workflows:
       - build
 `,
 		},
+		{
+			name: "expressions in typed fields",
+			content: `version: 2.1
+parameters:
+  reruns:
+    type: integer
+    default: 2
+  delay:
+    type: string
+    default: 30s
+jobs:
+  build:
+    parameters:
+      split:
+        type: integer
+        default: 2
+      fixed_ips:
+        type: boolean
+        default: false
+    docker:
+      - image: cimg/base:current
+    parallelism: << matrix.split >>
+    circleci_ip_ranges: << parameters.fixed_ips >>
+    steps:
+      - run:
+          command: make test
+          max_auto_reruns: << pipeline.parameters.reruns >>
+          auto_rerun_delay: << pipeline.parameters.delay >>
+workflows:
+  main:
+    max_auto_reruns: << pipeline.parameters.reruns >>
+    jobs:
+      - build:
+          matrix:
+            parameters:
+              split: [2, 4]
+`,
+		},
 	}
 
 	for _, tt := range tests {

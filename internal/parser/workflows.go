@@ -9,6 +9,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/codeaction"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/paramref"
 )
 
 func (doc *YamlDocument) parseWorkflows(workflowsNode *sitter.Node) {
@@ -96,8 +97,10 @@ func (doc *YamlDocument) parseSingleWorkflow(workflowNode *sitter.Node) ast.Work
 			res.Triggers = doc.parseWorkflowTriggers(valueNode)
 		case "max_auto_reruns":
 			res.MaxAutoRerunsRange = doc.NodeToRange(valueNode)
-			res.HasMaxAutoReruns = true
-			if valueText := doc.GetNodeText(valueNode); valueText != "" {
+			valueText := doc.GetNodeText(valueNode)
+			// A reference's value is only known once the config is compiled.
+			res.HasMaxAutoReruns = !paramref.ContainsReference(valueText)
+			if valueText != "" {
 				if maxAutoReruns, err := strconv.Atoi(valueText); err == nil {
 					res.MaxAutoReruns = maxAutoReruns
 				}
