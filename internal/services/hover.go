@@ -9,6 +9,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/parser"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/services/hover"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/session"
 )
 
@@ -25,6 +26,12 @@ func Hover(params protocol.HoverParams, cache *cache.Cache, context *session.Set
 				Kind:  protocol.MarkupKindPlainText,
 				Value: "Circle CI Config Helper is not available for this version. (Supported: 2.1)",
 			},
+		}, nil
+	}
+
+	if text, ok := hover.Step(doc, cache, params.Position); ok {
+		return protocol.Hover{
+			Contents: &protocol.MarkupContent{Kind: protocol.MarkupKindMarkdown, Value: text},
 		}, nil
 	}
 
