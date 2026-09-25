@@ -558,6 +558,30 @@ func TestSchemaAcceptsWhatTheCompilerAccepts(t *testing.T) {
 		content string
 	}{
 		{
+			name: "a step's parameters indented level with its name",
+			content: `version: 2.1
+commands:
+  greet:
+    parameters:
+      who:
+        type: string
+        default: world
+    steps:
+      - run: echo << parameters.who >>
+jobs:
+  build:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - greet:
+        who: me
+workflows:
+  main:
+    jobs:
+      - build
+`,
+		},
+		{
 			name: "save_cache paths as a string",
 			content: job(`      - save_cache:
           key: deps

@@ -214,12 +214,16 @@ func (validator *JSONSchemaValidator) ValidateWithJSONSchema(rootNode *sitter.No
 	jsonSchemaDiags := []protocol.Diagnostic{}
 
 	if !result.Valid() {
-		// A value that is only a reference, such as << parameters.flag >>, is
-		// a string until the config is compiled, so the schema rejects it
-		// wherever it wants anything else. Those errors are dropped, along
-		// with the combinator errors (oneOf, if/then/else) they caused.
+		// Some errors are dropped, along with the combinator errors (oneOf,
+		// if/then/else) they caused:
+		//   - a value that is only a reference, such as << parameters.flag >>,
+		//     is a string until the config is compiled, so the schema rejects
+		//     it wherever it wants anything else;
+		//   - the compiler drops the null-valued key of a flattened step
+		//     before checking it, so it passes, and the validator warns
+		//     about it instead.
 		var combinators []protocol.Diagnostic
-		var referenced []protocol.Range
+		var dropped []protocol.Range
 
 		for _, resErr := range result.Errors() {
 			fields := strings.Split(resErr.Field(), ".")
@@ -234,8 +238,8 @@ func (validator *JSONSchemaValidator) ValidateWithJSONSchema(rootNode *sitter.No
 				continue
 			}
 
-			if validator.doesNodeUseParameter(node) {
-				referenced = append(referenced, validator.Doc.NodeToRange(node))
+			if validator.doesNodeUseParameter(node) || validator.isInFlattenedStep(node) {
+				dropped = append(dropped, validator.Doc.NodeToRange(node))
 				continue
 			}
 
@@ -261,7 +265,7 @@ func (validator *JSONSchemaValidator) ValidateWithJSONSchema(rootNode *sitter.No
 		// that failure is reported within its range, it says nothing more.
 		leaves := slices.Clone(jsonSchemaDiags)
 		for _, combinator := range combinators {
-			if onlyContainsReferences(combinator, referenced, leaves) ||
+			if onlyContainsDropped(combinator, dropped, leaves) ||
 				hasAnotherDiagInsideRange(leaves, combinator.Range) {
 				continue
 			}
@@ -319,14 +323,14 @@ func isCombinatorError(err gojsonschema.ResultError) bool {
 	return false
 }
 
-// onlyContainsReferences reports whether every failure inside the combinator
-// error is one of the referenced values: there is one of those in its range,
-// and no other error is.
-func onlyContainsReferences(combinator protocol.Diagnostic, referenced []protocol.Range, others []protocol.Diagnostic) bool {
-	containsReference := slices.ContainsFunc(referenced, func(rng protocol.Range) bool {
+// onlyContainsDropped reports whether every failure inside the combinator
+// error was dropped: there is one of those in its range, and no other error
+// is.
+func onlyContainsDropped(combinator protocol.Diagnostic, dropped []protocol.Range, others []protocol.Diagnostic) bool {
+	containsDropped := slices.ContainsFunc(dropped, func(rng protocol.Range) bool {
 		return position.InRange(combinator.Range, rng.Start)
 	})
-	if !containsReference {
+	if !containsDropped {
 		return false
 	}
 
@@ -377,6 +381,16 @@ func removeUselessMustValidateError(diags []protocol.Diagnostic) []protocol.Diag
 	}
 
 	return resDiags
+}
+
+func (validator *JSONSchemaValidator) isInFlattenedStep(node *sitter.Node) bool {
+	start := validator.Doc.NodeToRange(node).Start
+	for _, rng := range validator.Doc.FlattenedSteps {
+		if position.InRange(rng, start) {
+			return true
+		}
+	}
+	return false
 }
 
 func hasAnotherDiagInsideRange(diags []protocol.Diagnostic, rangeToCheck protocol.Range) bool {

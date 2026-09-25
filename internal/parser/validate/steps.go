@@ -32,6 +32,13 @@ func (val Validate) validateSteps(steps []ast2.Step, name string, jobOrCommandPa
 			val.validateRunCommand(step, jobOrCommandParameters)
 		case ast2.NamedStep:
 			// Function steps are checked by ValidateFunctions.
+			if len(step.Siblings) > 0 {
+				val.addDiagnostic(diagnostic.Warning(step.Range, fmt.Sprintf(
+					"Step '%s' has %d sibling key(s) at the same indentation (%s). Keeping '%s' "+
+						"as a no-argument step and ignoring the rest; this usually means the step's "+
+						"parameters are indented to the same level as the step name.",
+					step.Name, len(step.Siblings), strings.Join(step.Siblings, ", "), step.Name)))
+			}
 			if _, _, ok := val.Doc.FunctionForStep(step.Name); ok {
 				continue
 			}
@@ -42,6 +49,19 @@ func (val Validate) validateSteps(steps []ast2.Step, name string, jobOrCommandPa
 			val.validateCheckout(step)
 		case ast2.SetupRemoteDocker:
 			val.validateSetupRemoteDocker(step)
+		}
+	}
+}
+
+// warnNullBodySteps warns about `- name:` in steps the compiler passes as
+// arguments, such as pre-steps, where it takes them as bare invocations. In
+// a job's or a command's steps the schema rejects them.
+func (val Validate) warnNullBodySteps(steps []ast2.Step) {
+	for _, step := range steps {
+		if step, ok := step.(ast2.NamedStep); ok && step.NullBody {
+			val.addDiagnostic(diagnostic.Warning(step.Range, fmt.Sprintf(
+				"Step '%s' has a null body; treating as a no-argument invocation. Write `- %s` instead.",
+				step.Name, step.Name)))
 		}
 	}
 }
