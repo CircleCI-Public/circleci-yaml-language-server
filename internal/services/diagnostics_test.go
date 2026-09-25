@@ -917,6 +917,17 @@ workflows:
 		assert.Check(t, cmp.DeepEqual(errors, []string{}))
 	})
 
+	t.Run("pre-steps and post-steps, one given no arguments", func(t *testing.T) {
+		errors := configErrors(t, fake, workflowJob(`          pre-steps:
+            - checkout
+            - run: echo before
+          post-steps:
+            - store_artifacts:
+                path: out
+            - run:`))
+		assert.Check(t, cmp.DeepEqual(errors, []string{}))
+	})
+
 	t.Run("a name that is only spaces", func(t *testing.T) {
 		errors := configErrors(t, fake, workflowJob(`          name: "   "`))
 		assert.Check(t, len(errors) != 0)

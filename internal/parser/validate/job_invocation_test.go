@@ -1531,3 +1531,43 @@ workflows:
 
 	CheckYamlErrors(t, testCases)
 }
+
+func TestJobInvocationPreAndPostSteps(t *testing.T) {
+	testCases := []ValidateTestCase{
+		{
+			Name: "Steps in pre-steps and post-steps are checked",
+			YamlContent: `version: 2.1
+
+commands:
+  prepare:
+    steps:
+      - run: echo prepare
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+
+workflows:
+  main:
+    jobs:
+      - build:
+          pre-steps:
+            - prepare
+            - checkout
+          post-steps:
+            - missing-command`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(protocol.Range{
+					Start: protocol.Position{Line: 22, Character: 14},
+					End:   protocol.Position{Line: 22, Character: 29},
+				}, "Cannot find declaration for step missing-command"),
+			},
+		},
+	}
+
+	CheckYamlErrors(t, testCases)
+}
