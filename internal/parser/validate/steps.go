@@ -170,18 +170,23 @@ func (val Validate) validateRunCommand(step ast2.Run, jobOrCommandParameters map
 	}
 }
 
-func (val Validate) validateNamedStep(step ast2.NamedStep, usableParams map[string]ast2.Parameter) {
-	commandExists := val.Doc.DoesJobExist(step.Name) ||
-		val.Doc.DoesCommandExist(step.Name) ||
-		val.Doc.IsBuiltIn(step.Name) ||
-		val.Doc.IsOrbCommand(step.Name, val.Cache) ||
-		val.Doc.IsAlias(step.Name)
+// isKnownStep reports whether a step can be called by name: a command,
+// built-in, orb command or alias, or one from an orb that can't be fetched.
+func (val Validate) isKnownStep(name string) bool {
+	return val.Doc.DoesJobExist(name) ||
+		val.Doc.DoesCommandExist(name) ||
+		val.Doc.IsBuiltIn(name) ||
+		val.Doc.IsOrbCommand(name, val.Cache) ||
+		val.Doc.IsAlias(name) ||
+		val.Doc.IsFromUnfetchableOrb(name)
+}
 
+func (val Validate) validateNamedStep(step ast2.NamedStep, usableParams map[string]ast2.Parameter) {
 	if val.Doc.IsFromUnfetchableOrb(step.Name) {
 		return
 	}
 
-	if !commandExists {
+	if !val.isKnownStep(step.Name) {
 		val.addDiagnostic(diagnostic.Error(
 			step.Range,
 			fmt.Sprintf("Cannot find declaration for step %s", step.Name)))

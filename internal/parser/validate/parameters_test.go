@@ -519,3 +519,53 @@ workflows:
 
 	CheckYamlErrors(t, testCases)
 }
+
+func TestStepsParameterValues(t *testing.T) {
+	testCases := []ValidateTestCase{
+		{
+			Name: "Steps named by a built-in, a command, or an orb that isn't fetched",
+			YamlContent: `version: 2.1
+
+orbs:
+  bp-go: https://example.com/orbs/bp-go.yml
+
+commands:
+  with-cache:
+    parameters:
+      steps:
+        type: steps
+    steps:
+      - steps: << parameters.steps >>
+  prepare:
+    steps:
+      - run: echo prepare
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - with-cache:
+          steps:
+            - checkout
+            - prepare
+            - bp-go/private-mod-init
+            - missing
+
+workflows:
+  main:
+    jobs:
+      - build
+`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(protocol.Range{
+					Start: protocol.Position{Line: 26, Character: 14},
+					End:   protocol.Position{Line: 26, Character: 21},
+				}, "Cannot find a definition for command named missing"),
+			},
+		},
+	}
+
+	CheckYamlErrors(t, testCases)
+}
