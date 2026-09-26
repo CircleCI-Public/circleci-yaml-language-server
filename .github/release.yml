@@ -1,0 +1,7 @@
+# The notes GitHub generates for a release, which release-please also uses for
+# the changelog. Its own release PRs are left out of them.
+changelog:
+  exclude:
+    labels:
+      - "autorelease: pending"
+      - "autorelease: tagged"

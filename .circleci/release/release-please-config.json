@@ -5,6 +5,7 @@
     "initial-version": "0.1.15",
     "bootstrap-sha": "6bd5479468c1352fde43e3d22d917f36e46e9782",
     "changelog-path": "CHANGELOG.md",
+    "changelog-type": "github",
     "include-component-in-tag": false,
     "release-type": "node",
     "packages": {
