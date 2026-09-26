@@ -672,6 +672,62 @@ workflows:
 func TestJobInvocationRequiresNonExistentRef(t *testing.T) {
 	testCases := []ValidateTestCase{
 		{
+			Name: "A job requiring its own name requires the other job of that name",
+			YamlContent: `version: 2.1
+
+jobs:
+  a:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+
+workflows:
+  test-workflow:
+    jobs:
+      - a
+      - a:
+          requires:
+            - a`,
+			OnlyErrors:  true,
+			Diagnostics: []protocol.Diagnostic{},
+		},
+		{
+			Name: "Requiring a name that more than one other job has",
+			YamlContent: `version: 2.1
+
+jobs:
+  a:
+    parameters:
+      n:
+        type: string
+        default: ""
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+
+workflows:
+  test-workflow:
+    jobs:
+      - a
+      - a:
+          matrix:
+            parameters:
+              n: ["1", "2"]
+      - a:
+          requires:
+            - a`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(protocol.Range{
+					Start: protocol.Position{Line: 23, Character: 14},
+					End:   protocol.Position{Line: 23, Character: 15},
+				}, "Job 'a' requires 'a', which is the name of 1 other job and 1 matrix in this workflow. "+
+					"Give each of them a unique `name`, or a matrix a unique `alias`, to require one"),
+			},
+		},
+		{
 			Name: "Arguments given as a flow mapping are checked",
 			YamlContent: `version: 2.1
 
