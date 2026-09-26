@@ -102,8 +102,8 @@ func hasBeenRenamed(inv ast2.JobInvocation) bool {
 }
 
 // validateDuplicateJobGroupInvocations checks for job-group invocations that
-// collide: same group invoked twice with the same name:, or multiple times
-// without any name:.
+// collide: same group invoked twice with the same name:, or more than once
+// without any name:. One invocation without a name takes the group's name.
 func (val Validate) validateDuplicateJobGroupInvocations(jobInvocations []ast2.JobInvocation) {
 	type entry struct {
 		isRenamed  bool
@@ -129,19 +129,28 @@ func (val Validate) validateDuplicateJobGroupInvocations(jobInvocations []ast2.J
 			continue
 		}
 
-		namesSeen := map[string]bool{}
+		unnamed := 0
 		for _, e := range entries {
 			if !e.isRenamed {
-				val.addDiagnostic(diagnostic.Error(
-					e.invocation.JobNameRange,
-					fmt.Sprintf("Job group \"%s\" is invoked multiple times without a \"name\" attribute. Each invocation must have a unique name", groupName),
-				))
-			} else if namesSeen[e.name] {
+				unnamed++
+			}
+		}
+		namesSeen := map[string]bool{}
+		for _, e := range entries {
+			switch {
+			case !e.isRenamed:
+				if unnamed > 1 {
+					val.addDiagnostic(diagnostic.Error(
+						e.invocation.JobNameRange,
+						fmt.Sprintf("Job group \"%s\" is invoked multiple times without a \"name\" attribute. Each invocation must have a unique name", groupName),
+					))
+				}
+			case namesSeen[e.name]:
 				val.addDiagnostic(diagnostic.Error(
 					e.invocation.StepNameRange,
 					fmt.Sprintf("Job group \"%s\" is already invoked with the name \"%s\"", groupName, e.name),
 				))
-			} else {
+			default:
 				namesSeen[e.name] = true
 			}
 		}
