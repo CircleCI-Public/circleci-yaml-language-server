@@ -198,6 +198,10 @@ func (val Validate) validateExecutorOverrides(job ast2.Job, executor ast2.Execut
 }
 
 func (val Validate) checkAndReportUnusedJob(job ast2.Job) {
+	if job.Name == "build" && val.Doc.HasNoWorkflows() {
+		return
+	}
+
 	// Used directly in another job's steps
 	for _, definedJob := range val.Doc.Jobs {
 		if val.checkIfStepsContainStep(definedJob.Steps, job.Name) {
