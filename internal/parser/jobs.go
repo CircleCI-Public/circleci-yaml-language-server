@@ -170,6 +170,7 @@ func (doc *YamlDocument) jobCompletionItem(job ast2.Job, has map[string]bool) {
 	switch job.Type {
 	case "release":
 		offer("plan_name", scalar)
+		offer("validation", block)
 	case "lock", "unlock":
 		offer("key", scalar)
 		offer("parameters", block)

@@ -33,7 +33,7 @@ func (ch *CompletionHandler) completeJobs() {
 		return
 	}
 
-	if ch.completeJobExecutor(job) || ch.completeDockerEntry() {
+	if ch.completeJobExecutor(job) || ch.completeDockerEntry() || ch.completeReleaseValidation(job) {
 		return
 	}
 
@@ -139,4 +139,35 @@ func (ch *CompletionHandler) addJobTypeCompletion() {
 	for _, jobType := range ast2.JobTypes {
 		ch.addCompletionItem(jobType)
 	}
+}
+
+var releaseValidationKeys = []string{"enabled", "evaluation_time", "auto_rollback_on_failure", "webhooks"}
+
+// completeReleaseValidation offers the keys a release job's validation
+// doesn't have yet, or the values of its booleans, and says whether the
+// cursor is at one.
+func (ch *CompletionHandler) completeReleaseValidation(job ast2.Job) bool {
+	isValidation := func(lines []string, line int) bool {
+		return line != -1 && strings.TrimSpace(lines[line]) == "validation:" && parentLine(lines, line) == startLine(job.NameRange)
+	}
+
+	if key, lines, parent := ch.valueAt(); isValidation(lines, parent) {
+		if key == "enabled" || key == "auto_rollback_on_failure" {
+			ch.addCompletionItem("true")
+			ch.addCompletionItem("false")
+		}
+		return true
+	}
+
+	lines, parent := ch.keyParent()
+	if !isValidation(lines, parent) {
+		return false
+	}
+	present := ch.stepBodyKeys(parent)
+	for _, key := range releaseValidationKeys {
+		if !present[key] {
+			ch.addCompletionItemField(key)
+		}
+	}
+	return true
 }
