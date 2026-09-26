@@ -625,6 +625,26 @@ workflows:
 				},
 			},
 		},
+		{
+			Name: "A quoted job name invokes the job it names",
+			YamlContent: `version: 2.1
+
+jobs:
+  job a:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+
+workflows:
+  test-workflow:
+    jobs:
+      - "job a"
+      - 'job a':
+          name: again
+`,
+			OnlyErrors: true,
+		},
 	}
 
 	CheckYamlErrors(t, testCases)
