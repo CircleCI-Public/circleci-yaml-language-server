@@ -8,8 +8,11 @@ import (
 	"gotest.tools/v3/assert/cmp"
 )
 
-// toolsOrbSource is an orb with a command and a job, each with a description.
+// toolsOrbSource is an orb with a description, and a command and a job with
+// one each.
 const toolsOrbSource = `version: 2.1
+
+description: Tools for acme.
 
 jobs:
   test:
@@ -79,5 +82,11 @@ func TestHover(t *testing.T) {
 	t.Run("a workflow's job shows the orb job it runs", func(t *testing.T) {
 		got := markdownAt(t, position(16, 10))
 		assert.Check(t, cmp.Equal(got, "**tools/test** job\n\nRun the tests."))
+	})
+
+	t.Run("the orb's declaration shows the orb", func(t *testing.T) {
+		got := markdownAt(t, position(3, 12))
+		assert.Check(t, cmp.Equal(got,
+			"**tools** orb `acme/tools@1.0.0`\n\nTools for acme.\n\nCommands: `install`\n\nJobs: `test`"))
 	})
 }
