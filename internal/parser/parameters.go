@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"slices"
 	"strconv"
+	"strings"
 
 	sitter "github.com/tree-sitter/go-tree-sitter"
 	"go.lsp.dev/protocol"
@@ -33,6 +34,10 @@ func (doc *YamlDocument) parseSingleParameter(paramNode *sitter.Node, params map
 	keyNode, valueNode := doc.GetKeyValueNodes(paramNode)
 
 	if keyNode == nil {
+		return
+	}
+	if strings.TrimSpace(doc.GetNodeText(keyNode)) == "" {
+		doc.addDiagnostic(diagnostic.ErrorFromNode(keyNode, "Parameters must be named"))
 		return
 	}
 
