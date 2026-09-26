@@ -2,6 +2,7 @@ package ast
 
 import (
 	"fmt"
+	"strings"
 
 	sitter "github.com/tree-sitter/go-tree-sitter"
 	"go.lsp.dev/protocol"
@@ -39,6 +40,13 @@ type OrbURLDefinition struct {
 	Namespace TextAndRange
 	Name      TextAndRange
 	Version   TextAndRange
+}
+
+// HasReference reports whether the orb is named with a `<< >>` template,
+// such as `circleci/node@<< pipeline.parameters.version >>`, so that which
+// orb it is is only known once the config is compiled.
+func (orb OrbURL) HasReference() bool {
+	return strings.Contains(orb.Name, "<<") || strings.Contains(orb.Version, "<<")
 }
 
 func (orb *OrbURL) GetOrbID() string {

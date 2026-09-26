@@ -50,6 +50,25 @@ workflows:
 			},
 		},
 		{
+			Name: "An orb named whole by a pipeline parameter isn't looked up",
+			YamlContent: `version: 2.1
+
+parameters:
+  orb:
+    type: string
+    default: cci-dev/ccc@1.0.0
+
+orbs:
+  ccc: << pipeline.parameters.orb >>
+
+workflows:
+  someworkflow:
+    jobs:
+      - ccc/job
+`,
+			Diagnostics: []protocol.Diagnostic{},
+		},
+		{
 			Name: "Ignore workflow's jobs that are come from uncheckable orbs",
 			YamlContent: `version: 2.1
 

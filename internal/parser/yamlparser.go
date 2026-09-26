@@ -16,7 +16,6 @@ import (
 	ast2 "github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/paramref"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/session"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/yamltree"
@@ -336,8 +335,7 @@ func (doc *YamlDocument) IsFromUnfetchableOrb(name string, cache *cache.Cache) b
 		return orbInfo == nil || err != nil
 	}
 
-	hasParamInTag, _ := paramref.IsPartiallyReferenced(orb.Url.Version)
-	return hasParamInTag
+	return orb.Url.HasReference()
 }
 
 func (doc *YamlDocument) IsOrbCommand(orbCommand string, cache *cache.Cache) bool {

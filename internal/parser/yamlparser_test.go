@@ -257,10 +257,12 @@ func TestIsFromUnfetchableOrb(t *testing.T) {
 orbs:
   slack: circleci/slack@4.12.5
   ccc: cci-dev/ccc@<<pipeline.parameters.dev-orb-version>>
+  chosen: << pipeline.parameters.orb >>
 `), testHelpers.DefaultSettings(), uri.File(""), protocol.Position{})
 
 	assert.Check(t, err)
 	assert.Check(t, yamlDocument.IsFromUnfetchableOrb("ccc/entity", cache.New()))
+	assert.Check(t, yamlDocument.IsFromUnfetchableOrb("chosen/entity", cache.New()))
 	assert.Check(t, !yamlDocument.IsFromUnfetchableOrb("slack/entity", cache.New()))
 }
 
