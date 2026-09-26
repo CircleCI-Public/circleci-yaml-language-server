@@ -11,6 +11,7 @@ import (
 	ast2 "github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/paramref"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 )
 
 func (val Validate) ValidateJobs() {
@@ -99,6 +100,7 @@ func (val Validate) validateSingleJob(job ast2.Job) {
 				job.Parameters,
 			)
 			val.validateExecutorOverrides(job, executor)
+			val.validateExecutorHasType(job, executor)
 		}
 	}
 
@@ -181,6 +183,20 @@ func (val Validate) validateRemoteDockerOnce(job ast2.Job) {
 
 // validateExecutorOverrides warns about a setting given both on the job and on
 // its executor, where the job's silently wins.
+// validateExecutorHasType checks that a job using an executor with no
+// docker, machine or macos key gives one itself.
+func (val Validate) validateExecutorHasType(job ast2.Job, executor ast2.Executor) {
+	if _, typeless := executor.(ast2.BaseExecutor); !typeless {
+		return
+	}
+	if !position.IsDefaultRange(job.DockerRange) || !position.IsDefaultRange(job.MachineRange) ||
+		!position.IsDefaultRange(job.MacOSRange) {
+		return
+	}
+	val.addDiagnostic(diagnostic.Error(job.ExecutorRange, fmt.Sprintf(
+		`Executor %s is missing a required key: "docker", "machine", or "macos"`, executor.GetName())))
+}
+
 func (val Validate) validateExecutorOverrides(job ast2.Job, executor ast2.Executor) {
 	if job.ResourceClass != "" && executor.GetResourceClass() != "" {
 		val.addDiagnostic(diagnostic.Warning(job.ResourceClassRange,
