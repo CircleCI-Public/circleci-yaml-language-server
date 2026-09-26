@@ -29,8 +29,7 @@ func (doc *YamlDocument) parseJobInvocations(jobsInvocationsNode *sitter.Node) [
 
 // parseJobInvocationName reads an invocation that is only a job's name.
 func (doc *YamlDocument) parseJobInvocationName(res ast2.JobInvocation, element *sitter.Node) ast2.JobInvocation {
-	name := GetChildOfType(element, "plain_scalar")
-	res.JobName = doc.GetNodeText(name)
+	res.JobName = doc.GetNodeText(element)
 	res.JobNameRange = doc.NodeToRange(element)
 	res.StepName = res.JobName
 	res.StepNameRange = res.JobNameRange
