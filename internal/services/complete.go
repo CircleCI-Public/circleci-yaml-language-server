@@ -5,6 +5,7 @@ import (
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
 	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/internal/parser"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/services/complete"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/session"
 )
@@ -17,7 +18,10 @@ func Complete(params protocol.CompletionParams, cache *cache.Cache, context *ses
 	}
 	defer yamlDocument.Close()
 
-	if yamlDocument.Version < 2.1 {
+	// A 2.0 config gets no completion, except for its version, which is how
+	// it becomes 2.1. The version being typed, `version: 2.`, reads as 2.
+	onVersion := position.InRange(yamlDocument.VersionRange, params.Position)
+	if yamlDocument.Version != 0 && yamlDocument.Version < 2.1 && !onVersion {
 		return protocol.CompletionList{
 			IsIncomplete: true,
 			Items:        []protocol.CompletionItem{},

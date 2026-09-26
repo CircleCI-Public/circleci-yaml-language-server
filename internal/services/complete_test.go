@@ -10,6 +10,7 @@ import (
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 	"gotest.tools/v3/assert"
+	"gotest.tools/v3/assert/cmp"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
@@ -375,4 +376,48 @@ func createCompletionItemForLabels(labels []string) []protocol.CompletionItem {
 		completeItems[i].Label = label
 	}
 	return completeItems
+}
+
+func TestCompleteTheVersion(t *testing.T) {
+	settings := testHelpers.DefaultSettings()
+	labels := func(t *testing.T, content string, pos protocol.Position) []string {
+		t.Helper()
+		fileURI := uri.File(filepath.Join(t.TempDir(), "config.yml"))
+		c := cache.New()
+		c.FileCache.SetFile(cache.File{
+			TextDocument: protocol.TextDocumentItem{URI: fileURI, Text: content},
+		})
+		list, err := Complete(protocol.CompletionParams{
+			TextDocumentPositionParams: protocol.TextDocumentPositionParams{
+				TextDocument: protocol.TextDocumentIdentifier{URI: fileURI},
+				Position:     pos,
+			},
+		}, c, settings)
+		assert.NilError(t, err)
+		got := []string{}
+		for _, item := range list.Items {
+			got = append(got, item.Label)
+		}
+		return got
+	}
+
+	t.Run("an empty version", func(t *testing.T) {
+		got := labels(t, "version: \n", protocol.Position{Line: 0, Character: 9})
+		assert.Check(t, cmp.DeepEqual(got, []string{"2.1"}))
+	})
+
+	t.Run("a version being typed", func(t *testing.T) {
+		got := labels(t, "version: 2.\n", protocol.Position{Line: 0, Character: 11})
+		assert.Check(t, cmp.DeepEqual(got, []string{"2.1"}))
+	})
+
+	t.Run("a config without a version yet", func(t *testing.T) {
+		got := labels(t, "\n", protocol.Position{Line: 0, Character: 0})
+		assert.Check(t, cmp.Contains(got, "version"))
+	})
+
+	t.Run("nothing else in a 2.0 config", func(t *testing.T) {
+		got := labels(t, "version: 2.0\njobs:\n  build:\n    \n", protocol.Position{Line: 3, Character: 4})
+		assert.Check(t, cmp.Len(got, 0))
+	})
 }
