@@ -2133,7 +2133,8 @@
                                                 },
                                                 "additionalProperties": false
                                             }
-                                        }
+                                        },
+                                        "additionalProperties": false
                                     },
                                     {
                                         "type": "string",
