@@ -126,6 +126,14 @@ func yamlForMachine(resourceClass, image string) string {
 	fmt.Fprint(&builder, "version: 2.1\n")
 	fmt.Fprint(&builder, "executors:\n")
 	fmt.Fprint(&builder, "  toto:\n")
+	if strings.Contains(resourceClass+image, "parameters.") {
+		fmt.Fprint(&builder, "    parameters:\n")
+	}
+	for _, param := range []string{"resource_class", "ubuntu_version"} {
+		if strings.Contains(resourceClass+image, "parameters."+param) {
+			fmt.Fprintf(&builder, "      %s:\n        type: string\n        default: medium\n", param)
+		}
+	}
 	if resourceClass == "" && image == "" {
 		fmt.Fprint(&builder, "    machine: {}\n")
 	} else {
