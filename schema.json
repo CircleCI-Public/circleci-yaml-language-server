@@ -2926,11 +2926,11 @@
                 "oneOf": [
                     {
                         "type": "string",
-                        "pattern": "^[a-z][a-z0-9_-]+/[a-z][a-z0-9_-]+@(dev:[\\.a-z0-9_-]+|\\d+|\\d+\\.\\d+|\\d+\\.\\d+\\.\\d+|volatile)$"
+                        "pattern": "^[a-z][a-z0-9_-]*/[a-z][a-z0-9_-]*@(dev:[^\\s\\p{Cc}]+|\\d+|\\d+\\.\\d+|\\d+\\.\\d+\\.\\d+|volatile)$"
                     },
                     {
                         "type": "string",
-                        "pattern": "^[a-z][a-z0-9_-]+/[a-z][a-z0-9_-]+@ *(dev:)?<<.+>> *$"
+                        "pattern": "^[a-z][a-z0-9_-]*/[a-z][a-z0-9_-]*@ *(dev:)?<<.+>> *$"
                     },
                     {
                         "type": "string",
