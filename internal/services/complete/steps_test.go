@@ -137,3 +137,35 @@ jobs:
 		assert.Check(t, cmp.Len(completionLabels(t, config, protocol.Position{Line: 29, Character: 12}), 0))
 	})
 }
+
+func TestCompleteTeardown(t *testing.T) {
+	withTeardown := func(teardown string) string {
+		return `version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run:
+          command: make test
+          teardown:
+` + teardown + `
+`
+	}
+
+	t.Run("only the steps a teardown can hold are offered", func(t *testing.T) {
+		config := withTeardown("            - ")
+		labels := completionLabels(t, config, positionBelow(t, config, "teardown:", 14))
+		assert.Check(t, cmp.DeepEqual(labels, teardownSteps))
+	})
+
+	t.Run("a teardown run can't run in the background or have a teardown", func(t *testing.T) {
+		config := withTeardown("            - run:\n                ")
+		lastLine := uint32(strings.Count(config, "\n") - 1)
+		labels := completionLabels(t, config, protocol.Position{Line: lastLine, Character: 16})
+		assert.Check(t, cmp.Contains(labels, "command"))
+		assert.Check(t, !slices.Contains(labels, "background"), "%q", labels)
+		assert.Check(t, !slices.Contains(labels, "teardown"), "%q", labels)
+	})
+}

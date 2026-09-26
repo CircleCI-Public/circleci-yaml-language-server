@@ -29,6 +29,20 @@ var builtInStepKeys = map[string][]string{
 	"unless":               {"condition", "steps"},
 }
 
+// teardownSteps are the steps a run step's teardown can hold. A teardown run
+// can't run in the background or have a teardown of its own.
+var (
+	teardownSteps      = []string{"run", "save_cache", "persist_to_workspace", "store_artifacts", "store_test_results"}
+	teardownRunLeftOut = []string{"background", "teardown"}
+)
+
+// isInTeardown goes by indentation, not the parsed steps: a teardown's range
+// doesn't reach the blank item being typed at its end.
+func isInTeardown(lines []string, line int) bool {
+	parent := parentLine(lines, line)
+	return parent != -1 && strings.TrimSpace(lines[parent]) == "teardown:"
+}
+
 // functionStepKeys are the keys a function step takes.
 var functionStepKeys = []string{"id", "with"}
 
@@ -97,6 +111,11 @@ func (ch *CompletionHandler) completeStepBody(name string, nameLine int) {
 
 	if builtIn, ok := builtInStepKeys[name]; ok {
 		keys = builtIn
+		if name == "run" && isInTeardown(strings.Split(string(ch.Doc.Content), "\n"), nameLine) {
+			keys = slices.DeleteFunc(slices.Clone(keys), func(key string) bool {
+				return slices.Contains(teardownRunLeftOut, key)
+			})
+		}
 	} else if _, _, isFunction := ch.Doc.FunctionForStep(name); isFunction {
 		keys = functionStepKeys
 	} else {

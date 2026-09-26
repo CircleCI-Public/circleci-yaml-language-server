@@ -1,6 +1,8 @@
 package complete
 
 import (
+	"strings"
+
 	sitter "github.com/tree-sitter/go-tree-sitter"
 
 	ast2 "github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
@@ -39,6 +41,13 @@ func (ch *CompletionHandler) completeStepList(completionNode *sitter.Node) {
 		ch.completeStepBody(name, nameLine)
 		return
 	case elsewhere:
+		return
+	}
+
+	if lines := strings.Split(string(ch.Doc.Content), "\n"); isInTeardown(lines, int(ch.Params.Position.Line)) {
+		for _, step := range teardownSteps {
+			ch.addCompletionItem(step)
+		}
 		return
 	}
 
