@@ -2,6 +2,7 @@ package complete
 
 import (
 	"fmt"
+	"strings"
 
 	"go.lsp.dev/protocol"
 
@@ -26,7 +27,7 @@ func (ch *CompletionHandler) completeWorkflows() {
 		return
 	}
 
-	ch.addWorkflowKeys(wf)
+	ch.completeWorkflowKeys(wf)
 }
 
 // completeInJobInvocations completes inside the body of one of a workflow's
@@ -72,16 +73,66 @@ func (ch *CompletionHandler) completeInJobInvocations(invocations []ast.JobInvoc
 	return false
 }
 
-// addWorkflowKeys offers the keys a workflow doesn't have yet, when the
-// cursor is at a workflow's own keys rather than inside one of them.
-func (ch *CompletionHandler) addWorkflowKeys(wf ast.Workflow) {
-	pos := ch.Params.Position
-	for _, rng := range []protocol.Range{wf.NameRange, wf.JobsRange, wf.TriggersRange, wf.WhenRange, wf.UnlessRange, wf.MaxAutoRerunsRange} {
-		if !position.IsDefaultRange(rng) && position.InRange(rng, pos) {
-			return
-		}
+// triggerMappingKeys are the keys of each mapping in a workflow's triggers,
+// by the path to the mapping from the workflow.
+var triggerMappingKeys = map[string][]string{
+	"triggers.schedule":                  {"cron", "filters"},
+	"triggers.schedule.filters":          {"branches"},
+	"triggers.schedule.filters.branches": {"only", "ignore"},
+}
+
+// completeWorkflowKeys offers the keys the workflow, or a mapping in its
+// triggers, doesn't have yet, when the cursor is at a key of one.
+func (ch *CompletionHandler) completeWorkflowKeys(wf ast.Workflow) {
+	lines, parent := ch.keyParent()
+	if parent == -1 {
+		ch.completeTriggerItem(wf, lines)
+		return
 	}
 
+	path := []string{}
+	for line := parent; line != startLine(wf.NameRange); line = parentLine(lines, line) {
+		if line == -1 {
+			return
+		}
+		match := mappingKey.FindStringSubmatch(lines[line])
+		if match == nil {
+			return
+		}
+		path = append([]string{match[1]}, path...)
+	}
+
+	if len(path) == 0 {
+		ch.addWorkflowKeys(wf)
+		return
+	}
+	present := ch.stepBodyKeys(parent)
+	for _, key := range triggerMappingKeys[strings.Join(path, ".")] {
+		if !present[key] {
+			ch.addCompletionItemField(key)
+		}
+	}
+}
+
+// completeTriggerItem offers `schedule` for an item being written in a
+// workflow's triggers.
+func (ch *CompletionHandler) completeTriggerItem(wf ast.Workflow, lines []string) {
+	pos := ch.Params.Position
+	if int(pos.Line) >= len(lines) {
+		return
+	}
+	before := lines[pos.Line][:min(int(pos.Character), len(lines[pos.Line]))]
+	if !listItemBeingWritten.MatchString(before) {
+		return
+	}
+	parent := lineAbove(lines, int(pos.Line), indentation(before))
+	if parent != -1 && strings.TrimSpace(lines[parent]) == "triggers:" && parentLine(lines, parent) == startLine(wf.NameRange) {
+		ch.addCompletionItemFieldWithNewLine("schedule")
+	}
+}
+
+// addWorkflowKeys offers the keys a workflow doesn't have yet.
+func (ch *CompletionHandler) addWorkflowKeys(wf ast.Workflow) {
 	if position.IsDefaultRange(wf.JobsRange) {
 		ch.addCompletionItemFieldWithNewLine("jobs")
 	}

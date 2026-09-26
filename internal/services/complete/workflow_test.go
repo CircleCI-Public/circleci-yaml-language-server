@@ -152,6 +152,58 @@ workflows:
 	})
 }
 
+func TestCompleteWorkflowTriggers(t *testing.T) {
+	// The cursor goes on the blank line under the last line of triggers.
+	withTriggers := func(triggers string) string {
+		return `version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+
+workflows:
+  nightly:
+    triggers:
+` + triggers + `
+    jobs:
+      - build
+`
+	}
+
+	t.Run("a schedule's keys are offered in it", func(t *testing.T) {
+		config := withTriggers("      - schedule:\n          ")
+		pos := positionBelow(t, config, "- schedule:", 10)
+		assert.Check(t, cmp.DeepEqual(completionLabels(t, config, pos), []string{"cron", "filters"}))
+	})
+
+	t.Run("a schedule's keys it has are left out", func(t *testing.T) {
+		config := withTriggers("      - schedule:\n          cron: \"0 0 * * *\"\n          ")
+		pos := positionBelow(t, config, `cron: "0 0 * * *"`, 10)
+		assert.Check(t, cmp.DeepEqual(completionLabels(t, config, pos), []string{"filters"}))
+	})
+
+	t.Run("a schedule's filters take branches", func(t *testing.T) {
+		config := withTriggers("      - schedule:\n          filters:\n            ")
+		pos := positionBelow(t, config, "filters:", 12)
+		assert.Check(t, cmp.DeepEqual(completionLabels(t, config, pos), []string{"branches"}))
+	})
+
+	t.Run("a schedule's branches take only and ignore", func(t *testing.T) {
+		config := withTriggers("      - schedule:\n          filters:\n            branches:\n              ")
+		pos := positionBelow(t, config, "branches:", 14)
+		assert.Check(t, cmp.DeepEqual(completionLabels(t, config, pos), []string{"only", "ignore"}))
+	})
+
+	t.Run("a trigger is a schedule", func(t *testing.T) {
+		config := withTriggers("      - ")
+		pos := positionBelow(t, config, "triggers:", 8)
+		assert.Check(t, cmp.DeepEqual(completionLabels(t, config, pos), []string{"schedule"}))
+	})
+}
+
 func TestCompleteJobKeys(t *testing.T) {
 	jobKeys := func(t *testing.T, body string) []string {
 		t.Helper()
