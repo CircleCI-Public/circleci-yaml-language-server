@@ -202,7 +202,9 @@ func (val Validate) isKnownStep(name string) bool {
 }
 
 func (val Validate) validateNamedStep(step ast2.NamedStep, usableParams map[string]ast2.Parameter) {
-	if val.Doc.IsFromUnfetchableOrb(step.Name, val.Cache) {
+	// A name taken from a parameter, `- << parameters.step >>`, is only
+	// known once the config is compiled.
+	if val.Doc.IsFromUnfetchableOrb(step.Name, val.Cache) || paramref.ContainsReference(step.Name) {
 		return
 	}
 
