@@ -102,7 +102,7 @@ func (val Validate) validateSingleJob(job ast2.Job) {
 	}
 
 	// By default Parallelism is set to -1; see parser.parseSingleJob
-	if job.Parallelism == 0 || job.Parallelism == 1 {
+	if job.Parallelism == 1 {
 		val.addDiagnostic(
 			protocol.Diagnostic{
 				Range:    job.ParallelismRange,

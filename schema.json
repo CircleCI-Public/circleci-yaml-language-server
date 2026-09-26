@@ -225,7 +225,8 @@
                                             "markdownDescription": "An integer, or an expression that evaluates to one",
                                             "anyOf": [
                                                 {
-                                                    "type": "integer"
+                                                    "type": "integer",
+                                                    "minimum": 1
                                                 },
                                                 {
                                                     "$ref": "#/definitions/expression"
