@@ -26,6 +26,10 @@ func (ch *CompletionHandler) completeSteps(entityName string, inJob bool, comple
 // completeStepList offers the steps of a list of steps, or the keys of the
 // step whose body the cursor is in.
 func (ch *CompletionHandler) completeStepList(completionNode *sitter.Node) {
+	if ch.completeFunctionFlags() {
+		return
+	}
+
 	if key, lines, parent := ch.valueAt(); parent != -1 {
 		if match := stepWithBody.FindStringSubmatch(lines[parent]); match != nil {
 			for _, value := range builtInStepValues(match[2], key) {
