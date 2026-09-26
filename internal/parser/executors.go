@@ -173,12 +173,14 @@ func (doc *YamlDocument) parseSingleExecutorMachine(nameNode *sitter.Node, value
 			case "resource_class":
 				res.ResourceClassRange = doc.NodeToRange(child)
 				res.ResourceClass = doc.GetNodeText(valueNode)
+				res.InMapResourceClassRange = doc.NodeToRange(keyNode)
 				doc.addDiagnostic(diagnostic.Warning(doc.NodeToRange(keyNode),
 					"Setting `resource_class` inside the `machine` map is undocumented; set it "+
 						"as a sibling of `machine` instead. See "+
 						"https://circleci.com/docs/reference/configuration-reference/#executors"))
 
 			case "shell":
+				res.InMapShellRange = doc.NodeToRange(keyNode)
 				doc.addDiagnostic(diagnostic.Warning(doc.NodeToRange(keyNode),
 					"Setting `shell` inside the `machine` map is undocumented; set it "+
 						"as a sibling of `machine` instead. See "+
@@ -193,6 +195,15 @@ func (doc *YamlDocument) parseSingleExecutorMachine(nameNode *sitter.Node, value
 	}
 
 	doc.parseBaseExecutor(&res.BaseExecutor, nameNode, valueNode, parseMachine, "machine")
+	doc.iterateOnBlockMapping(valueNode, func(child *sitter.Node) {
+		keyNode, _ := doc.GetKeyValueNodes(child)
+		switch doc.GetNodeText(keyNode) {
+		case "resource_class":
+			res.ResourceClassBeside = true
+		case "shell":
+			res.ShellBeside = true
+		}
+	})
 
 	// This only happens when the executor is `machine: true`
 	if machineNode != nil && doc.addedMachineTrueDeprecatedDiag(machineNode.Parent(), res.ResourceClass) {

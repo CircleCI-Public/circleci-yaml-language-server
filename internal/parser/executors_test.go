@@ -129,7 +129,8 @@ func TestYamlDocument_parseExecutors(t *testing.T) {
 							Character: 38,
 						},
 					},
-					DockerLayerCaching: true,
+					DockerLayerCaching:  true,
+					ResourceClassBeside: true,
 					BaseExecutor: ast2.BaseExecutor{
 						Name: "machine-executor",
 						NameRange: protocol.Range{

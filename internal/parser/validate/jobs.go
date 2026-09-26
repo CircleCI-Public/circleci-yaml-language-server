@@ -124,6 +124,10 @@ func (val Validate) validateSingleJob(job ast2.Job) {
 		val.validateRetention(job.Retention)
 	}
 
+	if !position.IsDefaultRange(job.MachineRange) {
+		val.validateMachineMapClashes(job.Machine, job.Machine.ResourceClassBeside, job.Machine.ShellBeside, false)
+	}
+
 	if len(job.Docker.Image) > 0 {
 		val.validateDockerExecutor(job.Docker)
 	} else if job.MacOS.Xcode != "" {
@@ -198,6 +202,10 @@ func (val Validate) validateExecutorHasType(job ast2.Job, executor ast2.Executor
 }
 
 func (val Validate) validateExecutorOverrides(job ast2.Job, executor ast2.Executor) {
+	if machine, ok := executor.(ast2.MachineExecutor); ok {
+		val.validateMachineMapClashes(machine, job.ResourceClass != "", job.Shell != "", false)
+	}
+
 	if job.ResourceClass != "" && executor.GetResourceClass() != "" {
 		val.addDiagnostic(diagnostic.Warning(job.ResourceClassRange,
 			"resource_class is set both on the job and on the executor; the job's "+
