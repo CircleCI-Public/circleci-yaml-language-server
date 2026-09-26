@@ -473,3 +473,33 @@ workflows:
 		"my-orb/lint is a job, not a command: a job can't be run as a step",
 	}, anyOrder))
 }
+
+func TestStepNamedByParameter(t *testing.T) {
+	val := CreateValidateFromYAML(`version: 2.1
+
+commands:
+  run-step:
+    parameters:
+      step:
+        type: string
+    steps:
+      - << parameters.step >>
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run-step:
+          step: checkout
+
+workflows:
+  w:
+    jobs:
+      - build
+`)
+	val.Cache.MachineOfferingsCache.Set(testMachineOfferings())
+	val.Validate()
+
+	assert.Check(t, cmp.Len(getErrorDiagnostic(val.Diagnostics), 0))
+}
