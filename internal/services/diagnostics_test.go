@@ -1223,3 +1223,40 @@ workflows:
 		assert.Check(t, cmp.DeepEqual(errors, []string{}))
 	})
 }
+
+func TestBlankParameterNames(t *testing.T) {
+	fake := fakes.NewCircleCI(t)
+	errors := configErrors(t, fake, `version: 2.1
+parameters:
+  "":
+    type: string
+    default: pipeline
+commands:
+  greet:
+    parameters:
+      " ":
+        type: string
+        default: command
+    steps:
+      - checkout
+jobs:
+  build:
+    parameters:
+      "":
+        type: string
+        default: job
+    docker:
+      - image: cimg/base:current
+    steps:
+      - greet
+workflows:
+  main:
+    jobs:
+      - build
+`)
+	assert.Check(t, cmp.DeepEqual(errors, []string{
+		"Parameters must be named",
+		"Parameters must be named",
+		"Parameters must be named",
+	}))
+}
