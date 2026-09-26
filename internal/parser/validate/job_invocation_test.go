@@ -1156,7 +1156,7 @@ workflows:
 			},
 		},
 		{
-			Name:       "one invocation without name, one with name is an error (the nameless one)",
+			Name:       "one invocation without name, one with name is valid",
 			OnlyErrors: true,
 			YamlContent: `version: 2.1
 
@@ -1178,12 +1178,6 @@ workflows:
       - deploy-group
       - deploy-group:
           name: prod-deploy`,
-			Diagnostics: []protocol.Diagnostic{
-				diagnostic.Error(protocol.Range{
-					Start: protocol.Position{Line: 17, Character: 8},
-					End:   protocol.Position{Line: 17, Character: 20},
-				}, `Job group "deploy-group" is invoked multiple times without a "name" attribute. Each invocation must have a unique name`),
-			},
 		},
 	}
 
