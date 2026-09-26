@@ -12,7 +12,6 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/orburl"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/codeaction"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/paramref"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/parser"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 )
@@ -36,7 +35,7 @@ func (val Validate) validateSingleOrb(orb ast.Orb) {
 		val.orbIsUnused(orb)
 	}
 
-	if hasParam, _ := paramref.IsPartiallyReferenced(orb.Url.Version); hasParam {
+	if orb.Url.HasReference() {
 		return
 	}
 
