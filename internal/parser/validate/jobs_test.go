@@ -657,3 +657,40 @@ workflows:
 	}
 	assert.Check(t, cmp.DeepEqual(lines, []uint32{8, 5}), "pre-steps, then context")
 }
+
+func TestTypelessExecutor(t *testing.T) {
+	diags := validateYAML(t, `version: 2.1
+
+executors:
+  big:
+    resource_class: large
+
+jobs:
+  typed-here:
+    executor: big
+    docker:
+      - image: cimg/base:2024.01
+    steps:
+      - checkout
+  typed-nowhere:
+    executor: big
+    steps:
+      - checkout
+
+workflows:
+  main:
+    jobs:
+      - typed-here
+      - typed-nowhere
+`)
+
+	var got []string
+	for _, diag := range *diags {
+		if diag.Severity == protocol.DiagnosticSeverityError {
+			got = append(got, fmt.Sprintf("%d: %s", diag.Range.Start.Line, diagnostic.MessageText(diag)))
+		}
+	}
+	assert.Check(t, cmp.DeepEqual(got, []string{
+		`14: Executor big is missing a required key: "docker", "machine", or "macos"`,
+	}))
+}
