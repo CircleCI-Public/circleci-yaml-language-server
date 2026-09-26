@@ -1940,18 +1940,8 @@
                                     "markdownDescription": "A logical condition that must evaluate to true for the steps to run"
                                 },
                                 "steps": {
-                                    "oneOf": [
-                                        {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/step"
-                                            }
-                                        },
-                                        {
-                                            "$ref": "#/definitions/step"
-                                        }
-                                    ],
-                                    "markdownDescription": "A list of steps to be performed when the condition is true"
+                                    "markdownDescription": "A list of steps to be performed when the condition is true",
+                                    "$ref": "#/definitions/step"
                                 }
                             }
                         },
@@ -1968,22 +1958,19 @@
                                     "markdownDescription": "A logical condition that must evaluate to false for the steps to run"
                                 },
                                 "steps": {
-                                    "oneOf": [
-                                        {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/step"
-                                            }
-                                        },
-                                        {
-                                            "$ref": "#/definitions/step"
-                                        }
-                                    ],
-                                    "markdownDescription": "A list of steps to be performed when the condition is false"
+                                    "markdownDescription": "A list of steps to be performed when the condition is false",
+                                    "$ref": "#/definitions/step"
                                 }
                             }
                         }
                     }
+                },
+                {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/step"
+                    },
+                    "markdownDescription": "A list of steps, such as one an anchor holds, which is flattened into the list it's in."
                 }
             ]
         },
