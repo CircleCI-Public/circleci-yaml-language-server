@@ -1546,6 +1546,36 @@ workflows:
 func TestJobInvocationRequiresMatrixMembers(t *testing.T) {
 	testCases := []ValidateTestCase{
 		{
+			Name: "A matrix parameter the job doesn't declare",
+			YamlContent: `version: 2.1
+
+jobs:
+  test:
+    parameters:
+      os:
+        type: string
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "<< parameters.os >>"
+
+workflows:
+  test-workflow:
+    jobs:
+      - test:
+          matrix:
+            parameters:
+              os: [go, windows]
+              arch: [amd64]`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(protocol.Range{
+					Start: protocol.Position{Line: 19, Character: 14},
+					End:   protocol.Position{Line: 19, Character: 27},
+				}, "Parameter arch is not defined in test"),
+			},
+		},
+		{
 			Name: "Requires names matrix members, a templated member, and an alias",
 			YamlContent: `version: 2.1
 

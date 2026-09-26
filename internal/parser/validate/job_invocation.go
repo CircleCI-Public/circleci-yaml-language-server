@@ -98,6 +98,15 @@ func (val Validate) validateJobInvocationParameters(jobInvocation ast2.JobInvoca
 			)
 		}
 	}
+
+	for name, values := range jobInvocation.MatrixParams {
+		if definedParams[name] == nil && len(values) > 0 {
+			val.addDiagnostic(diagnostic.Error(
+				values[0].Range,
+				fmt.Sprintf("Parameter %s is not defined in %s", name, jobName)),
+			)
+		}
+	}
 }
 
 // hasBeenRenamed returns true when the invocation has an explicit name: attribute

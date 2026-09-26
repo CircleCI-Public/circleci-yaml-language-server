@@ -41,12 +41,18 @@ commands:
 
 jobs:
   dummyJob:
+    parameters:
+      py_version:
+        type: string
+        default: *py39
     docker:
       - image: cimg/node:17.2.0
     steps:
       - install-python-pyenv:
           is_build: true
           py_version: *py39
+      - print:
+          message: << parameters.py_version >>
 
   uselessJob:
     docker:
