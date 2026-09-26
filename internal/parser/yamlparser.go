@@ -241,6 +241,9 @@ type YamlDocument struct {
 	// FlattenedSteps are the ranges of steps whose parameters are indented
 	// level with the step's name. See NamedStep.Siblings.
 	FlattenedSteps []protocol.Range
+	// expandingStepAnchors are the anchors whose steps are being read, so
+	// that a step holding an alias of itself isn't read forever.
+	expandingStepAnchors map[string]bool
 	// Conditions are the workflow and step conditions written as strings.
 	Conditions []ast2.TextAndRange
 
