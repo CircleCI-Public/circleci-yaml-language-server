@@ -4,6 +4,8 @@ import (
 	"path"
 
 	sitter "github.com/tree-sitter/go-tree-sitter"
+
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 )
 
 // pipelineConfigKeys are the top-level keys that only pipeline config has.
@@ -68,4 +70,11 @@ func (doc *YamlDocument) IsUnderUnreadTopLevelKey(node *sitter.Node) bool {
 	}
 
 	return false
+}
+
+// HasNoWorkflows reports whether the config leaves out `workflows`, or gives
+// it no value. The compiler then makes a workflow that runs the job named
+// build.
+func (doc *YamlDocument) HasNoWorkflows() bool {
+	return position.IsDefaultRange(doc.WorkflowRange)
 }

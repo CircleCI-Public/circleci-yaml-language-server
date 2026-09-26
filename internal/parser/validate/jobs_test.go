@@ -173,6 +173,31 @@ workflows:
 	assert.Check(t, hasUnused, "expected 'Job is unused' diagnostic for unused-job.\nAll diagnostics: %v", msgs)
 }
 
+func TestBuildJobRunsWithoutWorkflows(t *testing.T) {
+	diags := validateYAML(t, `version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:2024.01
+    steps:
+      - run: echo build
+  unused-job:
+    docker:
+      - image: cimg/base:2024.01
+    steps:
+      - run: echo unused
+`)
+
+	var unused []uint32
+	for _, diag := range *diags {
+		if diagnostic.MessageText(diag) == "Job is unused" {
+			unused = append(unused, diag.Range.Start.Line)
+		}
+	}
+	assert.Check(t, cmp.DeepEqual(unused, []uint32{8}), "only unused-job is unused")
+}
+
 func TestJobGroupUnusedInWorkflow(t *testing.T) {
 	yamlData := `version: 2.1
 
