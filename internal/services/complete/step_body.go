@@ -29,6 +29,27 @@ var builtInStepKeys = map[string][]string{
 	"unless":               {"condition", "steps"},
 }
 
+// builtInStepKeyValues are the values of the built-in steps' keys that take
+// only a few, other than `when`, which every step with a `when` takes.
+var builtInStepKeyValues = map[string]map[string][]string{
+	"run": {"background": {"true", "false"}},
+	"setup_remote_docker": {
+		"version":              {"default", "24.0.9"},
+		"docker_layer_caching": {"true", "false"},
+		"prefer_same_region":   {"true", "false"},
+	},
+	"with_tool_cache": {"tool": {"gradle", "bazel", "turborepo", "xcode"}},
+}
+
+// builtInStepValues is empty for a key whose values can't be listed, such
+// as run's command.
+func builtInStepValues(step, key string) []string {
+	if key == "when" && slices.Contains(builtInStepKeys[step], "when") {
+		return []string{"always", "on_success", "on_fail"}
+	}
+	return builtInStepKeyValues[step][key]
+}
+
 // teardownSteps are the steps a run step's teardown can hold. A teardown run
 // can't run in the background or have a teardown of its own.
 var (

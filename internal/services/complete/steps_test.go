@@ -193,3 +193,35 @@ jobs:
 		})
 	}
 }
+
+func TestCompleteBuiltInStepValues(t *testing.T) {
+	tests := []struct {
+		step, key string
+		want      []string
+	}{
+		{"run", "when", []string{"always", "on_success", "on_fail"}},
+		{"save_cache", "when", []string{"always", "on_success", "on_fail"}},
+		{"run", "background", []string{"true", "false"}},
+		{"setup_remote_docker", "version", []string{"default", "24.0.9"}},
+		{"setup_remote_docker", "prefer_same_region", []string{"true", "false"}},
+		{"with_tool_cache", "tool", []string{"gradle", "bazel", "turborepo", "xcode"}},
+		{"run", "command", []string{}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.step+"."+tt.key, func(t *testing.T) {
+			config := `version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - ` + tt.step + `:
+          ` + tt.key + `: 
+`
+			pos := positionBelow(t, config, "- "+tt.step+":", uint32(len("          "+tt.key+": ")))
+			assert.Check(t, cmp.DeepEqual(completionLabels(t, config, pos), tt.want))
+		})
+	}
+}
