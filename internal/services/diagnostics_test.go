@@ -1328,3 +1328,28 @@ workflows:
 		assert.Check(t, cmp.DeepEqual(errors, []string{}))
 	})
 }
+
+func TestNestedStepLists(t *testing.T) {
+	fake := fakes.NewCircleCI(t)
+	errors := configErrors(t, fake, `version: 2.1
+references:
+  setup: &setup
+    - checkout
+    - run: echo setup
+jobs:
+  build:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - *setup
+      - [run: echo inline, checkout]
+      - - no-such-command
+workflows:
+  main:
+    jobs:
+      - build:
+          pre-steps:
+            - *setup
+`)
+	assert.Check(t, cmp.DeepEqual(errors, []string{"Cannot find declaration for step no-such-command"}))
+}

@@ -63,6 +63,10 @@ func (doc *YamlDocument) parseSingleStep(stepNode *sitter.Node) []ast.Step {
 	case "flow_node":
 		return doc.parseFlowNodeStep(child)
 	case "block_node":
+		// A list of steps inside the list is flattened into it.
+		if GetChildSequence(child) != nil {
+			return doc.parseSteps(child)
+		}
 		blockMapping := GetChildOfType(child, "block_mapping")
 		if blockMapping == nil {
 			return []ast.Step{ast.Run{Range: doc.NodeToRange(child)}}
@@ -80,6 +84,9 @@ func (doc *YamlDocument) parseFlowNodeStep(child *sitter.Node) []ast.Step {
 	if first != nil && first.Kind() == "flow_mapping" {
 		return doc.parseStep(first)
 	}
+	if first != nil && first.Kind() == "flow_sequence" {
+		return doc.parseSteps(child)
+	}
 	// A node holding only an anchor, whose value is yet to be typed, has no
 	// first child.
 	if first == nil || first.Kind() != "alias" {
@@ -91,7 +98,8 @@ func (doc *YamlDocument) parseFlowNodeStep(child *sitter.Node) []ast.Step {
 		return nil
 	}
 	blockMapping := GetChildOfType(step, "block_mapping")
-	if blockMapping == nil {
+	sequence := GetChildSequence(step)
+	if blockMapping == nil && sequence == nil {
 		step = GetChildOfType(step, "plain_scalar")
 		if step == nil {
 			return nil
@@ -103,6 +111,9 @@ func (doc *YamlDocument) parseFlowNodeStep(child *sitter.Node) []ast.Step {
 	}
 	doc.expandingStepAnchors[anchorName] = true
 	defer delete(doc.expandingStepAnchors, anchorName)
+	if sequence != nil {
+		return doc.parseSteps(step)
+	}
 	return doc.parseStep(blockMapping)
 }
 
