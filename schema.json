@@ -1399,11 +1399,44 @@
                                                                             false
                                                                         ],
                                                                         "markdownDescription": "A teardown step can't run in the background: it would be cancelled as soon as it started."
+                                                                    },
+                                                                    "max_auto_reruns": {
+                                                                        "anyOf": [
+                                                                            {
+                                                                                "type": "integer",
+                                                                                "minimum": 1,
+                                                                                "maximum": 5
+                                                                            },
+                                                                            {
+                                                                                "$ref": "#/definitions/expression"
+                                                                            }
+                                                                        ]
+                                                                    },
+                                                                    "auto_rerun_delay": {
+                                                                        "anyOf": [
+                                                                            {
+                                                                                "type": "string",
+                                                                                "pattern": "^((10|[1-9])m|([1-9][0-9]*)s)$"
+                                                                            },
+                                                                            {
+                                                                                "$ref": "#/definitions/expression"
+                                                                            }
+                                                                        ]
                                                                     }
                                                                 },
                                                                 "not": {
                                                                     "required": [
                                                                         "teardown"
+                                                                    ]
+                                                                },
+                                                                "if": {
+                                                                    "required": [
+                                                                        "auto_rerun_delay"
+                                                                    ]
+                                                                },
+                                                                "then": {
+                                                                    "required": [
+                                                                        "max_auto_reruns"
                                                                     ]
                                                                 }
                                                             }
@@ -1423,6 +1456,7 @@
                                                             },
                                                             "key": {
                                                                 "type": "string",
+                                                                "minLength": 1,
                                                                 "markdownDescription": "Unique identifier for this cache"
                                                             },
                                                             "name": {
@@ -1653,6 +1687,7 @@
                                 },
                                 "key": {
                                     "type": "string",
+                                    "minLength": 1,
                                     "markdownDescription": "Unique identifier for this cache"
                                 },
                                 "name": {
