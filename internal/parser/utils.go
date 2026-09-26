@@ -495,3 +495,13 @@ func (doc *YamlDocument) unquotedRange(node *sitter.Node) protocol.Range {
 
 	return rng
 }
+
+// isNullValue reports whether a value is YAML's null: missing, or written as
+// `null` or `~`.
+func (doc *YamlDocument) isNullValue(valueNode *sitter.Node) bool {
+	if valueNode == nil {
+		return true
+	}
+	scalar := doc.scalarOf(valueNode, 0)
+	return scalar.Kind() == "plain_scalar" && GetFirstChild(scalar) != nil && GetFirstChild(scalar).Kind() == "null_scalar"
+}

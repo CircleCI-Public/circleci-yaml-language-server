@@ -327,6 +327,12 @@ func (doc *YamlDocument) parseMatrixParam(node *sitter.Node) map[string][]ast2.P
 		}
 		keyName := doc.GetNodeText(keyNode)
 
+		// A null parameter is still given, but the matrix has no jobs.
+		if _, valueNode := doc.GetKeyValueNodes(child); doc.isNullValue(valueNode) {
+			res[keyName] = append(res[keyName], ast2.ParameterValue{Name: keyName, Type: "null", Range: doc.NodeToRange(child)})
+			return
+		}
+
 		paramValue, err := doc.parseParameterValue(child)
 		if err != nil {
 			return
