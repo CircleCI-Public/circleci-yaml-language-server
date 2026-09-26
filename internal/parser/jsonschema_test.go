@@ -510,3 +510,36 @@ workflows:
 		})
 	}
 }
+
+func Test_Parallelism(t *testing.T) {
+	config := func(parallelism string) string {
+		return `
+version: 2.1
+jobs:
+  j:
+    docker:
+      - image: cimg/base:stable
+    parallelism: ` + parallelism + `
+    steps:
+      - run: echo
+workflows:
+  w:
+    jobs:
+      - j
+`
+	}
+
+	for _, parallelism := range []string{"1", "4", "<< pipeline.number >>"} {
+		t.Run("accepts "+parallelism, func(t *testing.T) {
+			said := schemaMessages(t, config(parallelism))
+			assert.Check(t, cmp.Len(said, 0))
+		})
+	}
+
+	for _, parallelism := range []string{"0", "-1"} {
+		t.Run("rejects "+parallelism, func(t *testing.T) {
+			said := schemaMessages(t, config(parallelism))
+			assert.Check(t, cmp.DeepEqual(said, []string{"Must be greater than or equal to 1"}))
+		})
+	}
+}
