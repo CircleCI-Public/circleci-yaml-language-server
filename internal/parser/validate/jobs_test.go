@@ -212,24 +212,6 @@ func TestExecutorParam(t *testing.T) {
 		expectedDiag protocol.Diagnostic
 	}{
 		{
-			label: "without default",
-			yamlData: `jobs:
-  test:
-    parameters:
-      os:
-        type: executor
-    executor: << parameters.os >>
-    steps:
-      - checkout`,
-			expectedDiag: protocol.Diagnostic{
-				Range: protocol.Range{
-					Start: protocol.Position{Line: 5, Character: 4},
-					End:   protocol.Position{Line: 5, Character: 33},
-				},
-				Severity: protocol.DiagnosticSeverityWarning,
-			},
-		},
-		{
 			label: "with unknown default",
 			yamlData: `jobs:
   test:
@@ -283,6 +265,45 @@ func TestExecutorParam(t *testing.T) {
 			t.Fatalf(`missing "parameter as executor" diagnostic`)
 		})
 	}
+}
+
+func TestExecutorParamWithoutDefault(t *testing.T) {
+	diags := validateYAML(t, `version: 2.1
+
+executors:
+  linux:
+    docker:
+      - image: cimg/base:2024.01
+
+jobs:
+  build:
+    parameters:
+      executor:
+        type: executor
+    executor: << parameters.executor >>
+    steps:
+      - checkout
+
+workflows:
+  given:
+    jobs:
+      - build:
+          executor: linux
+  missing:
+    jobs:
+      - build
+`)
+
+	var got []protocol.Diagnostic
+	for _, diag := range *diags {
+		if diag.Severity <= protocol.DiagnosticSeverityWarning {
+			got = append(got, diag)
+		}
+	}
+	assert.Assert(t, cmp.Len(got, 1), "diagnostics: %v", diagnosticMessages(diags))
+	assert.Check(t, cmp.Equal(diagnostic.MessageText(got[0]), "Parameter executor is required for build"))
+	assert.Check(t, cmp.Equal(got[0].Severity, protocol.DiagnosticSeverityError))
+	assert.Check(t, cmp.Equal(got[0].Range.Start.Line, uint32(23)))
 }
 
 func TestResourceClass(t *testing.T) {
