@@ -224,19 +224,26 @@ func (doc *YamlDocument) parseDictionary(valueNode *sitter.Node) map[string]stri
 	return dictionary
 }
 
-// parseDescription is a description's text, as YAML reads it: without the
-// quotes of a quoted string, and with a block scalar's indentation and folding
-// applied. When YAML can't read it as text, it's the text GetNodeText gives.
+// parseDescription is a description's text, as ScalarText reads it, without
+// the line breaks at its end.
 func (doc *YamlDocument) parseDescription(descriptionNode *sitter.Node) string {
-	if descriptionNode == nil {
+	return strings.TrimRight(doc.ScalarText(descriptionNode), "\n")
+}
+
+// ScalarText is a scalar's text, as YAML reads it: without the quotes of a
+// quoted string or its escapes, and with a block scalar's indentation and
+// folding applied. When YAML can't read it as text, it's the text
+// GetNodeText gives.
+func (doc *YamlDocument) ScalarText(node *sitter.Node) string {
+	if node == nil {
 		return ""
 	}
 
 	var text string
-	if err := yaml.Unmarshal([]byte(doc.GetRawNodeText(doc.scalarOf(descriptionNode, 0))), &text); err != nil {
-		return doc.GetNodeText(descriptionNode)
+	if err := yaml.Unmarshal([]byte(doc.GetRawNodeText(doc.scalarOf(node, 0))), &text); err != nil {
+		return doc.GetNodeText(node)
 	}
-	return strings.TrimRight(text, "\n")
+	return text
 }
 
 func (doc *YamlDocument) GetKeyValueNodes(node *sitter.Node) (keyNode *sitter.Node, valueNode *sitter.Node) {

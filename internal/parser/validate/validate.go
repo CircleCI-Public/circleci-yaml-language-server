@@ -35,6 +35,7 @@ func (val *Validate) Validate() {
 		val.ValidateLocalOrbs()
 		val.ValidateFunctions()
 		val.ValidateConditions()
+		val.ValidateRegexes()
 	}
 	val.ValidateJobs()
 	val.ValidateCommands()
