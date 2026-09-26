@@ -467,3 +467,46 @@ workflows:
 		assert.Check(t, len(said) != 0, "a string circleci_ip_ranges must be rejected")
 	})
 }
+
+func Test_OrbReferences(t *testing.T) {
+	config := func(ref string) string {
+		return `
+version: 2.1
+orbs:
+  o: ` + ref + `
+jobs:
+  j:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo
+workflows:
+  w:
+    jobs:
+      - j
+`
+	}
+
+	for _, ref := range []string{
+		"circleci/node@7.1.0",
+		"circleci/node@dev:alpha",
+		"circleci/android@dev:exampleTag",
+		"circleci/node@dev:feature/branch+1",
+		"a/b@1",
+	} {
+		t.Run("accepts "+ref, func(t *testing.T) {
+			assert.Check(t, cmp.Len(schemaMessages(t, config(ref)), 0))
+		})
+	}
+
+	for _, ref := range []string{
+		"circleci/node",
+		"circleci/node@dev:",
+		"Circleci/node@1.0.0",
+		"circleci/node@latest",
+	} {
+		t.Run("rejects "+ref, func(t *testing.T) {
+			assert.Check(t, len(schemaMessages(t, config(ref))) != 0, "%s must be rejected", ref)
+		})
+	}
+}
