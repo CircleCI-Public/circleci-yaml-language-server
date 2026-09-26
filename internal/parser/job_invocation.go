@@ -92,7 +92,7 @@ func (doc *YamlDocument) parseSingleJobInvocation(jobInvocationNode *sitter.Node
 		res.JobName = doc.GetNodeText(key)
 		res.StepNameRange = doc.NodeToRange(key)
 		res.StepName = doc.GetNodeText(key)
-		blockMappingNode = GetChildOfType(value, "block_mapping")
+		blockMappingNode = GetChildMapping(value)
 
 		var matrixNode *sitter.Node
 		name := ""
@@ -292,8 +292,7 @@ func (doc *YamlDocument) parseSingleJobRequires(requiresNode *sitter.Node) []ast
 }
 
 func (doc *YamlDocument) parseMatrixAttributes(node *sitter.Node) (map[string][]ast2.ParameterValue, string) {
-	// node is a block_node
-	blockMapping := GetChildOfType(node, "block_mapping")
+	blockMapping := GetChildMapping(node)
 	res := make(map[string][]ast2.ParameterValue)
 	alias := ""
 
@@ -316,8 +315,7 @@ func (doc *YamlDocument) parseMatrixAttributes(node *sitter.Node) (map[string][]
 }
 
 func (doc *YamlDocument) parseMatrixParam(node *sitter.Node) map[string][]ast2.ParameterValue {
-	// node is a block_node
-	blockMapping := GetChildOfType(node, "block_mapping")
+	blockMapping := GetChildMapping(node)
 	res := make(map[string][]ast2.ParameterValue)
 
 	doc.iterateOnBlockMapping(blockMapping, func(child *sitter.Node) {

@@ -653,6 +653,37 @@ workflows:
 func TestJobInvocationRequiresNonExistentRef(t *testing.T) {
 	testCases := []ValidateTestCase{
 		{
+			Name: "Arguments given as a flow mapping are checked",
+			YamlContent: `version: 2.1
+
+jobs:
+  test:
+    parameters:
+      word:
+        type: string
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo << parameters.word >>
+
+workflows:
+  test-workflow:
+    jobs:
+      - test: {word: hi, matrix: {parameters: {word: [a, b]}}}
+      - test: {word: hi, requires: [ghost-job], bogus: 1}`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(protocol.Range{
+					Start: protocol.Position{Line: 16, Character: 36},
+					End:   protocol.Position{Line: 16, Character: 45},
+				}, "Cannot find declaration for job invocation \"ghost-job\""),
+				diagnostic.Error(protocol.Range{
+					Start: protocol.Position{Line: 16, Character: 48},
+					End:   protocol.Position{Line: 16, Character: 56},
+				}, "Parameter bogus is not defined in test"),
+			},
+		},
+		{
 			Name: "Requires a job named by a pipeline parameter, or a matrix aliased by one",
 			YamlContent: `version: 2.1
 
