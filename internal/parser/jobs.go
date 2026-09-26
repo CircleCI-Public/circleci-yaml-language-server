@@ -78,6 +78,7 @@ func (doc *YamlDocument) parseSingleJob(jobNode *sitter.Node) ast2.Job {
 			case "shell":
 				res.Shell = doc.GetNodeText(valueNode)
 				res.ShellRange = doc.NodeToRange(keyNode)
+				doc.warnShellList(valueNode)
 
 			case "working_directory":
 				res.WorkingDirectory = doc.GetNodeText(valueNode)

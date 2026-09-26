@@ -245,7 +245,17 @@
                                                     "type": "string"
                                                 },
                                                 "shell": {
-                                                    "type": "string"
+                                                    "oneOf": [
+                                                        {
+                                                            "type": "string"
+                                                        },
+                                                        {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "type": "string"
+                                                            }
+                                                        }
+                                                    ]
                                                 },
                                                 "code_signing": {
                                                     "type": "array",
@@ -510,7 +520,17 @@
                                                             "type": "string"
                                                         },
                                                         "shell": {
-                                                            "type": "string"
+                                                            "oneOf": [
+                                                                {
+                                                                    "type": "string"
+                                                                },
+                                                                {
+                                                                    "type": "array",
+                                                                    "items": {
+                                                                        "type": "string"
+                                                                    }
+                                                                }
+                                                            ]
                                                         },
                                                         "code_signing": {
                                                             "type": "array",
@@ -770,7 +790,17 @@
                                                         "type": "string"
                                                     },
                                                     "shell": {
-                                                        "type": "string"
+                                                        "oneOf": [
+                                                            {
+                                                                "type": "string"
+                                                            },
+                                                            {
+                                                                "type": "array",
+                                                                "items": {
+                                                                    "type": "string"
+                                                                }
+                                                            }
+                                                        ]
                                                     },
                                                     "code_signing": {
                                                         "type": "array",
@@ -1007,7 +1037,17 @@
                                                                 "type": "string"
                                                             },
                                                             "shell": {
-                                                                "type": "string"
+                                                                "oneOf": [
+                                                                    {
+                                                                        "type": "string"
+                                                                    },
+                                                                    {
+                                                                        "type": "array",
+                                                                        "items": {
+                                                                            "type": "string"
+                                                                        }
+                                                                    }
+                                                                ]
                                                             },
                                                             "code_signing": {
                                                                 "type": "array",
@@ -2292,7 +2332,17 @@
                                         "type": "string"
                                     },
                                     "shell": {
-                                        "type": "string"
+                                        "oneOf": [
+                                            {
+                                                "type": "string"
+                                            },
+                                            {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        ]
                                     },
                                     "code_signing": {
                                         "type": "array",
@@ -2574,7 +2624,17 @@
                                                 "type": "string"
                                             },
                                             "shell": {
-                                                "type": "string"
+                                                "oneOf": [
+                                                    {
+                                                        "type": "string"
+                                                    },
+                                                    {
+                                                        "type": "array",
+                                                        "items": {
+                                                            "type": "string"
+                                                        }
+                                                    }
+                                                ]
                                             },
                                             "code_signing": {
                                                 "type": "array",
@@ -3068,7 +3128,17 @@
                                                             "type": "string"
                                                         },
                                                         "shell": {
-                                                            "type": "string"
+                                                            "oneOf": [
+                                                                {
+                                                                    "type": "string"
+                                                                },
+                                                                {
+                                                                    "type": "array",
+                                                                    "items": {
+                                                                        "type": "string"
+                                                                    }
+                                                                }
+                                                            ]
                                                         },
                                                         "code_signing": {
                                                             "type": "array",
@@ -3305,7 +3375,17 @@
                                                                     "type": "string"
                                                                 },
                                                                 "shell": {
-                                                                    "type": "string"
+                                                                    "oneOf": [
+                                                                        {
+                                                                            "type": "string"
+                                                                        },
+                                                                        {
+                                                                            "type": "array",
+                                                                            "items": {
+                                                                                "type": "string"
+                                                                            }
+                                                                        }
+                                                                    ]
                                                                 },
                                                                 "code_signing": {
                                                                     "type": "array",
