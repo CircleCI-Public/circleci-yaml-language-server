@@ -728,11 +728,14 @@ func (doc *YamlDocument) FromOrbParsedAttributesToYamlDocument(orb ast2.OrbParse
 		LocalOrbName: orb.Name,
 
 		RootNode: doc.RootNode,
+		Context:  doc.Context,
 
 		Commands:           orb.Commands,
 		Jobs:               orb.Jobs,
 		Executors:          orb.Executors,
 		PipelineParameters: orb.PipelineParameters,
+		Orbs:               orb.Orbs,
+		LocalOrbInfo:       orb.LocalOrbInfo,
 
 		ExecutorsRange:          orb.ExecutorsRange,
 		CommandsRange:           orb.CommandsRange,

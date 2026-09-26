@@ -80,6 +80,8 @@ func (doc *YamlDocument) parseLocalOrb(name string, orbNode *sitter.Node) (*Loca
 			Jobs:               orbDoc.Jobs,
 			Executors:          orbDoc.Executors,
 			PipelineParameters: orbDoc.PipelineParameters,
+			Orbs:               orbDoc.Orbs,
+			LocalOrbInfo:       orbDoc.LocalOrbInfo,
 
 			OrbsRange:               orbDoc.OrbsRange,
 			ExecutorsRange:          orbDoc.ExecutorsRange,
