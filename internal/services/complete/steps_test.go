@@ -169,3 +169,27 @@ jobs:
 		assert.Check(t, !slices.Contains(labels, "teardown"), "%q", labels)
 	})
 }
+
+func TestCompleteNoStepsInAStepsValue(t *testing.T) {
+	for _, line := range []string{"      - run: echo ", "      - run: ", "      - greet: "} {
+		t.Run(strings.TrimSpace(line), func(t *testing.T) {
+			config := `version: 2.1
+
+commands:
+  greet:
+    steps:
+      - run: echo hello
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:stable
+    steps:
+` + line + `
+`
+			lastLine := uint32(strings.Count(config, "\n") - 1)
+			labels := completionLabels(t, config, protocol.Position{Line: lastLine, Character: uint32(len(line))})
+			assert.Check(t, cmp.Len(labels, 0))
+		})
+	}
+}
