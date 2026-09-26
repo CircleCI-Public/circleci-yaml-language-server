@@ -110,6 +110,19 @@ func ContainsReference(content string) bool {
 	return referenceRegex.MatchString(content)
 }
 
+// CouldExpandTo reports whether content, once each of its references is
+// replaced by some value, could be s.
+func CouldExpandTo(content, s string) bool {
+	if !ContainsReference(content) {
+		return content == s
+	}
+	literals := referenceRegex.Split(content, -1)
+	for i, literal := range literals {
+		literals[i] = regexp.QuoteMeta(literal)
+	}
+	return regexp.MustCompile("^" + strings.Join(literals, ".*") + "$").MatchString(s)
+}
+
 var onlyParamRegex = regexp.MustCompile(`^<<\s*(parameters|pipeline.parameters)\.([A-Za-z0-9-_]*)\s*>>$`)
 
 // Returns true if the string is *only* a parameter

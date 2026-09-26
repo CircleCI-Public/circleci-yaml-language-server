@@ -653,6 +653,50 @@ workflows:
 func TestJobInvocationRequiresNonExistentRef(t *testing.T) {
 	testCases := []ValidateTestCase{
 		{
+			Name: "Requires a job named by a pipeline parameter, or a matrix aliased by one",
+			YamlContent: `version: 2.1
+
+parameters:
+  suffix:
+    type: string
+    default: release
+
+jobs:
+  build:
+    parameters:
+      word:
+        type: string
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo << parameters.word >>
+
+workflows:
+  test-workflow:
+    jobs:
+      - build:
+          name: gen-<< pipeline.parameters.suffix >>
+          word: hi
+      - build:
+          matrix:
+            parameters:
+              word: [ola]
+            alias: app-<< pipeline.parameters.suffix >>
+      - build:
+          word: bye
+          requires:
+            - gen-release
+            - app-staging
+            - ghost-release`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(protocol.Range{
+					Start: protocol.Position{Line: 33, Character: 14},
+					End:   protocol.Position{Line: 33, Character: 27},
+				}, "Cannot find declaration for job invocation \"ghost-release\""),
+			},
+		},
+		{
 			Name: "Requires references a job that does not exist in invocations",
 			YamlContent: `version: 2.1
 
