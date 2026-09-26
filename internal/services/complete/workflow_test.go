@@ -231,8 +231,27 @@ func TestCompleteJobKeys(t *testing.T) {
 		assert.Check(t, cmp.Contains(labels, "parallelism"))
 	})
 
-	t.Run("a release job is offered its plan", func(t *testing.T) {
-		assert.Check(t, cmp.DeepEqual(jobKeys(t, "    type: release\n"), []string{"plan_name"}))
+	t.Run("a release job is offered its plan and validation", func(t *testing.T) {
+		assert.Check(t, cmp.DeepEqual(jobKeys(t, "    type: release\n"), []string{"plan_name", "validation"}))
+	})
+
+	// The cursor goes at the end of the validation's last line.
+	validation := func(t *testing.T, body string) []string {
+		t.Helper()
+		config := "version: 2.1\n\njobs:\n  deploy:\n    type: release\n    validation:\n" + body
+		lines := strings.Split(config, "\n")
+		last := len(lines) - 1
+		return completionLabels(t, config, protocol.Position{Line: uint32(last), Character: uint32(len(lines[last]))})
+	}
+
+	t.Run("a release job's validation is offered its keys", func(t *testing.T) {
+		assert.Check(t, cmp.DeepEqual(validation(t, "      enabled: true\n      "), []string{
+			"evaluation_time", "auto_rollback_on_failure", "webhooks",
+		}))
+	})
+
+	t.Run("a release job's validation booleans are offered true and false", func(t *testing.T) {
+		assert.Check(t, cmp.DeepEqual(validation(t, "      auto_rollback_on_failure: "), []string{"true", "false"}))
 	})
 
 	t.Run("a lock job is offered its key and parameters", func(t *testing.T) {
