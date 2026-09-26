@@ -18,6 +18,9 @@ jobs:
     steps:
       - checkout
       - run: make
+  test:
+    context: [one, 42, true]
+    environment: {"A": 1, B: [x, {c: 2}]}
 `)
 	root := rootNodeOf(t, content)
 
@@ -34,5 +37,14 @@ jobs:
 
 	t.Run("a key below a sequence item", func(t *testing.T) {
 		assert.Check(t, cmp.Equal(find(t, "workflows.main.jobs.0"), "- build"))
+	})
+
+	t.Run("an item of a flow sequence, past the brackets and commas", func(t *testing.T) {
+		assert.Check(t, cmp.Equal(find(t, "jobs.test.context.2"), "true"))
+	})
+
+	t.Run("a pair of a flow mapping, quoted or not", func(t *testing.T) {
+		assert.Check(t, cmp.Equal(find(t, "jobs.test.environment.A"), `"A": 1`))
+		assert.Check(t, cmp.Equal(find(t, "jobs.test.environment.B.1.c"), "c: 2"))
 	})
 }

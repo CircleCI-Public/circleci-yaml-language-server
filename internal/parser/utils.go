@@ -441,9 +441,9 @@ func findChildNode(node *sitter.Node, content []byte, key string) (*sitter.Node,
 	for i := uint(0); i < node.ChildCount(); i++ {
 		child := node.Child(i)
 		switch child.Kind() {
-		case "block_mapping_pair":
+		case "block_mapping_pair", "flow_pair":
 			if keyNode := child.ChildByFieldName("key"); !isIndex && keyNode != nil &&
-				string(content[keyNode.StartByte():keyNode.EndByte()]) == key {
+				unquoteScalar(string(content[keyNode.StartByte():keyNode.EndByte()])) == key {
 				return child, nil
 			}
 			continue
@@ -455,6 +455,21 @@ func findChildNode(node *sitter.Node, content []byte, key string) (*sitter.Node,
 				return nil, fmt.Errorf("index out of range: trying to access %d in array of size %d", index, child.ChildCount())
 			}
 			return child.Child(uint(index)), nil
+		case "flow_sequence":
+			if !isIndex {
+				continue
+			}
+			// Its children also hold the brackets and commas.
+			items := []*sitter.Node{}
+			for j := uint(0); j < child.NamedChildCount(); j++ {
+				if item := child.NamedChild(j); item.Kind() != "comment" {
+					items = append(items, item)
+				}
+			}
+			if len(items) < index+1 {
+				return nil, fmt.Errorf("index out of range: trying to access %d in array of size %d", index, len(items))
+			}
+			return items[index], nil
 		}
 
 		if found, err := findChildNode(child, content, key); found != nil || err != nil {
