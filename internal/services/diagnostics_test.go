@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 
@@ -1149,6 +1150,42 @@ workflows:
     type: lock
     key: << parameters.key >>
 `))
+		assert.Check(t, cmp.DeepEqual(errors, []string{}))
+	})
+}
+
+func TestFlowStyleSteps(t *testing.T) {
+	fake := fakes.NewCircleCI(t)
+	withGreet := func(steps string) string {
+		return `version: 2.1
+commands:
+  greet:
+    steps:
+      - run: echo hello
+jobs:
+  build:
+    docker:
+      - image: cimg/base:current
+    steps: ` + steps + `
+workflows:
+  main:
+    jobs:
+      - build
+`
+	}
+
+	t.Run("an unknown step in a flow sequence is reported", func(t *testing.T) {
+		errors := configErrors(t, fake, withGreet("[checkout, nosuch]"))
+		assert.Check(t, cmp.DeepEqual(errors, []string{"Cannot find declaration for step nosuch"}))
+	})
+
+	t.Run("a command used only in a flow sequence is used", func(t *testing.T) {
+		warnings := configWarnings(t, fake, withGreet("[checkout, greet]"))
+		assert.Check(t, !slices.Contains(warnings, "Command is unused"), "warnings: %v", warnings)
+	})
+
+	t.Run("a flow mapping is read as the step it holds", func(t *testing.T) {
+		errors := configErrors(t, fake, withGreet("[checkout, {run: make}, {greet: {}}]"))
 		assert.Check(t, cmp.DeepEqual(errors, []string{}))
 	})
 }

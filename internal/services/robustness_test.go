@@ -168,6 +168,7 @@ var malformedConfigs = map[string]string{
 	"merge self":                 "version: 2.1\njobs:\n  build: &a\n    <<: *a\n    docker: [{image: cimg/base:current}]\n",
 	"merge cycle":                "version: 2.1\nx: &a\n  <<: *b\ny: &b\n  <<: *a\njobs:\n  build:\n    <<: *a\n",
 	"step alias self":            "version: 2.1\njobs:\n  build:\n    steps:\n      - &s\n        when:\n          condition: true\n          steps: [*s]\n",
+	"step alias self, block":     "version: 2.1\njobs:\n  build:\n    steps:\n      - &s\n        when:\n          condition: true\n          steps:\n            - *s\n",
 	"step alias later":           "version: 2.1\njobs:\n  build:\n    steps:\n      - *s\n      - &s run: echo\n",
 	"executor alias self":        "version: 2.1\nexecutors:\n  e: &e\n    <<: *e\n",
 	"workflow job alias self":    "version: 2.1\nworkflows:\n  main:\n    jobs:\n      - &j build:\n          requires: [*j]\n",
