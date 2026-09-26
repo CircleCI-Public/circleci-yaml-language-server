@@ -61,8 +61,11 @@ const (
 var (
 	stepNameBeingWritten = regexp.MustCompile(`^\s*-\s*[\w/.-]*$`)
 	stepWithBody         = regexp.MustCompile(`^(\s*)-\s+([\w/.-]+)\s*:\s*$`)
-	bodyKey              = regexp.MustCompile(`^(\s*)([A-Za-z_][\w-]*)\s*:`)
-	stepsKey             = regexp.MustCompile(`^\s*(-\s+)?(steps|pre-steps|post-steps)\s*:\s*$`)
+	// stepWithValue is a step and the start of the value written after it,
+	// such as `- run: make`.
+	stepWithValue = regexp.MustCompile(`^\s*-\s+[\w/.-]+\s*:`)
+	bodyKey       = regexp.MustCompile(`^(\s*)([A-Za-z_][\w-]*)\s*:`)
+	stepsKey      = regexp.MustCompile(`^\s*(-\s+)?(steps|pre-steps|post-steps)\s*:\s*$`)
 )
 
 // stepAt says where the cursor is among steps, and when it is in a step's
@@ -80,6 +83,9 @@ func (ch *CompletionHandler) stepAt() (stepPosition, string, int) {
 	before := line[:min(int(pos.Character), len(line))]
 	if stepNameBeingWritten.MatchString(before) {
 		return atStepName, "", 0
+	}
+	if stepWithValue.MatchString(before) {
+		return elsewhere, "", 0
 	}
 
 	indent := len(before) - len(strings.TrimLeft(before, " "))
