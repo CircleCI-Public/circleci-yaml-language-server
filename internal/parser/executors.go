@@ -100,6 +100,7 @@ func (doc *YamlDocument) parseBaseExecutor(base *ast2.BaseExecutor, nameNode *si
 			}
 		case "shell":
 			base.BuiltInParameters.Shell = doc.GetNodeText(valueNode)
+			doc.warnShellList(valueNode)
 		case "working_directory":
 			base.BuiltInParameters.WorkingDirectory = doc.GetNodeText(valueNode)
 		case "description":
@@ -403,4 +404,15 @@ func (doc *YamlDocument) machineTrueFix(machineRange protocol.Range) {
 	)
 	diag.Tags = protocol.NewDiagnosticTags(protocol.DiagnosticTagDeprecated)
 	doc.addDiagnostic(diag)
+}
+
+// warnShellList warns on a `shell` given as a list. The list is joined into
+// one command line, which works but isn't documented.
+func (doc *YamlDocument) warnShellList(valueNode *sitter.Node) {
+	if GetChildSequence(valueNode) == nil {
+		return
+	}
+	doc.addDiagnostic(diagnostic.Warning(doc.NodeToRange(valueNode),
+		"The `shell` value should be a string. See "+
+			"https://circleci.com/docs/reference/configuration-reference/#job-name"))
 }

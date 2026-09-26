@@ -1059,6 +1059,40 @@ workflows:
 			"used and the executor's is ignored. See "+executorsURL))
 	})
 
+	t.Run("a shell given as a list", func(t *testing.T) {
+		const shellListWarning = "The `shell` value should be a string. See " +
+			"https://circleci.com/docs/reference/configuration-reference/#job-name"
+		config := withJob(`  box:
+    docker:
+      - image: cimg/base:current
+    shell: ["/bin/bash", "-eo", "pipefail"]
+  vm:
+    machine:
+      image: ubuntu-2204:current
+      shell: ["/bin/bash", "-eo", "pipefail"]
+`, `    executor: box
+    shell:
+      - /bin/bash
+      - -eo
+      - pipefail
+    steps:
+      - checkout
+  other:
+    executor: vm
+`)
+		config = strings.Replace(config, "      - build\n", "      - build\n      - other\n", 1)
+
+		assert.Check(t, cmp.DeepEqual(configErrors(t, fake, config), []string{}))
+		warnings := configWarnings(t, fake, config)
+		count := 0
+		for _, w := range warnings {
+			if w == shellListWarning {
+				count++
+			}
+		}
+		assert.Check(t, cmp.Equal(count, 2), "one warning each for the executor's and the job's shell: %v", warnings)
+	})
+
 	t.Run("nothing to warn about", func(t *testing.T) {
 		warnings := configWarnings(t, fake, withJob(`  box:
     docker:
