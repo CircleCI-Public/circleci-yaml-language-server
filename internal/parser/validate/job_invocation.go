@@ -3,6 +3,7 @@ package validate
 import (
 	"fmt"
 	"maps"
+	"regexp"
 	"slices"
 	"sort"
 	"strings"
@@ -349,7 +350,17 @@ func (val Validate) validateInvocationContexts(jobInvocation ast2.JobInvocation)
 // validateApprovalInvocation checks an invocation with `type: approval`, which
 // defines an approval job there and then. An approval job has no parameters,
 // so any other key is ignored.
+// jobNamePattern is the shape of a job's name under `jobs:`. An approval job
+// is named in the workflow, where nothing checks that it has this shape.
+var jobNamePattern = regexp.MustCompile(`^[A-Za-z][A-Za-z\s\d_-]*$`)
+
 func (val Validate) validateApprovalInvocation(jobInvocation ast2.JobInvocation) {
+	if !jobNamePattern.MatchString(jobInvocation.JobName) && !paramref.ContainsReference(jobInvocation.JobName) {
+		val.addDiagnostic(diagnostic.Warning(jobInvocation.JobNameRange, fmt.Sprintf(
+			"Approval job '%s' is not a valid job name: it must start with a letter and contain only "+
+				"letters, digits, whitespace, underscores and hyphens", jobInvocation.JobName)))
+	}
+
 	if val.Doc.DoesJobExist(jobInvocation.JobName) {
 		val.addDiagnostic(diagnostic.Warning(jobInvocation.JobNameRange, fmt.Sprintf(
 			"'%s' is invoked here with type: approval, which shadows the job definition of the same name; "+
