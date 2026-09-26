@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"go.lsp.dev/protocol"
+	"gotest.tools/v3/assert"
+	"gotest.tools/v3/assert/cmp"
 )
 
 func TestGetParamNameUsedAtPos(t *testing.T) {
@@ -329,5 +331,24 @@ example5: |
 				t.Errorf("GetParamsUsedInNode() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestCouldExpandTo(t *testing.T) {
+	tests := []struct {
+		content, s string
+		want       bool
+	}{
+		{"deploy", "deploy", true},
+		{"deploy", "deploy-prod", false},
+		{"deploy-<< pipeline.parameters.env >>", "deploy-prod", true},
+		{"deploy-<< pipeline.parameters.env >>", "deploy-", true},
+		{"deploy-<< pipeline.parameters.env >>", "build-prod", false},
+		{"<< pipeline.git.branch >> (<< matrix.os >>)", "main (linux)", true},
+		{"a.b-<< pipeline.parameters.x >>", "aXb-1", false},
+	}
+	for _, tt := range tests {
+		got := CouldExpandTo(tt.content, tt.s)
+		assert.Check(t, cmp.Equal(got, tt.want), "CouldExpandTo(%q, %q)", tt.content, tt.s)
 	}
 }

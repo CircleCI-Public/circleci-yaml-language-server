@@ -38,14 +38,19 @@ type InvocationContext struct {
 
 func (val Validate) doesJobInvocationExist(jobInvocations []ast2.JobInvocation, requireName string) bool {
 	for _, jobInvocation := range jobInvocations {
-		if jobInvocation.JobName == requireName || jobInvocation.StepName == requireName {
-			return true
-		}
-		if jobInvocation.MatrixAlias == requireName || slices.Contains(jobInvocation.MatrixNames, requireName) {
+		names := append([]string{jobInvocation.JobName, jobInvocation.StepName, jobInvocation.MatrixAlias}, jobInvocation.MatrixNames...)
+		if slices.ContainsFunc(names, func(name string) bool { return invocationNameMatches(name, requireName) }) {
 			return true
 		}
 	}
 	return false
+}
+
+// invocationNameMatches reports whether a job's name is the name a `requires`
+// gives. A name holding a reference, such as `deploy-<< pipeline.git.branch >>`,
+// is only known once the pipeline runs.
+func invocationNameMatches(name, requireName string) bool {
+	return name == requireName || paramref.CouldExpandTo(name, requireName)
 }
 
 func (val Validate) validateJobInvocationParameters(jobInvocation ast2.JobInvocation) {
