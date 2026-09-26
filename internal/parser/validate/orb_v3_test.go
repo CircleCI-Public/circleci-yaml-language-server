@@ -9,6 +9,7 @@ import (
 	"gotest.tools/v3/assert/cmp"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/parser"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/fakes"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/testHelpers"
@@ -361,3 +362,60 @@ commands:
     steps:
       - run: echo hello
 `
+
+func TestOrbsInsideAnInlineOrb(t *testing.T) {
+	isolateOrbSources(t)
+
+	fake := fakes.NewCircleCI(t)
+	fake.AddNamespace("ns-acme", "acme")
+	fake.AddOrbPackage("orb-nested", "ns-acme", "acme", "nested-tools", false, true)
+	fake.AddOrbVersion("ver-nested", "orb-nested", "acme/nested-tools", "1.0.0", `version: 2.1
+commands:
+  install:
+    steps:
+      - run: echo install
+`, "")
+
+	lsContext := testHelpers.SettingsForHost(fake.URL())
+	doc, err := parser.ParseFromContent([]byte(`version: 2.1
+orbs:
+  outer:
+    orbs:
+      tools: acme/nested-tools@1.0.0
+      inner:
+        commands:
+          hi:
+            steps:
+              - run: echo hi
+    jobs:
+      use-them:
+        docker:
+          - image: cimg/base:current
+        steps:
+          - tools/install
+          - inner/hi
+          - tools/nope
+workflows:
+  main:
+    jobs:
+      - outer/use-them
+`), lsContext, uri.File("config.yml"), protocol.Position{})
+	assert.NilError(t, err)
+
+	diagnostics := []protocol.Diagnostic{}
+	val := Validate{
+		APIs:        ValidateAPIs{DockerHub: DockerHubMock{}},
+		Diagnostics: &diagnostics,
+		Cache:       cache.New(),
+		Doc:         doc,
+		Context:     lsContext,
+	}
+	val.Cache.MachineOfferingsCache.Set(testMachineOfferings())
+	val.Validate()
+
+	errors := []string{}
+	for _, d := range getErrorDiagnostic(val.Diagnostics) {
+		errors = append(errors, diagnostic.MessageText(d))
+	}
+	assert.Check(t, cmp.DeepEqual(errors, []string{"Cannot find declaration for step tools/nope"}))
+}

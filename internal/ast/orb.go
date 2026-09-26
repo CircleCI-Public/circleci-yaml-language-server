@@ -74,6 +74,9 @@ type OrbParsedAttributes struct {
 	Jobs               map[string]Job
 	Executors          map[string]Executor
 	PipelineParameters map[string]Parameter
+	// Orbs and LocalOrbInfo are the orbs the orb declares for its own use.
+	Orbs         map[string]Orb
+	LocalOrbInfo map[string]*OrbInfo
 
 	ExecutorsRange          protocol.Range
 	CommandsRange           protocol.Range
