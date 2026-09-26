@@ -2,7 +2,9 @@ package validate
 
 import (
 	"fmt"
+	"maps"
 	"slices"
+	"strings"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
@@ -21,6 +23,63 @@ func (val Validate) ValidateCommands() {
 	for _, command := range val.Doc.Commands {
 		val.validateSingleCommand(command)
 	}
+	val.validateCommandRecursion()
+}
+
+// validateCommandRecursion reports each command that calls itself, directly
+// or through other commands, which the compiler would expand forever.
+func (val Validate) validateCommandRecursion() {
+	names := slices.Sorted(maps.Keys(val.Doc.Commands))
+	calls := map[string][]string{}
+	for _, caller := range names {
+		for _, callee := range names {
+			// A built-in step's `name:` is not a call.
+			isCall := func(step ast.Step) bool {
+				named, ok := step.(ast.NamedStep)
+				return ok && named.Name == callee
+			}
+			if anyStep(val.Doc.Commands[caller].Steps, isCall) {
+				calls[caller] = append(calls[caller], callee)
+			}
+		}
+	}
+
+	for _, name := range names {
+		path, ok := callPathBack(calls, name)
+		if !ok {
+			continue
+		}
+		message := fmt.Sprintf("Infinite loop detected: command %s calls itself", name)
+		if len(path) > 0 {
+			message += " through " + strings.Join(path, ", then ")
+		}
+		val.addDiagnostic(diagnostic.Error(val.Doc.Commands[name].NameRange, message))
+	}
+}
+
+// callPathBack finds the shortest chain of calls from name back to itself,
+// and returns the commands in between.
+func callPathBack(calls map[string][]string, name string) ([]string, bool) {
+	parent := map[string]string{}
+	queue := []string{name}
+	for len(queue) > 0 {
+		caller := queue[0]
+		queue = queue[1:]
+		for _, callee := range calls[caller] {
+			if callee == name {
+				path := []string{}
+				for step := caller; step != name; step = parent[step] {
+					path = append([]string{step}, path...)
+				}
+				return path, true
+			}
+			if _, seen := parent[callee]; !seen {
+				parent[callee] = caller
+				queue = append(queue, callee)
+			}
+		}
+	}
+	return nil, false
 }
 
 // primitiveSteps are the built-in steps a command can be named after, taking
