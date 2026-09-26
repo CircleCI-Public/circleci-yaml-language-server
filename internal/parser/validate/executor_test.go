@@ -158,6 +158,29 @@ func testMachineOfferings() *circleci.Offerings {
 	}
 }
 
+func TestUnknownMachineImageSeverity(t *testing.T) {
+	severities := map[string]protocol.DiagnosticSeverity{
+		"bad-image":              protocol.DiagnosticSeverityError,
+		"ubunto-2404:current":    protocol.DiagnosticSeverityError,
+		"windows-default":        protocol.DiagnosticSeverityError,
+		"ubuntu-2404-kvm:canary": protocol.DiagnosticSeverityError,
+		"ubuntu-2404:canary":     protocol.DiagnosticSeverityWarning,
+		"ubuntu-2004:current":    protocol.DiagnosticSeverityWarning,
+	}
+	for image, want := range severities {
+		t.Run(image, func(t *testing.T) {
+			val := CreateValidateFromYAML(yamlForMachine("", image))
+			val.Cache.MachineOfferingsCache.Set(testMachineOfferings())
+			val.Validate()
+
+			assert.Assert(t, cmp.Len(*val.Diagnostics, 1))
+			got := (*val.Diagnostics)[0]
+			assert.Check(t, cmp.Equal(diagnostic.MessageText(got), fmt.Sprintf("Unknown machine image %q", image)))
+			assert.Check(t, cmp.Equal(got.Severity, want))
+		})
+	}
+}
+
 // When the offerings API is unavailable, machine validation is skipped rather than
 // flagging valid images as errors.
 func TestMachineExecutorSkipsWhenOfferingsUnavailable(t *testing.T) {

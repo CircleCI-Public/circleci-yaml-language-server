@@ -136,7 +136,8 @@ func (val Validate) validateMachineExecutor(executor ast.MachineExecutor) {
 
 	// The compiler checks neither resource classes nor images, and the catalog
 	// can lag behind what can be scheduled (canary tags, for one), so one the
-	// catalog lacks is only a warning. A pair it rules out is an error.
+	// catalog lacks is only a warning, unless its family is missing too. A pair
+	// it rules out is an error.
 	if !validResourceClass {
 		val.addDiagnostic(diagnostic.Warning(
 			executor.ResourceClassRange,
@@ -157,13 +158,12 @@ func (val Validate) validateMachineExecutor(executor ast.MachineExecutor) {
 				),
 			))
 		} else {
-			val.addDiagnostic(diagnostic.Warning(
-				executor.ImageRange,
-				fmt.Sprintf(
-					"Unknown machine image \"%s\"",
-					executor.Image,
-				),
-			))
+			message := fmt.Sprintf("Unknown machine image \"%s\"", executor.Image)
+			if isMistakenImage(executor.Image, val.Cache.Offerings(val.Context.Api)) {
+				val.addDiagnostic(diagnostic.Error(executor.ImageRange, message))
+			} else {
+				val.addDiagnostic(diagnostic.Warning(executor.ImageRange, message))
+			}
 		}
 	}
 
@@ -178,6 +178,14 @@ func (val Validate) validateMachineExecutor(executor ast.MachineExecutor) {
 			),
 		))
 	}
+}
+
+// isMistakenImage reports whether a machine image the catalog lacks is of a
+// family it lacks too, rather than a tag it has yet to catch up with. That
+// makes CircleCI's own images outside the catalog errors as well.
+func isMistakenImage(image string, offerings *circleci.Offerings) bool {
+	family, _, _ := strings.Cut(image, ":")
+	return !slices.Contains(offerings.MachineImageFamilies(), family)
 }
 
 // DockerExecutor
