@@ -543,3 +543,38 @@ workflows:
 		})
 	}
 }
+
+func Test_WorkflowJobFilters(t *testing.T) {
+	config := func(filters string) string {
+		return `
+version: 2.1
+jobs:
+  j:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo
+workflows:
+  w:
+    jobs:
+      - j:
+          filters:
+` + filters
+	}
+
+	t.Run("branches and tags", func(t *testing.T) {
+		said := schemaMessages(t, config(`            branches:
+              only: main
+            tags:
+              ignore: /.*/
+`))
+		assert.Check(t, cmp.Len(said, 0))
+	})
+
+	t.Run("any other key", func(t *testing.T) {
+		said := schemaMessages(t, config(`            commits:
+              only: main
+`))
+		assert.Check(t, cmp.DeepEqual(said, []string{"Additional property commits is not allowed"}))
+	})
+}
