@@ -1,5 +1,128 @@
 # CHANGELOG
 
+## 0.41.0 (2026-09-26)
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+* fix: stop an orb referenced by URL from failing everything it declares by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/514
+* fix: don't validate files under .circleci that aren't pipeline config by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/515
+* feat: recognise function steps declared in the functions block by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/517
+* feat: check function steps against the functions catalog by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/518
+* fix(schema): accept a string for paths, keys and fingerprints by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/519
+* fix(schema): accept any executor resource class by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/520
+* fix(schema): accept an orb at dev:<< pipeline.git.revision >> by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/521
+* fix: accept << >> expressions in typed fields by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/522
+* fix(schema): accept an integer no_output_timeout, and anchor auto_rerun_delay by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/523
+* fix(schema): accept code_signing on macOS and machine executors by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/524
+* fix: keep caches for up to 30 days by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/525
+* fix(schema): make experimental.notify optional, and allow observability by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/526
+* fix(schema): accept gcp_auth on docker images by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/527
+* fix: accept setup_remote_docker's options, and warn on resource_class by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/528
+* fix(schema): accept any job group name, and keys the compiler allows by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/529
+* fix: don't check an Xcode version given by a parameter by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/530
+* fix: don't look up an executor whose name is built from a parameter by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/531
+* feat: resolve requires against the jobs a matrix expands to by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/532
+* fix: don't check a checkout method or depth given by a parameter by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/533
+* fix: check a parameter given a reference by type, not by its text by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/534
+* fix: read an anchored scalar, or an alias of one, as its value by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/535
+* fix: don't check parameters under a top-level key the compiler ignores by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/536
+* fix: resolve a steps parameter's commands the way steps are resolved by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/537
+* fix: warn, not error, on a machine image, class or Xcode version missing from the catalog by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/538
+* feat: recognise the install_signing_bundle step by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/539
+* feat: recognise the with_tool_cache step by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/540
+* feat(schema): describe run.teardown by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/541
+* feat(schema): describe top-level setup and functions by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/542
+* feat(schema): describe a release job's validation by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/543
+* feat(schema): check a workflow job's name, serial-group and filters by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/544
+* fix: check the steps in pre-steps and post-steps by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/545
+* fix: place schema errors at the right key by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/546
+* fix: warn about unknown options on built-in steps by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/547
+* feat: warn about step shapes the compiler recovers from by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/548
+* feat: warn about executor settings the compiler ignores or deprecates by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/549
+* fix: read workflow jobs written as a flow sequence by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/550
+* feat: warn about approval invocations and single-job matrices by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/551
+* feat: warn about conditions a template makes always true by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/552
+* feat: mirror the compiler's post-schema checks by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/553
+* feat: report a matrix over the compiler's 128-job limit by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/554
+* feat: fetch orbs referenced by URL by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/555
+* feat: fetch private orbs from GitHub with a GitHub token by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/556
+* fix: don't accept or offer a job as a step by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/557
+* fix: don't accept an orb command as a workflow job by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/558
+* fix: look up an inline or URL orb's executors in the orb by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/559
+* fix: check the parameters of an orb job where it's invoked by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/560
+* fix: complete a workflow's keys, as `triggers`, and only at its keys by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/561
+* fix: complete the keys a job's type allows, and those it doesn't have by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/562
+* feat: complete a step's keys, and a command step's parameters by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/563
+* fix: point the probe tasks at cmd/dev by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/564
+* feat: check in the config survey as cmd/dev/survey by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/565
+* feat: complete a workflow job's keys, and the job's parameters by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/566
+* feat: complete an executor mapping's name and parameters by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/567
+* feat: complete the steps of a workflow job's pre-steps and post-steps by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/568
+* feat: complete the values of enum and boolean parameters by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/569
+* feat: complete the keys of a workflow job's filters and matrix by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/570
+* feat: complete the status a required job must have by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/571
+* feat: complete the contexts of a workflow job by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/572
+* feat: complete a command's parameters key by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/573
+* feat: complete an executor's keys once its type is written by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/574
+* feat: complete the top-level keys and the version by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/575
+* feat: complete the definitions of pipeline parameters by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/576
+* feat: complete a job's resource class and the body of its machine or macos by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/577
+* feat: complete the keys of a docker image and its credentials by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/578
+* feat: complete in the job invocations of a job group by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/579
+* feat: complete the version of a declared function by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/580
+* feat: complete inside inline orbs by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/581
+* feat: hover on a step to show the command it runs by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/582
+* feat: hover on a workflow's job to show the job it runs by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/583
+* feat: hover on a job's executor to show the executor by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/584
+* fix: read descriptions as YAML text by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/585
+* feat: hover on a function's step or declaration by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/586
+* feat: hover on an orb's declaration to show the orb by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/587
+* fix: don't fetch again what a finished fetch has just remembered by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/588
+* feat: hint at a newer version of a declared function by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/589
+* feat: check function step ids once commands are expanded by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/590
+* chore: list each PR once in the changelog by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/591
+* fix: error on a machine image of a family the catalog lacks by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/593
+* fix: don't warn on an executor parameter without a default by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/594
+* fix: read steps written as a flow sequence by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/595
+* fix: complete the version through the server by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/596
+* fix: complete a workflow's triggers by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/597
+* fix: complete only the steps a run step's teardown can hold by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/598
+* fix: don't offer steps in a step's value by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/599
+* feat: complete the values of built-in steps' keys by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/600
+* feat: complete a function step's flags by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/601
+* feat: complete a release job's validation by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/602
+* fix: read a quoted job name in a workflow by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/603
+* fix: accept a step named by a parameter by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/604
+* fix: allow one unnamed invocation of a job group among named ones by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/605
+* fix: accept any development label in an orb reference by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/606
+* fix: warn on a shell given as a list, instead of an error by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/607
+* fix: warn on a null matrix parameter, instead of a missing one by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/608
+* fix: match a requires to a job named with a pipeline value by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/609
+* fix: check parameter references in quoted strings by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/610
+* fix: report schema errors inside flow sequences and mappings by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/611
+* fix: read a workflow job's arguments given as a flow mapping by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/612
+* fix: error on a parallelism below 1 by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/613
+* fix: error on a key other than branches or tags in a job's filters by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/614
+* fix: error on a docker_layer_caching that isn't a boolean by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/615
+* fix: error on an empty save_cache key, and check teardown reruns by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/616
+* fix: error on a job parameter with a reserved name by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/617
+* fix: error on a matrix parameter the job doesn't declare by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/618
+* fix: error on a parameter with a blank name by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/619
+* fix: don't call a build job unused when there are no workflows by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/620
+* fix: error on a job with no type from it or its executor by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/621
+* fix: error on a command that calls itself by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/622
+* fix: error on a setting given both inside a machine map and beside it by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/623
+* fix: warn on an approval job named as no job could be by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/624
+* fix: warn on a step condition string that can't be an expression by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/625
+* fix: error on a regular expression the compiler can't compile by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/626
+* fix: don't look up an orb named whole by a pipeline parameter by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/627
+* fix: accept a list of steps inside a list of steps by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/628
+* fix: follow how the compiler resolves a requires naming several jobs by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/629
+
+
+**Full Changelog**: https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.40.6...0.41.0
+
 ## [0.40.6](https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.40.5...0.40.6) (2026-09-25)
 
 
