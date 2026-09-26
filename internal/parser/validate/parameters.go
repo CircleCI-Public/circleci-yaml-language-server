@@ -18,6 +18,7 @@ import (
 var (
 	stringScalarsQuery = yamltree.MustCompileQuery("(string_scalar) @string")
 	blockScalarsQuery  = yamltree.MustCompileQuery("(block_scalar) @string")
+	quotedScalarsQuery = yamltree.MustCompileQuery("[(double_quote_scalar) (single_quote_scalar)] @string")
 )
 
 func (val Validate) ValidatePipelineParameters() {
@@ -229,24 +230,16 @@ func (val Validate) CheckIfParamsExist() {
 					continue
 				}
 
-				diagnosticRange := protocol.Range{
-					Start: protocol.Position{
-						Line:      param.ParamRange.Start.Line + position.Start(node).Line,
-						Character: param.ParamRange.Start.Character + position.Start(node).Character,
-					},
-					End: protocol.Position{
-						Line:      param.ParamRange.End.Line + position.Start(node).Line,
-						Character: param.ParamRange.End.Character + position.Start(node).Character,
-					},
+				// A position in content is from the start of the scalar on its
+				// first line, and from the start of the line on the others.
+				inFile := func(pos protocol.Position) protocol.Position {
+					if pos.Line == 0 {
+						pos.Character += position.Start(node).Character
+					}
+					pos.Line += position.Start(node).Line
+					return pos
 				}
-
-				if node.Kind() == "block_scalar" {
-					// Little difference when the node is a block scalar,
-					// We should remove the node Char bonus on the positions
-
-					diagnosticRange.Start.Character -= position.Start(node).Character
-					diagnosticRange.End.Character -= position.Start(node).Character
-				}
+				diagnosticRange := protocol.Range{Start: inFile(param.ParamRange.Start), End: inFile(param.ParamRange.End)}
 
 				errorMessage := ""
 
@@ -266,6 +259,7 @@ func (val Validate) CheckIfParamsExist() {
 
 	stringScalarsQuery.Run(val.Doc.RootNode, checkOnNode)
 	blockScalarsQuery.Run(val.Doc.RootNode, checkOnNode)
+	quotedScalarsQuery.Run(val.Doc.RootNode, checkOnNode)
 }
 
 func (val Validate) validateParametersValue(paramsValue map[string]ast2.ParameterValue, calledEntity string, entityRange protocol.Range, calledEntityDefinedParams map[string]ast2.Parameter, usableParams map[string]ast2.Parameter) {

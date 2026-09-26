@@ -515,6 +515,41 @@ workflows:
 				}, "Parameter version is not defined"),
 			},
 		},
+		{
+			Name: "A parameter used in a quoted string is checked",
+			YamlContent: `version: 2.1
+
+jobs:
+  check:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: "echo << parameters.version >>"
+      - run: 'echo << parameters.name >>'
+      - run: "echo one
+          << pipeline.parameters.two >>"
+
+workflows:
+  main:
+    jobs:
+      - check
+`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(protocol.Range{
+					Start: protocol.Position{Line: 7, Character: 19},
+					End:   protocol.Position{Line: 7, Character: 43},
+				}, "Parameter version is not defined"),
+				diagnostic.Error(protocol.Range{
+					Start: protocol.Position{Line: 8, Character: 19},
+					End:   protocol.Position{Line: 8, Character: 40},
+				}, "Parameter name is not defined"),
+				diagnostic.Error(protocol.Range{
+					Start: protocol.Position{Line: 10, Character: 10},
+					End:   protocol.Position{Line: 10, Character: 39},
+				}, "Pipeline parameter two is not defined"),
+			},
+		},
 	}
 
 	CheckYamlErrors(t, testCases)
