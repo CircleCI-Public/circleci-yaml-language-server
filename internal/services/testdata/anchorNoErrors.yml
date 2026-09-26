@@ -67,6 +67,7 @@ workflows:
       - dummyJob:
           name: build-windows-<<matrix.py_version>>
           matrix:
+            alias: build-windows
             parameters:
               py_version: ["3.8", "3.9"]
       - uselessJob:

@@ -343,9 +343,19 @@ func (doc *YamlDocument) parseMatrixParam(node *sitter.Node) map[string][]ast2.P
 }
 
 func (doc *YamlDocument) buildJobsDAG(jobInvocations []ast2.JobInvocation) map[string][]string {
+	invocationsNamed := map[string]int{}
+	for _, jobInvocation := range jobInvocations {
+		invocationsNamed[jobInvocation.StepName]++
+	}
+
 	res := make(map[string][]string)
 	for _, jobInvocation := range jobInvocations {
 		for _, requirement := range jobInvocation.Requires {
+			// A job requiring its own name requires the other job of that
+			// name, which the graph, keyed by name, can't tell apart.
+			if requirement.Name == jobInvocation.StepName && invocationsNamed[requirement.Name] > 1 {
+				continue
+			}
 			res[requirement.Name] = append(res[requirement.Name], jobInvocation.StepName)
 		}
 	}

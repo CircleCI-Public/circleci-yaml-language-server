@@ -47,6 +47,40 @@ func (val Validate) doesJobInvocationExist(jobInvocations []ast2.JobInvocation, 
 	return false
 }
 
+// validateRequireIsUnambiguous reports a require of the invocation at index
+// that names more than one of the other invocations, as jobs or matrices.
+func (val Validate) validateRequireIsUnambiguous(jobInvocations []ast2.JobInvocation, index int, require ast2.Require) {
+	jobs, matrices := 0, 0
+	for i, other := range jobInvocations {
+		switch {
+		case i == index:
+		case other.HasMatrix && other.MatrixAlias == require.Name:
+			matrices++
+		case !other.HasMatrix && other.StepName == require.Name:
+			jobs++
+		}
+	}
+	if jobs+matrices < 2 {
+		return
+	}
+
+	named := counted(jobs, "other job", "other jobs")
+	if matrices > 0 {
+		named += " and " + counted(matrices, "matrix", "matrices")
+	}
+	val.addDiagnostic(diagnostic.Error(require.Range, fmt.Sprintf(
+		"Job '%s' requires '%s', which is the name of %s in this workflow. "+
+			"Give each of them a unique `name`, or a matrix a unique `alias`, to require one",
+		jobInvocations[index].StepName, require.Name, named)))
+}
+
+func counted(n int, one, many string) string {
+	if n == 1 {
+		return "1 " + one
+	}
+	return fmt.Sprintf("%d %s", n, many)
+}
+
 // invocationNameMatches reports whether a job's name is the name a `requires`
 // gives. A name holding a reference, such as `deploy-<< pipeline.git.branch >>`,
 // is only known once the pipeline runs.
@@ -176,7 +210,7 @@ func (val Validate) validateDuplicateJobGroupInvocations(jobInvocations []ast2.J
 func (val Validate) validateInvocations(jobInvocations []ast2.JobInvocation, ctx InvocationContext) {
 
 	val.validateDuplicateJobGroupInvocations(jobInvocations)
-	for _, jobInvocation := range jobInvocations {
+	for i, jobInvocation := range jobInvocations {
 		// A job invocation can invoke either a job or job-group, each type requires different validation
 		isJobGroup := val.Doc.DoesJobGroupExist(jobInvocation.JobName)
 		if isJobGroup {
@@ -194,6 +228,8 @@ func (val Validate) validateInvocations(jobInvocations []ast2.JobInvocation, ctx
 		val.warnNullBodySteps(jobInvocation.PostSteps)
 
 		for _, require := range jobInvocation.Requires {
+			val.validateRequireIsUnambiguous(jobInvocations, i, require)
+
 			if !val.doesJobInvocationExist(jobInvocations, require.Name) && !paramref.IsMatrixPartiallyReferenced(require.Name) {
 				// Check if the require references a job inside a job-group
 				if ownerGroup, found := val.Doc.FindJobGroupContainingJob(require.Name); found {
