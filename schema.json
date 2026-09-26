@@ -501,21 +501,7 @@
                                                         },
                                                         "docker_layer_caching": {
                                                             "markdownDescription": "Set to `true` to enable [Docker Layer Caching](https://circleci.com/docs/docker-layer-caching). Note: If you haven't already, you must open a support ticket to have a CircleCI Sales representative contact you about enabling this feature on your account for an additional fee.",
-                                                            "anyOf": [
-                                                                {
-                                                                    "type": "string",
-                                                                    "pattern": " *<< *parameters.([^ ]+) *>> *"
-                                                                },
-                                                                {
-                                                                    "type": "boolean"
-                                                                },
-                                                                {
-                                                                    "type": "number"
-                                                                },
-                                                                {
-                                                                    "type": "string"
-                                                                }
-                                                            ]
+                                                            "type": "boolean"
                                                         },
                                                         "resource_class": {
                                                             "type": "string"
@@ -1018,21 +1004,7 @@
                                                             },
                                                             "docker_layer_caching": {
                                                                 "markdownDescription": "Set to `true` to enable [Docker Layer Caching](https://circleci.com/docs/docker-layer-caching). Note: If you haven't already, you must open a support ticket to have a CircleCI Sales representative contact you about enabling this feature on your account for an additional fee.",
-                                                                "anyOf": [
-                                                                    {
-                                                                        "type": "string",
-                                                                        "pattern": " *<< *parameters.([^ ]+) *>> *"
-                                                                    },
-                                                                    {
-                                                                        "type": "boolean"
-                                                                    },
-                                                                    {
-                                                                        "type": "number"
-                                                                    },
-                                                                    {
-                                                                        "type": "string"
-                                                                    }
-                                                                ]
+                                                                "type": "boolean"
                                                             },
                                                             "resource_class": {
                                                                 "type": "string"
@@ -2606,21 +2578,7 @@
                                             },
                                             "docker_layer_caching": {
                                                 "markdownDescription": "Set to `true` to enable [Docker Layer Caching](https://circleci.com/docs/docker-layer-caching). Note: If you haven't already, you must open a support ticket to have a CircleCI Sales representative contact you about enabling this feature on your account for an additional fee.",
-                                                "anyOf": [
-                                                    {
-                                                        "type": "string",
-                                                        "pattern": " *<< *parameters.([^ ]+) *>> *"
-                                                    },
-                                                    {
-                                                        "type": "boolean"
-                                                    },
-                                                    {
-                                                        "type": "number"
-                                                    },
-                                                    {
-                                                        "type": "string"
-                                                    }
-                                                ]
+                                                "type": "boolean"
                                             },
                                             "resource_class": {
                                                 "type": "string"
@@ -3357,21 +3315,7 @@
                                                                 },
                                                                 "docker_layer_caching": {
                                                                     "markdownDescription": "Set to `true` to enable [Docker Layer Caching](https://circleci.com/docs/docker-layer-caching). Note: If you haven't already, you must open a support ticket to have a CircleCI Sales representative contact you about enabling this feature on your account for an additional fee.",
-                                                                    "anyOf": [
-                                                                        {
-                                                                            "type": "string",
-                                                                            "pattern": " *<< *parameters.([^ ]+) *>> *"
-                                                                        },
-                                                                        {
-                                                                            "type": "boolean"
-                                                                        },
-                                                                        {
-                                                                            "type": "number"
-                                                                        },
-                                                                        {
-                                                                            "type": "string"
-                                                                        }
-                                                                    ]
+                                                                    "type": "boolean"
                                                                 },
                                                                 "resource_class": {
                                                                     "type": "string"

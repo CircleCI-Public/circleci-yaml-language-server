@@ -578,3 +578,43 @@ workflows:
 		assert.Check(t, cmp.DeepEqual(said, []string{"Additional property commits is not allowed"}))
 	})
 }
+
+func Test_DockerLayerCaching(t *testing.T) {
+	config := func(value string) string {
+		return `
+version: 2.1
+executors:
+  vm:
+    parameters:
+      dlc:
+        type: boolean
+        default: false
+    machine:
+      image: ubuntu-2204:current
+      docker_layer_caching: ` + value + `
+jobs:
+  j:
+    executor: vm
+    steps:
+      - run: echo
+workflows:
+  w:
+    jobs:
+      - j
+`
+	}
+
+	for _, value := range []string{"true", "<< parameters.dlc >>"} {
+		t.Run("accepts "+value, func(t *testing.T) {
+			said := schemaMessages(t, config(value))
+			assert.Check(t, cmp.Len(said, 0))
+		})
+	}
+
+	for _, value := range []string{`"yes"`, "1"} {
+		t.Run("rejects "+value, func(t *testing.T) {
+			said := schemaMessages(t, config(value))
+			assert.Check(t, len(said) != 0, "%s must be rejected", value)
+		})
+	}
+}
