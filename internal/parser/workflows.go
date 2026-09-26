@@ -342,13 +342,15 @@ func (doc *YamlDocument) sequenceToStrings(node *sitter.Node) []string {
 }
 
 // addCondition records a condition written as a string. A logic statement,
-// such as `equal:`, is a mapping, and isn't recorded.
-func (doc *YamlDocument) addCondition(valueNode *sitter.Node) {
+// such as `equal:`, is a mapping, and isn't recorded. It returns whether it
+// recorded one.
+func (doc *YamlDocument) addCondition(valueNode *sitter.Node) bool {
 	if valueNode == nil || valueNode.Kind() != "flow_node" {
-		return
+		return false
 	}
 	doc.Conditions = append(doc.Conditions, ast.TextAndRange{
 		Text:  unquoteScalar(doc.GetNodeText(valueNode)),
 		Range: doc.NodeToRange(valueNode),
 	})
+	return true
 }

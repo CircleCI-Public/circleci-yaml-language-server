@@ -246,6 +246,8 @@ type YamlDocument struct {
 	expandingStepAnchors map[string]bool
 	// Conditions are the workflow and step conditions written as strings.
 	Conditions []ast2.TextAndRange
+	// StepConditions are the step conditions among Conditions.
+	StepConditions []ast2.TextAndRange
 
 	SetupRange              protocol.Range
 	OrbsRange               protocol.Range

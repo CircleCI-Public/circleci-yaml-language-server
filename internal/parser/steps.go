@@ -220,7 +220,9 @@ func (doc *YamlDocument) parseWhenUnlessStep(blockNode *sitter.Node) []ast.Step 
 		case "steps":
 			steps = append(steps, doc.parseSteps(value)...)
 		case "condition":
-			doc.addCondition(value)
+			if doc.addCondition(value) {
+				doc.StepConditions = append(doc.StepConditions, doc.Conditions[len(doc.Conditions)-1])
+			}
 		}
 	})
 

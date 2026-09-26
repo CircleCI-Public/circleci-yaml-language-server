@@ -393,6 +393,67 @@ workflows:
 	})
 }
 
+func TestTruthyStringStepConditions(t *testing.T) {
+	truthy := func(condition string) string {
+		return "Condition `" + condition + "` is treated as always true. Use a boolean (`true`/`false`), " +
+			"an expression, or a logic statement such as `equal:`."
+	}
+
+	CheckYamlErrors(t, []ValidateTestCase{
+		{
+			Name: "An environment variable, or a run step's when, as a step's condition",
+			YamlContent: `version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - when:
+          condition: $DEPLOY_ENABLED
+          steps:
+            - checkout
+      - unless:
+          condition: ${BRANCH} != "main"
+          steps:
+            - checkout
+      - when:
+          condition: on_fail
+          steps:
+            - checkout
+      - when:
+          condition: pipeline.git.branch == "$main"
+          steps:
+            - checkout
+      - when:
+          condition: ""
+          steps:
+            - checkout
+
+workflows:
+  main:
+    when: $DEPLOY_ENABLED
+    jobs:
+      - build
+`,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Warning(protocol.Range{
+					Start: protocol.Position{Line: 8, Character: 21},
+					End:   protocol.Position{Line: 8, Character: 36},
+				}, truthy("$DEPLOY_ENABLED")),
+				diagnostic.Warning(protocol.Range{
+					Start: protocol.Position{Line: 12, Character: 21},
+					End:   protocol.Position{Line: 12, Character: 40},
+				}, truthy(`${BRANCH} != "main"`)),
+				diagnostic.Warning(protocol.Range{
+					Start: protocol.Position{Line: 16, Character: 21},
+					End:   protocol.Position{Line: 16, Character: 28},
+				}, truthy("on_fail")),
+			},
+		},
+	})
+}
+
 func TestMatrixJobLimit(t *testing.T) {
 	values := func(n int) string {
 		items := make([]string, n)
