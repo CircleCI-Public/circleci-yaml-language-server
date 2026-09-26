@@ -73,7 +73,7 @@ func (val Validate) validateJobInvocationParameters(jobInvocation ast2.JobInvoca
 					for _, value := range param.Value.([]ast2.ParameterValue) {
 						val.checkParamSimpleType(value, jobName, definedParam)
 					}
-				} else if param.Type != "alias" {
+				} else if param.Type != "alias" && param.Type != "null" {
 					val.addDiagnostic(diagnostic.Error(
 						param.Range,
 						fmt.Sprintf("Parameter %s is not an enum of values", param.Name)),
@@ -261,6 +261,15 @@ func (val Validate) validateSingleJobInvocation(jobInvocation ast2.JobInvocation
 		val.addDiagnostic(diagnostic.Error(matrixKeyRange(jobInvocation), fmt.Sprintf(
 			"The %s build matrix expands to %d jobs. Matrices cannot generate more than %d jobs.",
 			jobInvocation.MatrixAlias, jobInvocation.MatrixJobCount, parser.MaxMatrixJobs)))
+	}
+
+	for name, values := range jobInvocation.MatrixParams {
+		for _, value := range values {
+			if value.Type == "null" {
+				val.addDiagnostic(diagnostic.Warning(value.Range,
+					fmt.Sprintf("Matrix parameter '%s' is null; the matrix will produce 0 jobs", name)))
+			}
+		}
 	}
 
 	if jobInvocation.MatrixIsSingleCombination {

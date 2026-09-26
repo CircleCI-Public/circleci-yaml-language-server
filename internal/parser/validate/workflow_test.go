@@ -267,6 +267,35 @@ workflows:
 `,
 			Diagnostics: []protocol.Diagnostic{},
 		},
+		{
+			Name: "A matrix parameter that is null supplies a required parameter, and no jobs",
+			YamlContent: `version: 2.1
+
+jobs:
+  deploy:
+    parameters:
+      env:
+        type: string
+    docker:
+      - image: cimg/base:current
+    steps:
+      - checkout
+
+workflows:
+  main:
+    jobs:
+      - deploy:
+          matrix:
+            parameters:
+              env: null
+`,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Warning(protocol.Range{
+					Start: protocol.Position{Line: 18, Character: 14},
+					End:   protocol.Position{Line: 18, Character: 23},
+				}, "Matrix parameter 'env' is null; the matrix will produce 0 jobs"),
+			},
+		},
 	})
 }
 
