@@ -162,6 +162,15 @@ type MachineExecutor struct {
 	DockerLayerCaching bool
 	Machine            bool
 	IsDeprecated       bool // This field is true when using `machine: true`
+
+	// InMapResourceClassRange and InMapShellRange are the keys of a
+	// resource_class or shell given inside the machine map, which is
+	// undocumented. The Beside fields say whether the same key is also given
+	// beside the map.
+	InMapResourceClassRange protocol.Range
+	InMapShellRange         protocol.Range
+	ResourceClassBeside     bool
+	ShellBeside             bool
 }
 
 func (e MachineExecutor) GetRange() protocol.Range {

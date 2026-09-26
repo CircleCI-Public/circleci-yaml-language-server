@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 	"gotest.tools/v3/assert"
@@ -1259,4 +1260,71 @@ workflows:
 		"Parameters must be named",
 		"Parameters must be named",
 	}))
+}
+
+func TestMachineMapClashes(t *testing.T) {
+	fake := fakes.NewCircleCI(t)
+	const onJob = " is set both on the job and inside the `machine` map; remove the one inside `machine`"
+	const onExecutor = " is set both on the executor and inside its `machine` map; remove the one inside `machine`"
+
+	t.Run("a job's own setting and its machine map's", func(t *testing.T) {
+		errors := configErrors(t, fake, `version: 2.1
+jobs:
+  build:
+    shell: /bin/bash
+    resource_class: medium
+    machine:
+      image: ubuntu-2204:current
+      shell: /bin/sh
+      resource_class: large
+    steps:
+      - checkout
+workflows:
+  main:
+    jobs:
+      - build
+`)
+		assert.Check(t, cmp.DeepEqual(errors, []string{"resource_class" + onJob, "shell" + onJob},
+			cmpopts.SortSlices(func(a, b string) bool { return a < b })))
+	})
+
+	t.Run("an executor's own setting, and the job's, with its machine map's", func(t *testing.T) {
+		errors := configErrors(t, fake, `version: 2.1
+executors:
+  vm:
+    machine:
+      image: ubuntu-2204:current
+      resource_class: large
+    resource_class: medium
+jobs:
+  build:
+    executor: vm
+    resource_class: small
+    steps:
+      - checkout
+workflows:
+  main:
+    jobs:
+      - build
+`)
+		assert.Check(t, cmp.DeepEqual(errors, []string{"resource_class" + onExecutor, "resource_class" + onJob},
+			cmpopts.SortSlices(func(a, b string) bool { return a < b })))
+	})
+
+	t.Run("a setting only inside the machine map", func(t *testing.T) {
+		errors := configErrors(t, fake, `version: 2.1
+jobs:
+  build:
+    machine:
+      image: ubuntu-2204:current
+      resource_class: large
+    steps:
+      - checkout
+workflows:
+  main:
+    jobs:
+      - build
+`)
+		assert.Check(t, cmp.DeepEqual(errors, []string{}))
+	})
 }

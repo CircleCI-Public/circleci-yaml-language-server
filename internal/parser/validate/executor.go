@@ -32,6 +32,7 @@ func (val Validate) ValidateExecutors() {
 			val.validateMacOSExecutor(executor)
 		case ast.MachineExecutor:
 			val.validateMachineExecutor(executor)
+			val.validateMachineMapClashes(executor, executor.ResourceClassBeside, executor.ShellBeside, true)
 		case ast.DockerExecutor:
 			val.validateDockerExecutor(executor)
 		}
@@ -74,6 +75,21 @@ func (val Validate) validateMacOSExecutor(executor ast.MacOSExecutor) {
 }
 
 // MachineExecutor
+
+// validateMachineMapClashes reports a resource_class or shell given inside a
+// machine map when the job, or the executor, also gives it.
+func (val Validate) validateMachineMapClashes(executor ast.MachineExecutor, resourceClassBeside, shellBeside bool, onExecutor bool) {
+	message := "%s is set both on the job and inside the `machine` map; remove the one inside `machine`"
+	if onExecutor {
+		message = "%s is set both on the executor and inside its `machine` map; remove the one inside `machine`"
+	}
+	if resourceClassBeside && !position.IsDefaultRange(executor.InMapResourceClassRange) {
+		val.addDiagnostic(diagnostic.Error(executor.InMapResourceClassRange, fmt.Sprintf(message, "resource_class")))
+	}
+	if shellBeside && !position.IsDefaultRange(executor.InMapShellRange) {
+		val.addDiagnostic(diagnostic.Error(executor.InMapShellRange, fmt.Sprintf(message, "shell")))
+	}
+}
 
 func (val Validate) validateMachineExecutor(executor ast.MachineExecutor) {
 	if executor.IsDeprecated {
