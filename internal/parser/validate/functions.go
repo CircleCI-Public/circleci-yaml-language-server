@@ -79,6 +79,7 @@ func (val Validate) ValidateFunctions() {
 		}
 	}
 	val.validateUniqueFunctionIDs(steps, ids)
+	val.validateUniqueExpandedFunctionIDs(ids)
 
 	descriptors := map[string]*circleci.FunctionDescriptor{}
 	for _, step := range steps {
@@ -161,6 +162,71 @@ func (val Validate) validateUniqueFunctionIDs(steps []functionStep, ids map[stri
 			id.Range,
 			fmt.Sprintf("The %s has more than one function step with id: %s", step.context, strings.Join(duplicates, ", ")),
 		))
+	}
+}
+
+// validateUniqueExpandedFunctionIDs checks the function step ids of each job
+// once the commands it runs are expanded into it, as the compiler does: a
+// command's step can share an id with the job's own, or with itself when the
+// job runs the command twice. An id already reported as repeated within one
+// job or command isn't reported again.
+func (val Validate) validateUniqueExpandedFunctionIDs(ids map[string]map[string]int) {
+	for _, job := range val.Doc.Jobs {
+		counts := map[string]int{}
+		reported := map[string]bool{}
+		val.countFunctionIDs(job.Steps, fmt.Sprintf("job '%s'", job.Name), ids, counts, reported, map[string]bool{})
+
+		var duplicates []string
+		for id, count := range counts {
+			if count > 1 && !reported[id] {
+				duplicates = append(duplicates, id)
+			}
+		}
+		if len(duplicates) == 0 {
+			continue
+		}
+		sort.Strings(duplicates)
+
+		val.addDiagnostic(diagnostic.Error(
+			job.NameRange,
+			fmt.Sprintf("The job '%s' has more than one function step with id: %s", job.Name, strings.Join(duplicates, ", ")),
+		))
+	}
+}
+
+// countFunctionIDs counts the ids of the function steps among steps, and
+// among those of the commands they run, in turn. reported collects the ids
+// that repeat within one of those jobs or commands on its own.
+func (val Validate) countFunctionIDs(steps []ast.Step, context string, ids map[string]map[string]int, counts map[string]int, reported, expanding map[string]bool) {
+	for id, count := range ids[context] {
+		if count > 1 {
+			reported[id] = true
+		}
+	}
+
+	for _, step := range steps {
+		named, ok := step.(ast.NamedStep)
+		if !ok {
+			continue
+		}
+
+		if _, _, isFunction := val.Doc.FunctionForStep(named.Name); isFunction {
+			// An invalid id is reported as such, not counted.
+			if id, ok := named.Parameters["id"].Value.(string); ok && functionIDPattern.MatchString(id) {
+				counts[id]++
+			}
+			continue
+		}
+
+		// A command that runs itself is reported elsewhere; expanding it
+		// again would never end.
+		command, ok := val.Doc.Commands[named.Name]
+		if !ok || expanding[command.Name] {
+			continue
+		}
+		expanding[command.Name] = true
+		val.countFunctionIDs(command.Steps, fmt.Sprintf("command '%s'", command.Name), ids, counts, reported, expanding)
+		delete(expanding, command.Name)
 	}
 }
 

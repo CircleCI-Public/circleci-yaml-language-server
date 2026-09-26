@@ -418,3 +418,63 @@ func actionTitles(t *testing.T, d protocol.Diagnostic) []string {
 	}
 	return titles
 }
+
+func TestFunctionIDsAcrossCommands(t *testing.T) {
+	// config has a command, setup, that runs setup-go with the id go, and
+	// any more commands given.
+	config := func(commands, jobSteps string) string {
+		return `version: 2.1
+
+functions:
+  setup-go: github.com/circleci-functions/setup-go@v0.5.1-684fd5b
+
+commands:
+  setup:
+    steps:
+      - setup-go:
+          id: go
+` + commands + `
+jobs:
+  build:
+    docker:
+      - image: cimg/base:current
+    steps:
+` + jobSteps + `
+workflows:
+  main:
+    jobs:
+      - build
+`
+	}
+	const duplicate = "The job 'build' has more than one function step with id: go"
+
+	t.Run("a command's step and the job's own", func(t *testing.T) {
+		got := functionErrors(t, config("", "      - setup\n      - setup-go:\n          id: go\n"))
+		assert.Check(t, cmp.DeepEqual(got, []string{duplicate}))
+	})
+
+	t.Run("a command run twice", func(t *testing.T) {
+		got := functionErrors(t, config("", "      - setup\n      - setup\n"))
+		assert.Check(t, cmp.DeepEqual(got, []string{duplicate}))
+	})
+
+	t.Run("a command run once", func(t *testing.T) {
+		got := functionErrors(t, config("", "      - setup\n"))
+		assert.Check(t, cmp.DeepEqual(got, []string{}))
+	})
+
+	t.Run("a repeat within one command is only reported there", func(t *testing.T) {
+		const twice = `  twice:
+    steps:
+      - setup-go:
+          id: go
+      - setup-go:
+          id: go
+`
+		got := functionErrors(t, config(twice, "      - twice\n"))
+		assert.Check(t, cmp.DeepEqual(got, []string{
+			"The command 'twice' has more than one function step with id: go",
+			"The command 'twice' has more than one function step with id: go",
+		}))
+	})
+}
