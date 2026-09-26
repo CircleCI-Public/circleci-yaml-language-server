@@ -618,3 +618,43 @@ workflows:
 		})
 	}
 }
+
+func Test_TeardownSteps(t *testing.T) {
+	config := func(teardown string) string {
+		return `
+version: 2.1
+jobs:
+  j:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - save_cache: {key: "", paths: [a-path]}
+      - run:
+          command: make build
+          teardown:
+            - ` + teardown + `
+workflows:
+  w:
+    jobs:
+      - j
+`
+	}
+
+	t.Run("a save_cache key can't be empty, in a teardown or not", func(t *testing.T) {
+		said := schemaMessages(t, config(`save_cache: {key: "", paths: [a-path]}`))
+		assert.Check(t, cmp.DeepEqual(said, []string{
+			"String length must be greater than or equal to 1",
+			"String length must be greater than or equal to 1",
+		}))
+	})
+
+	t.Run("a teardown run can be rerun", func(t *testing.T) {
+		said := schemaMessages(t, config(`run: {command: ./save.sh, max_auto_reruns: 2, auto_rerun_delay: 30s}`))
+		assert.Check(t, cmp.DeepEqual(said, []string{"String length must be greater than or equal to 1"}))
+	})
+
+	t.Run("a teardown run's rerun delay needs a number of reruns", func(t *testing.T) {
+		said := schemaMessages(t, config(`run: {command: ./save.sh, auto_rerun_delay: 30s}`))
+		assert.Check(t, cmp.Contains(said, "max_auto_reruns is required"))
+	})
+}
