@@ -8,6 +8,7 @@ import (
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/codeaction"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/fakes"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/testHelpers"
@@ -345,6 +346,38 @@ workflows:
 		}, anyOrder))
 	})
 
+	t.Run("an older patch gets a warning, and an update", func(t *testing.T) {
+		val := validateWithSetupGo(t, config("github.com/circleci-functions/setup-go@v0.5.0-aaaaaaa", "      - setup-go\n"),
+			fakes.FunctionVersion{ID: "ver-0-5-0", Version: "v0.5.0-aaaaaaa", Descriptor: map[string]any{"name": "setup-go"}},
+			fakes.FunctionVersion{ID: "ver-0-5-1", Version: "v0.5.1-684fd5b", Descriptor: map[string]any{"name": "setup-go"}},
+		)
+		assert.Assert(t, cmp.Len(*val.Diagnostics, 1))
+		got := (*val.Diagnostics)[0]
+		assert.Check(t, cmp.Equal(got.Severity, protocol.DiagnosticSeverityWarning))
+		assert.Check(t, cmp.Equal(diagnostic.MessageText(got),
+			"A newer patch of github.com/circleci-functions/setup-go is published: v0.5.1-684fd5b."))
+		assert.Check(t, cmp.DeepEqual(actionTitles(t, got), []string{"Update to v0.5.1-684fd5b"}))
+	})
+
+	t.Run("an older minor version gets information", func(t *testing.T) {
+		val := validateWithSetupGo(t, config("github.com/circleci-functions/setup-go@v0.4.2-bbbbbbb", "      - setup-go\n"),
+			fakes.FunctionVersion{ID: "ver-0-4-2", Version: "v0.4.2-bbbbbbb", Descriptor: map[string]any{"name": "setup-go"}},
+			fakes.FunctionVersion{ID: "ver-0-5-1", Version: "v0.5.1-684fd5b", Descriptor: map[string]any{"name": "setup-go"}},
+		)
+		assert.Assert(t, cmp.Len(*val.Diagnostics, 1))
+		got := (*val.Diagnostics)[0]
+		assert.Check(t, cmp.Equal(got.Severity, protocol.DiagnosticSeverityInformation))
+		assert.Check(t, cmp.Equal(diagnostic.MessageText(got),
+			"A newer version of github.com/circleci-functions/setup-go is published: v0.5.1-684fd5b."))
+	})
+
+	t.Run("the latest version gets nothing", func(t *testing.T) {
+		val := validateWithSetupGo(t, config("github.com/circleci-functions/setup-go@v0.5.1-684fd5b", "      - setup-go\n"),
+			fakes.FunctionVersion{ID: "ver-0-5-1", Version: "v0.5.1-684fd5b", Descriptor: map[string]any{"name": "setup-go"}},
+		)
+		assert.Check(t, cmp.Len(*val.Diagnostics, 0))
+	})
+
 	t.Run("a host without the catalog gets no warning", func(t *testing.T) {
 		isolateOrbSources(t)
 		fake := fakes.NewCircleCI(t)
@@ -357,4 +390,31 @@ workflows:
 
 		assert.Check(t, cmp.Len(*val.Diagnostics, 0))
 	})
+}
+
+// validateWithSetupGo validates the functions of a config against a catalog
+// that publishes setup-go at the versions given.
+func validateWithSetupGo(t *testing.T, config string, versions ...fakes.FunctionVersion) Validate {
+	t.Helper()
+	isolateOrbSources(t)
+	fake := fakes.NewCircleCI(t)
+	fake.AddFunction("fn-setup-go", "github.com/circleci-functions/setup-go", "Install a Go toolchain.", versions...)
+
+	val := CreateValidateFromYAML(config)
+	val.Context = testHelpers.SettingsForHost(fake.URL())
+	val.Doc.Context = val.Context
+	val.ValidateFunctions()
+	return val
+}
+
+func actionTitles(t *testing.T, d protocol.Diagnostic) []string {
+	t.Helper()
+	actions, err := codeaction.FromData(d.Data)
+	assert.NilError(t, err)
+
+	titles := []string{}
+	for _, action := range actions {
+		titles = append(titles, action.Title)
+	}
+	return titles
 }

@@ -7,8 +7,12 @@ import (
 	"sort"
 	"strings"
 
+	"go.lsp.dev/protocol"
+	"golang.org/x/mod/semver"
+
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/codeaction"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/paramref"
 )
@@ -307,9 +311,64 @@ func (val Validate) validateFunctionPublished(function ast.Function) *circleci.F
 			function.ReferenceRange,
 			fmt.Sprintf("Function %s has no version %s. The latest is %s.", path, version, published.LatestVersion),
 		))
+	default:
+		val.hintFunctionUpgrade(function, published)
 	}
 
 	return descriptor
+}
+
+// hintFunctionUpgrade tells of a newer version of a function than the one a
+// declaration pins, as for an orb: a newer patch is a warning, and a newer
+// minor or major version is information. Each comes with a code action to
+// update the declaration to it.
+func (val Validate) hintFunctionUpgrade(function ast.Function, published *circleci.FunctionPackage) {
+	path, pin, _ := strings.Cut(function.Reference, "@")
+
+	patch := pin
+	for _, candidate := range published.Versions {
+		if semver.MajorMinor(candidate.Version) == semver.MajorMinor(pin) && newerVersion(candidate.Version, patch) {
+			patch = candidate.Version
+		}
+	}
+	latest := published.LatestVersion
+
+	var message string
+	var severity protocol.DiagnosticSeverity
+	switch {
+	case newerVersion(patch, pin):
+		message = fmt.Sprintf("A newer patch of %s is published: %s.", path, patch)
+		if newerVersion(latest, patch) {
+			message += fmt.Sprintf(" The latest is %s.", latest)
+		}
+		severity = protocol.DiagnosticSeverityWarning
+	case newerVersion(latest, pin):
+		message = fmt.Sprintf("A newer version of %s is published: %s.", path, latest)
+		severity = protocol.DiagnosticSeverityInformation
+	default:
+		return
+	}
+
+	var actions []protocol.CodeAction
+	for _, version := range slices.Compact([]string{patch, latest}) {
+		if newerVersion(version, pin) {
+			actions = append(actions, codeaction.TextEdit(
+				"Update to "+version,
+				val.Doc.URI,
+				[]protocol.TextEdit{{Range: function.ReferenceRange, NewText: path + "@" + version}},
+				false,
+			))
+		}
+	}
+
+	val.addDiagnostic(diagnostic.New(function.ReferenceRange, severity, message, actions))
+}
+
+// newerVersion reports whether a function version is newer than another, by
+// their major, minor and patch. What follows them is the commit a version was
+// built from, which doesn't order them.
+func newerVersion(version, than string) bool {
+	return semver.Compare(semverCore(version), semverCore(than)) > 0
 }
 
 // validateFunctionStepAgainst checks a step against the descriptor of the
