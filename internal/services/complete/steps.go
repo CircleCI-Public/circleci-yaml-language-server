@@ -28,6 +28,9 @@ func (ch *CompletionHandler) completeSteps(entityName string, inJob bool, comple
 func (ch *CompletionHandler) completeStepList(completionNode *sitter.Node) {
 	if key, lines, parent := ch.valueAt(); parent != -1 {
 		if match := stepWithBody.FindStringSubmatch(lines[parent]); match != nil {
+			for _, value := range builtInStepValues(match[2], key) {
+				ch.addCompletionItem(value)
+			}
 			params := ch.Doc.GetDefinedParams(match[2], yamlparser.CommandEntity, ch.Cache)
 			if param, ok := params[key]; ok {
 				ch.addParameterValues(param)
