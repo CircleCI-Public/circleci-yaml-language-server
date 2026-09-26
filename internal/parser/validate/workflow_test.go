@@ -229,6 +229,23 @@ workflows:
 			},
 		},
 		{
+			Name: "An approval job whose name no job could have",
+			YamlContent: deploy + `      - approve/prod:
+          type: approval
+      - hold for prod_1:
+          type: approval
+      - deploy:
+          requires: [approve/prod, hold for prod_1]
+`,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Warning(protocol.Range{
+					Start: protocol.Position{Line: 16, Character: 8},
+					End:   protocol.Position{Line: 16, Character: 20},
+				}, "Approval job 'approve/prod' is not a valid job name: it must start with a letter and contain only "+
+					"letters, digits, whitespace, underscores and hyphens"),
+			},
+		},
+		{
 			Name: "An approval job named after a job shadows it",
 			YamlContent: deploy + `      - deploy:
           type: approval
