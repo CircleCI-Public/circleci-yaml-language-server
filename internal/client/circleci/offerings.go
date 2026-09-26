@@ -90,6 +90,22 @@ func (o *Offerings) MachineImages() []string {
 	return slices.Collect(maps.Keys(images))
 }
 
+// MachineImageFamilies is each Linux and Windows image in the catalog,
+// deprecated ones included, without its tag.
+func (o *Offerings) MachineImageFamilies() []string {
+	if o == nil {
+		return nil
+	}
+	families := []string{}
+	for _, image := range append(o.MachineImages(), o.DeprecatedMachineImages()...) {
+		family, _, _ := strings.Cut(image, ":")
+		if !slices.Contains(families, family) {
+			families = append(families, family)
+		}
+	}
+	return families
+}
+
 func (o *Offerings) MachineResourceClasses() []string {
 	pairs := o.MachinePairs()
 	if pairs == nil {
