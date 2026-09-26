@@ -594,3 +594,41 @@ func TestJobTypeValidation(t *testing.T) {
 		})
 	}
 }
+
+func TestReservedJobParameterNames(t *testing.T) {
+	diags := validateYAML(t, `version: 2.1
+
+jobs:
+  build:
+    parameters:
+      context:
+        type: string
+        default: ""
+      pre-steps:
+        type: steps
+        default: []
+      words:
+        type: string
+        default: ""
+    docker:
+      - image: cimg/base:2024.01
+    steps:
+      - run: echo << parameters.context >> << parameters.words >>
+      - steps: << parameters.pre-steps >>
+
+workflows:
+  main:
+    jobs:
+      - build
+`)
+
+	const reserved = `"name", "pre-steps", "post-steps", "filters", "requires", "context", "type", ` +
+		`"override-with", and "upstream" are reserved parameter names in build jobs`
+	var lines []uint32
+	for _, diag := range *diags {
+		if diagnostic.MessageText(diag) == reserved {
+			lines = append(lines, diag.Range.Start.Line)
+		}
+	}
+	assert.Check(t, cmp.DeepEqual(lines, []uint32{8, 5}), "pre-steps, then context")
+}

@@ -21,6 +21,7 @@ func (val Validate) ValidateJobs() {
 
 func (val Validate) validateSingleJob(job ast2.Job) {
 	val.validateJobType(job)
+	val.validateReservedParameterNames(job)
 
 	val.validateSteps(job.Steps, job.Name, job.Parameters)
 	val.validateRemoteDockerOnce(job)
@@ -136,6 +137,27 @@ func (val Validate) validateSingleJob(job ast2.Job) {
 
 // validateRemoteDockerOnce reports each setup_remote_docker after a job's
 // first, which the compiler rejects.
+// reservedJobParameters are the keys a workflow gives a job invocation
+// itself, so a job can't take a parameter of the same name.
+var reservedJobParameters = []string{
+	"name", "pre-steps", "post-steps", "filters", "requires", "context", "type", "override-with", "upstream",
+}
+
+func (val Validate) validateReservedParameterNames(job ast2.Job) {
+	quoted := make([]string, len(reservedJobParameters))
+	for i, name := range reservedJobParameters {
+		quoted[i] = fmt.Sprintf("%q", name)
+	}
+	last := len(quoted) - 1
+	message := strings.Join(quoted[:last], ", ") + ", and " + quoted[last] + " are reserved parameter names in build jobs"
+
+	for _, name := range reservedJobParameters {
+		if param, ok := job.Parameters[name]; ok {
+			val.addDiagnostic(diagnostic.Error(param.GetNameRange(), message))
+		}
+	}
+}
+
 func (val Validate) validateRemoteDockerOnce(job ast2.Job) {
 	seen := false
 	for _, step := range job.Steps {
