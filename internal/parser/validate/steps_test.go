@@ -2,6 +2,7 @@ package validate
 
 import (
 	_ "embed"
+	"fmt"
 	"testing"
 
 	"go.lsp.dev/protocol"
@@ -502,4 +503,58 @@ workflows:
 	val.Validate()
 
 	assert.Check(t, cmp.Len(getErrorDiagnostic(val.Diagnostics), 0))
+}
+
+func TestCommandRecursion(t *testing.T) {
+	diags := validateYAML(t, `version: 2.1
+
+commands:
+  self:
+    steps:
+      - when:
+          condition: true
+          steps:
+            - self
+  first:
+    steps:
+      - second
+  second:
+    steps:
+      - third
+  third:
+    steps:
+      - first
+  fine:
+    steps:
+      - run:
+          name: fine
+          command: echo fine
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:2024.01
+    steps:
+      - self
+      - first
+      - fine
+
+workflows:
+  main:
+    jobs:
+      - build
+`)
+
+	var got []string
+	for _, diag := range *diags {
+		if diag.Severity == protocol.DiagnosticSeverityError {
+			got = append(got, fmt.Sprintf("%d: %s", diag.Range.Start.Line, diagnostic.MessageText(diag)))
+		}
+	}
+	assert.Check(t, cmp.DeepEqual(got, []string{
+		"9: Infinite loop detected: command first calls itself through second, then third",
+		"12: Infinite loop detected: command second calls itself through third, then first",
+		"3: Infinite loop detected: command self calls itself",
+		"15: Infinite loop detected: command third calls itself through first, then second",
+	}))
 }
