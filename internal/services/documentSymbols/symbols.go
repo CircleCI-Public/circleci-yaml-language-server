@@ -1,6 +1,8 @@
 package documentSymbols
 
 import (
+	"strings"
+
 	"go.lsp.dev/protocol"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/parser"
@@ -77,5 +79,26 @@ func SymbolsForDocument(document *parser.YamlDocument) []protocol.DocumentSymbol
 		resolvePipelineParametersSymbols(document)...,
 	)
 
-	return symbols
+	return withoutBlankNames(symbols)
+}
+
+// withoutBlankNames drops symbols whose name is empty or only whitespace, such
+// as a half-typed `- ` step. The LSP spec forbids them, and VS Code rejects
+// the whole response if it finds one.
+func withoutBlankNames(symbols []protocol.DocumentSymbol) []protocol.DocumentSymbol {
+	kept := make([]protocol.DocumentSymbol, 0, len(symbols))
+
+	for _, symbol := range symbols {
+		if strings.TrimSpace(symbol.Name) == "" {
+			continue
+		}
+
+		if symbol.Children != nil {
+			symbol.Children = withoutBlankNames(symbol.Children)
+		}
+
+		kept = append(kept, symbol)
+	}
+
+	return kept
 }
