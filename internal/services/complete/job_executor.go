@@ -85,7 +85,7 @@ func (ch *CompletionHandler) addJobResourceClasses(job ast2.Job) {
 	case ast2.MachineExecutor:
 		ch.addResourceClassCompletion(offerings.MachineResourceClasses())
 		if ch.Context.Api.IsLoggedIn() {
-			ch.addResourceClassCompletion(ch.Cache.ResourceClassesOfFile(ch.Context.Api, ch.Doc.URI))
+			ch.addResourceClassCompletion(ch.Cache.ResourceClassesOfFile(ch.Context.V3Client(), ch.Doc.URI))
 		}
 	case ast2.MacOSExecutor:
 		ch.addResourceClassCompletion(offerings.MacOSResourceClasses())

@@ -3,6 +3,7 @@ package acceptance
 import (
 	"context"
 	"net/http"
+	"slices"
 	"strings"
 	"testing"
 
@@ -20,6 +21,9 @@ const (
 	// and environment variables are looked up by it, not by the project.
 	orgID = "org-acme"
 
+	// runnerClass is a self-hosted runner resource class of the organization.
+	runnerClass = "acme-builders/linux-arm"
+
 	// testToken is the token a test presents, set the way the extension sets
 	// it: over executeCommand, after the handshake.
 	testToken = "test-token"
@@ -27,16 +31,12 @@ const (
 
 // Routes, as the fake records them, so an assertion can say which of the
 // server's reads happened.
-//
-// runnerPath belongs to the runner service rather than to the CircleCI V3 API,
-// despite sharing its prefix; the server reaches it on a runner. subdomain,
-// which is why the tests override that host.
 const (
 	projectPath    = "/api/v2/project/gh/acme/rocket"
 	envVarPath     = "/api/v2/project/gh/acme/rocket/envvar"
 	contextPath    = "/api/v2/context"
 	orbPackagePath = "/api/v3/orb/packages"
-	runnerPath     = "/api/v3/runner/resource"
+	runnerPath     = "/api/v3/runner/resource-classes"
 )
 
 // validConfig is a config with nothing wrong with it, using a machine executor
@@ -99,7 +99,7 @@ workflows:
 
 // linkedProjectFake is a CircleCI that knows the acme/rocket project, the
 // contexts and variables of its organization, the machine catalog, the runner
-// resource classes of the namespace, and the circleci/go orb.
+// resource classes of the organization, and the circleci/go orb.
 func linkedProjectFake(t *testing.T) *fakes.CircleCI {
 	t.Helper()
 
@@ -118,7 +118,10 @@ func linkedProjectFakeIn(t *testing.T, orgID string) *fakes.CircleCI {
 	fake.AddProjectEnvVar(workspace.DefaultSlug, "AWS_REGION", "")
 	fake.AddContext(orgID, "ctx-deploy", "acme/deploy")
 	fake.AddContextEnvVar("ctx-deploy", "DEPLOY_KEY")
-	fake.AddRunnerResourceClass("acme", "acme/linux-arm", "ARM builders")
+	fake.AddOrg("gh/acme", orgID)
+	// Named for a namespace the organization has claimed, not for the
+	// organization itself.
+	fake.AddRunnerResourceClass(orgID, runnerClass, "ARM builders")
 	fake.SetMachineOfferings(fakes.MachineOfferings{
 		Linux: map[string][]string{"medium": {"ubuntu-2404:current"}},
 	})
@@ -152,7 +155,7 @@ func start(t *testing.T, fake *fakes.CircleCI, config, token string) *session {
 func startIn(t *testing.T, fake *fakes.CircleCI, project *workspace.Workspace, token string) *session {
 	t.Helper()
 
-	server := runner.StartStdio(t, serverBinary, "CIRCLECI_RUNNER_HOST="+fake.URL())
+	server := runner.StartStdio(t, serverBinary)
 	client := lspclient.New(t, context.Background(), server.Stream())
 
 	_, err := client.Initialize(project.RootURI())
@@ -242,13 +245,11 @@ func TestOpenLinkedProject(t *testing.T) {
 		assert.Assert(t, len(requests) != 0)
 
 		for _, request := range requests {
-			assert.Check(t, cmp.Equal(request.CircleToken, testToken), "%s %s", request.Method, request.Path)
+			token := request.Token()
+			assert.Check(t, cmp.Equal(token, testToken), "%s %s", request.Method, request.Path)
 		}
 	})
 
-	// The runner API is a different host in production, so this only works
-	// because it is overridable — and without it the server would spend every
-	// open waiting on a name that does not resolve.
 	t.Run("reads the organization's runner resource classes", func(t *testing.T) {
 		eventually(t, "the runner API to be read", func() bool {
 			return fake.RequestCount(http.MethodGet, runnerPath) > 0
@@ -281,6 +282,47 @@ func TestUnknownContextIsADiagnostic(t *testing.T) {
 	assert.Check(t, cmp.Contains(diagnostics, "Context nope does not exist"))
 }
 
+// runnerClassConfig leaves a machine job's resource class to be completed.
+const runnerClassConfig = `version: 2.1
+
+jobs:
+  build:
+    machine:
+      image: ubuntu-2404:current
+    resource_class: 
+    steps:
+      - run: echo building
+`
+
+func TestRunnerResourceClassCompletion(t *testing.T) {
+	fake := linkedProjectFake(t)
+	session := start(t, fake, runnerClassConfig, testToken)
+
+	t.Run("open the config", func(t *testing.T) {
+		session.open(t, runnerClassConfig)
+
+		eventually(t, "the runner API to be read", func() bool {
+			return fake.RequestCount(http.MethodGet, runnerPath) > 0
+		})
+	})
+
+	t.Run("offers the organization's runner resource classes", func(t *testing.T) {
+		const prefix = "    resource_class: "
+		line := slices.Index(strings.Split(runnerClassConfig, "\n"), prefix)
+		assert.Assert(t, line >= 0, "the config must leave a resource class to complete")
+
+		completions, err := session.client.Completion(session.workspace.URI(), position(uint32(line), uint32(len(prefix))))
+		assert.NilError(t, err)
+		assert.Assert(t, completions != nil)
+
+		labels := make([]string, 0, len(completions.Items))
+		for _, item := range completions.Items {
+			labels = append(labels, item.Label)
+		}
+		assert.Check(t, cmp.Contains(labels, runnerClass))
+	})
+}
+
 func TestSetToken(t *testing.T) {
 	fake := linkedProjectFake(t)
 	session := start(t, fake, validConfig, "")
@@ -303,7 +345,8 @@ func TestSetToken(t *testing.T) {
 		})
 
 		requests := fake.Requests()
-		assert.Check(t, cmp.Equal(requests[len(requests)-1].CircleToken, testToken))
+		token := requests[len(requests)-1].Token()
+		assert.Check(t, cmp.Equal(token, testToken))
 	})
 }
 
@@ -321,9 +364,8 @@ func TestSetSelfHostedUrl(t *testing.T) {
 	assert.Assert(t, first.RequestCount(http.MethodGet, projectPath) > 0)
 
 	// Opening the document also reads the runner resource classes, in the
-	// background, from the runner host start pinned to the first fake. Wait for
-	// that read so it is not counted as the first host being read after the
-	// switch.
+	// background. Wait for that read so it is not counted as the first host
+	// being read after the switch.
 	eventually(t, "the runner API to be read", func() bool {
 		return first.RequestCount(http.MethodGet, runnerPath) > 0
 	})
@@ -427,7 +469,7 @@ func TestSocketTransport(t *testing.T) {
 
 	// The extension starts the server this way and waits for the line it
 	// prints before connecting, so the line is part of the contract.
-	server := runner.StartSocket(t, serverBinary, "CIRCLECI_RUNNER_HOST="+fake.URL())
+	server := runner.StartSocket(t, serverBinary)
 	assert.Check(t, server.Port() != 0, "the server must report the port it bound")
 
 	client := lspclient.New(t, context.Background(), server.Stream())

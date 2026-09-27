@@ -124,7 +124,7 @@ func TestCache_ClearHostData(t *testing.T) {
 		cache.OrbPackages.namespaces.Put("circleci", []circleci.OrbPackage{{Name: "circleci/go"}})
 		cache.MachineOfferingsCache.Set(&circleci.Offerings{})
 		cache.ProjectCache.projects.Put("gh/acme/rocket", circleci.Project{Slug: "gh/acme/rocket"})
-		cache.ResourceClassCache.classes.Put("acme", []string{"acme/runner"})
+		cache.ResourceClassCache.classes.Put("gh/acme", []string{"acme/runner"})
 		cache.NamespaceCache.namespaces.Put("acme", true)
 		cache.DockerCache.Add("cimg", "go", true)
 
@@ -155,7 +155,7 @@ func TestCache_ClearHostData(t *testing.T) {
 		assert.Check(t, !known, "machine catalog")
 		_, known = cache.ProjectCache.projects.Peek("gh/acme/rocket")
 		assert.Check(t, !known, "project")
-		_, known = cache.ResourceClassCache.classes.Peek("acme")
+		_, known = cache.ResourceClassCache.classes.Peek("gh/acme")
 		assert.Check(t, !known, "runner resource classes")
 		_, known = cache.NamespaceCache.namespaces.Peek("acme")
 		assert.Check(t, !known, "namespace")

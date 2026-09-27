@@ -89,7 +89,7 @@ func (c *Cache) init() {
 	c.MachineOfferingsCache.catalog = memo.New(offeringsLifetime, nil)
 	c.ProjectCache.projects = memo.New(projectLifetime, nil)
 
-	c.ResourceClassCache.namespaceOfFile = make(map[uri.URI]string)
+	c.ResourceClassCache.orgOfFile = make(map[uri.URI]string)
 	c.ResourceClassCache.classes = memo.New(memo.Fixed[[]string](listLifetime), nil)
 }
 

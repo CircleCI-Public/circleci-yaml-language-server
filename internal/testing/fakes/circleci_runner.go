@@ -1,16 +1,7 @@
 package fakes
 
-// This file serves self-hosted runner resource classes.
-//
-// Its route says /api/v3, but this is not the CircleCI V3 API: it is the runner
-// service's own versioning, which is why it answers with a plain
-// {"items": [...]} and not the {"data": ..., "page": ...} envelope the orb and
-// catalog routes use. It is served from this fake because a caller reaches it
-// with the same token and the same client, and because the language server
-// addresses it as runner.<api host>, which a test overrides to point here.
-//
-// When that call moves onto the standard API — the CLI already calls this path
-// on the API host itself — this route moves with it, envelope and all.
+// This file serves self-hosted runner resource classes, which are listed by
+// organization id.
 
 import (
 	"net/http"
@@ -19,7 +10,7 @@ import (
 
 // runnerState is the stored runner resource classes.
 type runnerState struct {
-	classes map[string][]RunnerClass // namespace -> resource classes, insertion order
+	classes map[string][]RunnerClass // org id -> resource classes, insertion order
 }
 
 func newRunnerState() runnerState {
@@ -33,13 +24,15 @@ type RunnerClass struct {
 	Description   string
 }
 
-// AddRunnerResourceClass registers a self-hosted runner resource class of a
-// namespace. class is the fully qualified "namespace/class" the API reports.
-func (f *CircleCI) AddRunnerResourceClass(namespace, class, description string) {
+// AddRunnerResourceClass registers a self-hosted runner resource class of an
+// organization, which must also be registered with AddOrg for the route to
+// serve it. class is the fully qualified "namespace/class" the API reports;
+// its namespace need not match the organization's name.
+func (f *CircleCI) AddRunnerResourceClass(orgID, class, description string) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
-	f.runner.classes[namespace] = append(f.runner.classes[namespace], RunnerClass{
+	f.runner.classes[orgID] = append(f.runner.classes[orgID], RunnerClass{
 		ID:            "rc-" + strings.ReplaceAll(class, "/", "-"),
 		ResourceClass: class,
 		Description:   description,
@@ -47,21 +40,38 @@ func (f *CircleCI) AddRunnerResourceClass(namespace, class, description string) 
 }
 
 func (f *CircleCI) handleListRunnerClasses(w http.ResponseWriter, r *http.Request) {
-	namespace := r.URL.Query().Get("namespace")
+	orgID := r.URL.Query().Get("filter[org_id]")
+	if orgID == "" {
+		writeError(w, http.StatusBadRequest, "validation_error", "Missing Filter", "filter[org_id] is required")
+
+		return
+	}
 
 	f.mu.RLock()
-	classes := f.runner.classes[namespace]
+	known := f.hasOrgID(orgID)
+	classes := f.runner.classes[orgID]
 	f.mu.RUnlock()
 
-	// An unknown namespace is an empty list, not a 404.
-	items := make([]any, 0, len(classes))
+	// The real route refuses an organization the caller cannot see, rather
+	// than reporting it as having no classes.
+	if !known {
+		writeStatus(w, r.URL.Path, http.StatusForbidden)
+
+		return
+	}
+
+	entities := make([]any, 0, len(classes))
 	for _, class := range classes {
-		items = append(items, map[string]any{
-			"id":             class.ID,
-			"resource_class": class.ResourceClass,
-			"description":    class.Description,
+		entities = append(entities, map[string]any{
+			"id": class.ID,
+			"attributes": map[string]any{
+				"resource_class": class.ResourceClass,
+				"description":    class.Description,
+			},
+			"references": map[string]any{"org": map[string]any{"id": orgID}},
 		})
 	}
 
-	writeJSON(w, http.StatusOK, map[string]any{"items": items})
+	// The real route answers without a page member.
+	writeJSON(w, http.StatusOK, map[string]any{"data": entities})
 }

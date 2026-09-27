@@ -10,7 +10,7 @@
 // answer through. One file per domain holds that domain's state, builders and
 // handlers: circleci_orbs.go, circleci_graphql.go, circleci_account.go,
 // circleci_projects.go, circleci_contexts.go, circleci_catalog.go,
-// circleci_runner.go and circleci_functions.go.
+// circleci_orgs.go, circleci_runner.go and circleci_functions.go.
 //
 // Requests are served anonymously by default because the language server
 // resolves public orbs for users who have not logged in. Call RequireToken to
@@ -50,6 +50,7 @@ type CircleCI struct {
 	projects  projectsState  // circleci_projects.go
 	contexts  contextsState  // circleci_contexts.go
 	catalog   catalogState   // circleci_catalog.go
+	orgs      orgsState      // circleci_orgs.go
 	runner    runnerState    // circleci_runner.go
 	functions functionsState // circleci_functions.go
 }
@@ -72,6 +73,16 @@ type Request struct {
 	UserAgent     string
 }
 
+// Token is the token a request presented, in whichever of the three headers
+// the real edge accepts it carried it.
+func (r Request) Token() string {
+	if r.CircleToken != "" {
+		return r.CircleToken
+	}
+
+	return strings.TrimPrefix(r.Authorization, "Bearer ")
+}
+
 // NewCircleCI starts a fake CircleCI API server and closes it on cleanup.
 func NewCircleCI(t testing.TB) *CircleCI {
 	t.Helper()
@@ -84,6 +95,7 @@ func NewCircleCI(t testing.TB) *CircleCI {
 		orbs:            newOrbState(),
 		projects:        newProjectsState(),
 		contexts:        newContextsState(),
+		orgs:            newOrgsState(),
 		runner:          newRunnerState(),
 	}
 
@@ -124,10 +136,11 @@ func NewCircleCI(t testing.TB) *CircleCI {
 	mux.HandleFunc("GET /api/v3/function/packages", fake.handleListFunctionPackages)
 	mux.HandleFunc("GET /api/v3/function/versions/{id}", fake.handleGetFunctionVersion)
 
-	// Self-hosted runner resource classes — circleci_runner.go. The /api/v3
-	// here is the runner service's own versioning, not the CircleCI V3 API
-	// above it; the two share a prefix and nothing else.
-	mux.HandleFunc("GET /api/v3/runner/resource", fake.handleListRunnerClasses)
+	// Organizations — circleci_orgs.go.
+	mux.HandleFunc("GET /api/v3/orgs", fake.handleListOrgs)
+
+	// Self-hosted runner resource classes — circleci_runner.go.
+	mux.HandleFunc("GET /api/v3/runner/resource-classes", fake.handleListRunnerClasses)
 
 	fake.server = httptest.NewServer(fake.middleware(mux))
 	t.Cleanup(fake.server.Close)
