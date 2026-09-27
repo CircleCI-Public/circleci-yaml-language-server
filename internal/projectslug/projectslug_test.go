@@ -2,6 +2,9 @@ package projectslug
 
 import (
 	"testing"
+
+	"gotest.tools/v3/assert"
+	"gotest.tools/v3/assert/cmp"
 )
 
 func Test_fromURL(t *testing.T) {
@@ -104,5 +107,19 @@ func Test_fromURL(t *testing.T) {
 				t.Errorf("fromURL() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestOrgSlug(t *testing.T) {
+	tests := map[string]string{
+		"gh/CircleCI-Public/circleci-yaml-language-server": "gh/CircleCI-Public",
+		"bb/acme/rocket": "bb/acme",
+		"":               "",
+		"gh/acme":        "",
+	}
+
+	for projectSlug, want := range tests {
+		got := OrgSlug(projectSlug)
+		assert.Check(t, cmp.Equal(got, want), "project slug %q", projectSlug)
 	}
 }

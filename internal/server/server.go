@@ -159,11 +159,6 @@ func getJsonRpcServer(ctx context.Context, schemaLocation string) JSONRPCServer 
 			Api: circleci.Config{
 				HostUrl: circleci.DefaultHostURL,
 				Token:   "",
-				// A self-hosted install can serve the runner API somewhere
-				// other than runner.<host>. The host and token are set later
-				// over the protocol; this one has no command, so it is read
-				// from the environment.
-				RunnerHost: os.Getenv("CIRCLECI_RUNNER_HOST"),
 			},
 			// An editor can set this over the protocol too (setGitHubToken).
 			OrbURLs:        orburl.Config{GitHubToken: gitHubTokenFromEnv()},

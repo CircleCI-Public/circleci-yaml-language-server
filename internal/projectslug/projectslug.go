@@ -56,12 +56,14 @@ func fromURL(projectUrl string) string {
 	return ""
 }
 
-func Org(projectSlug string) string {
+// OrgSlug returns the slug of a project's organization, such as "gh/acme" for
+// "gh/acme/rocket", or "" when projectSlug is not a project slug.
+func OrgSlug(projectSlug string) string {
 	splitted := strings.Split(projectSlug, "/")
 
 	if len(splitted) != 3 {
 		return ""
 	}
 
-	return splitted[1]
+	return splitted[0] + "/" + splitted[1]
 }
