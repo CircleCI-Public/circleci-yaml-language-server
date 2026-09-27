@@ -112,6 +112,20 @@ tasks:
         vars:
           CLI_ARGS: ./... --fix
 
+  commitlint:
+    desc: Lint the message of each commit not on main (set BASE to compare with another ref)
+    silent: true
+    vars:
+      BASE: '{{default "origin/main" .BASE}}'
+      COMMITS:
+        sh: git rev-list --no-merges --reverse {{.BASE}}..HEAD
+    cmds:
+      - for:
+          var: COMMITS
+        cmd: |
+          git log -1 --format='%h %s' {{.ITEM}}
+          git log -1 --format=%B {{.ITEM}} | go tool -modfile tools/go.mod commitlint lint
+
   prepare:vscode:
     dir: editors/vscode
     cmds:
@@ -183,6 +197,15 @@ tasks:
         vars:
           CLI_ARGS: -diff
       - task: release-check
+
+  ci:commitlint:
+    desc: Lint the message of each commit not on main
+    cmds:
+      # CircleCI's checkout fetches only the branch being built.
+      - git fetch --quiet origin main
+      - task: commitlint
+        vars:
+          BASE: FETCH_HEAD
 
   ci:build:
     desc: Build and package the release at the version in ~/version

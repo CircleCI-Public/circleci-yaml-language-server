@@ -29,6 +29,10 @@ orbs:
   github-cli: circleci/github-cli@2.2.0
 
 executors:
+  default:
+    docker:
+      - image: cimg/base:current
+
   linux:
     machine:
       image: ubuntu-2604:current
@@ -47,10 +51,6 @@ executors:
   windows:
     machine: true
     resource_class: windows.medium
-
-  go-executor:
-    docker:
-      - image: cimg/go:1.27.1
 
 commands:
   setup:
@@ -102,7 +102,7 @@ commands:
 
 jobs:
   Create version file:
-    executor: go-executor
+    executor: default
     description: |
       Write the version being released to ~/version, for `task ci:build` and
       `task ci:smoke-test`.
@@ -113,7 +113,7 @@ jobs:
           When set to true will set a prerelease in the version file.
           Else will set the version from the release-please manifest
     steps:
-      - checkout
+      - setup
       - when:
           condition: << parameters.is-prerelease >>
           steps:
@@ -141,6 +141,12 @@ jobs:
       - setup
       - run: task ci:check
       - store_results
+
+  commitlint:
+    executor: default
+    steps:
+      - setup
+      - run: task ci:commitlint
 
   test:
     parameters:
@@ -225,9 +231,9 @@ jobs:
                 --manifest-file .circleci/release/release-please-manifest.json
 
   Pre-Release:
-    executor: go-executor
+    executor: default
     steps:
-      - checkout
+      - setup
       - attach_workspace:
           at: ~/
       - run:
@@ -286,9 +292,9 @@ jobs:
           destination: .
 
   Security Scan release:
-    executor: go-executor
+    executor: default
     steps:
-      - checkout
+      - setup
       - run:
           name: Setup Scanning
           command: |
@@ -397,6 +403,7 @@ workflows:
       not: *release-conditions
     jobs:
       - check
+      - commitlint
       - test:
           matrix:
             parameters:
