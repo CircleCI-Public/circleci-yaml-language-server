@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 0.41.1 (2026-09-27)
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+* fix: drop document symbols with blank names by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/633
+* fix: list runner resource classes by organization, not namespace by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/634
+
+
+**Full Changelog**: https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.41.0...0.41.1
+
 ## 0.41.0 (2026-09-26)
 
 <!-- Release notes generated using configuration in .github/release.yml at main -->
