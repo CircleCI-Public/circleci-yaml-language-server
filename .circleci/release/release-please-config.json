@@ -7,10 +7,11 @@
     "changelog-path": "CHANGELOG.md",
     "changelog-type": "github",
     "include-component-in-tag": false,
-    "release-type": "node",
+    "release-type": "simple",
     "packages": {
         ".": {
-            "release-type": "node",
+            "release-type": "simple",
+            "package-name": "yaml-language-server",
             "extra-files": [
                 {
                     "type": "generic",

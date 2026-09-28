@@ -1,0 +1,56 @@
+# The rules of @commitlint/config-conventional, for `task commitlint`.
+min-version: v0.12.0
+formatter: default
+rules:
+  - header-max-length
+  - body-leading-blank
+  - body-max-line-length
+  - footer-leading-blank
+  - footer-max-line-length
+  - type-enum
+  - type-case
+  - type-empty
+  - scope-case
+  - description-empty
+  - description-full-stop
+severity:
+  default: error
+  rules:
+    body-leading-blank: warn
+    footer-leading-blank: warn
+settings:
+  header-max-length:
+    argument: 100
+  body-leading-blank:
+    argument: null
+  footer-leading-blank:
+    argument: null
+  description-empty:
+    argument: null
+  body-max-line-length:
+    argument: 100
+  footer-max-line-length:
+    argument: 100
+  type-enum:
+    argument:
+      - build
+      - chore
+      - ci
+      - docs
+      - feat
+      - fix
+      - perf
+      - refactor
+      - revert
+      - style
+      - test
+  type-case:
+    argument: lower-case
+  type-empty:
+    argument: null
+  scope-case:
+    argument: lower-case
+  description-full-stop:
+    argument: .
+disable-default-ignores: false
+ignores: []
