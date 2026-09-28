@@ -110,6 +110,30 @@ workflows:
 				}, "setup_remote_docker has no resource_class option, so this is ignored."),
 			},
 		},
+		{
+			Name: "deploy is deprecated in favour of run",
+			YamlContent: `version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - deploy:
+          command: echo deploy
+
+workflows:
+  main:
+    jobs:
+      - build
+`,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Deprecated(protocol.Range{
+					Start: protocol.Position{Line: 7, Character: 8},
+					End:   protocol.Position{Line: 7, Character: 14},
+				}, "The `deploy` step is deprecated. Please use the `run` step instead."),
+			},
+		},
 	}
 
 	CheckYamlErrors(t, testCases)
