@@ -1,6 +1,7 @@
 package pipelinevalues
 
 import (
+	"slices"
 	"testing"
 
 	"gotest.tools/v3/assert"
@@ -32,4 +33,18 @@ func TestLookup(t *testing.T) {
 		_, ok := Lookup("pipeline.not_a_value")
 		assert.Check(t, !ok)
 	})
+}
+
+func TestPublic(t *testing.T) {
+	public := Public()
+	names := []string{}
+	for _, value := range public {
+		names = append(names, value.Name)
+		assert.Check(t, !value.Private, value.Name)
+	}
+
+	assert.Check(t, cmp.Contains(names, "pipeline.git.branch"))
+	assert.Check(t, !slices.Contains(names, "pipeline.trigger.name"), "private values are left out")
+	assert.Check(t, !slices.Contains(names, "pipeline.parameters.*"), "the pipeline parameters are left out")
+	assert.Check(t, slices.IsSorted(names))
 }

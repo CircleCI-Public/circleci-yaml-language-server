@@ -4,6 +4,9 @@ package pipelinevalues
 
 import (
 	"fmt"
+	"maps"
+	"slices"
+	"strings"
 	"sync"
 
 	"github.com/CircleCI-Public/expr/domains"
@@ -25,6 +28,18 @@ type Value struct {
 func Lookup(name string) (Value, bool) {
 	value, ok := values()[name]
 	return value, ok
+}
+
+// Public leaves out the private values and the pipeline.parameters.*
+// wildcard, and sorts the rest by name.
+func Public() []Value {
+	public := []Value{}
+	for _, name := range slices.Sorted(maps.Keys(values())) {
+		if value := values()[name]; !value.Private && !strings.HasSuffix(name, "*") {
+			public = append(public, value)
+		}
+	}
+	return public
 }
 
 var values = sync.OnceValue(func() map[string]Value {

@@ -26,6 +26,11 @@ type CompletionHandler struct {
 }
 
 func (ch *CompletionHandler) GetCompletionItems() {
+	ch.completePipelineValues()
+	if len(ch.Items) > 0 {
+		return
+	}
+
 	node, _, err := position.NodeAt(ch.Doc.RootNode, ch.Params.Position)
 	if err == nil {
 		ch.addParameterReferenceCompletion(node)
