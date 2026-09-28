@@ -16,7 +16,7 @@ func resolveCommandsSymbols(document *parser.YamlDocument) []protocol.DocumentSy
 	commandsSymbols := symbolFromRange(
 		document.CommandsRange,
 		"Commands",
-		ListSymbol,
+		SectionSymbol,
 	)
 
 	children := []protocol.DocumentSymbol{}
@@ -36,7 +36,7 @@ func singleCommandSymbols(command ast.Command) protocol.DocumentSymbol {
 		Range:          command.Range,
 		SelectionRange: command.Range,
 		Detail:         unlessZero(command.Description),
-		Kind:           protocol.SymbolKind(CommandsSymbol),
+		Kind:           CommandSymbol,
 	}
 
 	if len(command.Steps) > 0 {
@@ -44,7 +44,7 @@ func singleCommandSymbols(command ast.Command) protocol.DocumentSymbol {
 			Name:           "Steps",
 			Range:          command.StepsRange,
 			SelectionRange: command.StepsRange,
-			Kind:           protocol.SymbolKind(ListSymbol),
+			Kind:           ListSymbol,
 			Children:       stepsSymbols(command.Steps),
 		}
 
@@ -56,7 +56,7 @@ func singleCommandSymbols(command ast.Command) protocol.DocumentSymbol {
 			Name:           "Parameters",
 			Range:          command.ParametersRange,
 			SelectionRange: command.ParametersRange,
-			Kind:           protocol.SymbolKind(ListSymbol),
+			Kind:           ListSymbol,
 			Children:       parametersSymbols(command.Parameters),
 		}
 

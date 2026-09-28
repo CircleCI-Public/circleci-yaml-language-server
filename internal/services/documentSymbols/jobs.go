@@ -18,7 +18,7 @@ func resolveJobsSymbols(document *parser.YamlDocument) []protocol.DocumentSymbol
 	jobsSymbols := symbolFromRange(
 		document.JobsRange,
 		"Jobs",
-		ListSymbol,
+		SectionSymbol,
 	)
 
 	children := []protocol.DocumentSymbol{}
@@ -38,6 +38,7 @@ func singleJobSymbols(job ast2.Job) protocol.DocumentSymbol {
 	if !position.IsDefaultRange(job.ParametersRange) {
 		jobSymbol.Children = append(jobSymbol.Children, protocol.DocumentSymbol{
 			Name:           "Parameters",
+			Kind:           ListSymbol,
 			Range:          job.ParametersRange,
 			SelectionRange: job.ParametersRange,
 			Children:       parametersSymbols(job.Parameters),
@@ -50,7 +51,7 @@ func singleJobSymbols(job ast2.Job) protocol.DocumentSymbol {
 			Range:          job.StepsRange,
 			SelectionRange: job.StepsRange,
 			Children:       stepsSymbols(job.Steps),
-			Kind:           protocol.SymbolKind(ListSymbol),
+			Kind:           ListSymbol,
 			Detail:         unlessZero(fmt.Sprintf("%d total", len(job.Steps))),
 		})
 	}
@@ -60,7 +61,7 @@ func singleJobSymbols(job ast2.Job) protocol.DocumentSymbol {
 			Name:           fmt.Sprintf("Executor: %s", job.Executor),
 			Range:          job.ExecutorRange,
 			SelectionRange: job.ExecutorRange,
-			Kind:           protocol.SymbolKind(ExecutorsSymbol),
+			Kind:           ExecutorSymbol,
 		})
 	}
 
@@ -91,10 +92,11 @@ func singleJobSymbols(job ast2.Job) protocol.DocumentSymbol {
 			Name:           "MacOS",
 			Range:          job.MacOSRange,
 			SelectionRange: job.MacOSRange,
-			Kind:           protocol.SymbolKind(ExecutorsSymbol),
+			Kind:           ExecutorSymbol,
 			Children: []protocol.DocumentSymbol{
 				{
 					Name:           "xcode",
+					Kind:           PropertySymbol,
 					Detail:         unlessZero(job.MacOS.Xcode),
 					Range:          job.MacOS.Range,
 					SelectionRange: job.MacOS.Range,
@@ -124,7 +126,7 @@ func stepsSymbols(steps []ast2.Step) []protocol.DocumentSymbol {
 			Name:           step.GetName(),
 			Range:          step.GetRange(),
 			SelectionRange: step.GetRange(),
-			Kind:           protocol.SymbolKind(JobSymbol),
+			Kind:           InvocationSymbol,
 		})
 	}
 

@@ -34,8 +34,8 @@ func machineExecutorSymbols(machineExec ast.MachineExecutor) protocol.DocumentSy
 		Range:          machineExec.Range,
 		SelectionRange: machineExec.Range,
 		Detail:         unlessZero(machineVersion),
-		Kind:           protocol.SymbolKind(DockerSymbol),
-		Deprecated:     unlessZero(deprecated), //nolint:staticcheck // what clients read today; tags are the 3.18 way
+		Kind:           DockerSymbol,
+		Deprecated:     unlessZero(deprecated), //nolint:staticcheck
 	}
 
 	return symbol

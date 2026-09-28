@@ -11,7 +11,7 @@ func dockerExecutorSymbols(dockerExec ast.DockerExecutor) protocol.DocumentSymbo
 		Name:           "Docker",
 		Range:          dockerExec.Range,
 		SelectionRange: dockerExec.Range,
-		Kind:           protocol.SymbolKind(DockerSymbol),
+		Kind:           DockerSymbol,
 	}
 
 	for _, img := range dockerExec.Image {
@@ -29,7 +29,7 @@ func dockerExecutorSymbols(dockerExec ast.DockerExecutor) protocol.DocumentSymbo
 			Name:           name,
 			Range:          img.ImageRange,
 			SelectionRange: img.ImageRange,
-			Kind:           8,
+			Kind:           ImageSymbol,
 		})
 	}
 

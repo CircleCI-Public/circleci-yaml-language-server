@@ -17,6 +17,7 @@ func resolveVersionSymbol(document *parser.YamlDocument) []protocol.DocumentSymb
 	return []protocol.DocumentSymbol{
 		{
 			Name:           "Version",
+			Kind:           PropertySymbol,
 			Range:          document.VersionRange,
 			SelectionRange: document.VersionRange,
 			Detail:         unlessZero(fmt.Sprintf("%.1f", document.Version)),
