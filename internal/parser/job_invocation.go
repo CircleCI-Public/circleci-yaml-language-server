@@ -119,6 +119,12 @@ func (doc *YamlDocument) parseSingleJobInvocation(jobInvocationNode *sitter.Node
 				case "context":
 					res.Context = doc.parseContext(valueNode)
 				case "filters":
+					if isScalarNode(valueNode) {
+						doc.FilterExpressions = append(doc.FilterExpressions, ast2.TextAndRange{
+							Text:  unquoteScalar(doc.GetNodeText(valueNode)),
+							Range: doc.NodeToRange(valueNode),
+						})
+					}
 				case "branches":
 				case "tags":
 				case "matrix":

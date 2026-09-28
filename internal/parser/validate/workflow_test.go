@@ -401,7 +401,7 @@ func TestTruthyStringStepConditions(t *testing.T) {
 
 	CheckYamlErrors(t, []ValidateTestCase{
 		{
-			Name: "An environment variable, or a run step's when, as a step's condition",
+			Name: "An environment variable, or a run step's when, as a step's condition, and as a workflow's",
 			YamlContent: `version: 2.1
 
 jobs:
@@ -449,6 +449,10 @@ workflows:
 					Start: protocol.Position{Line: 16, Character: 21},
 					End:   protocol.Position{Line: 16, Character: 28},
 				}, truthy("on_fail")),
+				diagnostic.Error(protocol.Range{
+					Start: protocol.Position{Line: 30, Character: 10},
+					End:   protocol.Position{Line: 30, Character: 11},
+				}, "Invalid condition expression: Unexpected character '$'"),
 			},
 		},
 	})

@@ -247,6 +247,9 @@ type YamlDocument struct {
 	Conditions []ast2.TextAndRange
 	// StepConditions are the step conditions among Conditions.
 	StepConditions []ast2.TextAndRange
+	// FilterExpressions are the jobs' filters written as expressions, such as
+	// `filters: pipeline.git.branch == "main"`.
+	FilterExpressions []ast2.TextAndRange
 
 	SetupRange              protocol.Range
 	OrbsRange               protocol.Range
