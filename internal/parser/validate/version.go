@@ -91,11 +91,12 @@ func DiagnosticVersion(version string, infoVersions InfoVersions) (string, proto
 		text := "A newer patched version exists.\n"
 		text += "- Current: " + version + "\n"
 
-		if infoVersions.LatestVersion != infoVersions.LatestMinorVersion {
-			if infoVersions.LatestMinorVersion != infoVersions.LatestPatchVersion {
-				text += "- Patch:   " + infoVersions.LatestPatchVersion + "\n"
-			}
+		if infoVersions.LatestPatchVersion != infoVersions.LatestVersion {
+			text += "- Patch:   " + infoVersions.LatestPatchVersion + "\n"
+		}
 
+		if infoVersions.LatestMinorVersion != infoVersions.LatestVersion &&
+			infoVersions.LatestMinorVersion != infoVersions.LatestPatchVersion {
 			text += "- Minor:   " + infoVersions.LatestMinorVersion + "\n"
 		}
 
