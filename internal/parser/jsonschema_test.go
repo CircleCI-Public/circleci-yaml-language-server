@@ -696,3 +696,43 @@ commands:
 		{10, `"otherCommand" isn't a valid command name: it must start with a lowercase letter, and have only lowercase letters, digits, "_" and "-".`},
 	}, cmpopts.SortSlices(func(a, b reported) bool { return a.Line < b.Line })))
 }
+
+func Test_JobWithoutExecutor(t *testing.T) {
+	config := func(executor string) string {
+		return `
+version: 2.1
+executors:
+  e:
+    docker:
+      - image: cimg/base:stable
+jobs:
+  deploy:` + executor + `
+    steps:
+      - checkout
+`
+	}
+
+	t.Run("has none", func(t *testing.T) {
+		diags := schemaDiagnostics(t, config(""))
+		assert.Assert(t, cmp.Len(diags, 1))
+		assert.Check(t, cmp.Equal(diagnostic.MessageText(diags[0]),
+			"A job needs an executor: give it one of `docker`, `machine`, `macos` or `executor`."))
+		assert.Check(t, cmp.DeepEqual(diags[0].Range, protocol.Range{
+			Start: protocol.Position{Line: 7, Character: 2},
+			End:   protocol.Position{Line: 7, Character: 8},
+		}))
+	})
+
+	executors := map[string]string{
+		"docker":   "\n    docker:\n      - image: cimg/base:stable",
+		"machine":  "\n    machine:\n      image: ubuntu-2404:current",
+		"macos":    "\n    macos:\n      xcode: 16.0.0",
+		"executor": "\n    executor: e",
+	}
+	for name, executor := range executors {
+		t.Run("has "+name, func(t *testing.T) {
+			said := schemaMessages(t, config(executor))
+			assert.Check(t, cmp.Len(said, 0))
+		})
+	}
+}

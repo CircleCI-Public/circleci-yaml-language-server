@@ -257,6 +257,12 @@ func (validator *JSONSchemaValidator) ValidateWithJSONSchema(rootNode *sitter.No
 				continue
 			}
 
+			if validator.isJobWithoutExecutor(resErr, fields, node, content) {
+				jsonSchemaDiags = append(jsonSchemaDiags, diagnostic.ErrorFromNode(node.ChildByFieldName("key"),
+					"A job needs an executor: give it one of `docker`, `machine`, `macos` or `executor`."))
+				continue
+			}
+
 			if step, property, ok := ignoredStepProperty(resErr, fields); ok {
 				if propertyNode, err := FindDeepestNode(node, content, []string{property}); err == nil {
 					node = propertyNode.ChildByFieldName("key")
@@ -324,6 +330,33 @@ func ignoredStepProperty(err gojsonschema.ResultError, fields []string) (step, p
 
 	property, ok = err.Details()["property"].(string)
 	return step, property, ok
+}
+
+var executorKeys = []string{"docker", "machine", "macos", "executor"}
+
+// isJobWithoutExecutor reports whether err is the schema saying a job needs
+// one of the executorKeys, and the job has none of them. The schema only
+// names one of them, which reads as if that one were the fix.
+func (validator *JSONSchemaValidator) isJobWithoutExecutor(err gojsonschema.ResultError, fields []string, job *sitter.Node, content []byte) bool {
+	property, _ := err.Details()["property"].(string)
+	if err.Type() != "required" || !slices.Contains(executorKeys, property) ||
+		len(fields) < 2 || fields[len(fields)-2] != "jobs" || job.ChildByFieldName("key") == nil {
+		return false
+	}
+
+	_, value := validator.Doc.GetKeyValueNodes(job)
+	if value == nil {
+		return false
+	}
+	mapping := GetChildMapping(value)
+	if mapping == nil {
+		return false
+	}
+
+	return !slices.ContainsFunc(executorKeys, func(key string) bool {
+		child, err := findChildNode(mapping, content, key)
+		return err == nil && child != nil
+	})
 }
 
 // invalidNamePatterns maps each field holding a name the schema rejects to
