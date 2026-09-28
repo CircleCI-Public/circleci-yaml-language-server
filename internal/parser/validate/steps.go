@@ -77,12 +77,8 @@ func (val Validate) validateSetupRemoteDocker(step ast2.SetupRemoteDocker) {
 
 func (val Validate) validateRunCommand(step ast2.Run, jobOrCommandParameters map[string]ast2.Parameter) {
 	if step.IsDeployStep {
-		val.addDiagnostic(protocol.Diagnostic{
-			Range:    step.Range,
-			Message:  protocol.String("The `deploy` step is deprecated. Please use the `run` job instead."),
-			Severity: protocol.DiagnosticSeverityWarning,
-			Tags:     protocol.NewDiagnosticTags(protocol.DiagnosticTagDeprecated),
-		})
+		val.addDiagnostic(diagnostic.Deprecated(step.Range,
+			"The `deploy` step is deprecated. Please use the `run` step instead."))
 	}
 
 	// Validate that background steps cannot use max_auto_reruns or auto_rerun_delay
