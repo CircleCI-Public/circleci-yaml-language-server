@@ -43,18 +43,21 @@ func (doc *YamlDocument) parseSingleJob(jobNode *sitter.Node) ast2.Job {
 	jobNameNode, valueNode := doc.GetKeyValueNodes(jobNode)
 	res := ast2.Job{CompletionItem: &[]protocol.CompletionItem{}, Parallelism: -1, Contexts: &[]string{}, Parameters: map[string]ast2.Parameter{}}
 
-	if jobNameNode == nil || valueNode == nil {
+	if jobNameNode == nil {
 		return res
 	}
-	jobName := doc.GetNodeText(jobNameNode)
+	res.Name = doc.getAttributeName(doc.GetNodeText(jobNameNode))
+	res.Range = doc.NodeToRange(jobNode)
+	res.NameRange = doc.NodeToRange(jobNameNode)
+
+	if valueNode == nil {
+		return res
+	}
 	blockMappingNode := GetChildMapping(valueNode)
 
 	if blockMappingNode == nil { //TODO: deal with errors
 		return res
 	}
-	res.Name = doc.getAttributeName(jobName)
-	res.Range = doc.NodeToRange(jobNode)
-	res.NameRange = doc.NodeToRange(jobNameNode)
 
 	// keys are the job's keys, including those with no value yet, for
 	// completion to leave out.
