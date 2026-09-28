@@ -1,6 +1,8 @@
 package documentSymbols
 
 import (
+	"cmp"
+	"slices"
 	"strings"
 
 	"go.lsp.dev/protocol"
@@ -79,7 +81,27 @@ func SymbolsForDocument(document *parser.YamlDocument) []protocol.DocumentSymbol
 		resolvePipelineParametersSymbols(document)...,
 	)
 
-	return withoutBlankNames(symbols)
+	symbols = withoutBlankNames(symbols)
+	inSourceOrder(symbols)
+
+	return symbols
+}
+
+// inSourceOrder sorts each level of the tree by where its symbols start, as
+// most come from maps. Symbols sharing a range, such as the keys of an
+// environment, are sorted by name.
+func inSourceOrder(symbols []protocol.DocumentSymbol) {
+	slices.SortFunc(symbols, func(a, b protocol.DocumentSymbol) int {
+		return cmp.Or(
+			cmp.Compare(a.Range.Start.Line, b.Range.Start.Line),
+			cmp.Compare(a.Range.Start.Character, b.Range.Start.Character),
+			strings.Compare(a.Name, b.Name),
+		)
+	})
+
+	for i := range symbols {
+		inSourceOrder(symbols[i].Children)
+	}
 }
 
 // withoutBlankNames drops symbols whose name is empty or only whitespace, such
