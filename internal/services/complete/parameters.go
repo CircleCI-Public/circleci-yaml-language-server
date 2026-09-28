@@ -73,17 +73,21 @@ func (ch *CompletionHandler) completeParameterDefinitions(parameters map[string]
 	}
 }
 
-// parameterBeingWritten finds a parameter being written anywhere inside an
-// unclosed `<<`, so in an expression too. The first group is `pipeline.` for
-// a pipeline parameter.
-var parameterBeingWritten = regexp.MustCompile(`<<(?:[^>]*[^\w.>])?(pipeline\.)?parameters\.[\w-]*$`)
+// parameterBeingWritten finds a parameter being written at the end of an
+// expression. The first group is `pipeline.` for a pipeline parameter.
+var parameterBeingWritten = regexp.MustCompile(`(?:^|[^\w.])(pipeline\.)?parameters\.[\w-]*$`)
 
 // completeParameterReferences offers the parameters after `parameters.`,
 // those of the job, command or executor the cursor is in, or after
-// `pipeline.parameters.`, the pipeline's.
+// `pipeline.parameters.`, the pipeline's. A bare expression only has the
+// pipeline's.
 func (ch *CompletionHandler) completeParameterReferences() {
-	match := parameterBeingWritten.FindSubmatch(ch.lineBeforeCursor())
-	if match == nil {
+	expression, inTag, ok := ch.expressionBeforeCursor()
+	if !ok {
+		return
+	}
+	match := parameterBeingWritten.FindSubmatch(expression)
+	if match == nil || !inTag && len(match[1]) == 0 {
 		return
 	}
 	parameters := ch.Doc.GetParamsWithPosition(ch.Params.Position)
@@ -91,7 +95,7 @@ func (ch *CompletionHandler) completeParameterReferences() {
 		parameters = ch.Doc.PipelineParameters
 	}
 
-	closed := ch.tagClosedAfterCursor()
+	closed := !inTag || ch.tagClosedAfterCursor()
 	for _, name := range slices.Sorted(maps.Keys(parameters)) {
 		param := parameters[name]
 		insert := param.GetName()
