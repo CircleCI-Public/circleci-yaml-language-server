@@ -304,7 +304,8 @@ jobs:
 					t.SkipNow()
 				}
 
-				diagnostics := validator.ValidateWithJSONSchema(yamlDocument.RootNode, yamlDocument.Content)
+				schemaDiagnostics, yamlDiagnostics := validator.ValidateWithJSONSchema(yamlDocument.RootNode, yamlDocument.Content)
+				diagnostics := append(schemaDiagnostics, yamlDiagnostics...)
 
 				// Log all diagnostics for debugging
 				if len(diagnostics) > 0 {
@@ -397,7 +398,8 @@ func schemaDiagnostics(t *testing.T, content string) []protocol.Diagnostic {
 	validator := JSONSchemaValidator{Doc: yamlDocument}
 	assert.NilError(t, validator.LoadEmbeddedJsonSchema())
 
-	return validator.ValidateWithJSONSchema(yamlDocument.RootNode, yamlDocument.Content)
+	schemaDiagnostics, yamlDiagnostics := validator.ValidateWithJSONSchema(yamlDocument.RootNode, yamlDocument.Content)
+	return append(schemaDiagnostics, yamlDiagnostics...)
 }
 
 func schemaMessages(t *testing.T, content string) []string {

@@ -231,17 +231,17 @@ func handleYAMLErrors(err string, content []byte, rootNode *sitter.Node) ([]prot
 	return diagnostics, nil
 }
 
-// Validates a config YML against a JSON Shema
-// Returns a list of diagnostics and a boolean that suggest
-// whether to continue diagnostic or not
-func (validator *JSONSchemaValidator) ValidateWithJSONSchema(rootNode *sitter.Node, content []byte) []protocol.Diagnostic {
+// ValidateWithJSONSchema checks a config against the JSON schema. It returns
+// the schema's errors and, separately, go-yaml's errors decoding the config.
+// When nothing could be decoded, it returns only go-yaml's.
+func (validator *JSONSchemaValidator) ValidateWithJSONSchema(rootNode *sitter.Node, content []byte) (schemaDiagnostics, yamlDiagnostics []protocol.Diagnostic) {
 	var file interface{}
-	diagnostics := make([]protocol.Diagnostic, 0)
 
 	if err := yaml.Unmarshal(content, &file); err != nil {
-		// Can only happen if anchor or alias are not properly defined and/or referenced
-		yamlError, _ := handleYAMLErrors(err.Error(), content, rootNode)
-		diagnostics = append(diagnostics, yamlError...)
+		yamlDiagnostics, _ = handleYAMLErrors(err.Error(), content, rootNode)
+		if file == nil {
+			return nil, yamlDiagnostics
+		}
 	}
 
 	yamlLoader := gojsonschema.NewGoLoader(file)
@@ -249,7 +249,7 @@ func (validator *JSONSchemaValidator) ValidateWithJSONSchema(rootNode *sitter.No
 	result, err := validator.schema.Validate(yamlLoader)
 	if err != nil {
 		// Should never happen
-		return []protocol.Diagnostic{diagnostic.ErrorFromNode(rootNode, err.Error())}
+		return []protocol.Diagnostic{diagnostic.ErrorFromNode(rootNode, err.Error())}, yamlDiagnostics
 	}
 
 	jsonSchemaDiags := []protocol.Diagnostic{}
@@ -335,10 +335,7 @@ func (validator *JSONSchemaValidator) ValidateWithJSONSchema(rootNode *sitter.No
 		}
 	}
 
-	jsonSchemaDiags = removeUselessMustValidateError(jsonSchemaDiags)
-	diagnostics = append(diagnostics, jsonSchemaDiags...)
-
-	return diagnostics
+	return removeUselessMustValidateError(jsonSchemaDiags), yamlDiagnostics
 }
 
 // openSteps are the built-in steps whose options the compiler doesn't close,

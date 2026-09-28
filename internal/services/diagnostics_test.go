@@ -1353,3 +1353,42 @@ workflows:
 `)
 	assert.Check(t, cmp.DeepEqual(errors, []string{"Cannot find declaration for step no-such-command"}))
 }
+
+func TestBrokenYAML(t *testing.T) {
+	fake := fakes.NewCircleCI(t)
+
+	t.Run("is reported once, where go-yaml finds it", func(t *testing.T) {
+		errors := configErrors(t, fake, `version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:stable
+     steps:
+      - checkout
+
+workflows:
+  main:
+    jobs:
+      - build
+`)
+		assert.Check(t, cmp.DeepEqual(errors, []string{"Did not find expected key"}))
+	})
+
+	t.Run("an unknown anchor is still reported", func(t *testing.T) {
+		errors := configErrors(t, fake, `version: 2.1
+
+jobs:
+  build:
+    <<: *missing
+    steps:
+      - checkout
+
+workflows:
+  main:
+    jobs:
+      - build
+`)
+		assert.Check(t, cmp.DeepEqual(errors, []string{"yaml: unknown anchor 'missing' referenced"}))
+	})
+}
