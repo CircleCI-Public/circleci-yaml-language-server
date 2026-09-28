@@ -42,4 +42,5 @@ func (val *Validate) Validate() {
 	val.ValidateJobs()
 	val.ValidateCommands()
 	val.ValidateExecutors()
+	val.ValidateTypedKeyReferences()
 }
