@@ -124,6 +124,17 @@ func CouldExpandTo(content, s string) bool {
 	return regexp.MustCompile("^" + strings.Join(literals, ".*") + "$").MatchString(s)
 }
 
+// CouldBothExpandTo reports whether a and b, each holding references, could
+// expand to the same string. Only the text before their first reference and
+// after their last is compared, as what lies between depends on values.
+func CouldBothExpandTo(a, b string) bool {
+	aParts, bParts := referenceRegex.Split(a, -1), referenceRegex.Split(b, -1)
+	aPrefix, bPrefix := aParts[0], bParts[0]
+	aSuffix, bSuffix := aParts[len(aParts)-1], bParts[len(bParts)-1]
+	return (strings.HasPrefix(aPrefix, bPrefix) || strings.HasPrefix(bPrefix, aPrefix)) &&
+		(strings.HasSuffix(aSuffix, bSuffix) || strings.HasSuffix(bSuffix, aSuffix))
+}
+
 var onlyParamRegex = regexp.MustCompile(`^<<\s*(parameters|pipeline.parameters)\.([A-Za-z0-9-_]*)\s*>>$`)
 
 // Returns true if the string is *only* a parameter

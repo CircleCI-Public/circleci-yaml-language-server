@@ -136,3 +136,21 @@ func TestCouldExpandTo(t *testing.T) {
 		assert.Check(t, cmp.Equal(got, tt.want), "CouldExpandTo(%q, %q)", tt.content, tt.s)
 	}
 }
+
+func TestCouldBothExpandTo(t *testing.T) {
+	tests := []struct {
+		a, b string
+		want bool
+	}{
+		{"setup-<< pipeline.parameters.env >>", "setup-<< pipeline.parameters.env >>", true},
+		{"setup-<< pipeline.parameters.env >>", "setup-<< pipeline.parameters.other >>", true},
+		{"<< pipeline.parameters.env >>-setup", "setup-<< pipeline.parameters.env >>", true},
+		{"test-hello-<< pipeline.parameters.place >>", "test-<< pipeline.parameters.x >>", true},
+		{"test-<< pipeline.parameters.x >>", "deploy-<< pipeline.parameters.x >>", false},
+		{"<< pipeline.parameters.x >>-a", "<< pipeline.parameters.x >>-b", false},
+	}
+	for _, tt := range tests {
+		got := CouldBothExpandTo(tt.a, tt.b)
+		assert.Check(t, cmp.Equal(got, tt.want), "CouldBothExpandTo(%q, %q)", tt.a, tt.b)
+	}
+}

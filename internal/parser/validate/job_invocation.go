@@ -40,7 +40,10 @@ type InvocationContext struct {
 func (val Validate) doesJobInvocationExist(jobInvocations []ast2.JobInvocation, requireName string) bool {
 	for _, jobInvocation := range jobInvocations {
 		names := append([]string{jobInvocation.JobName, jobInvocation.StepName, jobInvocation.MatrixAlias}, jobInvocation.MatrixNames...)
-		if slices.ContainsFunc(names, func(name string) bool { return invocationNameMatches(name, requireName) }) {
+		if slices.ContainsFunc(names, func(name string) bool {
+			// A matrix's `name:` template is only a name once MatrixNames expand it.
+			return !paramref.IsMatrixPartiallyReferenced(name) && invocationNameMatches(name, requireName)
+		}) {
 			return true
 		}
 	}
@@ -83,9 +86,36 @@ func counted(n int, one, many string) string {
 
 // invocationNameMatches reports whether a job's name is the name a `requires`
 // gives. A name holding a reference, such as `deploy-<< pipeline.git.branch >>`,
-// is only known once the pipeline runs.
+// is only known once the pipeline runs, and so is a require holding one.
 func invocationNameMatches(name, requireName string) bool {
-	return name == requireName || paramref.CouldExpandTo(name, requireName)
+	nameIsTemplate, requireIsTemplate := paramref.ContainsReference(name), paramref.ContainsReference(requireName)
+	switch {
+	case nameIsTemplate && requireIsTemplate:
+		return paramref.CouldBothExpandTo(name, requireName)
+	case nameIsTemplate:
+		return paramref.CouldExpandTo(name, requireName)
+	case requireIsTemplate:
+		return paramref.CouldExpandTo(requireName, name)
+	}
+	return name == requireName
+}
+
+// validateMatrixRequireExists checks a require holding `<< matrix.x >>`
+// against the other invocations once for each job the matrix expands to, as
+// the compiler expands it. Outside a matrix, it can't be expanded.
+func (val Validate) validateMatrixRequireExists(jobInvocations []ast2.JobInvocation, jobInvocation ast2.JobInvocation, require ast2.Require, ctx InvocationContext) {
+	for i, combination := range jobInvocation.MatrixCombinations {
+		expanded := parser.ExpandMatrixReferences(require.Name, combination)
+		if paramref.IsMatrixPartiallyReferenced(expanded) || val.doesJobInvocationExist(jobInvocations, expanded) {
+			continue
+		}
+		missing := "a job in this workflow"
+		if ctx.Kind == InJobGroup {
+			missing = fmt.Sprintf("a member of the job group '%s'", ctx.JobGroupName)
+		}
+		val.addDiagnostic(diagnostic.Error(require.Range, fmt.Sprintf(
+			"Job '%s' requires '%s', which is not %s", jobInvocation.MatrixNames[i], expanded, missing)))
+	}
 }
 
 func (val Validate) validateJobInvocationParameters(jobInvocation ast2.JobInvocation) {
@@ -230,7 +260,9 @@ func (val Validate) validateInvocations(jobInvocations []ast2.JobInvocation, ctx
 		for _, require := range jobInvocation.Requires {
 			val.validateRequireIsUnambiguous(jobInvocations, i, require)
 
-			if !val.doesJobInvocationExist(jobInvocations, require.Name) && !paramref.IsMatrixPartiallyReferenced(require.Name) {
+			if paramref.IsMatrixPartiallyReferenced(require.Name) {
+				val.validateMatrixRequireExists(jobInvocations, jobInvocation, require, ctx)
+			} else if !val.doesJobInvocationExist(jobInvocations, require.Name) {
 				// Check if the require references a job inside a job-group
 				if ownerGroup, found := val.Doc.FindJobGroupContainingJob(require.Name); found {
 					if ctx.Kind == InWorkflow {

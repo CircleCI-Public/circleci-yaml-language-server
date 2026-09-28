@@ -1842,3 +1842,140 @@ workflows:
 		"Parameter prod is not a valid value for env",
 	}, anyOrder))
 }
+
+func TestTemplatedRequiresInMatrices(t *testing.T) {
+	const jobs = `version: "2.1"
+
+parameters:
+  place:
+    type: string
+    default: world
+
+jobs:
+  test:
+    parameters:
+      word:
+        type: string
+    machine: true
+    steps:
+      - run: "test << parameters.word >>"
+  deploy:
+    parameters:
+      word:
+        type: string
+    machine: true
+    steps:
+      - run: "deploy << parameters.word >>"
+`
+	members := func(requires string) string {
+		return `      - test:
+          matrix:
+            parameters:
+              word: ["hello", "goodbye"]
+          name: "test-<< matrix.word >>"
+      - deploy:
+          matrix:
+            parameters:
+              word: ["hello", "goodbye"]
+          requires: ["` + requires + `"]
+`
+	}
+
+	testCases := []ValidateTestCase{
+		{
+			Name: "a matrix member requires a job, for each of its values",
+			YamlContent: jobs + `
+workflows:
+  workflow:
+    jobs:
+` + members("test-<< matrix.word >>"),
+			OnlyErrors:  true,
+			Diagnostics: []protocol.Diagnostic{},
+		},
+		{
+			Name: "a matrix member requires a job the workflow doesn't have",
+			YamlContent: jobs + `
+workflows:
+  workflow:
+    jobs:
+` + members("test-<< matrix.word >>-<< pipeline.parameters.place >>"),
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(span(35, 21, 77),
+					"Job 'deploy-hello' requires 'test-hello-<< pipeline.parameters.place >>', which is not a job in this workflow"),
+				diagnostic.Error(span(35, 21, 77),
+					"Job 'deploy-goodbye' requires 'test-goodbye-<< pipeline.parameters.place >>', which is not a job in this workflow"),
+			},
+		},
+		{
+			Name: "a job group's matrix member requires a job the group doesn't have",
+			YamlContent: jobs + `
+job-groups:
+  build-and-deploy:
+    jobs:
+` + members("test-<< matrix.word >>-<< pipeline.parameters.place >>") + `
+workflows:
+  workflow:
+    jobs:
+      - build-and-deploy
+`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(span(35, 21, 77),
+					"Job 'deploy-hello' requires 'test-hello-<< pipeline.parameters.place >>', which is not a member of the job group 'build-and-deploy'"),
+				diagnostic.Error(span(35, 21, 77),
+					"Job 'deploy-goodbye' requires 'test-goodbye-<< pipeline.parameters.place >>', which is not a member of the job group 'build-and-deploy'"),
+			},
+		},
+		{
+			Name: "a job group's matrix member requires a job named by a pipeline parameter",
+			YamlContent: jobs + `
+job-groups:
+  build-and-deploy:
+    jobs:
+      - test:
+          matrix:
+            parameters:
+              word: ["init"]
+          name: "test-<< pipeline.parameters.place >>"
+      - deploy:
+          matrix:
+            parameters:
+              word: ["qa", "staging"]
+          name: "deploy-<< matrix.word >>-<< pipeline.parameters.place >>"
+          requires:
+            - "test-<< pipeline.parameters.place >>"
+
+workflows:
+  workflow:
+    jobs:
+      - build-and-deploy
+`,
+			OnlyErrors:  true,
+			Diagnostics: []protocol.Diagnostic{},
+		},
+		{
+			Name: "a require named by a pipeline parameter",
+			YamlContent: jobs + `
+workflows:
+  workflow:
+    jobs:
+      - test:
+          name: test-world
+          word: hello
+      - deploy:
+          word: hello
+          requires:
+            - test-<< pipeline.parameters.place >>
+            - build-<< pipeline.parameters.place >>
+`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(span(33, 14, 51),
+					"Cannot find declaration for job invocation \"build-<< pipeline.parameters.place >>\""),
+			},
+		},
+	}
+
+	CheckYamlErrors(t, testCases)
+}
