@@ -200,3 +200,233 @@ workflows:
 
 	CheckYamlErrors(t, testCases)
 }
+
+func TestCommandAliases(t *testing.T) {
+	testCases := []ValidateTestCase{
+		{
+			Name: "an alias of an orb's command takes its parameters",
+			YamlContent: `version: 2.1
+orbs:
+  orb:
+    commands:
+      c:
+        parameters:
+          greeting:
+            type: string
+        steps:
+          - run: echo << parameters.greeting >>
+commands:
+  renamed-c: orb/c
+jobs:
+  build:
+    machine:
+      image: ubuntu-2404:current
+    steps:
+      - renamed-c:
+          greeting: hello
+      - renamed-c:
+          nope: hello
+workflows:
+  workflow:
+    jobs:
+      - build
+`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(span(19, 8, 17), "Parameter greeting is required for renamed-c"),
+				diagnostic.Error(span(20, 10, 21), "Parameter nope is not defined for renamed-c"),
+			},
+		},
+		{
+			Name: "an alias of an orb the config doesn't declare",
+			YamlContent: `version: 2.1
+commands:
+  renamed-c: nope/c
+jobs:
+  build:
+    machine:
+      image: ubuntu-2404:current
+    steps:
+      - renamed-c:
+          anything: at all
+workflows:
+  workflow:
+    jobs:
+      - build
+`,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(span(2, 13, 19),
+					"Unable to determine target for step invocation nope/c (renamed from local command renamed-c)"),
+			},
+		},
+		{
+			Name: "an alias of a command an orb doesn't have",
+			YamlContent: `version: 2.1
+orbs:
+  orb:
+    jobs:
+      c:
+        machine:
+          image: ubuntu-2404:current
+        steps:
+          - run: echo hello
+commands:
+  renamed-c: orb/c
+jobs:
+  build:
+    machine:
+      image: ubuntu-2404:current
+    steps:
+      - renamed-c
+workflows:
+  workflow:
+    jobs:
+      - build
+`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(span(10, 13, 18), "orb/c is a job, not a command: a job can't be run as a step"),
+			},
+		},
+		{
+			Name: "a malformed alias that is invoked",
+			YamlContent: `version: 2.1
+commands:
+  checkout: 45m
+jobs:
+  build:
+    machine:
+      image: ubuntu-2404:current
+    steps:
+      - checkout
+workflows:
+  workflow:
+    jobs:
+      - build
+`,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Warning(span(2, 2, 10),
+					"Command 'checkout' in commands.checkout shadows built-in CircleCI command 'checkout'"),
+				diagnostic.Error(span(2, 12, 15), malformedAliasMessage),
+			},
+		},
+		{
+			Name: "a malformed alias nothing invokes",
+			YamlContent: `version: 2.1
+commands:
+  no_output_timeout: 45m
+jobs:
+  build:
+    machine:
+      image: ubuntu-2404:current
+    steps:
+      - run: echo hello
+workflows:
+  workflow:
+    jobs:
+      - build
+`,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Warning(span(2, 2, 19), "Command is unused"),
+				diagnostic.Warning(span(2, 21, 24), "`45m` is not a valid orb element alias, "+
+					"so this entry is ignored unless it is invoked. An alias must be a single "+
+					"`orb-alias/element-name` reference."),
+			},
+		},
+		{
+			Name: "a malformed alias named run, which nothing can invoke",
+			YamlContent: `version: 2.1
+commands:
+  run: 45m
+jobs:
+  build:
+    machine:
+      image: ubuntu-2404:current
+    steps:
+      - checkout
+workflows:
+  workflow:
+    jobs:
+      - build
+`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(span(2, 7, 10), malformedAliasMessage),
+			},
+		},
+		{
+			Name: "an orb's command used only through an alias is used",
+			YamlContent: `version: 2.1
+orbs:
+  orb:
+    commands:
+      c:
+        steps:
+          - run: echo hello
+commands:
+  renamed-c: orb/c
+jobs:
+  build:
+    machine:
+      image: ubuntu-2404:current
+    steps:
+      - renamed-c
+workflows:
+  workflow:
+    jobs:
+      - build:
+          post-steps:
+            - renamed-c
+`,
+		},
+		{
+			Name: "an inline orb's alias of an orb it declares",
+			YamlContent: `version: 2.1
+orbs:
+  outer:
+    orbs:
+      inner:
+        commands:
+          c:
+            steps:
+              - run: echo inner
+    commands:
+      renamed-c: inner/c
+    jobs:
+      use-renamed-c:
+        machine:
+          image: ubuntu-2404:current
+        steps:
+          - renamed-c
+workflows:
+  workflow:
+    jobs:
+      - outer/use-renamed-c
+`,
+		},
+		{
+			Name: "an inline orb's malformed alias that it invokes",
+			YamlContent: `version: 2.1
+orbs:
+  outer:
+    commands:
+      renamed-c: 45m
+    jobs:
+      use-renamed-c:
+        machine:
+          image: ubuntu-2404:current
+        steps:
+          - renamed-c
+workflows:
+  workflow:
+    jobs:
+      - outer/use-renamed-c
+`,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(span(4, 17, 20), malformedAliasMessage),
+			},
+		},
+	}
+
+	CheckYamlErrors(t, testCases)
+}

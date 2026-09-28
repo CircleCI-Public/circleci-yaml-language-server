@@ -15,6 +15,10 @@ func (doc *YamlDocument) parseCommands(commandsNode *sitter.Node) {
 	}
 
 	doc.iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
+		if alias, ok := doc.parseAlias(child); ok {
+			doc.Aliases.Commands[alias.Name] = alias
+			return
+		}
 		command := doc.parseSingleCommand(child)
 		if definedCommand, ok := doc.Commands[command.Name]; ok {
 			doc.addDiagnostic(protocol.Diagnostic{

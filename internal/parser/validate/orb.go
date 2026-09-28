@@ -321,6 +321,14 @@ func (val Validate) ValidateLocalOrbs() {
 					val.commandIsUnused(command)
 				}
 			}
+
+			// An orb's aliases are only its own to use.
+			for _, alias := range orbInfo.Aliases.Commands {
+				if _, ok := validateStruct.Doc.CommandAlias(alias.Name); ok &&
+					!validateStruct.checkIfCommandIsUsed(ast.Command{Name: alias.Name}) {
+					val.commandIsUnused(ast.Command{Name: alias.Name, NameRange: alias.NameRange})
+				}
+			}
 		}
 	}
 }

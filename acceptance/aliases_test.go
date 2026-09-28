@@ -52,12 +52,61 @@ workflows:
       - electric/do-thing
 `
 
+// commandAliasesConfig renames an orb's command, and calls it both from a
+// job's steps and from a workflow's post-steps. The orb's own job still finds
+// the orb's command rather than the config's command of the same name.
+const commandAliasesConfig = `version: 2.1
+
+orbs:
+  orb:
+    commands:
+      c:
+        steps:
+          - run: echo orb command
+    jobs:
+      build:
+        machine:
+          image: ubuntu-2404:current
+        steps:
+          - c
+
+commands:
+  c:
+    steps:
+      - run: echo local command
+  renamed-c: orb/c
+
+jobs:
+  use-renamed-c:
+    machine:
+      image: ubuntu-2404:current
+    steps:
+      - renamed-c
+
+workflows:
+  workflow:
+    jobs:
+      - orb/build:
+          pre-steps:
+            - c
+          post-steps:
+            - renamed-c
+      - use-renamed-c
+`
+
 func TestOrbElementAliases(t *testing.T) {
 	fake := linkedProjectFake(t)
 
 	t.Run("executors", func(t *testing.T) {
 		session := start(t, fake, executorAliasesConfig, testToken)
 		diagnostics := session.open(t, executorAliasesConfig)
+
+		assert.Check(t, cmp.DeepEqual(diagnostics, []string{}))
+	})
+
+	t.Run("commands", func(t *testing.T) {
+		session := start(t, fake, commandAliasesConfig, testToken)
+		diagnostics := session.open(t, commandAliasesConfig)
 
 		assert.Check(t, cmp.DeepEqual(diagnostics, []string{}))
 	})

@@ -439,10 +439,20 @@ func (doc *YamlDocument) DoesExecutorExist(executorName string) bool {
 // ExecutorAlias returns the alias a name stands for, when no executor of that
 // name is defined.
 func (doc *YamlDocument) ExecutorAlias(name string) (ast2.Alias, bool) {
-	if _, ok := doc.Executors[name]; ok {
+	return lookupAlias(doc.Executors, doc.Aliases.Executors, name)
+}
+
+// CommandAlias returns the alias a name stands for, when no command of that
+// name is defined.
+func (doc *YamlDocument) CommandAlias(name string) (ast2.Alias, bool) {
+	return lookupAlias(doc.Commands, doc.Aliases.Commands, name)
+}
+
+func lookupAlias[T any](defined map[string]T, aliases map[string]ast2.Alias, name string) (ast2.Alias, bool) {
+	if _, ok := defined[name]; ok {
 		return ast2.Alias{}, false
 	}
-	alias, ok := doc.Aliases.Executors[name]
+	alias, ok := aliases[name]
 	return alias, ok
 }
 
@@ -698,8 +708,11 @@ const (
 // GetDefinedParams returns the parameters of the command or job that
 // entityName refers to, local or from an orb, preferring the kind it is used
 // as. The other kind is only a fallback: a name used as the wrong kind is
-// reported where its existence is checked.
+// reported where its existence is checked. An alias refers to its target.
 func (doc *YamlDocument) GetDefinedParams(entityName string, kind EntityKind, cache *cache.Cache) map[string]ast2.Parameter {
+	if alias, ok := doc.CommandAlias(entityName); ok && kind == CommandEntity {
+		entityName = alias.Target
+	}
 	attributes := doc.ToOrbParsedAttributes()
 	name := entityName
 

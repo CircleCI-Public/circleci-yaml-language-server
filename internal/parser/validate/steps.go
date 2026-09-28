@@ -186,11 +186,12 @@ func (val Validate) validateRunCommand(step ast2.Run, jobOrCommandParameters map
 	}
 }
 
-// isKnownStep reports whether a step can be called by name: a command,
-// built-in, orb command or alias, or one from an orb that can't be fetched.
-// A job is not a step.
+// isKnownStep reports whether a step can be called by name: a command or a
+// command's alias, a built-in, an orb command or a YAML alias, or one from an
+// orb that can't be fetched. A job is not a step.
 func (val Validate) isKnownStep(name string) bool {
-	return val.Doc.DoesCommandExist(name) ||
+	_, isCommandAlias := val.Doc.CommandAlias(name)
+	return val.Doc.DoesCommandExist(name) || isCommandAlias ||
 		val.Doc.IsBuiltIn(name) ||
 		val.Doc.IsOrbCommand(name, val.Cache) ||
 		val.Doc.IsAlias(name) ||
@@ -204,15 +205,13 @@ func (val Validate) validateNamedStep(step ast2.NamedStep, usableParams map[stri
 		return
 	}
 
-	if !val.isKnownStep(step.Name) {
-		message := fmt.Sprintf("Cannot find declaration for step %s", step.Name)
-		if val.Doc.DoesJobExist(step.Name) || val.Doc.IsOrbJob(step.Name, val.Cache) {
-			message = fmt.Sprintf("%s is a job, not a command: a job can't be run as a step", step.Name)
-		}
+	if message := val.unknownStepMessage(step.Name); message != "" {
 		val.addDiagnostic(diagnostic.Error(step.Range, message))
 	}
 
-	if !val.Doc.IsBuiltIn(step.Name) {
+	// An alias that names nothing is reported where it is declared.
+	alias, isAlias := val.Doc.CommandAlias(step.Name)
+	if !val.Doc.IsBuiltIn(step.Name) && (!isAlias || val.commandAliasProblem(alias) == "") {
 		targetEntityDefinedParams := val.Doc.GetDefinedParams(step.Name, parser.CommandEntity, val.Cache)
 		val.validateParametersValue(
 			step.Parameters,
@@ -230,6 +229,17 @@ func (val Validate) validateNamedStep(step ast2.NamedStep, usableParams map[stri
 				Range:    step.Range,
 				Severity: protocol.DiagnosticSeverityError,
 			})
+	}
+}
+
+func (val Validate) unknownStepMessage(name string) string {
+	switch {
+	case val.isKnownStep(name):
+		return ""
+	case val.Doc.DoesJobExist(name) || val.Doc.IsOrbJob(name, val.Cache):
+		return fmt.Sprintf("%s is a job, not a command: a job can't be run as a step", name)
+	default:
+		return fmt.Sprintf("Cannot find declaration for step %s", name)
 	}
 }
 
