@@ -37,6 +37,7 @@ func (val *Validate) Validate() {
 		val.ValidateConditions()
 		val.ValidateRegexes()
 		val.ValidateTemplates()
+		val.ValidatePipelineValues()
 	}
 	val.ValidateJobs()
 	val.ValidateCommands()
