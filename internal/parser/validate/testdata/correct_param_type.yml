@@ -16,7 +16,7 @@ jobs:
       - image: cimg/base:edge
     steps:
       - checkout
-      - run: echo "This was triggered by << pipeline.trigger_source >>"
+      - run: echo "This was triggered by << pipeline.trigger.type >>"
       
 workflows:
   commit:
