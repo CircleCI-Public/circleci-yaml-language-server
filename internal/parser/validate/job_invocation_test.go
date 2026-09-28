@@ -1174,6 +1174,12 @@ workflows:
 }
 
 func TestJobGroupInvocation_NameAttribute(t *testing.T) {
+	const groupOccurs = "Job-group 'prod-deploy' occurs 2 times in workflow 'main'. " +
+		"You can give a job-group an explicit name by adding a `name` key"
+	const myGroupOccurs = "Job-group 'my-group' occurs 2 times in workflow 'main'. " +
+		"You can give a job-group an explicit name by adding a `name` key"
+	const unnamedGroupOccurs = "Job-group 'deploy-group' occurs 2 times in workflow 'main'. " +
+		"You can give a job-group an explicit name by adding a `name` key"
 	testCases := []ValidateTestCase{
 		{
 			Name:       "job-group invocation with name: is allowed and can be required by that name",
@@ -1266,10 +1272,8 @@ workflows:
       - deploy-group:
           name: prod-deploy`,
 			Diagnostics: []protocol.Diagnostic{
-				diagnostic.Error(protocol.Range{
-					Start: protocol.Position{Line: 20, Character: 16},
-					End:   protocol.Position{Line: 20, Character: 27},
-				}, `Job group "deploy-group" is already invoked with the name "prod-deploy"`),
+				diagnostic.Error(span(18, 16, 27), groupOccurs),
+				diagnostic.Error(span(20, 16, 27), groupOccurs),
 			},
 		},
 		{
@@ -1295,14 +1299,8 @@ workflows:
       - deploy-group
       - deploy-group`,
 			Diagnostics: []protocol.Diagnostic{
-				diagnostic.Error(protocol.Range{
-					Start: protocol.Position{Line: 17, Character: 8},
-					End:   protocol.Position{Line: 17, Character: 20},
-				}, `Job group "deploy-group" is invoked multiple times without a "name" attribute. Each invocation must have a unique name`),
-				diagnostic.Error(protocol.Range{
-					Start: protocol.Position{Line: 18, Character: 8},
-					End:   protocol.Position{Line: 18, Character: 20},
-				}, `Job group "deploy-group" is invoked multiple times without a "name" attribute. Each invocation must have a unique name`),
+				diagnostic.Error(span(17, 8, 20), unnamedGroupOccurs),
+				diagnostic.Error(span(18, 8, 20), unnamedGroupOccurs),
 			},
 		},
 		{
@@ -1328,6 +1326,248 @@ workflows:
       - deploy-group
       - deploy-group:
           name: prod-deploy`,
+		},
+		{
+			Name:       "two job-groups invoked with the same name is an error on both",
+			OnlyErrors: true,
+			YamlContent: `version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "build"
+
+job-groups:
+  group-a:
+    jobs:
+      - build
+  group-b:
+    jobs:
+      - build
+
+workflows:
+  main:
+    jobs:
+      - group-a:
+          name: my-group
+      - group-b:
+          name: my-group`,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(span(21, 16, 24), myGroupOccurs),
+				diagnostic.Error(span(23, 16, 24), myGroupOccurs),
+			},
+		},
+		{
+			Name:       "a job-group invoked with the name of another job-group is an error on both",
+			OnlyErrors: true,
+			YamlContent: `version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "build"
+
+job-groups:
+  group-a:
+    jobs:
+      - build
+  my-group:
+    jobs:
+      - build
+
+workflows:
+  main:
+    jobs:
+      - group-a:
+          name: my-group
+      - my-group`,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(span(21, 16, 24), myGroupOccurs),
+				diagnostic.Error(span(22, 8, 16), myGroupOccurs),
+			},
+		},
+	}
+
+	CheckYamlErrors(t, testCases)
+}
+
+func TestJobGroupMemberNames(t *testing.T) {
+	const buildOccurs = "Job 'build' occurs 2 times in job group 'group-a'. " +
+		"You can give a job within a job group an explicit name by adding a `name` key"
+	testCases := []ValidateTestCase{
+		{
+			Name:       "the same job twice in a job group without a name is an error on both",
+			OnlyErrors: true,
+			YamlContent: `version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "build"
+
+job-groups:
+  group-a:
+    jobs:
+      - build
+      - build
+
+workflows:
+  main:
+    jobs:
+      - group-a`,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(span(12, 8, 13), buildOccurs),
+				diagnostic.Error(span(13, 8, 13), buildOccurs),
+			},
+		},
+		{
+			Name:       "a member named like another member is an error on both",
+			OnlyErrors: true,
+			YamlContent: `version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "build"
+  test:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "test"
+
+job-groups:
+  group-a:
+    jobs:
+      - build
+      - test:
+          name: build
+
+workflows:
+  main:
+    jobs:
+      - group-a`,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(span(17, 8, 13), buildOccurs),
+				diagnostic.Error(span(19, 16, 21), buildOccurs),
+			},
+		},
+		{
+			Name:       "the same job twice in a job group with different names is valid",
+			OnlyErrors: true,
+			YamlContent: `version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "build"
+
+job-groups:
+  group-a:
+    jobs:
+      - build
+      - build:
+          name: build-again
+
+workflows:
+  main:
+    jobs:
+      - group-a`,
+		},
+		{
+			Name:       "the same job in two job groups is valid",
+			OnlyErrors: true,
+			YamlContent: `version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo "build"
+
+job-groups:
+  group-a:
+    jobs:
+      - build
+  group-b:
+    jobs:
+      - build
+
+workflows:
+  main:
+    jobs:
+      - group-a
+      - group-b`,
+		},
+	}
+
+	CheckYamlErrors(t, testCases)
+}
+
+func TestApprovalShadowingAJob(t *testing.T) {
+	testCases := []ValidateTestCase{
+		{
+			Name: "an approval job in a job group named like a job is an error",
+			YamlContent: `version: 2.1
+
+jobs:
+  build:
+    machine: true
+    steps:
+      - checkout
+  release:
+    machine: true
+    steps:
+      - checkout
+
+job-groups:
+  deploy:
+    jobs:
+      - build
+      - release:
+          type: approval
+
+workflows:
+  main:
+    jobs:
+      - deploy`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(span(16, 8, 15), "Duplicate job definition: 'release' is defined in `jobs:`, "+
+					"so a job group can't also define it with type: approval"),
+			},
+		},
+		{
+			Name: "an approval job in a workflow named like a job is only a warning",
+			YamlContent: `version: 2.1
+
+jobs:
+  build:
+    machine: true
+    steps:
+      - checkout
+  release:
+    machine: true
+    steps:
+      - checkout
+
+workflows:
+  main:
+    jobs:
+      - build
+      - release:
+          type: approval`,
+			OnlyErrors: true,
 		},
 	}
 
