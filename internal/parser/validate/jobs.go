@@ -54,6 +54,7 @@ func (val Validate) validateSingleJob(job ast2.Job) {
 	}
 
 	if job.Executor != "" {
+		val.validateExecutorNameReference(job)
 		if paramref.IsOnlyParameter(job.Executor) {
 			_, paramName := paramref.ExtractName(job.Executor)
 			param := job.Parameters[paramName]

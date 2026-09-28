@@ -36,6 +36,7 @@ func (val *Validate) Validate() {
 		val.ValidateFunctions()
 		val.ValidateConditions()
 		val.ValidateRegexes()
+		val.ValidateMatchesValues()
 		val.ValidateTemplates()
 		val.ValidatePipelineValues()
 	}
