@@ -237,16 +237,90 @@ func (ref ReferenceHandler) getExecutorReferences() ([]protocol.Location, string
 	}
 
 	locations := []protocol.Location{}
+	add := func(rng protocol.Range) {
+		locations = append(locations, protocol.Location{URI: ref.Params.TextDocument.URI, Range: rng})
+	}
+
 	for _, job := range ref.Doc.Jobs {
 		if job.Executor == executorName {
-			locations = append(locations, protocol.Location{
-				URI:   ref.Params.TextDocument.URI,
-				Range: job.ExecutorRange,
-			})
+			add(job.ExecutorRange)
+			continue
+		}
+
+		// A job with `executor: << parameters.x >>` uses whichever executor x
+		// names: by default, or as the argument or matrix value of a job that
+		// invokes it.
+		if !paramref.IsOnlyParameter(job.Executor) {
+			continue
+		}
+		path, param := paramref.ExtractName(job.Executor)
+		if path != "parameters."+param {
+			continue
+		}
+
+		if definition, ok := job.Parameters[param]; ok && parameterDefault(definition) == executorName {
+			add(definition.GetDefaultRange())
+		}
+		for _, rng := range ref.executorArguments(job.Name, param, executorName) {
+			add(rng)
 		}
 	}
 
 	return locations, executorName
+}
+
+// executorArguments are where the invocations of job give its parameter param
+// the value executorName, directly or among a matrix's values.
+func (ref ReferenceHandler) executorArguments(job, param, executorName string) []protocol.Range {
+	var invocations []ast2.JobInvocation
+	for _, workflow := range ref.Doc.Workflows {
+		invocations = append(invocations, workflow.JobInvocations...)
+	}
+	for _, group := range ref.Doc.JobGroups {
+		invocations = append(invocations, group.JobInvocations...)
+	}
+
+	var ranges []protocol.Range
+	for _, invocation := range invocations {
+		if invocation.JobName != job {
+			continue
+		}
+
+		if argument, ok := invocation.Parameters[param]; ok && namesValue(argument, executorName) {
+			ranges = append(ranges, argument.Range)
+		}
+		for _, values := range invocation.MatrixParams[param] {
+			list, _ := values.Value.([]ast2.ParameterValue)
+			for _, value := range list {
+				if namesValue(value, executorName) {
+					ranges = append(ranges, value.ValueRange)
+				}
+			}
+		}
+	}
+
+	return ranges
+}
+
+// namesValue reports whether a parameter's value is the string name, quoted
+// or not.
+func namesValue(value ast2.ParameterValue, name string) bool {
+	text, ok := value.Value.(string)
+	return ok && strings.Trim(text, `"'`) == name
+}
+
+// parameterDefault is the default of a parameter that can name an executor.
+func parameterDefault(parameter ast2.Parameter) string {
+	var text string
+	switch parameter := parameter.(type) {
+	case ast2.ExecutorParameter:
+		text = parameter.Default
+	case ast2.StringParameter:
+		text = parameter.Default
+	case ast2.EnumParameter:
+		text = parameter.Default
+	}
+	return strings.Trim(text, `"'`)
 }
 
 func (ref ReferenceHandler) getParamReferences(cmdName string) ([]protocol.Location, error) {
