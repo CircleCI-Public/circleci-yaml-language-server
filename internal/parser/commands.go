@@ -75,7 +75,7 @@ func (doc *YamlDocument) parseSingleCommand(commandNode *sitter.Node) ast2.Comma
 			res.Steps = doc.parseSteps(valueNode)
 		case "parameters":
 			res.ParametersRange = doc.NodeToRange(valueNode)
-			res.Parameters = doc.parseParameters(valueNode)
+			res.Parameters = doc.parseParameters(valueNode, "Command "+res.Name)
 		}
 	})
 

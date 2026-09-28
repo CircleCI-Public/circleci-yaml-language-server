@@ -455,7 +455,7 @@ func TestYamlDocument_parseParameters(t *testing.T) {
 				Content: []byte(tt.args.paramString),
 			}
 
-			if gotRes := doc.parseParameters(paramNode); !reflect.DeepEqual(gotRes, tt.wantRes) {
+			if gotRes := doc.parseParameters(paramNode, "Job build"); !reflect.DeepEqual(gotRes, tt.wantRes) {
 				t.Errorf("YamlDocument.parseParameters() = got %v, want %v", gotRes, tt.wantRes)
 			}
 		})

@@ -113,7 +113,7 @@ func (doc *YamlDocument) parseBaseExecutor(base *ast2.BaseExecutor, nameNode *si
 			base.Environment = doc.parseEnvs(valueNode)
 		case "parameters":
 			base.UserParametersRange = doc.NodeToRange(child)
-			base.UserParameters = doc.parseParameters(valueNode)
+			base.UserParameters = doc.parseParameters(valueNode, "Executor "+doc.GetNodeText(nameNode))
 		}
 	})
 
