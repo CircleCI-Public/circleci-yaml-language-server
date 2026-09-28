@@ -120,6 +120,14 @@ jobs:
             - run: task ci:test
       - store_results
 
+  coverage:
+    executor: linux
+    steps:
+      - setup
+      - run: task cover
+      - store_artifacts:
+          path: test-reports/coverage.html
+
   # The dry run of the release: cross-compiles and packages every target with
   # goreleaser at 0.0.0-dev, unsigned, leaving the release in dist/release.
   build:
@@ -208,6 +216,7 @@ workflows:
           matrix:
             parameters:
               os: [linux, macos, windows]
+      - coverage
       - Security Scan release:
           context:
             - devex-release
@@ -241,6 +250,7 @@ workflows:
           matrix:
             parameters:
               os: [linux, macos, windows]
+      - coverage
       - build
       - smoke-test:
           matrix:
