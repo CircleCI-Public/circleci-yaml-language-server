@@ -2,6 +2,7 @@ package parser
 
 import (
 	"path"
+	"strings"
 
 	sitter "github.com/tree-sitter/go-tree-sitter"
 
@@ -26,8 +27,13 @@ var pipelineConfigKeys = map[string]bool{
 // client sends every YAML file under .circleci/, which also holds files for
 // other tools, such as test-suites.yml for Smarter Testing. A mapping with
 // none of the pipeline's top-level keys is one of those, unless the file is
-// named config.yml, which is config however unfinished it is.
+// named config.yml, which is config however unfinished it is. A ytt template
+// isn't config until ytt renders it, whatever its name.
 func (doc *YamlDocument) IsPipelineConfig() bool {
+	if doc.isYttTemplate() {
+		return false
+	}
+
 	switch path.Base(string(doc.URI)) {
 	case "config.yml", "config.yaml":
 		return true
@@ -48,6 +54,21 @@ func (doc *YamlDocument) IsPipelineConfig() bool {
 		}
 	})
 
+	return found
+}
+
+// isYttTemplate reports whether the document has a ytt annotation, a comment
+// starting `#@`, such as `#@ load("@ytt:data", "data")` or
+// `key: #@ data.values.key`.
+func (doc *YamlDocument) isYttTemplate() bool {
+	found := false
+	commentsQuery.Run(doc.RootNode, func(match *sitter.QueryMatch) {
+		for _, capture := range match.Captures {
+			if strings.HasPrefix(doc.GetNodeText(&capture.Node), "#@") {
+				found = true
+			}
+		}
+	})
 	return found
 }
 
