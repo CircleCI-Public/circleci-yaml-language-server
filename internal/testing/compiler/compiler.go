@@ -3,9 +3,7 @@
 // It is a copy of backplane-go's testing/compiler and the releases/compiler it
 // wraps, reduced to what this repository needs. Copied rather than imported:
 // backplane-go is not a dependency here, and taking it on for a test helper
-// would bring its observability and closer packages along with it. The
-// coverage instrumentation is left out, because nothing here reports coverage
-// from an acceptance run.
+// would bring its observability and closer packages along with it.
 //
 // Compiling the real binary is the point: an acceptance test that runs what
 // ships covers the flag parsing, the transport and the startup handshake a
@@ -36,6 +34,9 @@ type Work struct {
 	Tags string
 	// Environment is extra environment for the compiler, e.g. "GOOS=linux".
 	Environment []string
+	// ExtraArgs are appended to go build's arguments, e.g. "-cover" to build
+	// a binary that writes its coverage to GOCOVERDIR when it exits.
+	ExtraArgs []string
 
 	// Result is where the path of the compiled binary is written.
 	Result *string
@@ -138,6 +139,7 @@ func (p *Parallel) compile(ctx context.Context, work Work) error {
 	if work.Tags != "" {
 		args = append(args, "-tags", work.Tags)
 	}
+	args = append(args, work.ExtraArgs...)
 	args = append(args, work.Source)
 
 	cmd := exec.CommandContext(ctx, goBinary(), args...)
