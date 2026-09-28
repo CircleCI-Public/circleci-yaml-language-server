@@ -224,6 +224,14 @@ func (val Validate) CheckIfParamsExist() {
 					parameters = val.Doc.GetParamsWithPosition(val.Doc.NodeToRange(node).Start)
 					message = fmt.Sprintf("Parameter %s is not defined", name)
 					reference.Name = name
+				} else if name, ok := strings.CutPrefix(reference.Name, "matrix."); ok {
+					var inMatrix bool
+					parameters, inMatrix = val.matrixParametersAt(val.Doc.NodeToRange(node).Start)
+					message = fmt.Sprintf("Matrix parameter %s is not defined", name)
+					if !inMatrix {
+						message = fmt.Sprintf("matrix.%s is only set in a workflow job with a matrix", name)
+					}
+					reference.Name = name
 				} else {
 					continue
 				}
@@ -323,4 +331,30 @@ func (val Validate) checkExecutorParamValue(param ast2.ParameterValue) {
 	}
 
 	val.validateExecutorReference(executorName, executorNameRange)
+}
+
+// matrixParametersAt returns the matrix parameters set at pos, which are set
+// only within a job invocation that has a matrix. It reports whether pos is in
+// such an invocation.
+func (val Validate) matrixParametersAt(pos protocol.Position) (map[string]ast2.Parameter, bool) {
+	invocations := []ast2.JobInvocation{}
+	for _, workflow := range val.Doc.Workflows {
+		invocations = append(invocations, workflow.JobInvocations...)
+	}
+	for _, group := range val.Doc.JobGroups {
+		invocations = append(invocations, group.JobInvocations...)
+	}
+
+	for _, invocation := range invocations {
+		rng := invocation.JobInvocationRange
+		if !invocation.HasMatrix || position.Compare(pos, rng.Start) < 0 || position.Compare(pos, rng.End) > 0 {
+			continue
+		}
+		parameters := map[string]ast2.Parameter{}
+		for name := range invocation.MatrixParams {
+			parameters[name] = nil
+		}
+		return parameters, true
+	}
+	return nil, false
 }

@@ -70,4 +70,4 @@ workflows:
             parameters:
               py_version: ["3.8", "3.9"]
       - uselessJob:
-          requires: [*usefulJob, build-windows-<<matrix.py_version>>]
+          requires: [*usefulJob, build-windows]

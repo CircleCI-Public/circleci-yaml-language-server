@@ -712,7 +712,7 @@ jobs:
         default: false
     docker:
       - image: cimg/base:current
-    parallelism: << matrix.split >>
+    parallelism: << parameters.split >>
     circleci_ip_ranges: << parameters.fixed_ips >>
     steps:
       - run:

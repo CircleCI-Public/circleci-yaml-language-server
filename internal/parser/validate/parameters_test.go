@@ -794,3 +794,145 @@ workflows:
 
 	CheckYamlErrors(t, testCases)
 }
+
+func TestMatrixReferences(t *testing.T) {
+	testCases := []ValidateTestCase{
+		{
+			Name: "a matrix value is set in the arguments, name, requires and pre-steps of its job",
+			YamlContent: `version: 2.1
+jobs:
+  deploy:
+    parameters:
+      project:
+        type: string
+    machine: true
+    steps:
+      - run: echo << parameters.project >>
+  notify:
+    parameters:
+      env:
+        type: string
+    machine: true
+    steps:
+      - run: echo << parameters.env >>
+workflows:
+  deploy-all:
+    jobs:
+      - deploy:
+          name: deploy-<< matrix.env >>
+          matrix:
+            parameters:
+              env: [dev, prod]
+          project: my-app-<< matrix.env >>
+          pre-steps:
+            - run: echo << matrix.env >>
+      - notify:
+          name: notify-<< matrix.env >>
+          matrix:
+            parameters:
+              env: [dev, prod]
+          requires:
+            - deploy-<< matrix.env >>
+`,
+			OnlyErrors:  true,
+			Diagnostics: []protocol.Diagnostic{},
+		},
+		{
+			Name: "a matrix value in a job-group member's matrix",
+			YamlContent: `version: 2.1
+jobs:
+  deploy:
+    parameters:
+      word:
+        type: string
+    machine: true
+    steps:
+      - run: echo << parameters.word >>
+job-groups:
+  deploy-all:
+    jobs:
+      - deploy:
+          name: deploy-<< matrix.word >>
+          matrix:
+            parameters:
+              word: [qa, staging]
+workflows:
+  main:
+    jobs:
+      - deploy-all
+`,
+			OnlyErrors:  true,
+			Diagnostics: []protocol.Diagnostic{},
+		},
+		{
+			Name: "a matrix value in a job's steps",
+			YamlContent: `version: 2.1
+jobs:
+  deploy:
+    parameters:
+      env:
+        type: string
+    machine: true
+    steps:
+      - run: echo << matrix.env >>
+workflows:
+  deploy-all:
+    jobs:
+      - deploy:
+          matrix:
+            parameters:
+              env: [dev, prod]
+`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(span(8, 21, 31), "matrix.env is only set in a workflow job with a matrix"),
+			},
+		},
+		{
+			Name: "a matrix value in a workflow job without a matrix",
+			YamlContent: `version: 2.1
+jobs:
+  deploy:
+    machine: true
+    steps:
+      - run: echo deploy
+workflows:
+  deploy-all:
+    jobs:
+      - deploy:
+          name: deploy-<< matrix.env >>
+`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(span(10, 26, 36), "matrix.env is only set in a workflow job with a matrix"),
+			},
+		},
+		{
+			Name: "a value the matrix doesn't set",
+			YamlContent: `version: 2.1
+jobs:
+  deploy:
+    parameters:
+      env:
+        type: string
+    machine: true
+    steps:
+      - run: echo << parameters.env >>
+workflows:
+  deploy-all:
+    jobs:
+      - deploy:
+          name: deploy-<< matrix.region >>
+          matrix:
+            parameters:
+              env: [dev, prod]
+`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(span(13, 26, 39), "Matrix parameter region is not defined"),
+			},
+		},
+	}
+
+	CheckYamlErrors(t, testCases)
+}
