@@ -1,6 +1,7 @@
 package expect
 
 import (
+	"bytes"
 	"fmt"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
@@ -33,7 +34,12 @@ func ListHasDiagnostic(list []protocol.Diagnostic, diagnostic protocol.Diagnosti
 //   - Same message
 //   - Same range
 //   - Same severity
+//   - Same data, such as code actions, when b has any
 func AreDiagnosticEquivalent(a protocol.Diagnostic, b protocol.Diagnostic) bool {
+	if len(b.Data) != 0 && !bytes.Equal(a.Data, b.Data) {
+		return false
+	}
+
 	if a.Severity != b.Severity {
 		return false
 	}
@@ -61,7 +67,7 @@ func diagnosticInfoList(list []protocol.Diagnostic, prefix string) string {
 
 // Return a string containing the diagnostic information.
 func diagnosticInfo(diagnostic protocol.Diagnostic) string {
-	return fmt.Sprintf(
+	info := fmt.Sprintf(
 		"<L%d:%d,L%d:%d> %s: %s",
 		diagnostic.Range.Start.Line,
 		diagnostic.Range.Start.Character,
@@ -70,6 +76,10 @@ func diagnosticInfo(diagnostic protocol.Diagnostic) string {
 		severityName(diagnostic.Severity),
 		diagnostic.Message,
 	)
+	if len(diagnostic.Data) != 0 {
+		info += "\n\t\t  data: " + string(diagnostic.Data)
+	}
+	return info
 }
 
 func severityName(severity protocol.DiagnosticSeverity) string {
