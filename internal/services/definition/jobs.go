@@ -36,7 +36,7 @@ func (def DefinitionStruct) searchForJobs() []protocol.Location {
 		}
 	}
 
-	return []protocol.Location{}
+	return def.searchForAliasTargets(def.Doc.Aliases.Jobs)
 }
 
 func (def DefinitionStruct) getStepDefinition(steps []ast.Step) []protocol.Location {

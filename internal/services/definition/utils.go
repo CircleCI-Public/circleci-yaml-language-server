@@ -41,6 +41,13 @@ func (def DefinitionStruct) getCommandOrJobLocation(name string, includeCommands
 		}, nil
 	}
 
+	if alias, ok := def.Doc.JobAlias(name); ok {
+		return []protocol.Location{{Range: alias.Range, URI: def.Doc.URI}}, nil
+	}
+	if alias, ok := def.Doc.CommandAlias(name); ok && includeCommands {
+		return []protocol.Location{{Range: alias.Range, URI: def.Doc.URI}}, nil
+	}
+
 	if orb, err := def.getOrbLocation(name, true); err == nil {
 		return orb, nil
 	}
@@ -49,6 +56,13 @@ func (def DefinitionStruct) getCommandOrJobLocation(name string, includeCommands
 }
 
 func (def DefinitionStruct) getCommandOrJobParamLocation(name string, paramName string, includeCommands bool) ([]protocol.Location, error) {
+	// An alias's arguments are its target's parameters.
+	if alias, ok := def.Doc.CommandAlias(name); ok && includeCommands {
+		name = alias.Target
+	} else if alias, ok := def.Doc.JobAlias(name); ok {
+		name = alias.Target
+	}
+
 	if job, ok := def.Doc.Jobs[name]; ok {
 		if param, ok := job.Parameters[paramName]; ok {
 			return []protocol.Location{
