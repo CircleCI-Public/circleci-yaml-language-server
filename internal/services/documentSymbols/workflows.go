@@ -34,6 +34,7 @@ func resolveWorkflowsSymbols(document *parser.YamlDocument) []protocol.DocumentS
 
 func singleWorkflowSymbols(workflow ast.Workflow) protocol.DocumentSymbol {
 	symbol := symbolFromRange(workflow.Range, workflow.Name, WorkflowSymbol)
+	symbol.SelectionRange = selectionRange(workflow.Range, workflow.NameRange)
 
 	if len(workflow.JobInvocations) > 0 {
 		symbol.Children = append(symbol.Children, protocol.DocumentSymbol{
@@ -90,7 +91,7 @@ func workflowJobsSymbols(workflow ast.Workflow) []protocol.DocumentSymbol {
 				Name:           j.StepName,
 				Kind:           InvocationSymbol,
 				Range:          j.JobInvocationRange,
-				SelectionRange: j.JobInvocationRange,
+				SelectionRange: selectionRange(j.JobInvocationRange, j.StepNameRange),
 				Children:       children,
 			},
 		)

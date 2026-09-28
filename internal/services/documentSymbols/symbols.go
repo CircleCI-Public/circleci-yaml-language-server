@@ -8,6 +8,7 @@ import (
 	"go.lsp.dev/protocol"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/parser"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 )
 
 const (
@@ -79,6 +80,17 @@ func SymbolsForDocument(document *parser.YamlDocument) []protocol.DocumentSymbol
 	inSourceOrder(symbols)
 
 	return symbols
+}
+
+// selectionRange is what a client highlights when a symbol is picked: its
+// name, when that's known and inside the symbol as the spec requires.
+func selectionRange(rng, name protocol.Range) protocol.Range {
+	if position.IsDefaultRange(name) ||
+		position.Compare(name.Start, rng.Start) < 0 ||
+		position.Compare(name.End, rng.End) > 0 {
+		return rng
+	}
+	return name
 }
 
 // inSourceOrder sorts each level of the tree by where its symbols start, as

@@ -47,7 +47,7 @@ func parameterDefinitionSymbols(parameter ast.Parameter) protocol.DocumentSymbol
 	return protocol.DocumentSymbol{
 		Name:           parameter.GetName(),
 		Range:          parameter.GetRange(),
-		SelectionRange: parameter.GetRange(),
+		SelectionRange: selectionRange(parameter.GetRange(), parameter.GetNameRange()),
 		Detail:         unlessZero(detail),
 		Kind:           PropertySymbol,
 	}

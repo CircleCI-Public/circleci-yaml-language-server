@@ -34,6 +34,7 @@ func resolveJobsSymbols(document *parser.YamlDocument) []protocol.DocumentSymbol
 
 func singleJobSymbols(job ast2.Job) protocol.DocumentSymbol {
 	jobSymbol := symbolFromRange(job.Range, job.Name, JobSymbol)
+	jobSymbol.SelectionRange = selectionRange(job.Range, job.NameRange)
 
 	if !position.IsDefaultRange(job.ParametersRange) {
 		jobSymbol.Children = append(jobSymbol.Children, protocol.DocumentSymbol{
