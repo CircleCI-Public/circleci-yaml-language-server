@@ -29,6 +29,10 @@ func (doc *YamlDocument) parseSingleExecutor(executorNode *sitter.Node) {
 	// jobNode is a block_mapping_pair
 	executorNameNode, blockMappingNode := doc.GetKeyValueNodes(executorNode)
 	executorName := doc.getAttributeName(doc.GetNodeText(executorNameNode))
+	if alias, ok := doc.parseAlias(executorNode); ok {
+		doc.Aliases.Executors[alias.Name] = alias
+		return
+	}
 	blockMappingNode = GetChildMapping(blockMappingNode)
 	if blockMappingNode == nil {
 		return

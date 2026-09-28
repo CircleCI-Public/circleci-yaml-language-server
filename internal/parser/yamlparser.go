@@ -37,6 +37,7 @@ func ParseFile(content []byte, context *session.Settings) YamlDocument {
 		JobGroups:          make(map[string]ast2.JobGroup),
 		Workflows:          make(map[string]ast2.Workflow),
 		Executors:          make(map[string]ast2.Executor),
+		Aliases:            ast2.NewAliases(),
 		PipelineParameters: make(map[string]ast2.Parameter),
 		Functions:          make(map[string]ast2.Function),
 		Diagnostics:        &[]protocol.Diagnostic{},
@@ -230,6 +231,7 @@ type YamlDocument struct {
 	Orbs               map[string]ast2.Orb
 	LocalOrbs          []LocalOrb
 	Executors          map[string]ast2.Executor
+	Aliases            ast2.Aliases
 	Commands           map[string]ast2.Command
 	Jobs               map[string]ast2.Job
 	JobGroups          map[string]ast2.JobGroup
@@ -426,9 +428,22 @@ func (doc *YamlDocument) DoesCommandExist(commandName string) bool {
 	return ok
 }
 
+// DoesExecutorExist reports whether the config defines an executor, or an
+// alias, of that name.
 func (doc *YamlDocument) DoesExecutorExist(executorName string) bool {
 	_, ok := doc.Executors[executorName]
-	return ok
+	_, isAlias := doc.Aliases.Executors[executorName]
+	return ok || isAlias
+}
+
+// ExecutorAlias returns the alias a name stands for, when no executor of that
+// name is defined.
+func (doc *YamlDocument) ExecutorAlias(name string) (ast2.Alias, bool) {
+	if _, ok := doc.Executors[name]; ok {
+		return ast2.Alias{}, false
+	}
+	alias, ok := doc.Aliases.Executors[name]
+	return alias, ok
 }
 
 func (doc *YamlDocument) DoesWorkflowExist(workflowName string) bool {
@@ -714,6 +729,7 @@ func (doc *YamlDocument) ToOrbParsedAttributes() ast2.OrbParsedAttributes {
 		Commands:           doc.Commands,
 		Jobs:               doc.Jobs,
 		Executors:          doc.Executors,
+		Aliases:            doc.Aliases,
 		PipelineParameters: doc.PipelineParameters,
 
 		ExecutorsRange:          doc.ExecutorsRange,
@@ -736,6 +752,7 @@ func (doc *YamlDocument) FromOrbParsedAttributesToYamlDocument(orb ast2.OrbParse
 		Commands:           orb.Commands,
 		Jobs:               orb.Jobs,
 		Executors:          orb.Executors,
+		Aliases:            orb.Aliases,
 		PipelineParameters: orb.PipelineParameters,
 		Orbs:               orb.Orbs,
 		LocalOrbInfo:       orb.LocalOrbInfo,

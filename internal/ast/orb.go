@@ -73,6 +73,7 @@ type OrbParsedAttributes struct {
 	Commands           map[string]Command
 	Jobs               map[string]Job
 	Executors          map[string]Executor
+	Aliases            Aliases
 	PipelineParameters map[string]Parameter
 	// Orbs and LocalOrbInfo are the orbs the orb declares for its own use.
 	Orbs         map[string]Orb
