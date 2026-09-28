@@ -165,6 +165,7 @@ jobs:
   # notarises the darwin binaries.
   release:
     executor: linux
+    resource_class: xlarge.gen3
     steps:
       - setup
       - with-zig-cache:
