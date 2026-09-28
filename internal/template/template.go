@@ -9,10 +9,12 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"unicode"
 	"unicode/utf8"
 
 	"github.com/CircleCI-Public/expr/parsers"
 	"github.com/CircleCI-Public/expr/scanners"
+	"github.com/CircleCI-Public/expr/tokens"
 )
 
 // maxExpressionLength is in characters, as orb-service counts them.
@@ -40,6 +42,21 @@ func Check(text string) (Problem, bool) {
 }
 
 func (p Problem) Error() string { return p.Message }
+
+// Reference is a name a template uses, such as parameters.version, and where,
+// as byte offsets into the template.
+type Reference struct {
+	Name       string
+	Start, End int
+}
+
+// References returns the names used in text's tags and sections, up to its
+// first problem.
+func References(text string) []Reference {
+	p := parser{tokens: scan(text), text: text}
+	_ = p.parse()
+	return p.references
+}
 
 type tokenType int
 
@@ -122,9 +139,10 @@ func scan(text string) []token {
 var identifierPattern = regexp.MustCompile(`^[\w-]+(\.\S+)*$`)
 
 type parser struct {
-	tokens  []token
-	current int
-	text    string
+	tokens     []token
+	current    int
+	text       string
+	references []Reference
 }
 
 func (p *parser) parse() error {
@@ -190,6 +208,7 @@ func (p *parser) identifier() (string, error) {
 	if !identifierPattern.MatchString(name) {
 		return "", problemAt(tok, "Expected valid identifier")
 	}
+	p.references = append(p.references, wholeReference(tok))
 	return name, nil
 }
 
@@ -205,34 +224,49 @@ func (p *parser) tag() error {
 	if _, err := p.consume(tagEnd, start, "Unclosed '<<' tag ('<<' must be escaped as '\\<<')"); err != nil {
 		return err
 	}
-	return checkExpression(body)
+	references, err := parseExpression(body)
+	p.references = append(p.references, references...)
+	return err
 }
 
-// checkExpression parses a tag's body as an expression. A body that uses a
-// character expressions don't allow is taken whole as a name, which is how
-// orb-service still accepts pipeline parameters named like URLs.
-func checkExpression(body token) error {
+// wholeReference is the name that's all of tok but the space around it.
+func wholeReference(tok token) Reference {
+	start := tok.start + len(tok.text) - len(strings.TrimLeftFunc(tok.text, unicode.IsSpace))
+	name := strings.TrimSpace(tok.text)
+	return Reference{Name: name, Start: start, End: start + len(name)}
+}
+
+// parseExpression parses a tag's body as an expression, and returns the names
+// it uses. A body that uses a character expressions don't allow is taken
+// whole as a name, which is how orb-service still accepts pipeline
+// parameters named like URLs.
+func parseExpression(body token) ([]Reference, error) {
 	toks, err := scanners.New(body.text).Scan()
 	if err != nil {
 		var scanErr scanners.Error
 		if !errors.As(err, &scanErr) {
-			return problemAt(body, "Invalid expression")
+			return nil, problemAt(body, "Invalid expression")
 		}
 		if scanErr.Type == scanners.UNEXPECTED_CHARACTER && identifierPattern.MatchString(strings.TrimSpace(body.text)) {
-			return nil
+			return []Reference{wholeReference(body)}, nil
 		}
 		start := body.start + byteOffset(body.text, scanErr.Pos)
 		_, size := utf8.DecodeRuneInString(body.text[start-body.start:])
-		return Problem{Start: start, End: start + size, Message: firstLine(scanErr.AsErrorMessage(body.text))}
+		return nil, Problem{Start: start, End: start + size, Message: firstLine(scanErr.AsErrorMessage(body.text))}
 	}
 
-	_, err = parsers.New(toks).Parse()
+	expression, err := parsers.New(toks).Parse()
 	if err == nil {
-		return nil
+		references := []Reference{}
+		for _, name := range identifiers(expression) {
+			start := body.start + byteOffset(body.text, name.CharPos)
+			references = append(references, Reference{Name: name.Lexeme, Start: start, End: start + len(name.Lexeme)})
+		}
+		return references, nil
 	}
 	var parseErr parsers.Error
 	if !errors.As(err, &parseErr) {
-		return problemAt(body, "Invalid expression")
+		return nil, problemAt(body, "Invalid expression")
 	}
 	start := body.start + byteOffset(body.text, parseErr.Token.CharPos)
 	end := start + len(parseErr.Token.Lexeme)
@@ -240,7 +274,26 @@ func checkExpression(body token) error {
 		// The expression ended too soon, so point at all of it.
 		start, end = body.start, body.end()
 	}
-	return Problem{Start: start, End: end, Message: firstLine(parseErr.AsErrorMessage(body.text))}
+	return nil, Problem{Start: start, End: end, Message: firstLine(parseErr.AsErrorMessage(body.text))}
+}
+
+// identifiers are the names an expression uses, in order.
+func identifiers(expression parsers.Expr) []tokens.Token {
+	switch e := expression.(type) {
+	case parsers.Identifier:
+		return []tokens.Token{e.Name}
+	case parsers.Logical:
+		return append(identifiers(e.Left), identifiers(e.Right)...)
+	case parsers.Binary:
+		return append(identifiers(e.Left), identifiers(e.Right)...)
+	case parsers.Infix:
+		return append(identifiers(e.Left), identifiers(e.Right)...)
+	case parsers.Unary:
+		return identifiers(e.Right)
+	case parsers.Grouping:
+		return identifiers(e.Expression)
+	}
+	return nil
 }
 
 // byteOffset converts expr's position, in characters, to one in bytes.
