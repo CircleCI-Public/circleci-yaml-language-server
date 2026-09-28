@@ -207,9 +207,17 @@ func (val Validate) checkIfOrbIsUsed(orb ast.Orb) bool {
 		}
 	}
 
+	for _, group := range val.Doc.JobGroups {
+		for _, jobInvocation := range group.JobInvocations {
+			if val.Doc.IsGivenOrb(jobInvocation.OverrideWith, orb.Name) {
+				return true
+			}
+		}
+	}
+
 	for _, workflow := range val.Doc.Workflows {
 		for _, jobInvocation := range workflow.JobInvocations {
-			if val.Doc.IsGivenOrb(jobInvocation.JobName, orb.Name) {
+			if val.Doc.IsGivenOrb(jobInvocation.JobName, orb.Name) || val.Doc.IsGivenOrb(jobInvocation.OverrideWith, orb.Name) {
 				return true
 			}
 

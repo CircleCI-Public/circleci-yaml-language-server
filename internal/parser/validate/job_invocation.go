@@ -367,10 +367,53 @@ func (val Validate) validateSingleJobInvocation(jobInvocation ast2.JobInvocation
 	// An alias that names nothing is reported where it is declared.
 	alias, isAlias := val.Doc.JobAlias(jobInvocation.JobName)
 	if !val.Doc.IsBuiltIn(jobInvocation.JobName) && (!isAlias || val.jobAliasProblem(alias) == "") {
-		val.validateJobInvocationParameters(jobInvocation)
+		if target, ok := val.overrideTarget(jobInvocation); ok {
+			invoked := jobInvocation
+			invoked.JobName = target
+			val.validateJobInvocationParameters(invoked)
+		}
 	}
 
 	val.validateInvocationContexts(jobInvocation)
+}
+
+// overrideTarget returns the job an invocation runs, which is its
+// `override-with` job when the orb has it, and otherwise the job it names.
+// It is false when the job's parameters can't be known.
+func (val Validate) overrideTarget(jobInvocation ast2.JobInvocation) (string, bool) {
+	target := jobInvocation.OverrideWith
+	if target == "" || paramref.ContainsReference(target) {
+		return jobInvocation.JobName, true
+	}
+
+	orbName, jobName, isOrbReference := strings.Cut(target, "/")
+	if !isOrbReference {
+		val.addDiagnostic(diagnostic.Error(jobInvocation.OverrideWithRange,
+			fmt.Sprintf("override-with: \"%s\" does not reference a job definition in an orb", target)))
+		return "", false
+	}
+
+	if _, ok := val.Doc.Orbs[orbName]; !ok {
+		val.addDiagnostic(diagnostic.Warning(jobInvocation.OverrideWithRange, fmt.Sprintf(
+			"override-with: orb %s is not declared, so this runs the job %s", orbName, jobInvocation.JobName)))
+		return jobInvocation.JobName, true
+	}
+
+	if val.Doc.IsFromUnfetchableOrb(target, val.Cache) {
+		return "", false
+	}
+
+	orbInfo, err := val.Doc.GetOrbInfoFromName(orbName, val.Cache)
+	if err != nil || orbInfo == nil {
+		return "", false
+	}
+	if _, ok := orbInfo.Jobs[jobName]; ok {
+		return target, true
+	}
+
+	val.addDiagnostic(diagnostic.Warning(jobInvocation.OverrideWithRange, fmt.Sprintf(
+		"override-with: orb %s has no job %s, so this runs the job %s", orbName, jobName, jobInvocation.JobName)))
+	return jobInvocation.JobName, true
 }
 
 func (val Validate) isKnownJob(name string) bool {
