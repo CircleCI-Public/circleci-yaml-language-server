@@ -603,12 +603,18 @@ func (doc *YamlDocument) DoesCommandOrJobOrExecutorExist(name string, includeCom
 	if _, ok := doc.Jobs[name]; ok {
 		return true
 	}
+	if _, ok := doc.Aliases.Jobs[name]; ok {
+		return true
+	}
 
 	if _, ok := doc.Commands[name]; ok && includeCommands {
 		return true
 	}
+	if _, ok := doc.Aliases.Commands[name]; ok && includeCommands {
+		return true
+	}
 
-	if _, ok := doc.Executors[name]; ok {
+	if doc.DoesExecutorExist(name) {
 		return true
 	}
 

@@ -189,13 +189,22 @@ func (ref ReferenceHandler) searchInJobs() string {
 			return job.Name
 		}
 	}
-	return ""
+	return ref.aliasNamedAt(ref.Doc.Aliases.Jobs)
 }
 
 func (ref ReferenceHandler) searchInCommands() string {
 	for _, command := range ref.Doc.Commands {
 		if position.InRange(command.NameRange, ref.Params.Position) || position.InRange(command.ParametersRange, ref.Params.Position) {
 			return command.Name
+		}
+	}
+	return ref.aliasNamedAt(ref.Doc.Aliases.Commands)
+}
+
+func (ref ReferenceHandler) aliasNamedAt(aliases map[string]ast2.Alias) string {
+	for _, alias := range aliases {
+		if position.InRange(alias.NameRange, ref.Params.Position) {
+			return alias.Name
 		}
 	}
 	return ""
@@ -219,6 +228,9 @@ func (ref ReferenceHandler) getReferenceFromSteps(nameOfStep string, isOrb bool)
 func (ref ReferenceHandler) getExecutorReferences() ([]protocol.Location, string) {
 	executor := ref.Doc.GetExecutorDefinedAtPosition(ref.Params.Position)
 	executorName := executor.GetName()
+	if alias := ref.aliasNamedAt(ref.Doc.Aliases.Executors); alias != "" {
+		executorName = alias
+	}
 
 	if position.InRange(executor.GetParametersRange(), ref.Params.Position) {
 		return []protocol.Location{}, executorName
@@ -226,7 +238,7 @@ func (ref ReferenceHandler) getExecutorReferences() ([]protocol.Location, string
 
 	locations := []protocol.Location{}
 	for _, job := range ref.Doc.Jobs {
-		if job.Executor == executor.GetName() {
+		if job.Executor == executorName {
 			locations = append(locations, protocol.Location{
 				URI:   ref.Params.TextDocument.URI,
 				Range: job.ExecutorRange,
