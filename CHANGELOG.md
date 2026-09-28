@@ -1,5 +1,51 @@
 # CHANGELOG
 
+## 0.42.0 (2026-09-28)
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+* chore: move to go-based commitlint by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/632
+* ci: run commitlint in the check job by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/637
+* ci: publish releases with goreleaser by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/638
+* feat: type pipeline values from the expr module's list by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/639
+* fix: don't suggest a Linux image for `machine: true` on Windows by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/641
+* feat: complete and describe built-in pipeline values by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/640
+* fix: look inside commands before hinting to store test results by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/642
+* feat: report `<< >>` tags and expressions the compiler can't parse by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/643
+* feat: check the parameters used anywhere in an expression by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/644
+* fix: drop the stray tabs from the `machine: true` warning by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/645
+* fix: give a value that's all one expression the expression's type by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/646
+* fix: point a command's Parameters symbol at its parameters by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/647
+* feat: check conditions and filters written as expressions by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/648
+* fix: list document symbols in the order they appear by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/649
+* fix: don't give an undocumented pipeline value as a replacement by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/650
+* feat: warn about unknown and replaced pipeline values by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/652
+* fix: give every document symbol a kind that fits it by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/651
+* test: check the code actions a diagnostic is expected to carry by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/653
+* fix: compare positions and range ends correctly by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/654
+* fix: select a document symbol's name rather than all of it by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/655
+* feat: complete parameters inside an expression by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/656
+* fix: report variables a workflow condition or filter doesn't have by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/657
+* fix: report a job whose value isn't a map at its name by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/658
+* chore: bump expr to v0.1.60 by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/659
+* fix: report a name the schema rejects once, at the name by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/660
+* fix: say a job with no executor needs one, not that it needs `machine` by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/661
+* fix: point a deprecated deploy step at the run step by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/662
+* fix: don't warn about a workflow named like a job by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/663
+* feat: complete bare workflow conditions and filters by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/664
+* fix: report a parameter value the parser can't read where it's given by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/665
+* fix: report a key that is a map or list where it's written by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/667
+* feat: warn about an executor no job uses by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/666
+* fix: say a parameter is "not defined for" a job, as for a step by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/668
+* fix: name the empty section rather than saying "Empty assignation" by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/670
+* chore: remove test-files by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/671
+* fix: report broken YAML once, where go-yaml finds it by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/669
+* fix: don't validate ytt templates by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/672
+
+
+**Full Changelog**: https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.41.1...0.42.0
+
 ## 0.41.1 (2026-09-27)
 
 <!-- Release notes generated using configuration in .github/release.yml at main -->
