@@ -683,3 +683,114 @@ workflows:
 		},
 	})
 }
+
+func TestPipelineParametersInInlineOrbs(t *testing.T) {
+	notInOrb := "Pipeline parameter p is not defined in orb my_orb: an inline orb can't use the config's pipeline parameters, so pass it in as a parameter"
+	testCases := []ValidateTestCase{
+		{
+			Name: "in an inline orb's command, job and executor",
+			YamlContent: `version: 2.1
+parameters:
+  p:
+    type: string
+    default: Hello World
+orbs:
+  my_orb:
+    commands:
+      run-foo:
+        steps:
+          - run: echo "<< pipeline.parameters.p >>"
+    executors:
+      my-executor:
+        docker:
+          - image: org-name/image-name:<< pipeline.parameters.p >>
+    jobs:
+      foo-job:
+        executor: my-executor
+        steps:
+          - run-foo
+          - run: echo << pipeline.parameters.p >>
+workflows:
+  foo:
+    jobs:
+      - my_orb/foo-job
+`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(span(10, 26, 47), notInOrb),
+				diagnostic.Error(span(14, 42, 63), notInOrb),
+				diagnostic.Error(span(20, 25, 46), notInOrb),
+			},
+		},
+		{
+			Name: "a pipeline parameter nothing defines",
+			YamlContent: `version: 2.1
+orbs:
+  my_orb:
+    jobs:
+      foo-job:
+        machine: true
+        steps:
+          - run: echo << pipeline.parameters.nope >>
+workflows:
+  foo:
+    jobs:
+      - my_orb/foo-job
+`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(span(7, 25, 49), "Pipeline parameter nope is not defined"),
+			},
+		},
+		{
+			Name: "passed in as a parameter from the workflow",
+			YamlContent: `version: 2.1
+parameters:
+  p:
+    type: string
+    default: value
+orbs:
+  my_orb:
+    jobs:
+      orb_job:
+        parameters:
+          p:
+            type: string
+        machine: true
+        steps:
+          - run: echo "<< parameters.p >>"
+workflows:
+  my_workflow:
+    jobs:
+      - my_orb/orb_job:
+          p: << pipeline.parameters.p >>
+`,
+			OnlyErrors:  true,
+			Diagnostics: []protocol.Diagnostic{},
+		},
+		{
+			Name: "the orb's own pipeline parameter",
+			YamlContent: `version: 2.1
+orbs:
+  my_orb:
+    parameters:
+      p:
+        type: string
+        default: value
+    jobs:
+      orb_job:
+        machine: true
+        steps:
+          - run: echo "<< pipeline.parameters.p >>"
+workflows:
+  my_workflow:
+    jobs:
+      - my_orb/orb_job
+`,
+			OnlyErrors:  true,
+			Diagnostics: []protocol.Diagnostic{},
+		},
+	}
+
+	CheckYamlErrors(t, testCases)
+}

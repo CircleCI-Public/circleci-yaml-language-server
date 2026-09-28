@@ -213,6 +213,12 @@ func (val Validate) CheckIfParamsExist() {
 				if name, ok := strings.CutPrefix(reference.Name, "pipeline.parameters."); ok {
 					parameters = val.Doc.PipelineParameters
 					message = fmt.Sprintf("Pipeline parameter %s is not defined", name)
+					if orb, inOrb := val.inlineOrbAt(val.Doc.NodeToRange(node).Start); inOrb {
+						parameters = orb.PipelineParameters
+						if _, inConfig := val.Doc.PipelineParameters[name]; inConfig {
+							message = fmt.Sprintf("Pipeline parameter %s is not defined in orb %s: an inline orb can't use the config's pipeline parameters, so pass it in as a parameter", name, orb.Name)
+						}
+					}
 					reference.Name = name
 				} else if name, ok := strings.CutPrefix(reference.Name, "parameters."); ok {
 					parameters = val.Doc.GetParamsWithPosition(val.Doc.NodeToRange(node).Start)
@@ -238,6 +244,23 @@ func (val Validate) CheckIfParamsExist() {
 	stringScalarsQuery.Run(val.Doc.RootNode, checkOnNode)
 	blockScalarsQuery.Run(val.Doc.RootNode, checkOnNode)
 	quotedScalarsQuery.Run(val.Doc.RootNode, checkOnNode)
+}
+
+// inlineOrbAt returns the inline orb declared around pos. An inline orb
+// sees only its own pipeline parameters, not the config's.
+func (val Validate) inlineOrbAt(pos protocol.Position) (*ast2.OrbInfo, bool) {
+	if !position.InRange(val.Doc.OrbsRange, pos) {
+		return nil, false
+	}
+
+	for _, orb := range val.Doc.Orbs {
+		if orb.Url.IsLocal && position.InRange(orb.Range, pos) {
+			info, ok := val.Doc.LocalOrbInfo[orb.Name]
+			return info, ok
+		}
+	}
+
+	return nil, false
 }
 
 func (val Validate) validateParametersValue(paramsValue map[string]ast2.ParameterValue, calledEntity string, entityRange protocol.Range, calledEntityDefinedParams map[string]ast2.Parameter, usableParams map[string]ast2.Parameter) {
