@@ -20,8 +20,8 @@ var templateRegex = regexp.MustCompile(`<<.*?>>`)
 
 // ValidateConditions checks the conditions and filters written as strings.
 // Without a << >> template, a workflow's `when` or `unless`, or a job's
-// `filters`, is an expression, and one that doesn't parse is an error. A
-// step condition that isn't one is always true.
+// `filters`, is an expression, and one that doesn't parse or names an unset
+// variable is an error. A step condition that isn't one is always true.
 func (val Validate) ValidateConditions() {
 	for _, condition := range val.Doc.Conditions {
 		if slices.Contains(val.Doc.StepConditions, condition) {
@@ -52,13 +52,30 @@ func (val Validate) warnTemplatedComparison(condition ast.TextAndRange) {
 			"to compare a parameter value."))
 }
 
+// checkExpression reports a workflow's condition or filter that doesn't
+// parse, or that names a variable the workflow doesn't have. Only pipeline
+// values and pipeline parameters are set, and an unknown pipeline value is
+// left to ValidatePipelineValues.
 func (val Validate) checkExpression(value ast.TextAndRange, message string) {
 	if !val.isExpression(value) {
 		return
 	}
-	if _, problem := template.Expression(value.Text); problem != nil {
+	references, problem := template.Expression(value.Text)
+	if problem != nil {
 		val.addDiagnostic(diagnostic.Error(val.rangeWithin(value.Range, problem.Start, problem.End),
 			fmt.Sprintf("%s: %s", message, problem.Message)))
+		return
+	}
+	for _, reference := range references {
+		rng := val.rangeWithin(value.Range, reference.Start, reference.End)
+		if name, ok := strings.CutPrefix(reference.Name, "pipeline.parameters."); ok {
+			if _, defined := val.Doc.PipelineParameters[name]; !defined {
+				val.addDiagnostic(diagnostic.Error(rng, fmt.Sprintf("Pipeline parameter %s is not defined", name)))
+			}
+		} else if !strings.HasPrefix(reference.Name, "pipeline.") {
+			val.addDiagnostic(diagnostic.Error(rng,
+				fmt.Sprintf("%s: %s is not a pipeline value or parameter", message, reference.Name)))
+		}
 	}
 }
 
