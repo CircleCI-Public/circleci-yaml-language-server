@@ -7,6 +7,9 @@ import (
 	"log/slog"
 	"net"
 	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 	"time"
 
 	"go.lsp.dev/jsonrpc2"
@@ -39,9 +42,23 @@ func (server JSONRPCServer) serve(stream jsonrpc2.Stream) error {
 	lsp := methods.New(server.ctx, protocol.ClientDispatcher(conn), cache.New(), *server.lsContext, server.SchemaLocation)
 	handler := protocol.ServerHandler(lsp, jsonrpc2.MethodNotFoundHandler)
 	conn.Go(server.ctx, recoverPanics(dropFailedNotifications(logMethods(releaseQueries(handler)))))
-	<-conn.Done()
+
+	select {
+	case <-lsp.Exited():
+	case <-conn.Done():
+	case <-server.ctx.Done():
+	}
+
+	lsp.Cache.Close()
 
 	return conn.Err()
+}
+
+// stopOnSignal returns a context that is done once the server is asked to stop
+// by a signal, so that it can end its sessions and return from main rather
+// than being killed where it stands.
+func stopOnSignal() (context.Context, context.CancelFunc) {
+	return signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 }
 
 // queries are the requests that answer from what the server knows without
@@ -78,8 +95,14 @@ func logMethods(handler jsonrpc2.Handler) jsonrpc2.Handler {
 }
 
 func StartServer(port int, host string, schemaLocation string) {
-	ctx := context.Background()
+	ctx, stop := stopOnSignal()
+	defer stop()
+
 	server := getJsonRpcServer(ctx, schemaLocation)
+
+	// Rollbar is shared by every connection, so it is closed only once the
+	// last one is over.
+	defer rollbar.Close()
 
 	if port == -1 {
 		port = 0
@@ -113,21 +136,35 @@ func StartServer(port int, host string, schemaLocation string) {
 		}
 	}()
 
+	// Stopping closes the listener, which ends the loop below.
+	go func() {
+		<-ctx.Done()
+		_ = ln.Close()
+	}()
+
 	// jsonrpc2.Serve would build each connection itself, with a codec that
 	// cannot write the protocol's types, so connections are accepted here.
+	var sessions sync.WaitGroup
 	for {
 		netConn, err := ln.Accept()
 		if err != nil {
+			if ctx.Err() != nil {
+				break
+			}
 			panic(err)
 		}
-		go func() {
+		sessions.Go(func() {
 			stream := jsonrpc2.NewStream(netConn)
 			if err := server.serve(stream); err != nil {
 				slog.Info("client connection closed", "err", err)
 			}
 			_ = stream.Close()
-		}()
+		})
 	}
+
+	// Each session ends as soon as the server is stopping; wait for them to
+	// clean up.
+	sessions.Wait()
 }
 
 type StdioReadWriteCloser struct {
@@ -138,13 +175,12 @@ type StdioReadWriteCloser struct {
 func (s *StdioReadWriteCloser) Close() error { return nil }
 
 func StartServerStdio(schemaLocation string) {
-	ctx := context.Background()
+	ctx, stop := stopOnSignal()
+	defer stop()
 
 	stdioStream := jsonrpc2.NewStream(&StdioReadWriteCloser{os.Stdin, os.Stdout})
 	server := getJsonRpcServer(ctx, schemaLocation)
 
-	// Rollbar is shared by every connection, so it is closed only once the
-	// last one is over, and a TCP server never gets there.
 	defer rollbar.Close()
 
 	if err := server.serve(stdioStream); err != nil {

@@ -16,10 +16,12 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"os"
 	"os/exec"
 	"regexp"
 	"strconv"
 	"sync"
+	"syscall"
 	"testing"
 	"time"
 )
@@ -32,13 +34,23 @@ const startTimeout = 30 * time.Second
 // waits for it before connecting, so its shape is a contract.
 var startedLine = regexp.MustCompile(`^Server started on port (\d+)`)
 
+// stopTimeout bounds how long Stop waits for the server to end on its own
+// before killing it.
+const stopTimeout = 10 * time.Second
+
 // Server is a running language server.
 type Server struct {
-	cmd    *exec.Cmd
-	stream io.ReadWriteCloser
-	stderr *syncBuffer
-	stdout *syncBuffer
-	port   int
+	cmd     *exec.Cmd
+	stream  io.ReadWriteCloser
+	stderr  *syncBuffer
+	stdout  *syncBuffer
+	port    int
+	tempDir string
+
+	// exited is closed once the process has ended, with waitErr what ending
+	// reported.
+	exited  chan struct{}
+	waitErr error
 
 	stopOnce sync.Once
 }
@@ -131,17 +143,43 @@ func (s *Server) Stderr() string {
 	return s.stderr.String()
 }
 
-// Stop closes the connection and ends the process. It runs when the test ends
-// and is safe to call again.
+func (s *Server) TempDir() string {
+	return s.tempDir
+}
+
+// Wait waits up to timeout for the process to end on its own, and returns what
+// it exited with: nil for a zero status.
+func (s *Server) Wait(timeout time.Duration) error {
+	select {
+	case <-s.exited:
+		return s.waitErr
+	case <-time.After(timeout):
+		return fmt.Errorf("server still running after %s", timeout)
+	}
+}
+
+func (s *Server) Signal(sig os.Signal) error {
+	return s.cmd.Process.Signal(sig)
+}
+
+// Stop closes the connection and asks the process to stop, as an editor would,
+// killing it only if it does not. Ending on its own is what lets a server built
+// with coverage write it out. It runs when the test ends and is safe to call
+// again.
 func (s *Server) Stop() {
 	s.stopOnce.Do(func() {
 		if s.stream != nil {
 			_ = s.stream.Close()
 		}
-		if s.cmd.Process != nil {
+		// Closing the connection ends a stdio server; a socket server serves
+		// other clients until it is signalled. Windows has no SIGTERM to send,
+		// so there a socket server is killed.
+		_ = s.cmd.Process.Signal(syscall.SIGTERM)
+
+		if s.Wait(stopTimeout) != nil {
 			_ = s.cmd.Process.Kill()
+			<-s.exited
 		}
-		_ = s.cmd.Wait()
 	})
 }
 
@@ -154,26 +192,38 @@ func command(t *testing.T, binary string, args []string, environment []string) *
 	home := t.TempDir()
 
 	cmd := exec.Command(binary, args...)
+	// Windows finds its temporary directory in TMP or TEMP rather than
+	// TMPDIR.
 	cmd.Env = append(cmd.Environ(),
 		"HOME="+home,
 		"TMPDIR="+home,
+		"TMP="+home,
+		"TEMP="+home,
 	)
 	cmd.Env = append(cmd.Env, environment...)
 
 	server := &Server{
-		cmd:    cmd,
-		stderr: &syncBuffer{},
-		stdout: &syncBuffer{},
+		cmd:     cmd,
+		stderr:  &syncBuffer{},
+		stdout:  &syncBuffer{},
+		tempDir: home,
+		exited:  make(chan struct{}),
 	}
 	cmd.Stderr = server.stderr
 
 	return server
 }
 
-// register stops the server when the test ends, and reports what it logged if
-// the test failed, which is where a server-side panic shows up.
+// register waits for the started process, stops the server when the test
+// ends, and reports what it logged if the test failed, which is where a
+// server-side panic shows up.
 func register(t *testing.T, server *Server) {
 	t.Helper()
+
+	go func() {
+		server.waitErr = server.cmd.Wait()
+		close(server.exited)
+	}()
 
 	t.Cleanup(func() {
 		server.Stop()

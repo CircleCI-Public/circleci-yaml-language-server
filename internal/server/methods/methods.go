@@ -2,7 +2,6 @@ package methods
 
 import (
 	"context"
-	"os"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -37,6 +36,9 @@ type Methods struct {
 	// of calls, once the burst is over.
 	debounceEdit         func(func())
 	debounceRevalidation func(func())
+
+	exited   chan struct{}
+	exitOnce sync.Once
 }
 
 var _ protocol.Server = (*Methods)(nil)
@@ -49,6 +51,7 @@ func New(ctx context.Context, client protocol.Client, cache *cache.Cache, settin
 		SchemaLocation:       schemaLocation,
 		debounceEdit:         debounce.New(1000 * time.Millisecond),
 		debounceRevalidation: debounce.New(1000 * time.Millisecond),
+		exited:               make(chan struct{}),
 	}
 	methods.settings.Store(&settings)
 
@@ -77,7 +80,14 @@ func (methods *Methods) Shutdown(context.Context) error {
 	return nil
 }
 
+// Exit ends the session. Ending the process is left to whoever runs the
+// session, so that it can clean up after it first.
 func (methods *Methods) Exit(context.Context) error {
-	os.Exit(0)
+	methods.exitOnce.Do(func() { close(methods.exited) })
 	return nil
+}
+
+// Exited is closed once the client has sent exit.
+func (methods *Methods) Exited() <-chan struct{} {
+	return methods.exited
 }
