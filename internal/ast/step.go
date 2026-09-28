@@ -213,5 +213,5 @@ func (step AddSSHKey) GetRange() protocol.Range {
 }
 
 func (step AddSSHKey) GetName() string {
-	return "add_ssh_key"
+	return "add_ssh_keys"
 }
