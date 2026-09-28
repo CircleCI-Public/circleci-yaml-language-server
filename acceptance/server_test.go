@@ -282,6 +282,21 @@ func TestUnknownContextIsADiagnostic(t *testing.T) {
 	assert.Check(t, cmp.Contains(diagnostics, "Context nope does not exist"))
 }
 
+func TestCloseClearsDiagnostics(t *testing.T) {
+	fake := linkedProjectFake(t)
+	session := start(t, fake, unknownContextConfig, testToken)
+
+	diagnostics := session.open(t, unknownContextConfig)
+	assert.Assert(t, len(diagnostics) != 0, "the config must have something wrong with it")
+
+	err := session.client.DidClose(session.workspace.URI())
+	assert.NilError(t, err)
+
+	cleared, err := session.client.WaitForDiagnostics(session.workspace.URI())
+	assert.NilError(t, err)
+	assert.Check(t, cmp.Len(cleared, 0))
+}
+
 const resultsThroughCommandConfig = `version: 2.1
 
 commands:
