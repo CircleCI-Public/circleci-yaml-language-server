@@ -355,23 +355,59 @@ func (val Validate) validateDockerExecutor(executor ast.DockerExecutor) {
 	}
 }
 
+// legacyImages maps each deprecated legacy convenience image in the
+// `circleci` namespace to its `cimg` successor, or to "" when it has none.
+// Other `circleci` images, such as circleci/circleci-cli, are current.
+var legacyImages = map[string]string{
+	"android":        "android",
+	"buildpack-deps": "base",
+	"clojure":        "clojure",
+	"dynamodb":       "",
+	"elixir":         "elixir",
+	"golang":         "go",
+	"jruby":          "",
+	"mariadb":        "mariadb",
+	"mongo":          "",
+	"mysql":          "mysql",
+	"node":           "node",
+	"openjdk":        "openjdk",
+	"php":            "php",
+	"postgres":       "postgres",
+	"python":         "python",
+	"redis":          "redis",
+	"ruby":           "ruby",
+	"rust":           "rust",
+}
+
 func (val Validate) checkDeprecatedNamespace(img ast.DockerImage) {
 	if img.Image.Namespace != "circleci" {
 		return
 	}
+	successor, legacy := legacyImages[img.Image.Name]
+	if !legacy {
+		return
+	}
 
+	image := "circleci/" + img.Image.Name
+	if successor == "" {
+		val.addDiagnostic(diagnostic.Warning(img.ImageRange, fmt.Sprintf(
+			"The legacy `%s` image is deprecated, and has no `cimg` successor.", image)))
+		return
+	}
+
+	replacement := "cimg/" + successor
 	val.addDiagnostic(
 		diagnostic.New(
 			img.ImageRange,
 			protocol.DiagnosticSeverityWarning,
-			"Docker images from `circleci` namespace are deprecated. Please use its `cimg` namespace's alternative.",
+			fmt.Sprintf("The legacy `%s` image is deprecated. Use `%s` instead.", image, replacement),
 			[]protocol.CodeAction{
 				codeaction.TextEdit(
-					"Use `cimg` namespace's alternative",
+					fmt.Sprintf("Use `%s`", replacement),
 					val.Doc.URI, []protocol.TextEdit{
 						{
 							Range:   img.ImageRange,
-							NewText: fmt.Sprintf("image: %s", strings.Replace(img.Image.FullPath, "circleci", "cimg", 1)),
+							NewText: "image: " + strings.Replace(img.Image.FullPath, image, replacement, 1),
 						},
 					}, true,
 				),

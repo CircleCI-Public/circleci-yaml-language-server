@@ -250,9 +250,88 @@ executors:
 	}
 }
 
-// The lookups skip an image with credentials, but the namespace needs none.
+func TestLegacyCircleciImages(t *testing.T) {
+	testCases := []struct {
+		name  string
+		image string
+		want  []ComparableDiagnostic
+	}{
+		{
+			name:  "with a cimg successor of the same name",
+			image: "circleci/redis:7",
+			want: []ComparableDiagnostic{{
+				Severity: protocol.DiagnosticSeverityWarning,
+				Message:  "The legacy `circleci/redis` image is deprecated. Use `cimg/redis` instead.",
+				Actions: []ComparableAction{{
+					Title:  "Use `cimg/redis`",
+					Writes: []string{"image: cimg/redis:7"},
+				}},
+			}},
+		},
+		{
+			name:  "with a cimg successor of another name",
+			image: "circleci/golang:1.17",
+			want: []ComparableDiagnostic{{
+				Severity: protocol.DiagnosticSeverityWarning,
+				Message:  "The legacy `circleci/golang` image is deprecated. Use `cimg/go` instead.",
+				Actions: []ComparableAction{{
+					Title:  "Use `cimg/go`",
+					Writes: []string{"image: cimg/go:1.17"},
+				}},
+			}},
+		},
+		{
+			name:  "without a cimg successor",
+			image: "circleci/mongo:4.2",
+			want: []ComparableDiagnostic{{
+				Severity: protocol.DiagnosticSeverityWarning,
+				Message:  "The legacy `circleci/mongo` image is deprecated, and has no `cimg` successor.",
+			}},
+		},
+		{
+			name:  "a current circleci image",
+			image: "circleci/circleci-cli:0.1.26646",
+		},
+		{
+			name:  "an unknown circleci image",
+			image: "circleci/command-convenience:0.1",
+		},
+	}
+
+	for _, c := range testCases {
+		t.Run(c.name, func(t *testing.T) {
+			// With auth, the Docker Hub lookups skip the image, which leaves
+			// the legacy image check's diagnostics alone.
+			val := CreateValidateFromYAML(`version: 2.1
+jobs:
+  build:
+    docker:
+      - image: ` + c.image + `
+        auth:
+          username: $USER
+          password: $PASSWORD
+    steps:
+      - checkout
+workflows:
+  main:
+    jobs:
+      - build
+`)
+			val.Validate()
+
+			var got []ComparableDiagnostic
+			for _, d := range *val.Diagnostics {
+				got = append(got, diagnosticToComparableDiagnostic(d))
+			}
+			assert.Check(t, cmp.DeepEqual(got, c.want))
+		})
+	}
+}
+
+// The lookups skip an image with credentials, but the legacy image check
+// needs none.
 func TestCircleciNamespaceImages(t *testing.T) {
-	const message = "Docker images from `circleci` namespace are deprecated. Please use its `cimg` namespace's alternative."
+	const message = "The legacy `circleci/redis` image is deprecated. Use `cimg/redis` instead."
 
 	testCases := []struct {
 		name  string
