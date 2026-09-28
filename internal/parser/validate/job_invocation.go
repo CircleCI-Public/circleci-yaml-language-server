@@ -35,6 +35,10 @@ type InvocationContext struct {
 	// JobGroupName is the name of the enclosing job-group definition.
 	// Only meaningful when Kind == InJobGroup; empty otherwise.
 	JobGroupName string
+
+	// WorkflowName is the name of the enclosing workflow.
+	// Only meaningful when Kind == InWorkflow; empty otherwise.
+	WorkflowName string
 }
 
 func (val Validate) doesJobInvocationExist(jobInvocations []ast2.JobInvocation, requireName string) bool {
@@ -180,66 +184,49 @@ func hasBeenRenamed(inv ast2.JobInvocation) bool {
 	return inv.StepName != inv.JobName
 }
 
-// validateDuplicateJobGroupInvocations checks for job-group invocations that
-// collide: same group invoked twice with the same name:, or more than once
-// without any name:. One invocation without a name takes the group's name.
-func (val Validate) validateDuplicateJobGroupInvocations(jobInvocations []ast2.JobInvocation) {
-	type entry struct {
-		isRenamed  bool
-		name       string
-		invocation ast2.JobInvocation
-	}
-	seen := map[string][]entry{}
-
+// validateDuplicateNames reports invocations that share a name: job groups
+// in a workflow, or jobs in a job group. An invocation without a `name` is
+// named after what it invokes.
+func (val Validate) validateDuplicateNames(jobInvocations []ast2.JobInvocation, ctx InvocationContext) {
+	byName := map[string][]ast2.JobInvocation{}
+	var names []string
 	for _, inv := range jobInvocations {
-		if !val.Doc.DoesJobGroupExist(inv.JobName) {
+		isJobGroup := val.Doc.DoesJobGroupExist(inv.JobName)
+		if inv.HasMatrix || (ctx.Kind == InWorkflow) != isJobGroup {
 			continue
 		}
-		isRenamed := hasBeenRenamed(inv)
-		name := ""
-		if isRenamed {
-			name = inv.StepName
+		if _, ok := byName[inv.StepName]; !ok {
+			names = append(names, inv.StepName)
 		}
-		seen[inv.JobName] = append(seen[inv.JobName], entry{isRenamed: isRenamed, name: name, invocation: inv})
+		byName[inv.StepName] = append(byName[inv.StepName], inv)
 	}
 
-	for groupName, entries := range seen {
-		if len(entries) < 2 {
+	for _, name := range names {
+		invocations := byName[name]
+		if len(invocations) < 2 {
 			continue
 		}
-
-		unnamed := 0
-		for _, e := range entries {
-			if !e.isRenamed {
-				unnamed++
-			}
+		message := fmt.Sprintf("Job-group '%s' occurs %d times in workflow '%s'. "+
+			"You can give a job-group an explicit name by adding a `name` key",
+			name, len(invocations), ctx.WorkflowName)
+		if ctx.Kind == InJobGroup {
+			message = fmt.Sprintf("Job '%s' occurs %d times in job group '%s'. "+
+				"You can give a job within a job group an explicit name by adding a `name` key",
+				name, len(invocations), ctx.JobGroupName)
 		}
-		namesSeen := map[string]bool{}
-		for _, e := range entries {
-			switch {
-			case !e.isRenamed:
-				if unnamed > 1 {
-					val.addDiagnostic(diagnostic.Error(
-						e.invocation.JobNameRange,
-						fmt.Sprintf("Job group \"%s\" is invoked multiple times without a \"name\" attribute. Each invocation must have a unique name", groupName),
-					))
-				}
-			case namesSeen[e.name]:
-				val.addDiagnostic(diagnostic.Error(
-					e.invocation.StepNameRange,
-					fmt.Sprintf("Job group \"%s\" is already invoked with the name \"%s\"", groupName, e.name),
-				))
-			default:
-				namesSeen[e.name] = true
+		for _, inv := range invocations {
+			rng := inv.JobNameRange
+			if hasBeenRenamed(inv) {
+				rng = inv.StepNameRange
 			}
+			val.addDiagnostic(diagnostic.Error(rng, message))
 		}
 	}
 }
 
 // Validates and adds diagnostics for workflow/job-group job invocations.
 func (val Validate) validateInvocations(jobInvocations []ast2.JobInvocation, ctx InvocationContext) {
-
-	val.validateDuplicateJobGroupInvocations(jobInvocations)
+	val.validateDuplicateNames(jobInvocations, ctx)
 	for i, jobInvocation := range jobInvocations {
 		// A job invocation can invoke either a job or job-group, each type requires different validation
 		isJobGroup := val.Doc.DoesJobGroupExist(jobInvocation.JobName)
@@ -362,7 +349,7 @@ func (val Validate) validateSingleJobInvocation(jobInvocation ast2.JobInvocation
 	}
 
 	if jobInvocation.Type == "approval" {
-		val.validateApprovalInvocation(jobInvocation)
+		val.validateApprovalInvocation(jobInvocation, ctx)
 		val.validateInvocationContexts(jobInvocation)
 		return
 	}
@@ -441,14 +428,20 @@ func (val Validate) validateInvocationContexts(jobInvocation ast2.JobInvocation)
 // is named in the workflow, where nothing checks that it has this shape.
 var jobNamePattern = regexp.MustCompile(`^[A-Za-z][A-Za-z\s\d_-]*$`)
 
-func (val Validate) validateApprovalInvocation(jobInvocation ast2.JobInvocation) {
+func (val Validate) validateApprovalInvocation(jobInvocation ast2.JobInvocation, ctx InvocationContext) {
 	if !jobNamePattern.MatchString(jobInvocation.JobName) && !paramref.ContainsReference(jobInvocation.JobName) {
 		val.addDiagnostic(diagnostic.Warning(jobInvocation.JobNameRange, fmt.Sprintf(
 			"Approval job '%s' is not a valid job name: it must start with a letter and contain only "+
 				"letters, digits, whitespace, underscores and hyphens", jobInvocation.JobName)))
 	}
 
-	if val.Doc.DoesJobExist(jobInvocation.JobName) {
+	switch {
+	case !val.Doc.DoesJobExist(jobInvocation.JobName):
+	case ctx.Kind == InJobGroup:
+		val.addDiagnostic(diagnostic.Error(jobInvocation.JobNameRange, fmt.Sprintf(
+			"Duplicate job definition: '%s' is defined in `jobs:`, so a job group can't also define it "+
+				"with type: approval", jobInvocation.JobName)))
+	default:
 		val.addDiagnostic(diagnostic.Warning(jobInvocation.JobNameRange, fmt.Sprintf(
 			"'%s' is invoked here with type: approval, which shadows the job definition of the same name; "+
 				"its own steps will not run for this invocation", jobInvocation.JobName)))
