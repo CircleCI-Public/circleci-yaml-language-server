@@ -19,18 +19,11 @@ var pipelineValueBeingWritten = regexp.MustCompile(`<<[^>]*\bpipeline\.((?:[A-Za
 // written: after `<< pipeline.git.`, that's branch, tag, revision and so on.
 // The pipeline parameters are completed from the config instead.
 func (ch *CompletionHandler) completePipelineValues() {
-	cursor := position.ToIndex(ch.Params.Position, ch.Doc.Content)
-	lineStart := position.ToIndex(protocol.Position{Line: ch.Params.Position.Line}, ch.Doc.Content)
-	match := pipelineValueBeingWritten.FindSubmatch(ch.Doc.Content[lineStart:cursor])
+	match := pipelineValueBeingWritten.FindSubmatch(ch.lineBeforeCursor())
 	if match == nil || string(match[1]) == "parameters." {
 		return
 	}
-
-	lineEnd := bytes.IndexByte(ch.Doc.Content[cursor:], '\n')
-	if lineEnd == -1 {
-		lineEnd = len(ch.Doc.Content) - cursor
-	}
-	closed := bytes.Contains(ch.Doc.Content[cursor:cursor+lineEnd], []byte(">>"))
+	closed := ch.tagClosedAfterCursor()
 
 	prefix := "pipeline." + string(match[1])
 	offered := map[string]bool{}
@@ -50,6 +43,23 @@ func (ch *CompletionHandler) completePipelineValues() {
 		offered[segment] = true
 		ch.Items = append(ch.Items, pipelineValueItem(segment, value, hasMore, closed))
 	}
+}
+
+// lineBeforeCursor is the text of the cursor's line up to the cursor.
+func (ch *CompletionHandler) lineBeforeCursor() []byte {
+	cursor := position.ToIndex(ch.Params.Position, ch.Doc.Content)
+	lineStart := position.ToIndex(protocol.Position{Line: ch.Params.Position.Line}, ch.Doc.Content)
+	return ch.Doc.Content[lineStart:cursor]
+}
+
+// tagClosedAfterCursor reports whether the rest of the cursor's line closes
+// the tag being written, so a completion needn't add ` >>`.
+func (ch *CompletionHandler) tagClosedAfterCursor() bool {
+	rest := ch.Doc.Content[position.ToIndex(ch.Params.Position, ch.Doc.Content):]
+	if lineEnd := bytes.IndexByte(rest, '\n'); lineEnd != -1 {
+		rest = rest[:lineEnd]
+	}
+	return bytes.Contains(rest, []byte(">>"))
 }
 
 // pipelineValueItem is the item for a segment of value's name.
