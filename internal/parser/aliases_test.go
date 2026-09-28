@@ -78,6 +78,24 @@ commands:
 	assert.Check(t, cmp.Len(doc.Commands, 1))
 }
 
+func TestJobAliasesParse(t *testing.T) {
+	const config = `version: 2.1
+jobs:
+  build: orb/build
+  real:
+    machine:
+      image: ubuntu-2404:current
+    steps:
+      - checkout
+`
+	doc, err := ParseFromContent([]byte(config), testHelpers.DefaultSettings(), uri.File(""), protocol.Position{})
+	assert.NilError(t, err)
+	t.Cleanup(doc.Close)
+
+	assert.Check(t, cmp.DeepEqual(targets(doc.Aliases.Jobs), map[string]string{"build": "orb/build"}))
+	assert.Check(t, !doc.DoesJobExist("build"))
+}
+
 func TestAliasOrbTarget(t *testing.T) {
 	for target, want := range map[string]bool{
 		"orb/build":       true,

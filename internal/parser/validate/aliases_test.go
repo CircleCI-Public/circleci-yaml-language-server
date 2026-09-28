@@ -430,3 +430,166 @@ workflows:
 
 	CheckYamlErrors(t, testCases)
 }
+
+func TestJobAliases(t *testing.T) {
+	testCases := []ValidateTestCase{
+		{
+			Name: "an alias of an orb's job takes its parameters",
+			YamlContent: `version: 2.1
+orbs:
+  orb:
+    jobs:
+      build:
+        parameters:
+          greeting:
+            type: string
+        machine:
+          image: ubuntu-2404:current
+        steps:
+          - run: echo << parameters.greeting >>
+jobs:
+  renamed-build: orb/build
+workflows:
+  workflow:
+    jobs:
+      - renamed-build:
+          greeting: hello
+      - renamed-build:
+          name: again
+          nope: hello
+`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(protocol.Range{
+					Start: protocol.Position{Line: 19, Character: 6},
+					End:   protocol.Position{Line: 22, Character: 0},
+				}, "Parameter greeting is required for renamed-build"),
+				diagnostic.Error(span(21, 10, 21), "Parameter nope is not defined for renamed-build"),
+			},
+		},
+		{
+			Name: "an alias of an orb the config doesn't declare",
+			YamlContent: `version: 2.1
+jobs:
+  build: nope/build
+workflows:
+  workflow:
+    jobs:
+      - build
+`,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(span(2, 9, 19),
+					"Unable to determine target for job invocation nope/build (renamed from local job build)"),
+			},
+		},
+		{
+			Name: "an alias of a job an orb doesn't have",
+			YamlContent: `version: 2.1
+orbs:
+  orb:
+    commands:
+      c:
+        steps:
+          - run: echo hello
+jobs:
+  build: orb/c
+workflows:
+  workflow:
+    jobs:
+      - build
+`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(span(8, 9, 14), "orb/c is a command, not a job: a workflow runs jobs"),
+			},
+		},
+		{
+			Name: "a malformed alias that is invoked",
+			YamlContent: `version: 2.1
+jobs:
+  multi-segment: orb/build/extra
+workflows:
+  workflow:
+    jobs:
+      - multi-segment
+`,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(span(2, 17, 32), malformedAliasMessage),
+			},
+		},
+		{
+			Name: "a malformed alias that the implicit workflow runs",
+			YamlContent: `version: 2.1
+jobs:
+  build: 45m
+`,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(span(2, 9, 12), malformedAliasMessage),
+			},
+		},
+		{
+			Name: "a malformed alias nothing invokes",
+			YamlContent: `version: 2.1
+jobs:
+  resource_class: medium.gen2
+  build:
+    machine:
+      image: ubuntu-2404:current
+    steps:
+      - run: echo hello
+workflows:
+  workflow:
+    jobs:
+      - build
+`,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Warning(span(2, 2, 16), "Job is unused"),
+				diagnostic.Warning(span(2, 18, 29), "`medium.gen2` is not a valid orb element alias, "+
+					"so this entry is ignored unless it is invoked. An alias must be a single "+
+					"`orb-alias/element-name` reference."),
+			},
+		},
+		{
+			Name: "the implicit workflow runs an alias named build",
+			YamlContent: `version: 2.1
+orbs:
+  orb:
+    jobs:
+      build:
+        machine:
+          image: ubuntu-2404:current
+        steps:
+          - checkout
+jobs:
+  build: orb/build
+`,
+		},
+		{
+			Name: "an inline orb's alias isn't the orb's job to the config",
+			YamlContent: `version: 2.1
+orbs:
+  outer:
+    orbs:
+      inner:
+        jobs:
+          build:
+            machine:
+              image: ubuntu-2404:current
+            steps:
+              - checkout
+    jobs:
+      renamed-build: inner/build
+workflows:
+  workflow:
+    jobs:
+      - outer/renamed-build
+`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(span(16, 6, 27), `Cannot find declaration for job "outer/renamed-build"`),
+			},
+		},
+	}
+
+	CheckYamlErrors(t, testCases)
+}

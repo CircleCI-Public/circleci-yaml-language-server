@@ -17,6 +17,10 @@ func (doc *YamlDocument) parseJobs(jobsNode *sitter.Node) {
 	}
 
 	doc.iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
+		if alias, ok := doc.parseAlias(child); ok {
+			doc.Aliases.Jobs[alias.Name] = alias
+			return
+		}
 		job := doc.parseSingleJob(child)
 		if definedJob, ok := doc.Jobs[job.Name]; ok {
 			doc.addDiagnostic(protocol.Diagnostic{

@@ -94,6 +94,58 @@ workflows:
       - use-renamed-c
 `
 
+// jobAliasesConfig renames an orb's job, which still uses the orb's own
+// executor and command, and runs it with an argument.
+const jobAliasesConfig = `version: 2.1
+
+orbs:
+  orb:
+    executors:
+      e:
+        machine:
+          image: ubuntu-2404:current
+    commands:
+      c:
+        steps:
+          - run: echo orb command
+    jobs:
+      build:
+        parameters:
+          greeting:
+            type: string
+            default: hello
+        executor: e
+        steps:
+          - c
+          - run: echo << parameters.greeting >>
+
+jobs:
+  build: orb/build
+
+workflows:
+  workflow:
+    jobs:
+      - build:
+          greeting: hi
+`
+
+// implicitWorkflowConfig has no workflows, so the compiler runs the job
+// named build, which here is an alias.
+const implicitWorkflowConfig = `version: 2.1
+
+orbs:
+  orb:
+    jobs:
+      build:
+        machine:
+          image: ubuntu-2404:current
+        steps:
+          - checkout
+
+jobs:
+  build: orb/build
+`
+
 func TestOrbElementAliases(t *testing.T) {
 	fake := linkedProjectFake(t)
 
@@ -107,6 +159,20 @@ func TestOrbElementAliases(t *testing.T) {
 	t.Run("commands", func(t *testing.T) {
 		session := start(t, fake, commandAliasesConfig, testToken)
 		diagnostics := session.open(t, commandAliasesConfig)
+
+		assert.Check(t, cmp.DeepEqual(diagnostics, []string{}))
+	})
+
+	t.Run("jobs", func(t *testing.T) {
+		session := start(t, fake, jobAliasesConfig, testToken)
+		diagnostics := session.open(t, jobAliasesConfig)
+
+		assert.Check(t, cmp.DeepEqual(diagnostics, []string{}))
+	})
+
+	t.Run("a job run by the implicit workflow", func(t *testing.T) {
+		session := start(t, fake, implicitWorkflowConfig, testToken)
+		diagnostics := session.open(t, implicitWorkflowConfig)
 
 		assert.Check(t, cmp.DeepEqual(diagnostics, []string{}))
 	})

@@ -236,7 +236,7 @@ func (val Validate) unknownStepMessage(name string) string {
 	switch {
 	case val.isKnownStep(name):
 		return ""
-	case val.Doc.DoesJobExist(name) || val.Doc.IsOrbJob(name, val.Cache):
+	case val.isKnownJob(name):
 		return fmt.Sprintf("%s is a job, not a command: a job can't be run as a step", name)
 	default:
 		return fmt.Sprintf("Cannot find declaration for step %s", name)
