@@ -1,5 +1,32 @@
 # CHANGELOG
 
+## 0.43.2 (2026-09-28)
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+* fix: write a development orb's source to a name Windows accepts by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/692
+* fix: forget a config once it is closed by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/694
+* perf: remember the project slug of each repository by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/696
+* fix: clean up when the client exits or the server is stopped by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/693
+* test: cover Docker image checks and completion in the acceptance tier by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/697
+* fix: read a Docker Hub namespace again once it is an hour old by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/698
+* test: count the acceptance tier's servers in coverage by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/699
+* fix: name the newer patch of an orb whose latest is a newer minor by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/701
+* ci: report coverage, with the acceptance tier's servers counted by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/700
+* fix: don't let an inline orb use the config's pipeline parameters by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/702
+* fix: check a matrix member's templated requires by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/703
+* fix: report job group members and job groups that share a name by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/704
+* fix: report a parameter default that isn't of the parameter's type by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/705
+* fix: check a parameter used as a typed setting by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/706
+* fix: check override-with against the orb job it names by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/707
+* fix: report a matrix value used outside its matrix by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/708
+* fix: error on a non-string reference as an executor or a matches value by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/709
+* fix: report a config with no workflows and no build job by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/710
+
+
+**Full Changelog**: https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.43.1...0.43.2
+
 ## 0.43.1 (2026-09-28)
 
 <!-- Release notes generated using configuration in .github/release.yml at main -->
