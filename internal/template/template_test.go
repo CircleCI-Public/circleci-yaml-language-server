@@ -94,3 +94,21 @@ func TestIsOnlyTag(t *testing.T) {
 		assert.Check(t, cmp.Equal(got, want), "%q", text)
 	}
 }
+
+func TestExpression(t *testing.T) {
+	t.Run("the names a bare expression uses", func(t *testing.T) {
+		got, problem := Expression(`pipeline.git.branch == "main" and not pipeline.parameters.skip`)
+		assert.Assert(t, problem == nil, "%v", problem)
+		assert.Check(t, cmp.DeepEqual(got, []Reference{
+			{Name: "pipeline.git.branch", Start: 0, End: 19},
+			{Name: "pipeline.parameters.skip", Start: 38, End: 62},
+		}))
+	})
+
+	t.Run("a problem, with no fallback to a name", func(t *testing.T) {
+		_, problem := Expression("pipeline.parameters.a:b")
+		assert.Assert(t, problem != nil)
+		assert.Check(t, cmp.Contains(problem.Message, "Unexpected character ':'"))
+		assert.Check(t, cmp.Equal(problem.Start, 21))
+	})
+}

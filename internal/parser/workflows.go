@@ -345,7 +345,7 @@ func (doc *YamlDocument) sequenceToStrings(node *sitter.Node) []string {
 // such as `equal:`, is a mapping, and isn't recorded. It returns whether it
 // recorded one.
 func (doc *YamlDocument) addCondition(valueNode *sitter.Node) bool {
-	if valueNode == nil || valueNode.Kind() != "flow_node" {
+	if !isScalarNode(valueNode) {
 		return false
 	}
 	doc.Conditions = append(doc.Conditions, ast.TextAndRange{
@@ -353,4 +353,11 @@ func (doc *YamlDocument) addCondition(valueNode *sitter.Node) bool {
 		Range: doc.NodeToRange(valueNode),
 	})
 	return true
+}
+
+// isScalarNode reports whether node is a flow node holding a scalar, rather
+// than a flow mapping or sequence, or an alias.
+func isScalarNode(node *sitter.Node) bool {
+	return node != nil && node.Kind() == "flow_node" && node.NamedChildCount() == 1 &&
+		isStringScalar(node.NamedChild(0).Kind())
 }
