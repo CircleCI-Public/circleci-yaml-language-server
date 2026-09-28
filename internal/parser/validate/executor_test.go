@@ -14,6 +14,7 @@ import (
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 )
 
 func TestExecutorValidation(t *testing.T) {
@@ -358,4 +359,105 @@ func TestMachineExecutor(t *testing.T) {
 			t.Errorf("expected error diagnostic with message \"%s\"", c.errRegex)
 		})
 	}
+}
+
+func TestUnusedExecutors(t *testing.T) {
+	unused := func(t *testing.T, yaml string) []string {
+		t.Helper()
+		var names []string
+		for _, d := range *validateYAML(t, yaml) {
+			if diagnostic.MessageText(d) == "Executor is unused" {
+				names = append(names, strings.TrimSuffix(yaml[position.ToIndex(d.Range.Start, []byte(yaml)):position.ToIndex(d.Range.End, []byte(yaml))], ":"))
+			}
+		}
+		return names
+	}
+	const executors = `version: 2.1
+executors:
+  small:
+    docker:
+      - image: cimg/base:current
+  big:
+    docker:
+      - image: cimg/base:current
+`
+
+	t.Run("one used and one not", func(t *testing.T) {
+		got := unused(t, executors+`jobs:
+  build:
+    executor: small
+    steps: [checkout]
+`)
+		assert.Check(t, cmp.DeepEqual(got, []string{"big"}))
+	})
+
+	t.Run("used with parameters", func(t *testing.T) {
+		got := unused(t, executors+`jobs:
+  build:
+    executor:
+      name: small
+    steps: [checkout]
+  test:
+    executor: { name: big }
+    steps: [checkout]
+`)
+		assert.Check(t, cmp.Len(got, 0))
+	})
+
+	t.Run("chosen by a parameter", func(t *testing.T) {
+		got := unused(t, executors+`jobs:
+  build:
+    parameters:
+      size:
+        type: enum
+        enum: [small, big]
+    executor: << parameters.size >>
+    steps: [checkout]
+workflows:
+  main:
+    jobs:
+      - build:
+          matrix:
+            parameters:
+              size: [small, big]
+`)
+		assert.Check(t, cmp.Len(got, 0))
+	})
+
+	t.Run("an executor parameter's default", func(t *testing.T) {
+		got := unused(t, executors+`jobs:
+  build:
+    parameters:
+      e:
+        type: executor
+        default: small
+    executor: << parameters.e >>
+    steps: [checkout]
+workflows:
+  main:
+    jobs:
+      - build:
+          e: big
+`)
+		assert.Check(t, cmp.Len(got, 0))
+	})
+
+	t.Run("named only by a key", func(t *testing.T) {
+		got := unused(t, executors+`jobs:
+  small:
+    docker:
+      - image: cimg/base:current
+    steps: [checkout]
+workflows:
+  main:
+    jobs:
+      - small
+`)
+		assert.Check(t, cmp.DeepEqual(got, []string{"big"}), "a job named small is not a use of the small executor")
+	})
+
+	t.Run("no jobs yet", func(t *testing.T) {
+		got := unused(t, executors)
+		assert.Check(t, cmp.Len(got, 0))
+	})
 }

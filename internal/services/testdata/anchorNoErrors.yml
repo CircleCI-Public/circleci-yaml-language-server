@@ -55,8 +55,7 @@ jobs:
           message: << parameters.py_version >>
 
   uselessJob:
-    docker:
-      - image: cimg/node:17.2.0
+    executor: macos-m1
     steps:
       - run: echo Hello world
 
