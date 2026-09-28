@@ -132,6 +132,7 @@ func (doc *YamlDocument) parseSingleJob(jobNode *sitter.Node) ast2.Job {
 			case "environment":
 				blockMapping := GetChildMapping(valueNode)
 				res.Environment = doc.parseDictionary(blockMapping)
+				res.EnvironmentVariables = doc.parseEnvVariables(blockMapping)
 				res.EnvironmentRange = doc.NodeToRange(child)
 
 			case "type":

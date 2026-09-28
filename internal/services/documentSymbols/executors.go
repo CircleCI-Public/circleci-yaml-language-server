@@ -72,12 +72,12 @@ func singleExecutorSymbols(executor ast2.Executor) protocol.DocumentSymbol {
 func envsSymbols(env ast2.Environment) protocol.DocumentSymbol {
 	children := []protocol.DocumentSymbol{}
 
-	for _, key := range env.Keys {
+	for _, variable := range env.Variables {
 		children = append(children, protocol.DocumentSymbol{
-			Name:           key,
+			Name:           variable.Name,
 			Kind:           VariableSymbol,
-			Range:          env.Range,
-			SelectionRange: env.Range,
+			Range:          variable.Range,
+			SelectionRange: variable.NameRange,
 		})
 	}
 

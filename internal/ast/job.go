@@ -36,8 +36,9 @@ type Job struct {
 	Docker      DockerExecutor
 	DockerRange protocol.Range
 
-	Environment      map[string]string
-	EnvironmentRange protocol.Range
+	Environment          map[string]string
+	EnvironmentVariables []EnvironmentVariable
+	EnvironmentRange     protocol.Range
 
 	Contexts     *[]string
 	Machine      MachineExecutor

@@ -17,19 +17,30 @@ func (doc *YamlDocument) parseEnvs(node *sitter.Node) ast.Environment {
 		return ast.Environment{}
 	}
 
-	keys := []string{}
+	return ast.Environment{
+		Range:     doc.NodeToRange(node),
+		Variables: doc.parseEnvVariables(blockMapping),
+	}
+}
+
+func (doc *YamlDocument) parseEnvVariables(blockMapping *sitter.Node) []ast.EnvironmentVariable {
+	variables := []ast.EnvironmentVariable{}
 
 	doc.iterateOnBlockMapping(
 		blockMapping,
 		func(child *sitter.Node) {
 			keyNode, _ := doc.GetKeyValueNodes(child)
+			if keyNode == nil {
+				return
+			}
 
-			keys = append(keys, doc.GetNodeText(keyNode))
+			variables = append(variables, ast.EnvironmentVariable{
+				Name:      doc.GetNodeText(keyNode),
+				Range:     doc.NodeToRange(child),
+				NameRange: doc.NodeToRange(keyNode),
+			})
 		},
 	)
 
-	return ast.Environment{
-		Range: doc.NodeToRange(node),
-		Keys:  keys,
-	}
+	return variables
 }
