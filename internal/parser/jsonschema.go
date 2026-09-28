@@ -3,6 +3,7 @@ package parser
 import (
 	"fmt"
 	"net/url"
+	"os"
 	"regexp"
 	"slices"
 	"strconv"
@@ -24,11 +25,13 @@ import (
 
 type JSONSchemaValidator struct {
 	schema *gojsonschema.Schema
+	keys   *schemaKeys
 	Doc    YamlDocument
 }
 
 func (validator *JSONSchemaValidator) LoadJsonSchema(schemaLocation string) error {
-	loader := gojsonschema.NewReferenceLoader(schemaURI(schemaLocation))
+	location := schemaURI(schemaLocation)
+	loader := gojsonschema.NewReferenceLoader(location)
 
 	schema, err := gojsonschema.NewSchema(loader)
 	if err != nil {
@@ -36,6 +39,9 @@ func (validator *JSONSchemaValidator) LoadJsonSchema(schemaLocation string) erro
 	}
 
 	validator.schema = schema
+	if data, err := os.ReadFile(uri.URI(location).FsPath()); err == nil {
+		validator.keys = newSchemaKeys(data)
+	}
 
 	return nil
 }
@@ -60,6 +66,10 @@ var embeddedSchema = sync.OnceValues(func() (*gojsonschema.Schema, error) {
 	return gojsonschema.NewSchema(gojsonschema.NewBytesLoader(schema.EmbeddedSchemaJSON))
 })
 
+var embeddedSchemaKeys = sync.OnceValue(func() *schemaKeys {
+	return newSchemaKeys(schema.EmbeddedSchemaJSON)
+})
+
 // LoadEmbeddedJsonSchema validates against the schema built into the server.
 func (validator *JSONSchemaValidator) LoadEmbeddedJsonSchema() error {
 	compiled, err := embeddedSchema()
@@ -68,6 +78,7 @@ func (validator *JSONSchemaValidator) LoadEmbeddedJsonSchema() error {
 	}
 
 	validator.schema = compiled
+	validator.keys = embeddedSchemaKeys()
 
 	return nil
 }
@@ -81,6 +92,7 @@ func (validator *JSONSchemaValidator) LoadJsonSchemaFromBytes(data []byte) error
 	}
 
 	validator.schema = schema
+	validator.keys = newSchemaKeys(data)
 
 	return nil
 }
@@ -309,7 +321,15 @@ func (validator *JSONSchemaValidator) ValidateWithJSONSchema(rootNode *sitter.No
 					node = propertyNode.ChildByFieldName("key")
 				}
 				jsonSchemaDiags = append(jsonSchemaDiags, diagnostic.WarningFromNode(node,
-					fmt.Sprintf("%s has no %s option, so this is ignored.", step, property)))
+					fmt.Sprintf("%s has no %s option, so this is ignored.", step, property)+
+						validator.didYouMean(fields, property)))
+				continue
+			}
+
+			if property, ok := resErr.Details()["property"].(string); ok && resErr.Type() == "additional_property_not_allowed" {
+				node = keyNode(node, content, property)
+				jsonSchemaDiags = append(jsonSchemaDiags, diagnostic.ErrorFromNode(node,
+					fmt.Sprintf("`%s` isn't allowed here.", property)+validator.didYouMean(fields, property)))
 				continue
 			}
 
@@ -368,6 +388,28 @@ func ignoredStepProperty(err gojsonschema.ResultError, fields []string) (step, p
 
 	property, ok = err.Details()["property"].(string)
 	return step, property, ok
+}
+
+// keyNode returns the key of property in the mapping node, or node itself when
+// it can't be found.
+func keyNode(node *sitter.Node, content []byte, property string) *sitter.Node {
+	pair, err := FindDeepestNode(node, content, []string{property})
+	if err != nil {
+		return node
+	}
+	if key := pair.ChildByFieldName("key"); key != nil {
+		return key
+	}
+	return node
+}
+
+// didYouMean suggests the key allowed at fields closest to property, if one
+// is close enough to be what was meant.
+func (validator *JSONSchemaValidator) didYouMean(fields []string, property string) string {
+	if key := closestKey(property, validator.keys.at(fields)); key != "" {
+		return fmt.Sprintf(" Did you mean `%s`?", key)
+	}
+	return ""
 }
 
 var executorKeys = []string{"docker", "machine", "macos", "executor"}
