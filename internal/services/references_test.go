@@ -3,7 +3,9 @@ package languageservice
 import (
 	"os"
 	"reflect"
+	"slices"
 	"sort"
+	"strings"
 	"testing"
 
 	"go.lsp.dev/protocol"
@@ -12,6 +14,8 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/testHelpers"
+	"gotest.tools/v3/assert"
+	"gotest.tools/v3/assert/cmp"
 )
 
 func TestReferences(t *testing.T) {
@@ -306,4 +310,80 @@ func sortLocationItem(items []protocol.Location) {
 
 		return items[i].Range.Start.Line < items[j].Range.Start.Line
 	})
+}
+
+func TestReferencesOfAnExecutorNamedByAParameter(t *testing.T) {
+	content := `version: 2.1
+executors:
+  small:
+    docker:
+      - image: cimg/base:current
+  big:
+    docker:
+      - image: cimg/base:current
+jobs:
+  direct:
+    executor: small
+    steps: [checkout]
+  through-a-parameter:
+    parameters:
+      e:
+        type: executor
+        default: small
+    executor: << parameters.e >>
+    steps: [checkout]
+  not-a-parameter-of-its-own:
+    executor: << pipeline.parameters.e >>
+    steps: [checkout]
+workflows:
+  main:
+    jobs:
+      - direct
+      - through-a-parameter:
+          name: argument
+          e: small
+      - through-a-parameter:
+          name: quoted
+          e: "small"
+      - through-a-parameter:
+          name: another
+          e: big
+      - through-a-parameter:
+          matrix:
+            parameters:
+              e: [big, small]
+`
+	file := uri.File("executor-parameter.yml")
+	c := cache.New()
+	c.FileCache.SetFile(cache.File{
+		TextDocument: protocol.TextDocumentItem{URI: file, Text: content},
+		Project:      circleci.Project{},
+		EnvVariables: []string{},
+	})
+
+	// 0-based, on the name `small` under executors.
+	params := protocol.ReferenceParams{
+		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
+			TextDocument: protocol.TextDocumentIdentifier{URI: file},
+			Position:     protocol.Position{Line: 2, Character: 4},
+		},
+	}
+	got, err := References(params, c, testHelpers.DefaultSettings())
+	assert.NilError(t, err)
+
+	// Each is found on its own line, 0-based: the job's executor, the
+	// parameter's default, the two arguments and the matrix value.
+	lines := []uint32{}
+	for _, location := range got {
+		lines = append(lines, location.Range.Start.Line)
+	}
+	slices.Sort(lines)
+	assert.Check(t, cmp.DeepEqual(lines, []uint32{10, 16, 28, 31, 38}))
+
+	source := strings.Split(content, "\n")
+	for _, location := range got {
+		rng := location.Range
+		text := source[rng.Start.Line][rng.Start.Character:rng.End.Character]
+		assert.Check(t, cmp.Contains(text, "small"), "line %d", rng.Start.Line)
+	}
 }
