@@ -70,6 +70,19 @@ func TestResourceClassesOfFile(t *testing.T) {
 		assert.Check(t, cmp.Equal(fake.RequestCount(http.MethodGet, runnerRoute), 1))
 	})
 
+	t.Run("forgets the organization of a closed file", func(t *testing.T) {
+		_, client := runnerFake(t)
+		c := New()
+
+		c.SetOrgOfFile(client, rocketConfig, "gh/acme")
+		c.SetOrgOfFile(client, gadgetConfig, "gh/acme")
+		c.ForgetFile(rocketConfig)
+
+		assert.Check(t, cmp.Len(c.ResourceClassesOfFile(client, rocketConfig), 0))
+		assert.Check(t, cmp.DeepEqual(c.ResourceClassesOfFile(client, gadgetConfig), acmeClasses),
+			"another file of the organization keeps its classes")
+	})
+
 	t.Run("reports none for a file whose organization is not known", func(t *testing.T) {
 		_, client := runnerFake(t)
 		c := New()

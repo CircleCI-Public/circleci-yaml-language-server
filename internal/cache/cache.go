@@ -279,6 +279,19 @@ func (cache *Cache) ClearHostData() {
 	cache.FileCache.forgetProjects()
 }
 
+// ForgetFile forgets what is kept for a document once it is closed: its text,
+// its project and variables, and the organization whose resource classes it
+// may name. What those were read from, such as the project or the classes, is
+// kept, for another document that names them.
+func (cache *Cache) ForgetFile(file uri.URI) {
+	cache.FileCache.RemoveFile(file)
+
+	c := &cache.ResourceClassCache
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	delete(c.orgOfFile, file)
+}
+
 // Close removes what the cache wrote to disk. The cache is still usable
 // afterwards, and writes again as it needs to.
 func (cache *Cache) Close() {

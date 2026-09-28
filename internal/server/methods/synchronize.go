@@ -68,16 +68,15 @@ func (methods *Methods) DidChange(_ context.Context, params *protocol.DidChangeT
 	return nil
 }
 
+// DidClose forgets a document, so that it is not validated again, and clears
+// its diagnostics: the client shows them for as long as they were the last
+// published.
 func (methods *Methods) DidClose(_ context.Context, params *protocol.DidCloseTextDocumentParams) error {
-	// removed due to a bug in remote orbs
-	isOrb, _ := methods.isOrb(params.TextDocument.URI)
-	if isOrb {
-		methods.Cache.FileCache.RemoveFile(params.TextDocument.URI)
-		defer methods.publishDiagnostics(protocol.PublishDiagnosticsParams{
-			URI:         params.TextDocument.URI,
-			Diagnostics: []protocol.Diagnostic{},
-		})
-	}
+	methods.Cache.ForgetFile(params.TextDocument.URI)
+	methods.publishDiagnostics(protocol.PublishDiagnosticsParams{
+		URI:         params.TextDocument.URI,
+		Diagnostics: []protocol.Diagnostic{},
+	})
 	return nil
 }
 
