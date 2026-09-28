@@ -54,8 +54,8 @@ func singleCommandSymbols(command ast.Command) protocol.DocumentSymbol {
 	if len(command.Parameters) > 0 {
 		paramsChild := protocol.DocumentSymbol{
 			Name:           "Parameters",
-			Range:          command.StepsRange,
-			SelectionRange: command.StepsRange,
+			Range:          command.ParametersRange,
+			SelectionRange: command.ParametersRange,
 			Kind:           protocol.SymbolKind(ListSymbol),
 			Children:       parametersSymbols(command.Parameters),
 		}
