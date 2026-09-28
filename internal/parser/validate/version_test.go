@@ -118,3 +118,72 @@ func TestDiagnosticVersionPartialPins(t *testing.T) {
 		assert.Check(t, cmp.Equal(severity, protocol.DiagnosticSeverityWarning))
 	})
 }
+
+func TestDiagnosticVersionNewerPatch(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		versions InfoVersions
+		want     string
+	}{
+		{
+			name: "the patch is the latest",
+			versions: InfoVersions{
+				LatestVersion:      "2.2.2",
+				LatestMinorVersion: "2.2.2",
+				LatestPatchVersion: "2.2.2",
+			},
+			want: "A newer patched version exists.\n" +
+				"- Current: 2.2.0\n" +
+				"- Latest:  2.2.2",
+		},
+		{
+			name: "a newer minor is the latest",
+			versions: InfoVersions{
+				LatestVersion:      "2.3.0",
+				LatestMinorVersion: "2.3.0",
+				LatestPatchVersion: "2.2.2",
+			},
+			want: "A newer patched version exists.\n" +
+				"- Current: 2.2.0\n" +
+				"- Patch:   2.2.2\n" +
+				"- Latest:  2.3.0",
+		},
+		{
+			name: "a newer major is the latest",
+			versions: InfoVersions{
+				LatestVersion:      "3.0.0",
+				LatestMinorVersion: "2.3.0",
+				LatestPatchVersion: "2.2.2",
+			},
+			want: "A newer patched version exists.\n" +
+				"- Current: 2.2.0\n" +
+				"- Patch:   2.2.2\n" +
+				"- Minor:   2.3.0\n" +
+				"- Latest:  3.0.0",
+		},
+		{
+			name: "the patch is the newest minor",
+			versions: InfoVersions{
+				LatestVersion:      "3.0.0",
+				LatestMinorVersion: "2.2.2",
+				LatestPatchVersion: "2.2.2",
+			},
+			want: "A newer patched version exists.\n" +
+				"- Current: 2.2.0\n" +
+				"- Patch:   2.2.2\n" +
+				"- Latest:  3.0.0",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			message, severity := DiagnosticVersion("2.2.0", tt.versions)
+			assert.Check(t, cmp.Equal(message, tt.want))
+			assert.Check(t, cmp.Equal(severity, protocol.DiagnosticSeverityWarning))
+		})
+	}
+}
