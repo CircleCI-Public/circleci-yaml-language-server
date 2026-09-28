@@ -142,12 +142,6 @@ jobs:
       - run: task ci:check
       - store_results
 
-  commitlint:
-    executor: default
-    steps:
-      - setup
-      - run: task ci:commitlint
-
   test:
     parameters:
       os:
@@ -403,7 +397,6 @@ workflows:
       not: *release-conditions
     jobs:
       - check
-      - commitlint
       - test:
           matrix:
             parameters:
