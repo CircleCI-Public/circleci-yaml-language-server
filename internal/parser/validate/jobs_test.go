@@ -2,6 +2,7 @@ package validate
 
 import (
 	"fmt"
+	"slices"
 	"testing"
 
 	"go.lsp.dev/protocol"
@@ -693,4 +694,171 @@ workflows:
 	assert.Check(t, cmp.DeepEqual(got, []string{
 		`14: Executor big is missing a required key: "docker", "machine", or "macos"`,
 	}))
+}
+
+func TestStoreTestResultsHint(t *testing.T) {
+	const hint = "You may want to add the `store_test_results` step to visualize the test results in CircleCI"
+
+	hinted := func(t *testing.T, yamlData string) bool {
+		t.Helper()
+
+		messages := diagnosticMessages(validateYAML(t, yamlData))
+		return slices.Contains(messages, hint)
+	}
+
+	job := func(steps string) string {
+		return `
+jobs:
+  test:
+    docker:
+      - image: cimg/base:stable
+    steps:
+` + steps + `
+workflows:
+  main:
+    jobs:
+      - test
+`
+	}
+
+	const commands = `version: 2.1
+
+commands:
+  store:
+    steps:
+      - store_test_results:
+          path: reports
+  store-indirectly:
+    steps:
+      - store
+  wrap:
+    parameters:
+      steps:
+        type: steps
+    steps:
+      - steps: << parameters.steps >>
+  loop:
+    steps:
+      - loop
+`
+
+	cases := []struct {
+		name   string
+		config string
+		hinted bool
+	}{
+		{
+			name:   "no results stored",
+			config: commands + job("      - run: go test ./..."),
+			hinted: true,
+		},
+		{
+			name: "results stored by the job",
+			config: commands + job(`      - run: go test ./...
+      - store_test_results:
+          path: reports`),
+		},
+		{
+			name:   "results stored through a command",
+			config: commands + job("      - store"),
+		},
+		{
+			name:   "results stored through a command that calls another",
+			config: commands + job("      - store-indirectly"),
+		},
+		{
+			name: "results stored inside when",
+			config: commands + job(`      - when:
+          condition: true
+          steps:
+            - store`),
+		},
+		{
+			name: "results stored through a steps argument",
+			config: commands + job(`      - wrap:
+          steps:
+            - store`),
+		},
+		{
+			name: "a steps argument that stores nothing",
+			config: commands + job(`      - wrap:
+          steps:
+            - run: go test ./...`),
+			hinted: true,
+		},
+		{
+			name:   "a command that calls itself",
+			config: commands + job("      - loop"),
+			hinted: true,
+		},
+		{
+			name: "results stored through an inline orb's command",
+			config: commands + `
+orbs:
+  reports:
+    commands:
+      upload:
+        steps:
+          - save
+      save:
+        steps:
+          - store_test_results:
+              path: reports
+` + job("      - reports/upload"),
+		},
+		{
+			name: "an inline orb's command that stores nothing",
+			config: commands + `
+orbs:
+  reports:
+    commands:
+      upload:
+        steps:
+          - run: echo nothing
+` + job("      - reports/upload"),
+			hinted: true,
+		},
+		{
+			name: "a command from an orb that can't be fetched",
+			config: `version: 2.1
+
+parameters:
+  orb:
+    type: string
+    default: acme/reports@1.0.0
+
+orbs:
+  reports: << pipeline.parameters.orb >>
+` + job("      - reports/upload"),
+		},
+		{
+			name: "steps passed to the job",
+			config: `version: 2.1
+
+jobs:
+  test:
+    parameters:
+      steps:
+        type: steps
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - steps: << parameters.steps >>
+
+workflows:
+  main:
+    jobs:
+      - test:
+          steps:
+            - run: go test ./...
+`,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := hinted(t, tc.config)
+			assert.Check(t, cmp.Equal(got, tc.hinted))
+		})
+	}
 }

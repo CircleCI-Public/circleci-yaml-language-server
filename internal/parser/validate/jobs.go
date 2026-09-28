@@ -42,7 +42,7 @@ func (val Validate) validateSingleJob(job ast2.Job) {
 		val.checkAndReportUnusedJob(job)
 	}
 
-	if !ast2.HasStoreTestResultStep(job.Steps) && strings.Contains(job.Name, "test") {
+	if strings.Contains(job.Name, "test") && !val.mayStoreTestResults(job.Steps) {
 		val.addDiagnostic(
 			protocol.Diagnostic{
 				Range:    job.NameRange,
@@ -313,4 +313,65 @@ func (val Validate) validateJobType(job ast2.Job) {
 			},
 		)
 	}
+}
+
+// mayStoreTestResults reports whether steps store test results, directly or
+// through the commands they call. Steps it can't see into count as storing
+// them: a job's steps parameter, and an orb command whose source isn't
+// available.
+func (val Validate) mayStoreTestResults(steps []ast2.Step) bool {
+	return anyStep(steps, func(step ast2.Step) bool {
+		if _, ok := step.(ast2.Steps); ok {
+			return true
+		}
+		return val.callStoresTestResults(step, "", val.Doc.Commands, map[string]bool{})
+	})
+}
+
+// callStoresTestResults is mayStoreTestResults for one step inside the
+// commands of scope, which is "" for the config's own and an orb's name for
+// that orb's. A command's steps parameter isn't followed, since anyStep has
+// already looked at the steps its caller passed.
+func (val Validate) callStoresTestResults(step ast2.Step, scope string, commands map[string]ast2.Command, seen map[string]bool) bool {
+	switch step := step.(type) {
+	case ast2.StoreTestResults:
+		return true
+	case ast2.NamedStep:
+		if step.Name == "store_test_results" {
+			return true
+		}
+		if command, ok := commands[step.Name]; ok {
+			return val.commandStoresTestResults(command, scope, commands, seen)
+		}
+		if scope != "" {
+			return false
+		}
+
+		orbName, commandName, ok := strings.Cut(step.Name, "/")
+		if !ok {
+			return false
+		}
+		if val.Doc.IsFromUnfetchableOrb(step.Name, val.Cache) {
+			return true
+		}
+		orbInfo, err := val.Doc.GetOrbInfoFromName(orbName, val.Cache)
+		if err != nil || orbInfo == nil {
+			return true
+		}
+		command, ok := orbInfo.Commands[commandName]
+		return ok && val.commandStoresTestResults(command, orbName, orbInfo.Commands, seen)
+	}
+	return false
+}
+
+func (val Validate) commandStoresTestResults(command ast2.Command, scope string, commands map[string]ast2.Command, seen map[string]bool) bool {
+	key := scope + "/" + command.Name
+	if seen[key] {
+		return false
+	}
+	seen[key] = true
+
+	return anyStep(command.Steps, func(step ast2.Step) bool {
+		return val.callStoresTestResults(step, scope, commands, seen)
+	})
 }
