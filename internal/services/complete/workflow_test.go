@@ -87,6 +87,18 @@ func completionLabels(t *testing.T, config string, pos protocol.Position) []stri
 func completionLabelsWith(t *testing.T, settings *session.Settings, c *cache.Cache, config string, pos protocol.Position) []string {
 	t.Helper()
 
+	labels := []string{}
+	for _, item := range completionItemsWith(t, settings, c, config, pos) {
+		labels = append(labels, item.Label)
+	}
+	return labels
+}
+
+// completionItemsWith are the items completion offers at a position in a
+// config at /config.yml, with the settings and what a cache remembers.
+func completionItemsWith(t *testing.T, settings *session.Settings, c *cache.Cache, config string, pos protocol.Position) []protocol.CompletionItem {
+	t.Helper()
+
 	doc, err := yamlparser.ParseFromContent([]byte(config), settings, uri.File("/config.yml"), protocol.Position{})
 	assert.NilError(t, err)
 	t.Cleanup(doc.Close)
@@ -100,12 +112,7 @@ func completionLabelsWith(t *testing.T, settings *session.Settings, c *cache.Cac
 		Context: settings,
 	}
 	ch.GetCompletionItems()
-
-	labels := []string{}
-	for _, item := range ch.Items {
-		labels = append(labels, item.Label)
-	}
-	return labels
+	return ch.Items
 }
 
 // positionBelow is the position on the line after the one whose text,
