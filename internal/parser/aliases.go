@@ -4,6 +4,7 @@ import (
 	sitter "github.com/tree-sitter/go-tree-sitter"
 
 	ast2 "github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
 )
 
 // parseAlias reads an entry of `commands`, `jobs` or `executors` whose value
@@ -33,4 +34,57 @@ func (doc *YamlDocument) parseAlias(entryNode *sitter.Node) (ast2.Alias, bool) {
 		TargetRange: doc.NodeToRange(valueNode),
 		Range:       doc.NodeToRange(entryNode),
 	}, true
+}
+
+// ResolveCommand returns the command a step names: the config's own, an
+// orb's as `orb-alias/command-name`, or either through an alias.
+func (doc *YamlDocument) ResolveCommand(name string, cache *cache.Cache) (ast2.Command, bool) {
+	if alias, ok := doc.CommandAlias(name); ok {
+		name = alias.Target
+	}
+	return resolveElement(doc, name, cache, func(attributes ast2.OrbParsedAttributes) map[string]ast2.Command {
+		return attributes.Commands
+	})
+}
+
+// ResolveJob returns the job a workflow names: the config's own, an orb's as
+// `orb-alias/job-name`, or either through an alias.
+func (doc *YamlDocument) ResolveJob(name string, cache *cache.Cache) (ast2.Job, bool) {
+	if alias, ok := doc.JobAlias(name); ok {
+		name = alias.Target
+	}
+	return resolveElement(doc, name, cache, func(attributes ast2.OrbParsedAttributes) map[string]ast2.Job {
+		return attributes.Jobs
+	})
+}
+
+// ResolveExecutor returns the executor a job names: the config's own, an
+// orb's as `orb-alias/executor-name`, or either through an alias.
+func (doc *YamlDocument) ResolveExecutor(name string, cache *cache.Cache) (ast2.Executor, bool) {
+	if alias, ok := doc.ExecutorAlias(name); ok {
+		name = alias.Target
+	}
+	return resolveElement(doc, name, cache, func(attributes ast2.OrbParsedAttributes) map[string]ast2.Executor {
+		return attributes.Executors
+	})
+}
+
+// resolveElement looks a name up among the config's elements of one kind,
+// or, for `orb-alias/element-name`, among the orb's.
+func resolveElement[T any](doc *YamlDocument, name string, cache *cache.Cache, elements func(ast2.OrbParsedAttributes) map[string]T) (T, bool) {
+	if element, ok := elements(doc.ToOrbParsedAttributes())[name]; ok {
+		return element, true
+	}
+
+	var none T
+	orbName, elementName, ok := (ast2.Alias{Target: name}).OrbTarget()
+	if !ok {
+		return none, false
+	}
+	orbInfo, err := doc.GetOrbInfoFromName(orbName, cache)
+	if err != nil || orbInfo == nil {
+		return none, false
+	}
+	element, ok := elements(orbInfo.OrbParsedAttributes)[elementName]
+	return element, ok
 }

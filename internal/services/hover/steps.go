@@ -14,31 +14,28 @@ import (
 )
 
 // Step is the hover for the name of a step that runs a command, whether the
-// config's own, an inline orb's or an orb's: the command's description and
-// parameters.
+// config's own, an inline orb's or an orb's, directly or through an alias:
+// the command's description and parameters.
 func Step(doc yamlparser.YamlDocument, c *cache.Cache, pos protocol.Position) (string, bool) {
 	if step, ok := namedStepAt(pos, doc.Jobs, doc.Commands); ok {
-		if command, ok := doc.Commands[step.Name]; ok {
-			return describe(step.Name, "command", command.Description, command.Parameters), true
-		}
-		if orb, name, ok := orbOf(doc, c, step.Name); ok {
-			if command, ok := orb.Commands[name]; ok {
-				return describe(step.Name, "command", command.Description, command.Parameters), true
-			}
-		}
-		return "", false
+		return describeCommand(doc, c, step.Name)
 	}
 
 	// An inline orb's steps name its commands without the orb's prefix.
 	for _, orb := range doc.LocalOrbInfo {
 		if step, ok := namedStepAt(pos, orb.Jobs, orb.Commands); ok {
-			if command, ok := orb.Commands[step.Name]; ok {
-				return describe(step.Name, "command", command.Description, command.Parameters), true
-			}
-			return "", false
+			return describeCommand(doc.FromOrbParsedAttributesToYamlDocument(orb.OrbParsedAttributes), c, step.Name)
 		}
 	}
 	return "", false
+}
+
+func describeCommand(doc yamlparser.YamlDocument, c *cache.Cache, name string) (string, bool) {
+	command, ok := doc.ResolveCommand(name, c)
+	if !ok {
+		return "", false
+	}
+	return describe(name, "command", command.Description, command.Parameters), true
 }
 
 // namedStepAt is the step, in one of the jobs or commands, whose name the
@@ -60,23 +57,6 @@ func namedStepAt(pos protocol.Position, jobs map[string]ast.Job, commands map[st
 		}
 	}
 	return ast.NamedStep{}, false
-}
-
-// orbOf is the orb a reference such as `orb/name` points into, when the
-// config declares that orb, and the name within it.
-func orbOf(doc yamlparser.YamlDocument, c *cache.Cache, reference string) (*ast.OrbInfo, string, bool) {
-	orbName, name, ok := strings.Cut(reference, "/")
-	if !ok {
-		return nil, "", false
-	}
-	if _, declared := doc.Orbs[orbName]; !declared {
-		return nil, "", false
-	}
-	orb, err := doc.GetOrbInfoFromName(orbName, c)
-	if err != nil || orb == nil {
-		return nil, "", false
-	}
-	return orb, name, true
 }
 
 // describe is the hover for a definition: its name and kind, its description

@@ -66,6 +66,9 @@ func (ch *CompletionHandler) addJobsCompletion() {
 	for _, job := range ch.Doc.Jobs {
 		ch.addCompletionItem(job.Name)
 	}
+	for _, alias := range ch.Doc.Aliases.Jobs {
+		ch.addCompletionItem(alias.Name)
+	}
 }
 
 // jobInvocationKeys are the keys a workflow's job invocation takes.

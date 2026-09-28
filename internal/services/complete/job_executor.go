@@ -64,7 +64,7 @@ func startLine(rng protocol.Range) int {
 }
 
 // addJobResourceClasses offers the resource classes of the job's executor:
-// the one it gives in place, or the executor of the config it names.
+// the one it gives in place, or the executor it names.
 func (ch *CompletionHandler) addJobResourceClasses(job ast2.Job) {
 	var executor ast2.Executor
 	switch {
@@ -75,7 +75,7 @@ func (ch *CompletionHandler) addJobResourceClasses(job ast2.Job) {
 	case !position.IsDefaultRange(job.MacOSRange):
 		executor = job.MacOS
 	default:
-		executor = ch.Doc.Executors[job.Executor]
+		executor, _ = ch.Doc.ResolveExecutor(job.Executor, ch.Cache)
 	}
 
 	offerings := ch.Cache.Offerings(ch.Context.Api)

@@ -9,23 +9,19 @@ import (
 )
 
 // JobInvocation is the hover for the name of a job that a workflow or a job
-// group runs, whether the config's own or an orb's: the job's description and
-// parameters.
+// group runs, whether the config's own or an orb's, directly or through an
+// alias: the job's description and parameters.
 func JobInvocation(doc yamlparser.YamlDocument, c *cache.Cache, pos protocol.Position) (string, bool) {
 	name, ok := invokedJobAt(doc, pos)
 	if !ok {
 		return "", false
 	}
 
-	if job, ok := doc.Jobs[name]; ok {
-		return describe(name, "job", job.Description, job.Parameters), true
+	job, ok := doc.ResolveJob(name, c)
+	if !ok {
+		return "", false
 	}
-	if orb, jobName, ok := orbOf(doc, c, name); ok {
-		if job, ok := orb.Jobs[jobName]; ok {
-			return describe(name, "job", job.Description, job.Parameters), true
-		}
-	}
-	return "", false
+	return describe(name, "job", job.Description, job.Parameters), true
 }
 
 // invokedJobAt is the name of the job whose invocation, in a workflow or a job
