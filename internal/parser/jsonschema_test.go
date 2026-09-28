@@ -584,7 +584,7 @@ workflows:
 		said := schemaMessages(t, config(`            commits:
               only: main
 `))
-		assert.Check(t, cmp.DeepEqual(said, []string{"Additional property commits is not allowed"}))
+		assert.Check(t, cmp.DeepEqual(said, []string{"`commits` isn't allowed here."}))
 	})
 }
 
@@ -771,4 +771,74 @@ func Test_HandleYAMLErrors_CollectionKey(t *testing.T) {
 	}
 	assert.Check(t, cmp.Len(diagnostics, len(expected)))
 	expect.DiagnosticList(t, diagnostics).To.IncludeAll(expected)
+}
+
+func Test_KeysTheSchemaDoesNotAllow(t *testing.T) {
+	job := func(body string) string {
+		return `version: 2.1
+jobs:
+  build:
+    docker:
+      - image: cimg/base:current
+` + body + `
+workflows:
+  w:
+    jobs: [build]
+`
+	}
+
+	testCases := []struct {
+		name string
+		body string
+		want string
+		// The text the diagnostic covers.
+		covers string
+	}{
+		{
+			name:   "a misspelt job key",
+			body:   "    resouce_class: large\n    steps: [checkout]",
+			want:   "`resouce_class` isn't allowed here. Did you mean `resource_class`?",
+			covers: "resouce_class",
+		},
+		{
+			name:   "a misspelt Docker image key",
+			body:   "        entrypont: [sh]\n    steps: [checkout]",
+			want:   "`entrypont` isn't allowed here. Did you mean `entrypoint`?",
+			covers: "entrypont",
+		},
+		{
+			name:   "a misspelt parameter key",
+			body:   "    parameters:\n      p:\n        type: string\n        defualt: x\n    steps: [checkout]",
+			want:   "`defualt` isn't allowed here. Did you mean `default`?",
+			covers: "defualt",
+		},
+		{
+			name:   "a key like none allowed",
+			body:   "    banana: 1\n    steps: [checkout]",
+			want:   "`banana` isn't allowed here.",
+			covers: "banana",
+		},
+		{
+			name:   "a misspelt option of an open step, which is ignored",
+			body:   "    steps:\n      - run:\n          command: echo\n          shel: bash",
+			want:   "run has no shel option, so this is ignored. Did you mean `shell`?",
+			covers: "shel",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			content := job(tc.body)
+			diagnostics := schemaDiagnostics(t, content)
+			assert.Assert(t, cmp.Len(diagnostics, 1))
+
+			message := diagnostic.MessageText(diagnostics[0])
+			assert.Check(t, cmp.Equal(message, tc.want))
+			rng := diagnostics[0].Range
+			assert.Assert(t, cmp.Equal(rng.Start.Line, rng.End.Line), "covers one line")
+			line := strings.Split(content, "\n")[rng.Start.Line]
+			covered := line[rng.Start.Character:rng.End.Character]
+			assert.Check(t, cmp.Equal(covered, tc.covers))
+		})
+	}
 }

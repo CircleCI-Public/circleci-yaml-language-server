@@ -935,7 +935,7 @@ func TestTeardownSchema(t *testing.T) {
           teardown:
             - restore_cache:
                 key: deps`))
-		assert.Check(t, cmp.Contains(errors, "Additional property restore_cache is not allowed"))
+		assert.Check(t, cmp.Contains(errors, "`restore_cache` isn't allowed here."))
 	})
 
 	t.Run("a teardown run can't run in the background", func(t *testing.T) {
@@ -972,7 +972,7 @@ func TestUnknownStepOptions(t *testing.T) {
           cache: true
           steps:
             - checkout`))
-		assert.Check(t, cmp.Contains(errors, "Additional property cache is not allowed"))
+		assert.Check(t, cmp.Contains(errors, "`cache` isn't allowed here."))
 	})
 }
 
@@ -1188,7 +1188,7 @@ workflows:
     steps:
       - checkout
 `))
-		assert.Check(t, cmp.Contains(errors, "Additional property steps is not allowed"))
+		assert.Check(t, cmp.Contains(errors, "`steps` isn't allowed here."))
 	})
 
 	t.Run("a lock key's characters", func(t *testing.T) {
