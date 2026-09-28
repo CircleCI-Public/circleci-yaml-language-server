@@ -56,9 +56,6 @@ func (doc *YamlDocument) parseSingleJob(jobNode *sitter.Node) ast2.Job {
 	res.Range = doc.NodeToRange(jobNode)
 	res.NameRange = doc.NodeToRange(jobNameNode)
 
-	machineNode := &sitter.Node{}
-	machineNodeFound := false
-
 	// keys are the job's keys, including those with no value yet, for
 	// completion to leave out.
 	keys := map[string]bool{}
@@ -118,9 +115,6 @@ func (doc *YamlDocument) parseSingleJob(jobNode *sitter.Node) ast2.Job {
 				res.DockerRange = doc.NodeToRange(child)
 
 			case "machine":
-				machineNode = child
-				machineNodeFound = true
-
 				res.Machine = doc.parseSingleExecutorMachine(keyNode, blockMappingNode)
 				res.MachineRange = doc.NodeToRange(child)
 
@@ -149,9 +143,6 @@ func (doc *YamlDocument) parseSingleJob(jobNode *sitter.Node) ast2.Job {
 		}
 	})
 
-	if machineNodeFound {
-		doc.addedMachineTrueDeprecatedDiag(machineNode, res.ResourceClass)
-	}
 	doc.jobCompletionItem(res, keys)
 
 	return res

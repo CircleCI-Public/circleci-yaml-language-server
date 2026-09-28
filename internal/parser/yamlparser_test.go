@@ -175,6 +175,60 @@ jobs:
 	assert.Check(t, cmp.Len(*yamlDocument.Diagnostics, 0))
 }
 
+func TestMachineTrueOnWindows(t *testing.T) {
+	machineRange := protocol.Range{
+		Start: protocol.Position{Line: 3, Character: 4},
+		End:   protocol.Position{Line: 3, Character: 17},
+	}
+	configs := map[string]string{
+		"in a job": `version: 2.1
+jobs:
+  test:
+    machine: true
+    resource_class: windows.medium
+    steps:
+      - checkout
+`,
+		"in an executor": `version: 2.1
+executors:
+  windows:
+    machine: true
+    resource_class: windows.medium
+
+jobs:
+  test:
+    executor: windows
+    steps:
+      - checkout
+`,
+	}
+
+	for name, yaml := range configs {
+		t.Run(name, func(t *testing.T) {
+			yamlDocument, err := parser2.ParseFromContent(
+				[]byte(yaml),
+				testHelpers.DefaultSettings(),
+				uri.File(""),
+				protocol.Position{},
+			)
+			assert.NilError(t, err)
+
+			var machineTrue []protocol.Diagnostic
+			for _, diagnostic := range *yamlDocument.Diagnostics {
+				if diagnostic.Range == machineRange {
+					machineTrue = append(machineTrue, diagnostic)
+				}
+			}
+			assert.Assert(t, cmp.Len(machineTrue, 1))
+
+			diagnostic := machineTrue[0]
+			assert.Check(t, cmp.Equal(diagnostic.Severity, protocol.DiagnosticSeverityWarning))
+			assert.Check(t, cmp.DeepEqual(diagnostic.Message, protocol.String(parser2.MachineTrueWindowsMessage)))
+			assert.Check(t, cmp.DeepEqual(diagnostic.Data, codeaction.Data(nil)), "no quick fix, since the right image isn't known")
+		})
+	}
+}
+
 func TestExecutorWithDefinedMachine(t *testing.T) {
 	yaml := `version: 2.1
 

@@ -385,11 +385,12 @@ func (doc *YamlDocument) addedMachineTrueDeprecatedDiag(child *sitter.Node, reso
 	if !doc.Context.Api.UseDefaultInstance() || circleci.IsSelfHostedRunner(resourceClass) {
 		return false
 	}
-
-	if circleci.IsSelfHostedRunner(resourceClass) {
-		return false
-	}
 	machineRange := doc.NodeToRange(child)
+
+	if strings.HasPrefix(resourceClass, "windows.") {
+		doc.addDiagnostic(diagnostic.Deprecated(machineRange, MachineTrueWindowsMessage))
+		return true
+	}
 
 	doc.machineTrueFix(machineRange)
 	return true
