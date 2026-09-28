@@ -5,9 +5,11 @@ import (
 	"net/http"
 	"net/url"
 	"sync"
+	"time"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/httpcl"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/memo"
 )
 
 // API is what validation asks Docker Hub.
@@ -48,7 +50,15 @@ type dockerHubAPI struct {
 	// knownNamespace, which hold namespacesMutex.
 	namespacesMutex sync.Mutex
 	namespaces      map[string]*HubNamespace
+
+	// now is the clock namespaces are aged by.
+	now func() time.Time
 }
+
+// namespaceLifetime is how long what was read of a namespace is kept before
+// it is read again from the start, since a namespace gains and loses
+// repositories.
+const namespaceLifetime = memo.FoundLifetime
 
 // defaultAPI backs the package-level Search and SearchTags for the zero
 // Config, which is what the server runs with, so that every completion
@@ -82,6 +92,7 @@ func newAPI(cfg Config) *dockerHubAPI {
 		baseURL:    baseURL,
 		client:     client.New(httpcl.Config{Transport: cfg.Transport}),
 		namespaces: map[string]*HubNamespace{},
+		now:        time.Now,
 	}
 
 	if cfg.BaseURL != "" {
@@ -90,19 +101,24 @@ func newAPI(cfg Config) *dockerHubAPI {
 		}
 	}
 
-	api.namespaces["library"] = &HubNamespace{namespace: "library", api: api}
+	api.namespaces["library"] = api.newNamespace("library")
 
 	return api
 }
 
-// namespace returns the cache for a namespace, creating it on first use.
+func (me *dockerHubAPI) newNamespace(name string) *HubNamespace {
+	return &HubNamespace{api: me, namespace: name, created: me.now()}
+}
+
+// namespace returns the cache for a namespace, starting a new one on first
+// use and once the old one is namespaceLifetime old.
 func (me *dockerHubAPI) namespace(name string) *HubNamespace {
 	me.namespacesMutex.Lock()
 	defer me.namespacesMutex.Unlock()
 
 	ns := me.namespaces[name]
-	if ns == nil {
-		ns = &HubNamespace{api: me, namespace: name}
+	if ns == nil || me.expired(ns) {
+		ns = me.newNamespace(name)
 		me.namespaces[name] = ns
 	}
 
@@ -110,12 +126,21 @@ func (me *dockerHubAPI) namespace(name string) *HubNamespace {
 }
 
 // knownNamespace returns the cache for a namespace, or nil when nothing has
-// asked for it yet.
+// asked for it since it was last namespaceLifetime old.
 func (me *dockerHubAPI) knownNamespace(name string) *HubNamespace {
 	me.namespacesMutex.Lock()
 	defer me.namespacesMutex.Unlock()
 
-	return me.namespaces[name]
+	ns := me.namespaces[name]
+	if ns == nil || me.expired(ns) {
+		return nil
+	}
+
+	return ns
+}
+
+func (me *dockerHubAPI) expired(ns *HubNamespace) bool {
+	return me.now().Sub(ns.created) >= namespaceLifetime
 }
 
 // exists asks whether an absolute URL names something Docker Hub has: a 2xx
