@@ -88,10 +88,9 @@ func (val Validate) validateSingleJob(job ast2.Job) {
 				}
 			}
 
-		} else if !val.Doc.DoesExecutorExist(job.Executor) {
+		} else if executor, ok := val.localExecutor(job.Executor); !ok {
 			val.validateExecutorReference(job.Executor, job.ExecutorRange)
 		} else {
-			executor := val.Doc.Executors[job.Executor]
 			val.validateParametersValue(
 				job.ExecutorParameters,
 				executor.GetName(),

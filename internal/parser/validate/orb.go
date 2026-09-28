@@ -187,6 +187,14 @@ func (val Validate) createCodeActions(orb ast.Orb, cachedOrb ast.OrbInfo) []prot
 }
 
 func (val Validate) checkIfOrbIsUsed(orb ast.Orb) bool {
+	for _, aliases := range []map[string]ast.Alias{val.Doc.Aliases.Commands, val.Doc.Aliases.Jobs, val.Doc.Aliases.Executors} {
+		for _, alias := range aliases {
+			if orbName, _, ok := alias.OrbTarget(); ok && orbName == orb.Name {
+				return true
+			}
+		}
+	}
+
 	for _, command := range val.Doc.Commands {
 		if val.checkIfStepsContainOrb(command.Steps, orb.Name) {
 			return true

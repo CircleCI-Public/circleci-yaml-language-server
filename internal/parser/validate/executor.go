@@ -20,7 +20,7 @@ import (
 )
 
 func (val Validate) ValidateExecutors() {
-	if len(val.Doc.Executors) == 0 && !position.IsDefaultRange(val.Doc.ExecutorsRange) {
+	if len(val.Doc.Executors) == 0 && len(val.Doc.Aliases.Executors) == 0 && !position.IsDefaultRange(val.Doc.ExecutorsRange) {
 		val.addDiagnostic(
 			diagnostic.EmptySectionWarning(val.Doc.ExecutorsRange, "executors"),
 		)
@@ -40,21 +40,42 @@ func (val Validate) ValidateExecutors() {
 		}
 	}
 
+	values := val.valuesOutsideExecutors()
+	val.validateExecutorAliases(values)
+
 	// Local orbs do not need unused checks because those checks collides with the overall YAML unused checks
 	if !val.IsLocalOrb {
-		val.checkUnusedExecutors()
+		val.checkUnusedExecutors(values)
 	}
 }
 
-// checkUnusedExecutors warns about an executor whose name is no value
-// outside the executors, once there are jobs to use it. Its name can reach a
-// job through a parameter, as an enum, a default or a matrix's values, so any
-// value is taken as a use.
-func (val Validate) checkUnusedExecutors() {
+// checkUnusedExecutors warns about an executor or an alias whose name is not
+// among values, once there are jobs to use it. An alias that is used uses its
+// target.
+func (val Validate) checkUnusedExecutors(values map[string]bool) {
 	if len(val.Doc.Jobs) == 0 {
 		return
 	}
 
+	for _, alias := range val.Doc.Aliases.Executors {
+		if values[alias.Name] {
+			values[alias.Target] = true
+		} else {
+			val.addDiagnostic(diagnostic.Warning(alias.NameRange, "Executor is unused"))
+		}
+	}
+
+	for _, executor := range val.Doc.Executors {
+		if !values[executor.GetName()] {
+			val.addDiagnostic(diagnostic.Warning(executor.GetNameRange(), "Executor is unused"))
+		}
+	}
+}
+
+// valuesOutsideExecutors are the config's scalar values outside its
+// executors. An executor's name can reach a job through a parameter, as an
+// enum, a default or a matrix's values, so any of them is taken as a use.
+func (val Validate) valuesOutsideExecutors() map[string]bool {
 	values := map[string]bool{}
 	for node := range yamltree.Walk(val.Doc.RootNode) {
 		switch node.Kind() {
@@ -67,12 +88,7 @@ func (val Validate) checkUnusedExecutors() {
 		}
 		values[strings.Trim(val.Doc.GetNodeText(node), `"'`)] = true
 	}
-
-	for _, executor := range val.Doc.Executors {
-		if !values[executor.GetName()] {
-			val.addDiagnostic(diagnostic.Warning(executor.GetNameRange(), "Executor is unused"))
-		}
-	}
+	return values
 }
 
 func isKey(scalar *sitter.Node) bool {
