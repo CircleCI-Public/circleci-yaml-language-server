@@ -13,6 +13,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/paramref"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/pipelinevalues"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/template"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/yamltree"
 )
 
@@ -195,6 +196,8 @@ func (val Validate) checkParamUsedWithParam(param ast2.ParameterValue, stepName 
 	}
 }
 
+// CheckIfParamsExist reports the parameters a template uses that aren't
+// defined, anywhere in a tag's expression or as a section's name.
 func (val Validate) CheckIfParamsExist() {
 	checkOnNode := func(match *sitter.QueryMatch) {
 		for _, capture := range match.Captures {
@@ -202,52 +205,31 @@ func (val Validate) CheckIfParamsExist() {
 			if val.Doc.IsUnderUnreadTopLevelKey(node) {
 				continue
 			}
-			content := val.Doc.GetRawNodeText(node)
-			params, err := paramref.InString(content)
-			if err != nil {
-				return
-			}
 
-			for _, param := range params {
-				isPipeline := strings.HasPrefix(param.FullName, "pipeline")
-
+			for _, reference := range template.References(val.Doc.GetRawNodeText(node)) {
 				var parameters map[string]ast2.Parameter
-
-				if isPipeline {
+				var message string
+				if name, ok := strings.CutPrefix(reference.Name, "pipeline.parameters."); ok {
 					parameters = val.Doc.PipelineParameters
-				} else {
+					message = fmt.Sprintf("Pipeline parameter %s is not defined", name)
+					reference.Name = name
+				} else if name, ok := strings.CutPrefix(reference.Name, "parameters."); ok {
 					parameters = val.Doc.GetParamsWithPosition(val.Doc.NodeToRange(node).Start)
-				}
-
-				_, parameterFound := parameters[param.Name]
-
-				if parameterFound {
+					message = fmt.Sprintf("Parameter %s is not defined", name)
+					reference.Name = name
+				} else {
 					continue
 				}
 
-				// A position in content is from the start of the scalar on its
-				// first line, and from the start of the line on the others.
-				inFile := func(pos protocol.Position) protocol.Position {
-					if pos.Line == 0 {
-						pos.Character += position.Start(node).Character
-					}
-					pos.Line += position.Start(node).Line
-					return pos
-				}
-				diagnosticRange := protocol.Range{Start: inFile(param.ParamRange.Start), End: inFile(param.ParamRange.End)}
-
-				errorMessage := ""
-
-				if isPipeline {
-					errorMessage = fmt.Sprintf("Pipeline parameter %s is not defined", param.Name)
-				} else {
-					errorMessage = fmt.Sprintf("Parameter %s is not defined", param.Name)
+				if _, defined := parameters[reference.Name]; defined {
+					continue
 				}
 
-				val.addDiagnostic(diagnostic.Error(
-					diagnosticRange,
-					errorMessage,
-				))
+				start := int(node.StartByte())
+				val.addDiagnostic(diagnostic.Error(protocol.Range{
+					Start: position.FromIndex(start+reference.Start, val.Doc.Content),
+					End:   position.FromIndex(start+reference.End, val.Doc.Content),
+				}, message))
 			}
 		}
 	}

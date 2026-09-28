@@ -180,59 +180,6 @@ func IsMatrixPartiallyReferenced(content string) bool {
 	return partialMatrixRegex.Find([]byte(content)) != nil
 }
 
-var paramInStringRegex = regexp.MustCompile(`<<\s*(parameters|pipeline.parameters)\.([A-Za-z0-9-_]*)\s*>>`)
-
-func InString(content string) ([]struct {
-	Name       string
-	FullName   string
-	ParamRange protocol.Range
-}, error,
-) {
-	byteContent := []byte(content)
-	params := paramInStringRegex.FindAllIndex(byteContent, -1)
-
-	results := []struct {
-		Name       string
-		FullName   string
-		ParamRange protocol.Range
-	}{}
-
-	for _, param := range params {
-		length := param[1] - param[0]
-
-		if length < 0 {
-			continue
-		}
-
-		paramFullName, paramName := ExtractName(string(byteContent[param[0]:param[1]]))
-
-		startPos := position.FromIndex(param[0], byteContent)
-		endPos := protocol.Position{
-			Line:      startPos.Line,
-			Character: startPos.Character + uint32(length),
-		}
-
-		totalRange := protocol.Range{
-			Start: startPos,
-			End:   endPos,
-		}
-
-		result := struct {
-			Name       string
-			FullName   string
-			ParamRange protocol.Range
-		}{
-			Name:       paramName,
-			FullName:   paramFullName,
-			ParamRange: totalRange,
-		}
-
-		results = append(results, result)
-	}
-
-	return results, nil
-}
-
 // Given a correct parameter string (example: << parameters.something >>)
 // will return a pair of strings
 //

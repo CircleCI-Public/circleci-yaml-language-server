@@ -510,8 +510,8 @@ workflows:
 			OnlyErrors: true,
 			Diagnostics: []protocol.Diagnostic{
 				diagnostic.Error(protocol.Range{
-					Start: protocol.Position{Line: 7, Character: 18},
-					End:   protocol.Position{Line: 7, Character: 42},
+					Start: protocol.Position{Line: 7, Character: 21},
+					End:   protocol.Position{Line: 7, Character: 39},
 				}, "Parameter version is not defined"),
 			},
 		},
@@ -537,16 +537,16 @@ workflows:
 			OnlyErrors: true,
 			Diagnostics: []protocol.Diagnostic{
 				diagnostic.Error(protocol.Range{
-					Start: protocol.Position{Line: 7, Character: 19},
-					End:   protocol.Position{Line: 7, Character: 43},
+					Start: protocol.Position{Line: 7, Character: 22},
+					End:   protocol.Position{Line: 7, Character: 40},
 				}, "Parameter version is not defined"),
 				diagnostic.Error(protocol.Range{
-					Start: protocol.Position{Line: 8, Character: 19},
-					End:   protocol.Position{Line: 8, Character: 40},
+					Start: protocol.Position{Line: 8, Character: 22},
+					End:   protocol.Position{Line: 8, Character: 37},
 				}, "Parameter name is not defined"),
 				diagnostic.Error(protocol.Range{
-					Start: protocol.Position{Line: 10, Character: 10},
-					End:   protocol.Position{Line: 10, Character: 39},
+					Start: protocol.Position{Line: 10, Character: 13},
+					End:   protocol.Position{Line: 10, Character: 36},
 				}, "Pipeline parameter two is not defined"),
 			},
 		},
@@ -603,4 +603,56 @@ workflows:
 	}
 
 	CheckYamlErrors(t, testCases)
+}
+
+func TestParametersInExpressions(t *testing.T) {
+	CheckYamlErrors(t, []ValidateTestCase{
+		{
+			Name: "Undefined parameters inside an expression and a section are errors",
+			YamlContent: `version: 2.1
+
+parameters:
+  deploy:
+    type: boolean
+    default: false
+
+commands:
+  greet:
+    parameters:
+      loud:
+        type: boolean
+        default: false
+    steps:
+      - run: echo << parameters.loud and pipeline.parameters.deploy >> << not parameters.quiet >>
+      - run: echo <<# pipeline.parameters.verbose >>-v<</ pipeline.parameters.verbose >>
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - greet
+
+workflows:
+  main:
+    jobs:
+      - build
+`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(protocol.Range{
+					Start: protocol.Position{Line: 14, Character: 78},
+					End:   protocol.Position{Line: 14, Character: 94},
+				}, "Parameter quiet is not defined"),
+				diagnostic.Error(protocol.Range{
+					Start: protocol.Position{Line: 15, Character: 22},
+					End:   protocol.Position{Line: 15, Character: 49},
+				}, "Pipeline parameter verbose is not defined"),
+				diagnostic.Error(protocol.Range{
+					Start: protocol.Position{Line: 15, Character: 58},
+					End:   protocol.Position{Line: 15, Character: 85},
+				}, "Pipeline parameter verbose is not defined"),
+			},
+		},
+	})
 }

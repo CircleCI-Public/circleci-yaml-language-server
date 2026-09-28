@@ -54,3 +54,27 @@ func TestCheckFindsProblems(t *testing.T) {
 		assert.Check(t, cmp.Equal(problem.Start, strings.Index(tc.text, tc.at)), "%q starts at %q", tc.text, tc.at)
 	}
 }
+
+func TestReferences(t *testing.T) {
+	t.Run("the names in expressions and sections, with where they are", func(t *testing.T) {
+		const text = `<< a >>, << not (pipeline.git.branch == "main" or b.c) >>, <<# d.e >>x<</ d.e >>`
+		got := References(text)
+
+		names := []string{}
+		for _, reference := range got {
+			names = append(names, reference.Name)
+			assert.Check(t, cmp.Equal(text[reference.Start:reference.End], reference.Name))
+		}
+		assert.Check(t, cmp.DeepEqual(names, []string{"a", "pipeline.git.branch", "b.c", "d.e", "d.e"}))
+	})
+
+	t.Run("a tag that isn't an expression is one name", func(t *testing.T) {
+		got := References("<<  pipeline.parameters.a:b >>")
+		assert.Check(t, cmp.DeepEqual(got, []Reference{{Name: "pipeline.parameters.a:b", Start: 4, End: 27}}))
+	})
+
+	t.Run("up to the first problem", func(t *testing.T) {
+		got := References("<< a >> << and >> << b >>")
+		assert.Check(t, cmp.DeepEqual(got, []Reference{{Name: "a", Start: 3, End: 4}}))
+	})
+}
