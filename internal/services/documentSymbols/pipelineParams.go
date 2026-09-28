@@ -21,15 +21,10 @@ func resolvePipelineParametersSymbols(document *parser.YamlDocument) []protocol.
 		children = append(children, parameterDefinitionSymbols(param))
 	}
 
-	return []protocol.DocumentSymbol{
-		{
-			Name:           "Pipeline Parameters",
-			Kind:           SectionSymbol,
-			Range:          document.PipelineParametersRange,
-			SelectionRange: document.PipelineParametersRange,
-			Children:       children,
-		},
-	}
+	symbol := sectionSymbol(document, "parameters", document.PipelineParametersRange, "Pipeline Parameters")
+	symbol.Children = children
+
+	return []protocol.DocumentSymbol{symbol}
 }
 
 func parameterDefinitionSymbols(parameter ast.Parameter) protocol.DocumentSymbol {

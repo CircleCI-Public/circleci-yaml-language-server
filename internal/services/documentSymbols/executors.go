@@ -13,10 +13,11 @@ func resolveExecutorsSymbols(document *parser.YamlDocument) []protocol.DocumentS
 		return nil
 	}
 
-	executorsSymbol := symbolFromRange(
+	executorsSymbol := sectionSymbol(
+		document,
+		"executors",
 		document.ExecutorsRange,
 		"Executors",
-		SectionSymbol,
 	)
 
 	children := []protocol.DocumentSymbol{}
