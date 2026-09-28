@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 	"gopkg.in/yaml.v3"
@@ -386,7 +387,7 @@ func Test_HandleYamlError_UnknownAnchorWhereTheTreeHasNoNode(t *testing.T) {
 }
 
 // schemaMessages is what validating content against the embedded schema says.
-func schemaMessages(t *testing.T, content string) []string {
+func schemaDiagnostics(t *testing.T, content string) []protocol.Diagnostic {
 	t.Helper()
 
 	yamlDocument, err := ParseFromContent([]byte(content), testHelpers.DefaultSettings(), uri.File(""), protocol.Position{})
@@ -396,8 +397,14 @@ func schemaMessages(t *testing.T, content string) []string {
 	validator := JSONSchemaValidator{Doc: yamlDocument}
 	assert.NilError(t, validator.LoadEmbeddedJsonSchema())
 
+	return validator.ValidateWithJSONSchema(yamlDocument.RootNode, yamlDocument.Content)
+}
+
+func schemaMessages(t *testing.T, content string) []string {
+	t.Helper()
+
 	said := []string{}
-	for _, d := range validator.ValidateWithJSONSchema(yamlDocument.RootNode, yamlDocument.Content) {
+	for _, d := range schemaDiagnostics(t, content) {
 		said = append(said, diagnostic.MessageText(d))
 	}
 
@@ -657,4 +664,35 @@ workflows:
 		said := schemaMessages(t, config(`run: {command: ./save.sh, auto_rerun_delay: 30s}`))
 		assert.Check(t, cmp.Contains(said, "max_auto_reruns is required"))
 	})
+}
+
+func Test_InvalidNames(t *testing.T) {
+	diags := schemaDiagnostics(t, `
+version: 2.1
+executors:
+  myExec:
+    docker:
+      - image: cimg/base:stable
+commands:
+  say-hello:
+    steps:
+      - run: echo hi
+  otherCommand:
+    steps:
+      - run: ls
+`)
+
+	type reported struct {
+		Line    uint32
+		Message string
+	}
+	var got []reported
+	for _, d := range diags {
+		got = append(got, reported{d.Range.Start.Line, diagnostic.MessageText(d)})
+	}
+
+	assert.Check(t, cmp.DeepEqual(got, []reported{
+		{3, `"myExec" isn't a valid executor name: it must start with a lowercase letter, and have only lowercase letters, digits, "_" and "-".`},
+		{10, `"otherCommand" isn't a valid command name: it must start with a lowercase letter, and have only lowercase letters, digits, "_" and "-".`},
+	}, cmpopts.SortSlices(func(a, b reported) bool { return a.Line < b.Line })))
 }

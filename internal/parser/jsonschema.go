@@ -224,8 +224,13 @@ func (validator *JSONSchemaValidator) ValidateWithJSONSchema(rootNode *sitter.No
 		//     about it instead.
 		var combinators []protocol.Diagnostic
 		var dropped []protocol.Range
+		namePatterns := invalidNamePatterns(result.Errors())
 
 		for _, resErr := range result.Errors() {
+			if _, isNamePattern := namePatterns[resErr.Field()]; isNamePattern && resErr.Type() == "pattern" {
+				continue
+			}
+
 			fields := strings.Split(resErr.Field(), ".")
 			if len(fields) == 1 && fields[0] == "(root)" {
 				diag := diagnostic.ErrorFromNode(rootNode, resErr.Description())
@@ -240,6 +245,15 @@ func (validator *JSONSchemaValidator) ValidateWithJSONSchema(rootNode *sitter.No
 
 			if validator.doesNodeUseParameter(node) || validator.isInFlattenedStep(node) {
 				dropped = append(dropped, validator.Doc.NodeToRange(node))
+				continue
+			}
+
+			if name, ok := resErr.Details()["property"].(string); ok && resErr.Type() == "invalid_property_name" {
+				if nameNode, err := FindDeepestNode(node, content, []string{name}); err == nil {
+					node = nameNode.ChildByFieldName("key")
+				}
+				jsonSchemaDiags = append(jsonSchemaDiags, diagnostic.ErrorFromNode(node,
+					invalidNameMessage(fields, name, namePatterns[resErr.Field()])))
 				continue
 			}
 
@@ -310,6 +324,38 @@ func ignoredStepProperty(err gojsonschema.ResultError, fields []string) (step, p
 
 	property, ok = err.Details()["property"].(string)
 	return step, property, ok
+}
+
+// invalidNamePatterns maps each field holding a name the schema rejects to
+// the pattern names there must match. The schema reports a bad name twice,
+// once naming it and once giving the pattern, both at the field.
+func invalidNamePatterns(errs []gojsonschema.ResultError) map[string]string {
+	patterns := map[string]string{}
+	for _, err := range errs {
+		if err.Type() == "invalid_property_name" {
+			patterns[err.Field()] = ""
+		}
+	}
+	for _, err := range errs {
+		if _, ok := patterns[err.Field()]; ok && err.Type() == "pattern" {
+			patterns[err.Field()] = fmt.Sprint(err.Details()["pattern"])
+		}
+	}
+	return patterns
+}
+
+var nameRules = map[string]string{
+	`^[a-z][a-z\d_-]*$`:         `start with a lowercase letter, and have only lowercase letters, digits, "_" and "-"`,
+	`^[A-Za-z][A-Za-z\s\d_-]*$`: `start with a letter, and have only letters, digits, spaces, "_" and "-"`,
+}
+
+func invalidNameMessage(fields []string, name, pattern string) string {
+	kind := strings.TrimSuffix(fields[len(fields)-1], "s")
+	rule, ok := nameRules[pattern]
+	if !ok {
+		rule = "match " + pattern
+	}
+	return fmt.Sprintf("%q isn't a valid %s name: it must %s.", name, kind, rule)
 }
 
 // isCombinatorError reports whether err only says that a value failed one
