@@ -19,7 +19,8 @@ type Value struct {
 	Type       string
 	Definition string
 	// Private values aren't documented publicly.
-	Private    bool
+	Private bool
+	// ReplacedBy is the documented value that replaces this one, if any.
 	ReplacedBy string
 }
 
@@ -76,6 +77,16 @@ func parse(data []byte) (map[string]Value, error) {
 			Definition: field.Definition,
 			Private:    field.Private,
 			ReplacedBy: field.ReplacedBy,
+		}
+	}
+
+	// A value replaced by one that isn't documented, such as
+	// pipeline.schedule.name by pipeline.trigger.name, isn't deprecated in
+	// the docs, so there's nothing to point to yet.
+	for name, value := range values {
+		if replacement, ok := values[value.ReplacedBy]; ok && replacement.Private {
+			value.ReplacedBy = ""
+			values[name] = value
 		}
 	}
 	return values, nil

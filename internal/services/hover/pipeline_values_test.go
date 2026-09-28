@@ -27,7 +27,7 @@ jobs:
     docker:
       - image: cimg/base:stable
     steps:
-      - run: echo << pipeline.git.branch.is_default >> << pipeline.schedule.name >>
+      - run: echo << pipeline.git.branch.is_default >> << pipeline.trigger_parameters.circleci.event_type >>
 
 workflows:
   main:
@@ -51,9 +51,9 @@ workflows:
 	})
 
 	t.Run("a replaced value says what replaces it", func(t *testing.T) {
-		got, ok := PipelineValue(doc, cache.New(), at(12, "pipeline.schedule"))
+		got, ok := PipelineValue(doc, cache.New(), at(12, "pipeline.trigger_parameters"))
 		assert.Assert(t, ok)
-		assert.Check(t, cmp.Contains(got, "Deprecated: use `pipeline.trigger.name` instead."))
+		assert.Check(t, cmp.Contains(got, "Deprecated: use `pipeline.event.name` instead."))
 	})
 
 	t.Run("a pipeline parameter doesn't", func(t *testing.T) {

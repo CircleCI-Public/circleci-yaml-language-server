@@ -24,9 +24,15 @@ func TestLookup(t *testing.T) {
 	})
 
 	t.Run("A replaced value", func(t *testing.T) {
+		value, ok := Lookup("pipeline.trigger_parameters.circleci.event_type")
+		assert.Assert(t, ok)
+		assert.Check(t, cmp.Equal(value.ReplacedBy, "pipeline.event.name"))
+	})
+
+	t.Run("A value replaced by a private one isn't replaced yet", func(t *testing.T) {
 		value, ok := Lookup("pipeline.schedule.name")
 		assert.Assert(t, ok)
-		assert.Check(t, cmp.Equal(value.ReplacedBy, "pipeline.trigger.name"))
+		assert.Check(t, cmp.Equal(value.ReplacedBy, ""))
 	})
 
 	t.Run("An unknown value", func(t *testing.T) {
