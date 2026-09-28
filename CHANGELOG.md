@@ -1,5 +1,29 @@
 # CHANGELOG
 
+## 0.43.0 (2026-09-28)
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+* fix: resolve executor aliases by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/673
+* fix: resolve command aliases by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/674
+* ci: run the release job on an xlarge.gen3 machine by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/677
+* fix: warn about a circleci/ image that has credentials by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/676
+* fix: publish release-please's draft instead of a second release by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/678
+* fix: resolve job aliases by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/675
+* fix: name add_ssh_keys steps add_ssh_keys in the outline by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/679
+* feat: hover and complete through orb element aliases by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/680
+* fix: put each environment variable on its own line in the outline by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/682
+* feat: go to definition and references through orb element aliases by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/683
+* fix: say which key isn't allowed, and suggest the one meant by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/684
+* fix: start each outline section on its key by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/685
+* fix: list orb element aliases in the outline by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/687
+* fix: find an executor's uses through a job's parameters by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/686
+* feat: hover a parameter reference to see its parameter by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/688
+
+
+**Full Changelog**: https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.42.0...0.43.0
+
 ## 0.42.0 (2026-09-28)
 
 <!-- Release notes generated using configuration in .github/release.yml at main -->
