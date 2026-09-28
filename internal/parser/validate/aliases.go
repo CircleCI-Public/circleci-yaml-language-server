@@ -22,13 +22,13 @@ func (val Validate) localExecutor(name string) (ast.Executor, bool) {
 // target is either an orb's executor, `orb-alias/executor-name`, or an
 // executor the config defines. The problem is an error where the alias is
 // used, and only a warning where nothing uses it.
-func (val Validate) validateExecutorAliases(used map[string]bool) {
+func (val Validate) validateExecutorAliases(used map[string]int) {
 	for _, alias := range val.Doc.Aliases.Executors {
 		if _, ok := val.Doc.Executors[alias.Name]; ok {
 			continue
 		}
 
-		val.reportAliasProblem(alias, val.executorAliasProblem(alias), used[alias.Name])
+		val.reportAliasProblem(alias, val.executorAliasProblem(alias), used[alias.Name] > 0)
 	}
 }
 
