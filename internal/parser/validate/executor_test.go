@@ -250,6 +250,58 @@ executors:
 	}
 }
 
+// The lookups skip an image with credentials, but the namespace needs none.
+func TestCircleciNamespaceImages(t *testing.T) {
+	const message = "Docker images from `circleci` namespace are deprecated. Please use its `cimg` namespace's alternative."
+
+	testCases := []struct {
+		name  string
+		image string
+	}{
+		{
+			name:  "without credentials",
+			image: `- image: circleci/redis:7`,
+		},
+		{
+			name: "with auth",
+			image: `- image: circleci/redis:7
+        auth:
+          username: $USER
+          password: $PASSWORD`,
+		},
+		{
+			name: "with aws_auth",
+			image: `- image: circleci/redis:7
+        aws_auth:
+          oidc_role_arn: arn:aws:iam::123456789012:role/pull`,
+		},
+	}
+
+	for _, c := range testCases {
+		t.Run(c.name, func(t *testing.T) {
+			val := CreateValidateFromYAML(`version: 2.1
+jobs:
+  build:
+    docker:
+      ` + c.image + `
+    steps:
+      - checkout
+workflows:
+  main:
+    jobs:
+      - build
+`)
+			val.Validate()
+
+			var messages []string
+			for _, d := range *val.Diagnostics {
+				messages = append(messages, diagnostic.MessageText(d))
+			}
+			assert.Check(t, cmp.Contains(messages, message))
+		})
+	}
+}
+
 func TestMachineExecutor(t *testing.T) {
 	type testCase struct {
 		name        string
