@@ -50,6 +50,19 @@ type Reference struct {
 	Start, End int
 }
 
+// IsOnlyTag reports whether text is a single `<< >>` tag and nothing else,
+// such as `<< pipeline.number >>` or `<< pipeline.git.tag and 1 or 0 >>`. The
+// compiler gives such a value the type of what's inside it, rather than
+// making it a string.
+func IsOnlyTag(text string) bool {
+	toks := scan(text)
+	if len(toks) != 4 || toks[0].kind != tagStart || toks[1].kind != stringToken || toks[2].kind != tagEnd {
+		return false
+	}
+	_, found := Check(text)
+	return !found
+}
+
 // References returns the names used in text's tags and sections, up to its
 // first problem.
 func References(text string) []Reference {

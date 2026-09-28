@@ -78,3 +78,19 @@ func TestReferences(t *testing.T) {
 		assert.Check(t, cmp.DeepEqual(got, []Reference{{Name: "a", Start: 3, End: 4}}))
 	})
 }
+
+func TestIsOnlyTag(t *testing.T) {
+	for text, want := range map[string]bool{
+		"<< pipeline.number >>":                           true,
+		`<< pipeline.git.branch == "main" and 10 or 1 >>`: true,
+		"<<parameters.count>>":                            true,
+		"<< a >> << b >>":                                 false,
+		"x-<< a >>":                                       false,
+		"<< a and and b >>":                               false,
+		"<<# a >>x<</ a >>":                               false,
+		"plain":                                           false,
+	} {
+		got := IsOnlyTag(text)
+		assert.Check(t, cmp.Equal(got, want), "%q", text)
+	}
+}
