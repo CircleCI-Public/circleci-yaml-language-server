@@ -31,12 +31,9 @@ func (ch *CompletionHandler) GetCompletionItems() {
 		return
 	}
 
-	node, _, err := position.NodeAt(ch.Doc.RootNode, ch.Params.Position)
-	if err == nil {
-		ch.addParameterReferenceCompletion(node)
-		if len(ch.Items) > 0 {
-			return
-		}
+	ch.completeParameterReferences()
+	if len(ch.Items) > 0 {
+		return
 	}
 
 	modifiedDocs := ch.Doc.ModifyTextForAutocomplete(ch.Params.Position)

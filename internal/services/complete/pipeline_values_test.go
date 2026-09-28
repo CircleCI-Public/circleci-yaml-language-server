@@ -36,28 +36,9 @@ workflows:
     jobs:
       - build
 `
-	// itemsAfter are the items offered with the cursor straight after text.
 	itemsAfter := func(t *testing.T, text string) []protocol.CompletionItem {
 		t.Helper()
-		lines := strings.Split(config, "\n")
-		line := slices.IndexFunc(lines, func(l string) bool { return strings.Contains(l, text) })
-		assert.Assert(t, line != -1, "no line with %q", text)
-		column := strings.Index(lines[line], text) + len(text)
-		pos := protocol.Position{Line: uint32(line), Character: uint32(column)}
-		return completionItemsWith(t, testHelpers.DefaultSettings(), cache.New(), config, pos)
-	}
-	labelsOf := func(items []protocol.CompletionItem) []string {
-		labels := []string{}
-		for _, item := range items {
-			labels = append(labels, item.Label)
-		}
-		return labels
-	}
-	find := func(t *testing.T, items []protocol.CompletionItem, label string) protocol.CompletionItem {
-		t.Helper()
-		i := slices.IndexFunc(items, func(item protocol.CompletionItem) bool { return item.Label == label })
-		assert.Assert(t, i != -1, "no item %q", label)
-		return items[i]
+		return completionItemsAfter(t, config, text)
 	}
 
 	t.Run("after pipeline., the first segments are offered", func(t *testing.T) {
@@ -71,17 +52,17 @@ workflows:
 		unique := slices.Compact(slices.Clone(sorted))
 		assert.Check(t, cmp.DeepEqual(sorted, unique), "each segment is offered once")
 
-		git := find(t, items, "git")
+		git := findItem(t, items, "git")
 		assert.Check(t, cmp.Equal(git.InsertText, protocol.NewOptional("git.")))
 
-		number := find(t, items, "number")
+		number := findItem(t, items, "number")
 		assert.Check(t, cmp.Equal(number.InsertText, protocol.NewOptional("number >>")))
 		assert.Check(t, cmp.Equal(number.Detail, protocol.NewOptional("uint")))
 	})
 
 	t.Run("a value that's already closed isn't closed again", func(t *testing.T) {
 		items := itemsAfter(t, "echo << pipeline.git.")
-		branch := find(t, items, "branch")
+		branch := findItem(t, items, "branch")
 		assert.Check(t, cmp.Equal(branch.InsertText, protocol.NewOptional("branch")))
 		assert.Check(t, !slices.Contains(labelsOf(items), "deploy"), "pipeline parameters aren't offered")
 	})
@@ -93,9 +74,36 @@ workflows:
 
 	t.Run("in an expression, a replaced value is marked deprecated", func(t *testing.T) {
 		items := itemsAfter(t, "pipeline.trigger_parameters.github_app.")
-		repoName := find(t, items, "repo_name")
+		repoName := findItem(t, items, "repo_name")
 		assert.Check(t, cmp.DeepEqual(repoName.Tags, []protocol.CompletionItemTag{protocol.CompletionItemTagDeprecated}))
-		tag := find(t, items, "tag")
+		tag := findItem(t, items, "tag")
 		assert.Check(t, cmp.Len(tag.Tags, 0))
 	})
+}
+
+// completionItemsAfter are the items offered with the cursor straight after
+// text, on the first line of config that contains it.
+func completionItemsAfter(t *testing.T, config, text string) []protocol.CompletionItem {
+	t.Helper()
+	lines := strings.Split(config, "\n")
+	line := slices.IndexFunc(lines, func(l string) bool { return strings.Contains(l, text) })
+	assert.Assert(t, line != -1, "no line with %q", text)
+	column := strings.Index(lines[line], text) + len(text)
+	pos := protocol.Position{Line: uint32(line), Character: uint32(column)}
+	return completionItemsWith(t, testHelpers.DefaultSettings(), cache.New(), config, pos)
+}
+
+func labelsOf(items []protocol.CompletionItem) []string {
+	labels := []string{}
+	for _, item := range items {
+		labels = append(labels, item.Label)
+	}
+	return labels
+}
+
+func findItem(t *testing.T, items []protocol.CompletionItem, label string) protocol.CompletionItem {
+	t.Helper()
+	i := slices.IndexFunc(items, func(item protocol.CompletionItem) bool { return item.Label == label })
+	assert.Assert(t, i != -1, "no item %q", label)
+	return items[i]
 }

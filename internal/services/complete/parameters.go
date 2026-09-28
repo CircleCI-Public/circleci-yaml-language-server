@@ -1,12 +1,13 @@
 package complete
 
 import (
-	"strings"
+	"maps"
+	"regexp"
+	"slices"
 
-	sitter "github.com/tree-sitter/go-tree-sitter"
+	"go.lsp.dev/protocol"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/paramref"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 )
 
@@ -72,48 +73,40 @@ func (ch *CompletionHandler) completeParameterDefinitions(parameters map[string]
 	}
 }
 
-func (ch *CompletionHandler) addParameterReferenceCompletion(node *sitter.Node) {
-	if node.Kind() == "string_scalar" {
-		isParamBeingWritten, isPipelineParam := paramref.IsPartiallyReferenced(ch.Doc.GetNodeText(node))
-		if isParamBeingWritten {
-			if isPipelineParam {
-				ch.addPipelineParametersReferenceCompletion()
-			} else {
-				ch.addParametersReferenceCompletion()
-			}
+// parameterBeingWritten finds a parameter being written anywhere inside an
+// unclosed `<<`, so in an expression too. The first group is `pipeline.` for
+// a pipeline parameter.
+var parameterBeingWritten = regexp.MustCompile(`<<(?:[^>]*[^\w.>])?(pipeline\.)?parameters\.[\w-]*$`)
+
+// completeParameterReferences offers the parameters after `parameters.`,
+// those of the job, command or executor the cursor is in, or after
+// `pipeline.parameters.`, the pipeline's.
+func (ch *CompletionHandler) completeParameterReferences() {
+	match := parameterBeingWritten.FindSubmatch(ch.lineBeforeCursor())
+	if match == nil {
+		return
+	}
+	parameters := ch.Doc.GetParamsWithPosition(ch.Params.Position)
+	if len(match[1]) > 0 {
+		parameters = ch.Doc.PipelineParameters
+	}
+
+	closed := ch.tagClosedAfterCursor()
+	for _, name := range slices.Sorted(maps.Keys(parameters)) {
+		param := parameters[name]
+		insert := param.GetName()
+		if !closed {
+			insert += " >>"
 		}
-	}
-}
-
-func (ch *CompletionHandler) addPipelineParametersReferenceCompletion() {
-	shouldAddClosingBrackets := ch.shouldAddParamsClosingBrackets()
-	for _, param := range ch.Doc.PipelineParameters {
-		if shouldAddClosingBrackets {
-			ch.addCompletionItemFieldWithCustomText(param.GetName(), "", " >>", "", "")
-		} else {
-			ch.addCompletionItem(param.GetName())
+		item := protocol.CompletionItem{
+			Label:      param.GetName(),
+			Kind:       protocol.CompletionItemKindVariable,
+			Detail:     protocol.NewOptional(param.GetType()),
+			InsertText: protocol.NewOptional(insert),
 		}
-	}
-}
-
-func (ch *CompletionHandler) addParametersReferenceCompletion() {
-	shouldAddClosingBrackets := ch.shouldAddParamsClosingBrackets()
-	for _, param := range ch.Doc.GetParamsWithPosition(ch.Params.Position) {
-		if shouldAddClosingBrackets {
-			ch.addCompletionItemFieldWithCustomText(param.GetName(), "", " >>", "", "")
-		} else {
-			ch.addCompletionItem(param.GetName())
+		if param.GetDescription() != "" {
+			item.Documentation = &protocol.MarkupContent{Kind: protocol.MarkupKindMarkdown, Value: param.GetDescription()}
 		}
+		ch.Items = append(ch.Items, item)
 	}
-}
-
-func (ch *CompletionHandler) shouldAddParamsClosingBrackets() bool {
-	idx := position.ToIndex(ch.Params.Position, ch.Doc.Content)
-
-	if strings.HasPrefix(string(ch.Doc.Content[idx:]), " >>") ||
-		strings.HasPrefix(string(ch.Doc.Content[idx:]), ">>") {
-		return false
-	}
-
-	return true
 }
