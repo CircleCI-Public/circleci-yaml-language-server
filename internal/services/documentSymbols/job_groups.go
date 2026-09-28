@@ -13,10 +13,11 @@ func resolveJobGroupsSymbols(document *parser.YamlDocument) []protocol.DocumentS
 		return nil
 	}
 
-	jobGroupsSymbols := symbolFromRange(
+	jobGroupsSymbols := sectionSymbol(
+		document,
+		"job-groups",
 		document.JobGroupsRange,
 		"Job Groups",
-		SectionSymbol,
 	)
 
 	children := []protocol.DocumentSymbol{}

@@ -13,10 +13,11 @@ func resolveCommandsSymbols(document *parser.YamlDocument) []protocol.DocumentSy
 		return nil
 	}
 
-	commandsSymbols := symbolFromRange(
+	commandsSymbols := sectionSymbol(
+		document,
+		"commands",
 		document.CommandsRange,
 		"Commands",
-		SectionSymbol,
 	)
 
 	children := []protocol.DocumentSymbol{}

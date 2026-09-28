@@ -57,10 +57,14 @@ func (doc *YamlDocument) ParseYAML(context *session.Settings, offset protocol.Po
 	doc.YamlAnchors = ParseYamlAnchors(doc)
 
 	doc.SuppressionInfo = ParseSuppressionComments(doc)
+	doc.SectionKeyRanges = map[string]protocol.Range{}
 
 	doc.iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
 		keyNode, valueNode := doc.GetKeyValueNodes(child)
 		keyName := doc.GetNodeText(keyNode)
+		if keyNode != nil {
+			doc.SectionKeyRanges[keyName] = doc.NodeToRange(keyNode)
+		}
 
 		switch keyName {
 		case "version":
@@ -263,6 +267,9 @@ type YamlDocument struct {
 	PipelineParametersRange protocol.Range
 	FunctionsRange          protocol.Range
 	VersionRange            protocol.Range
+	// SectionKeyRanges are the ranges of the top-level keys, such as `jobs`,
+	// whose Range fields above cover only their values.
+	SectionKeyRanges map[string]protocol.Range
 
 	LocalOrbInfo map[string]*ast2.OrbInfo
 

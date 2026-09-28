@@ -15,10 +15,11 @@ func resolveWorkflowsSymbols(document *parser.YamlDocument) []protocol.DocumentS
 		return nil
 	}
 
-	workflowsSymbols := symbolFromRange(
+	workflowsSymbols := sectionSymbol(
+		document,
+		"workflows",
 		document.WorkflowRange,
 		"Workflows",
-		SectionSymbol,
 	)
 
 	children := []protocol.DocumentSymbol{}

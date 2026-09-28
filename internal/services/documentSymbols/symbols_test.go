@@ -229,3 +229,71 @@ jobs:
 	assert.Check(t, cmp.DeepEqual(lines, map[string]uint32{"ONE": 6, "TWO": 7, "THREE": 12, "FOUR": 13}))
 	assert.Check(t, cmp.DeepEqual(selections, map[string]string{"ONE": "ONE", "TWO": "TWO", "THREE": "THREE", "FOUR": "FOUR"}))
 }
+
+func TestSymbolsForDocument_SectionsStartAtTheirKey(t *testing.T) {
+	doc := parseDoc(t, `version: 2.1
+
+parameters:
+  p:
+    type: string
+    default: ""
+
+orbs:
+  node: circleci/node@5
+
+executors:
+  small:
+    docker:
+      - image: cimg/base:current
+
+commands:
+  greet:
+    steps:
+      - run: echo
+
+jobs:
+  build:
+    executor: small
+    steps:
+      - greet
+
+workflows:
+  main:
+    jobs:
+      - build
+`)
+	symbols := SymbolsForDocument(&doc)
+	source := strings.Split(string(doc.Content), "\n")
+
+	// 0-based lines.
+	wantLines := map[string]uint32{
+		"Pipeline Parameters": 2,
+		"Orbs":                7,
+		"Executors":           10,
+		"Commands":            15,
+		"Jobs":                20,
+		"Workflows":           26,
+	}
+	wantKeys := map[string]string{
+		"Pipeline Parameters": "parameters",
+		"Orbs":                "orbs",
+		"Executors":           "executors",
+		"Commands":            "commands",
+		"Jobs":                "jobs",
+		"Workflows":           "workflows",
+	}
+
+	lines := map[string]uint32{}
+	keys := map[string]string{}
+	for _, symbol := range symbols {
+		if symbol.Kind != SectionSymbol {
+			continue
+		}
+		lines[symbol.Name] = symbol.Range.Start.Line
+		selection := symbol.SelectionRange
+		keys[symbol.Name] = source[selection.Start.Line][selection.Start.Character:selection.End.Character]
+	}
+
+	assert.Check(t, cmp.DeepEqual(lines, wantLines))
+	assert.Check(t, cmp.DeepEqual(keys, wantKeys))
+}
