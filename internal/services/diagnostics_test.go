@@ -1530,3 +1530,51 @@ workflows:
 		}, cmpopts.SortSlices(func(a, b string) bool { return a < b })))
 	})
 }
+
+func TestNoWorkflowsAndNoBuildJob(t *testing.T) {
+	fake := fakes.NewCircleCI(t)
+	const message = "There are no workflows or build jobs in the config."
+	const noBuildJob = `jobs:
+  test:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+`
+
+	t.Run("is an error", func(t *testing.T) {
+		errors := configErrors(t, fake, "version: 2.1\n"+noBuildJob)
+		assert.Check(t, cmp.DeepEqual(errors, []string{message}))
+	})
+
+	t.Run("isn't checked in a version 2 config", func(t *testing.T) {
+		errors := configErrors(t, fake, "version: 2\n"+noBuildJob)
+		assert.Check(t, cmp.Len(errors, 0))
+	})
+
+	t.Run("is suppressed with the rest of an ignored file", func(t *testing.T) {
+		errors := configErrors(t, fake, "# cci-ignore-file\nversion: 2.1\n"+noBuildJob)
+		assert.Check(t, cmp.Len(errors, 0))
+	})
+
+	t.Run("isn't reported in the source of a remote orb", func(t *testing.T) {
+		c := cache.New()
+		t.Cleanup(c.Close)
+		source := "version: 2.1\n" + noBuildJob
+		path, err := c.WriteOrbSource("circleci/go@1.7.1", source)
+		assert.NilError(t, err)
+		sourceURI := uri.File(path)
+		c.FileCache.SetFile(cache.File{
+			TextDocument: protocol.TextDocumentItem{URI: sourceURI, Text: source},
+		})
+
+		diagnostics, err := DiagnosticFile(sourceURI, c, testHelpers.SettingsForHost(fake.URL()), "")
+		assert.NilError(t, err)
+		messages := []string{}
+		for _, d := range diagnostics {
+			messages = append(messages, diagnostic.MessageText(d))
+		}
+		reported := slices.Contains(messages, message)
+		assert.Check(t, !reported, "got %v", messages)
+	})
+}

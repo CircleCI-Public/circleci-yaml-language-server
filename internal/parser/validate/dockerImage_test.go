@@ -81,7 +81,14 @@ func TestValidateDockerImage(t *testing.T) {
 executors:
   some-executor:
     docker:
-      - image: namespace/image:tag`,
+      - image: namespace/image:tag
+
+jobs:
+  build:
+    executor: some-executor
+    steps:
+      - checkout
+`,
 		},
 		{
 			Name: "Should give error on non-existing image",
@@ -102,7 +109,14 @@ executors:
 executors:
   some-executor:
     docker:
-      - image: namespace/image:tag`,
+      - image: namespace/image:tag
+
+jobs:
+  build:
+    executor: some-executor
+    steps:
+      - checkout
+`,
 		},
 		{
 			Name: "Should give an error on non-existing tag",
@@ -124,7 +138,14 @@ executors:
 executors:
   some-executor:
     docker:
-      - image: namespace/image:tag`,
+      - image: namespace/image:tag
+
+jobs:
+  build:
+    executor: some-executor
+    steps:
+      - checkout
+`,
 		},
 		{
 			Name: "Should give error on existing image non tagged image with no latest",
@@ -143,7 +164,14 @@ executors:
 executors:
   some-executor:
     docker:
-      - image: namespace/image`,
+      - image: namespace/image
+
+jobs:
+  build:
+    executor: some-executor
+    steps:
+      - checkout
+`,
 		},
 		{
 			Name: "Should give hint on existing non tagged image with no latest with tags",
@@ -171,7 +199,14 @@ executors:
 executors:
   some-executor:
     docker:
-      - image: namespace/image`,
+      - image: namespace/image
+
+jobs:
+  build:
+    executor: some-executor
+    steps:
+      - checkout
+`,
 		},
 		{
 			Name: "Should work on jobs",
@@ -229,7 +264,14 @@ workflows:
 executors:
   some-executor:
     docker:
-      - image: cimg/node:22.11.0@sha256:76aae59c6259672ab68819b8960de5ef571394681089eab2b576f85f080c73ba`,
+      - image: cimg/node:22.11.0@sha256:76aae59c6259672ab68819b8960de5ef571394681089eab2b576f85f080c73ba
+
+jobs:
+  build:
+    executor: some-executor
+    steps:
+      - checkout
+`,
 		},
 		{
 			Name: "Should give no diagnostic on valid SHA256 digest without tag",
@@ -243,7 +285,14 @@ executors:
 executors:
   some-executor:
     docker:
-      - image: cimg/node@sha256:76aae59c6259672ab68819b8960de5ef571394681089eab2b576f85f080c73ba`,
+      - image: cimg/node@sha256:76aae59c6259672ab68819b8960de5ef571394681089eab2b576f85f080c73ba
+
+jobs:
+  build:
+    executor: some-executor
+    steps:
+      - checkout
+`,
 		},
 		{
 			Name: "Should give error on invalid digest format - too short",
@@ -262,7 +311,14 @@ executors:
 executors:
   some-executor:
     docker:
-      - image: cimg/go:1.24@foo`,
+      - image: cimg/go:1.24@foo
+
+jobs:
+  build:
+    executor: some-executor
+    steps:
+      - checkout
+`,
 		},
 		{
 			Name: "Should give error on invalid digest format - wrong prefix",
@@ -281,7 +337,14 @@ executors:
 executors:
   some-executor:
     docker:
-      - image: cimg/node:18@abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890`,
+      - image: cimg/node:18@abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890
+
+jobs:
+  build:
+    executor: some-executor
+    steps:
+      - checkout
+`,
 		},
 		{
 			Name: "Should give error on invalid digest format - wrong hash length",
@@ -300,7 +363,14 @@ executors:
 executors:
   some-executor:
     docker:
-      - image: cimg/go:latest@sha256:abc123`,
+      - image: cimg/go:latest@sha256:abc123
+
+jobs:
+  build:
+    executor: some-executor
+    steps:
+      - checkout
+`,
 		},
 		{
 			Name: "Should give error on invalid digest format - non-hex characters",
@@ -319,7 +389,14 @@ executors:
 executors:
   some-executor:
     docker:
-      - image: node:alpine@sha256:ghijklmnopqrstuvwxyz1234567890abcdef1234567890abcdef1234567890`,
+      - image: node:alpine@sha256:ghijklmnopqrstuvwxyz1234567890abcdef1234567890abcdef1234567890
+
+jobs:
+  build:
+    executor: some-executor
+    steps:
+      - checkout
+`,
 		},
 	}
 
@@ -346,7 +423,14 @@ func TestValidateDockerImageWhenDockerHubCannotAnswer(t *testing.T) {
 executors:
   some-executor:
     docker:
-      - image: namespace/image:tag`
+      - image: namespace/image:tag
+
+jobs:
+  build:
+    executor: some-executor
+    steps:
+      - checkout
+`
 
 	t.Run("an image it cannot confirm", func(t *testing.T) {
 		val := CreateValidateFromYAML(config)
