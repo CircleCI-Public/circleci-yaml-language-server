@@ -166,7 +166,7 @@ func (doc *YamlDocument) parseSingleJobInvocation(jobInvocationNode *sitter.Node
 			if res.MatrixAlias == "" {
 				res.MatrixAlias = res.JobName
 			}
-			res.MatrixNames = doc.matrixMemberNames(matrixNode, res.JobName, name)
+			res.MatrixNames, res.MatrixCombinations = doc.matrixMembers(matrixNode, res.JobName, name)
 			res.MatrixIsSingleCombination = doc.isSingleCombinationMatrix(matrixNode)
 			res.MatrixJobCount = doc.matrixJobCount(matrixNode)
 		}

@@ -19,16 +19,17 @@ type matrixParameter struct {
 	values []string
 }
 
-// matrixMemberNames returns the names of the jobs a matrix expands to, in the
-// order the compiler produces them. name is the invocation's `name:`, if it
-// has one. The compiler names each member, in order of precedence:
+// matrixMembers returns the names of the jobs a matrix expands to, in the
+// order the compiler produces them, and each one's parameter values. name is
+// the invocation's `name:`, if it has one. The compiler names each member, in
+// order of precedence:
 //
 //  1. by a `name:` holding `<< matrix.x >>`, expanded for the member;
 //  2. by any other `name:`, as written when only one combination survives
 //     `exclude`, and otherwise suffixed `-1`, `-2`, … in the order produced;
 //  3. by a matrix parameter called `name`;
 //  4. as `job-value1-value2`, in the parameters' declared order.
-func (doc *YamlDocument) matrixMemberNames(matrixNode *sitter.Node, jobName, name string) []string {
+func (doc *YamlDocument) matrixMembers(matrixNode *sitter.Node, jobName, name string) ([]string, []map[string]string) {
 	parameters, excludes := doc.parseMatrixCombinations(matrixNode)
 
 	combinations := matrixCartesianProduct(parameters)
@@ -43,13 +44,7 @@ func (doc *YamlDocument) matrixMemberNames(matrixNode *sitter.Node, jobName, nam
 	for i, combination := range surviving {
 		switch {
 		case strings.Contains(name, "<<"):
-			names = append(names, matrixReferenceRegex.ReplaceAllStringFunc(name, func(reference string) string {
-				parameter := matrixReferenceRegex.FindStringSubmatch(reference)[1]
-				if value, ok := combination[parameter]; ok {
-					return value
-				}
-				return reference
-			}))
+			names = append(names, ExpandMatrixReferences(name, combination))
 		case name != "":
 			if len(surviving) == 1 {
 				names = append(names, name)
@@ -67,7 +62,19 @@ func (doc *YamlDocument) matrixMemberNames(matrixNode *sitter.Node, jobName, nam
 		}
 	}
 
-	return names
+	return names, surviving
+}
+
+// ExpandMatrixReferences replaces each `<< matrix.x >>` in s with x's value in
+// combination, leaving references to parameters it doesn't have.
+func ExpandMatrixReferences(s string, combination map[string]string) string {
+	return matrixReferenceRegex.ReplaceAllStringFunc(s, func(reference string) string {
+		parameter := matrixReferenceRegex.FindStringSubmatch(reference)[1]
+		if value, ok := combination[parameter]; ok {
+			return value
+		}
+		return reference
+	})
 }
 
 func (doc *YamlDocument) parseMatrixCombinations(matrixNode *sitter.Node) ([]matrixParameter, []map[string]string) {

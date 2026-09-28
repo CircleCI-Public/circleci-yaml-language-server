@@ -62,6 +62,8 @@ type JobInvocation struct {
 	MatrixAlias string
 	// MatrixNames are the names of the jobs the matrix expands to.
 	MatrixNames []string
+	// MatrixCombinations are the parameter values of each of MatrixNames.
+	MatrixCombinations []map[string]string
 	// MatrixIsSingleCombination is set when the matrix declares one value for
 	// every parameter, and no exclude.
 	MatrixIsSingleCombination bool
