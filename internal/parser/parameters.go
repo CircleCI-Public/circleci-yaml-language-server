@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -14,7 +15,9 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/yamlbool"
 )
 
-func (doc *YamlDocument) parseParameters(paramsNode *sitter.Node) map[string]ast2.Parameter {
+// parseParameters reads a parameters section. owner names what declares it,
+// such as "Job build", in its diagnostics; it's empty for pipeline parameters.
+func (doc *YamlDocument) parseParameters(paramsNode *sitter.Node, owner string) map[string]ast2.Parameter {
 	// paramsNode is of type block_node
 	blockMappingNode := GetChildMapping(paramsNode)
 	res := make(map[string]ast2.Parameter)
@@ -23,13 +26,13 @@ func (doc *YamlDocument) parseParameters(paramsNode *sitter.Node) map[string]ast
 	}
 
 	doc.iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
-		doc.parseSingleParameter(child, res)
+		doc.parseSingleParameter(child, owner, res)
 	})
 
 	return res
 }
 
-func (doc *YamlDocument) parseSingleParameter(paramNode *sitter.Node, params map[string]ast2.Parameter) {
+func (doc *YamlDocument) parseSingleParameter(paramNode *sitter.Node, owner string, params map[string]ast2.Parameter) {
 	// paramNode is a block_mapping_pair
 	keyNode, valueNode := doc.GetKeyValueNodes(paramNode)
 
@@ -48,6 +51,7 @@ func (doc *YamlDocument) parseSingleParameter(paramNode *sitter.Node, params map
 
 	paramType, paramTypeRange := doc.GetParameterType(valueNode)
 	paramName := doc.GetNodeText(keyNode)
+	defaultValid := doc.checkParameterDefault(owner, paramName, paramType, blockMappingNode)
 
 	switch paramType {
 	case "string":
@@ -69,7 +73,7 @@ func (doc *YamlDocument) parseSingleParameter(paramNode *sitter.Node, params map
 		param.TypeRange = paramTypeRange
 		params[param.Name] = param
 	case "enum":
-		param := doc.parseEnumParameter(paramName, blockMappingNode)
+		param := doc.parseEnumParameter(paramName, blockMappingNode, defaultValid)
 		param.Range = doc.NodeToRange(paramNode)
 		param.NameRange = doc.NodeToRange(keyNode)
 		param.TypeRange = paramTypeRange
@@ -184,12 +188,11 @@ func (doc *YamlDocument) parseIntegerParameter(paramName string, paramNode *sitt
 		keyName := doc.GetNodeText(keyNode)
 		switch keyName {
 		case "default":
-			int, err := strconv.Atoi(doc.GetNodeText(valueNode))
-			if err != nil {
-				return // TODO: error
+			if doc.defaultKind(valueNode) == "null" {
+				return
 			}
 			intParam.DefaultRange = doc.getDefaultParameterRange(child)
-			intParam.Default = int
+			intParam.Default, _ = strconv.Atoi(doc.GetNodeText(valueNode))
 			intParam.HasDefault = true
 		case "description":
 			intParam.Description = doc.parseDescription(valueNode)
@@ -199,7 +202,7 @@ func (doc *YamlDocument) parseIntegerParameter(paramName string, paramNode *sitt
 	return intParam
 }
 
-func (doc *YamlDocument) parseEnumParameter(paramName string, paramNode *sitter.Node) (enumParam ast2.EnumParameter) {
+func (doc *YamlDocument) parseEnumParameter(paramName string, paramNode *sitter.Node, defaultValid bool) (enumParam ast2.EnumParameter) {
 	// paramNode is a block_mapping_pair
 	enumParam.Name = paramName
 
@@ -218,7 +221,7 @@ func (doc *YamlDocument) parseEnumParameter(paramName string, paramNode *sitter.
 		}
 	})
 
-	if enumParam.HasDefault && !slices.Contains(enumParam.Enum, enumParam.Default) {
+	if defaultValid && enumParam.HasDefault && !slices.Contains(enumParam.Enum, enumParam.Default) {
 		doc.addDiagnostic(diagnostic.Error(enumParam.DefaultRange, "Default value is not in enum"))
 	}
 
@@ -256,6 +259,10 @@ func (doc *YamlDocument) parseStepsParameter(paramName string, paramNode *sitter
 		case "default":
 			stepsNode := GetChildSequence(valueNode)
 			if stepsNode == nil {
+				if doc.defaultKind(valueNode) != "null" {
+					stepsParam.DefaultRange = doc.getDefaultParameterRange(child)
+					stepsParam.HasDefault = true
+				}
 				return
 			}
 			rng := doc.NodeToRange(child)
@@ -547,4 +554,100 @@ func (doc *YamlDocument) getDefaultParameterRange(child *sitter.Node) protocol.R
 			Character: defaultRange.End.Character + 999,
 		},
 	}
+}
+
+var envVarNamePattern = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
+
+// yaml11Booleans are the plain scalars the compiler's YAML 1.1 parser reads
+// as booleans.
+var yaml11Booleans = []string{
+	"yes", "Yes", "YES", "no", "No", "NO",
+	"on", "On", "ON", "off", "Off", "OFF",
+}
+
+// checkParameterDefault reports a default that isn't of the parameter's type,
+// as the compiler does, and returns whether it is. A templated default isn't
+// checked, since its type is only known once it's replaced.
+func (doc *YamlDocument) checkParameterDefault(owner, paramName, paramType string, paramNode *sitter.Node) bool {
+	valid := true
+	doc.iterateOnBlockMapping(paramNode, func(child *sitter.Node) {
+		keyNode, valueNode := doc.GetKeyValueNodes(child)
+		if doc.GetNodeText(keyNode) != "default" {
+			return
+		}
+		kind := doc.defaultKind(valueNode)
+		text := doc.GetNodeText(valueNode)
+		switch {
+		case kind == "null" || kind == "" || kind == "float" || kind == "map":
+			return
+		case kind == "string" && strings.Contains(text, "<<"):
+			return
+		case kind == "list" && paramType != "steps":
+			valid = false
+			doc.addDiagnostic(diagnostic.Error(doc.getDefaultParameterRange(child),
+				`Unsupported parameter default value, allowed types are "string", "integer", and "boolean"`))
+			return
+		}
+
+		switch paramType {
+		case "string", "enum", "executor":
+			valid = kind == "string"
+		case "boolean":
+			valid = kind == "boolean"
+		case "integer":
+			valid = kind == "integer"
+		case "env_var_name":
+			valid = kind == "string" && envVarNamePattern.MatchString(text)
+		case "steps":
+			valid = kind == "list"
+		}
+		if valid {
+			return
+		}
+
+		message := fmt.Sprintf("%s: parameter %s default value must be of type %s", owner, paramName, paramType)
+		if owner == "" {
+			message = fmt.Sprintf("Pipeline parameter %s default value must be of type %s", paramName, paramType)
+		}
+		doc.addDiagnostic(diagnostic.Error(doc.getDefaultParameterRange(child), message))
+	})
+	return valid
+}
+
+// defaultKind returns the YAML type of a parameter's default: "string",
+// "integer", "float", "boolean", "null", "map" or "list", or "" for a value it
+// can't tell, such as an alias of nothing.
+func (doc *YamlDocument) defaultKind(valueNode *sitter.Node) string {
+	if valueNode == nil {
+		return "null"
+	}
+	node := doc.scalarOf(valueNode, 0)
+	switch node.Kind() {
+	case "double_quote_scalar", "single_quote_scalar", "block_scalar":
+		return "string"
+	case "plain_scalar":
+		switch GetFirstChild(node).Kind() {
+		case "integer_scalar":
+			return "integer"
+		case "float_scalar":
+			return "float"
+		case "boolean_scalar":
+			return "boolean"
+		case "null_scalar":
+			return "null"
+		}
+		if slices.Contains(yaml11Booleans, doc.GetRawNodeText(node)) {
+			return "boolean"
+		}
+		return "string"
+	}
+	for i := uint(0); i < node.NamedChildCount(); i++ {
+		switch node.NamedChild(i).Kind() {
+		case "block_mapping", "flow_mapping":
+			return "map"
+		case "block_sequence", "flow_sequence":
+			return "list"
+		}
+	}
+	return ""
 }

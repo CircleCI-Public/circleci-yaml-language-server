@@ -146,7 +146,7 @@ func (doc *YamlDocument) ParseYAML(context *session.Settings, offset protocol.Po
 		case "parameters":
 			if valueNode != nil {
 				doc.PipelineParametersRange = doc.NodeToRange(valueNode)
-				doc.PipelineParameters = doc.parseParameters(valueNode)
+				doc.PipelineParameters = doc.parseParameters(valueNode, "")
 			} else {
 				doc.PipelineParametersRange = doc.NodeToRange(child)
 			}

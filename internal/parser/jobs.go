@@ -115,7 +115,7 @@ func (doc *YamlDocument) parseSingleJob(jobNode *sitter.Node) ast2.Job {
 
 			case "parameters":
 				res.ParametersRange = doc.NodeToRange(child)
-				res.Parameters = doc.parseParameters(valueNode)
+				res.Parameters = doc.parseParameters(valueNode, "Job "+res.Name)
 
 			case "docker":
 				res.Docker = doc.parseSingleExecutorDocker(keyNode, blockMappingNode)

@@ -1413,3 +1413,120 @@ workflows:
 		assert.Check(t, cmp.DeepEqual(errors, []string{"yaml: unknown anchor 'missing' referenced"}))
 	})
 }
+
+func TestParameterDefaultTypes(t *testing.T) {
+	fake := fakes.NewCircleCI(t)
+
+	t.Run("defaults of each type", func(t *testing.T) {
+		errors := configErrors(t, fake, `version: 2.1
+parameters:
+  retries:
+    type: integer
+    default: 3
+commands:
+  greet:
+    parameters:
+      name:
+        type: string
+        default: world
+      loud:
+        type: boolean
+        default: yes
+      times:
+        type: integer
+        default: << pipeline.parameters.retries >>
+      token:
+        type: env_var_name
+        default: GITHUB_TOKEN
+      colour:
+        type: enum
+        enum: [red, blue]
+        default: red
+      then:
+        type: steps
+        default:
+          - run: echo done
+    steps:
+      - run: echo << parameters.name >> << parameters.loud >> << parameters.times >> $<< parameters.token >> << parameters.colour >>
+      - steps: << parameters.then >>
+jobs:
+  build:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - greet
+workflows:
+  main:
+    jobs:
+      - build
+`)
+		assert.Check(t, cmp.Len(errors, 0))
+	})
+
+	t.Run("defaults that aren't of the parameter's type", func(t *testing.T) {
+		errors := configErrors(t, fake, `version: 2.1
+parameters:
+  retries:
+    type: integer
+    default: "3"
+commands:
+  greet:
+    parameters:
+      name:
+        type: string
+        default: 1
+      loud:
+        type: boolean
+        default: "true"
+      times:
+        type: integer
+        default: "2"
+      token:
+        type: env_var_name
+        default: foo bar
+      colour:
+        type: enum
+        enum: [red, "1"]
+        default: 1
+      then:
+        type: steps
+        default: echo done
+    steps:
+      - run: echo << parameters.name >> << parameters.loud >> << parameters.times >> $<< parameters.token >> << parameters.colour >>
+      - steps: << parameters.then >>
+executors:
+  runner:
+    parameters:
+      tag:
+        type: string
+        default: true
+    docker:
+      - image: cimg/base:<< parameters.tag >>
+jobs:
+  build:
+    executor: runner
+    parameters:
+      settings:
+        type: string
+        default: [a, b]
+    steps:
+      - greet
+      - run: echo << parameters.settings >>
+workflows:
+  main:
+    jobs:
+      - build
+`)
+		assert.Check(t, cmp.DeepEqual(errors, []string{
+			"Pipeline parameter retries default value must be of type integer",
+			"Command greet: parameter name default value must be of type string",
+			"Command greet: parameter loud default value must be of type boolean",
+			"Command greet: parameter times default value must be of type integer",
+			"Command greet: parameter token default value must be of type env_var_name",
+			"Command greet: parameter colour default value must be of type enum",
+			"Command greet: parameter then default value must be of type steps",
+			"Executor runner: parameter tag default value must be of type string",
+			`Unsupported parameter default value, allowed types are "string", "integer", and "boolean"`,
+		}, cmpopts.SortSlices(func(a, b string) bool { return a < b })))
+	})
+}
