@@ -833,7 +833,7 @@ workflows:
 			},
 		},
 		{
-			Name: "Requires with matrix partial reference is allowed",
+			Name: "Requires with a matrix value outside a matrix",
 			YamlContent: `version: 2.1
 
 jobs:
@@ -862,6 +862,9 @@ workflows:
           requires:
             - build-<< matrix.os >>`,
 			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(span(26, 23, 32), "matrix.os is only set in a workflow job with a matrix"),
+			},
 		},
 	}
 
