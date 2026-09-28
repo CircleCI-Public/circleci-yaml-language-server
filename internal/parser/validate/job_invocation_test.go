@@ -755,7 +755,7 @@ workflows:
 				diagnostic.Error(protocol.Range{
 					Start: protocol.Position{Line: 16, Character: 48},
 					End:   protocol.Position{Line: 16, Character: 56},
-				}, "Parameter bogus is not defined in test"),
+				}, "Parameter bogus is not defined for test"),
 			},
 		},
 		{
@@ -1647,7 +1647,7 @@ workflows:
 				diagnostic.Error(protocol.Range{
 					Start: protocol.Position{Line: 19, Character: 14},
 					End:   protocol.Position{Line: 19, Character: 27},
-				}, "Parameter arch is not defined in test"),
+				}, "Parameter arch is not defined for test"),
 			},
 		},
 		{
@@ -1838,7 +1838,7 @@ workflows:
 	}
 	assert.Check(t, cmp.DeepEqual(errors, []string{
 		"Parameter env is required for my-orb/deploy",
-		"Parameter nosuch is not defined in my-orb/deploy",
+		"Parameter nosuch is not defined for my-orb/deploy",
 		"Parameter prod is not a valid value for env",
 	}, anyOrder))
 }

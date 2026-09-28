@@ -232,7 +232,7 @@ workflows:
 				diagnostic.Error(protocol.Range{
 					Start: protocol.Position{Line: 17, Character: 10},
 					End:   protocol.Position{Line: 17, Character: 28},
-				}, "Parameter bogus_param is not defined in my-deploy"),
+				}, "Parameter bogus_param is not defined for my-deploy"),
 			},
 		},
 		{
@@ -256,7 +256,7 @@ workflows:
 				diagnostic.Error(protocol.Range{
 					Start: protocol.Position{Line: 13, Character: 10},
 					End:   protocol.Position{Line: 13, Character: 27},
-				}, "Parameter some_param is not defined in my-build"),
+				}, "Parameter some_param is not defined for my-build"),
 			},
 		},
 	}

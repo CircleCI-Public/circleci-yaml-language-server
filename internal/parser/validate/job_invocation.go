@@ -129,7 +129,7 @@ func (val Validate) validateJobInvocationParameters(jobInvocation ast2.JobInvoca
 		if definedParams[param.Name] == nil {
 			val.addDiagnostic(diagnostic.Error(
 				param.Range,
-				fmt.Sprintf("Parameter %s is not defined in %s", param.Name, jobName)),
+				fmt.Sprintf("Parameter %s is not defined for %s", param.Name, jobName)),
 			)
 		}
 	}
@@ -138,7 +138,7 @@ func (val Validate) validateJobInvocationParameters(jobInvocation ast2.JobInvoca
 		if definedParams[name] == nil && len(values) > 0 {
 			val.addDiagnostic(diagnostic.Error(
 				values[0].Range,
-				fmt.Sprintf("Parameter %s is not defined in %s", name, jobName)),
+				fmt.Sprintf("Parameter %s is not defined for %s", name, jobName)),
 			)
 		}
 	}
