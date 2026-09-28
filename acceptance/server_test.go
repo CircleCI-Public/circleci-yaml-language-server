@@ -39,9 +39,7 @@ const (
 	runnerPath     = "/api/v3/runner/resource-classes"
 )
 
-// validConfig is a config with nothing wrong with it, using a machine executor
-// rather than a Docker image: Docker images are checked against the real Docker
-// Hub, which has no seam to point at a fake yet.
+// validConfig is a config with nothing wrong with it.
 const validConfig = `version: 2.1
 
 jobs:
@@ -136,6 +134,9 @@ type session struct {
 	client    *lspclient.Client
 	server    *runner.Server
 	workspace *workspace.Workspace
+	// dockerHub is the Docker Hub the server asks about images, which starts
+	// out knowing none.
+	dockerHub *fakes.DockerHub
 }
 
 // start compiles nothing and configures everything: it runs the server over
@@ -155,7 +156,8 @@ func start(t *testing.T, fake *fakes.CircleCI, config, token string) *session {
 func startIn(t *testing.T, fake *fakes.CircleCI, project *workspace.Workspace, token string) *session {
 	t.Helper()
 
-	server := runner.StartStdio(t, serverBinary)
+	dockerHub := fakes.NewDockerHub(t)
+	server := runner.StartStdio(t, serverBinary, dockerHubEnv(dockerHub))
 	client := lspclient.New(t, context.Background(), server.Stream())
 
 	_, err := client.Initialize(project.RootURI())
@@ -169,7 +171,12 @@ func startIn(t *testing.T, fake *fakes.CircleCI, project *workspace.Workspace, t
 		assert.NilError(t, err)
 	}
 
-	return &session{client: client, server: server, workspace: project}
+	return &session{client: client, server: server, workspace: project, dockerHub: dockerHub}
+}
+
+// dockerHubEnv is the environment that points a server at a fake Docker Hub.
+func dockerHubEnv(hub *fakes.DockerHub) string {
+	return "LSP_DOCKER_HUB_URL=" + hub.URL()
 }
 
 // open opens the workspace's config and returns the diagnostics the server
@@ -189,7 +196,7 @@ func (s *session) open(t *testing.T, config string) []string {
 func TestInitialize(t *testing.T) {
 	fake := linkedProjectFake(t)
 	project := workspace.New(t, validConfig)
-	server := runner.StartStdio(t, serverBinary)
+	server := runner.StartStdio(t, serverBinary, dockerHubEnv(fakes.NewDockerHub(t)))
 	client := lspclient.New(t, context.Background(), server.Stream())
 
 	result, err := client.Initialize(project.RootURI())
@@ -515,7 +522,7 @@ func TestSocketTransport(t *testing.T) {
 
 	// The extension starts the server this way and waits for the line it
 	// prints before connecting, so the line is part of the contract.
-	server := runner.StartSocket(t, serverBinary)
+	server := runner.StartSocket(t, serverBinary, dockerHubEnv(fakes.NewDockerHub(t)))
 	assert.Check(t, server.Port() != 0, "the server must report the port it bound")
 
 	client := lspclient.New(t, context.Background(), server.Stream())

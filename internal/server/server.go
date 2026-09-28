@@ -19,6 +19,7 @@ import (
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/dockerhub"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/orburl"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/lspcodec"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/server/methods"
@@ -197,7 +198,10 @@ func getJsonRpcServer(ctx context.Context, schemaLocation string) JSONRPCServer 
 				Token:   "",
 			},
 			// An editor can set this over the protocol too (setGitHubToken).
-			OrbURLs:        orburl.Config{GitHubToken: gitHubTokenFromEnv()},
+			OrbURLs: orburl.Config{GitHubToken: gitHubTokenFromEnv()},
+			// Empty is the public Docker Hub. The acceptance tests set it to
+			// point the server at a fake.
+			DockerHub:      dockerhub.Config{BaseURL: os.Getenv("LSP_DOCKER_HUB_URL")},
 			IsCciExtension: false,
 		},
 		SchemaLocation: schemaLocation,
