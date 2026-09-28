@@ -19,6 +19,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/paramref"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/yamltree"
 )
 
 type JSONSchemaValidator struct {
@@ -84,6 +85,39 @@ func (validator *JSONSchemaValidator) LoadJsonSchemaFromBytes(data []byte) error
 	return nil
 }
 
+// collectionKeyErrors reports each key that is a map or a list, which YAML
+// allows but no config can use. Unquoted template syntax, such as
+// `{{ .Name }}`, is the usual way to write one by accident.
+func collectionKeyErrors(rootNode *sitter.Node) []protocol.Diagnostic {
+	diagnostics := []protocol.Diagnostic{}
+	for node := range yamltree.Walk(rootNode) {
+		var key *sitter.Node
+		switch node.Kind() {
+		case "block_mapping_pair", "flow_pair":
+			key = node.ChildByFieldName("key")
+		case "flow_node":
+			// A key without a value, as in `{ a }`, is a flow_node of its
+			// flow_mapping rather than a flow_pair.
+			if parent := node.Parent(); parent != nil && parent.Kind() == "flow_mapping" {
+				key = node
+			}
+		}
+		if key == nil || key.NamedChildCount() == 0 {
+			continue
+		}
+
+		switch key.NamedChild(0).Kind() {
+		case "flow_mapping", "block_mapping":
+			diagnostics = append(diagnostics, diagnostic.ErrorFromNode(key,
+				"A map can't be used as a key; quote it if it's meant as text"))
+		case "flow_sequence", "block_sequence":
+			diagnostics = append(diagnostics, diagnostic.ErrorFromNode(key,
+				"A list can't be used as a key; quote it if it's meant as text"))
+		}
+	}
+	return diagnostics
+}
+
 func handleYAMLErrors(err string, content []byte, rootNode *sitter.Node) ([]protocol.Diagnostic, error) {
 	diagnostics := []protocol.Diagnostic{}
 
@@ -114,6 +148,13 @@ func handleYAMLErrors(err string, content []byte, rootNode *sitter.Node) ([]prot
 
 	if strings.Contains(err, "yaml: map merge requires map or sequence of maps as the value") {
 		return []protocol.Diagnostic{}, nil
+	}
+
+	// The error has no position, and names the key as a Go value.
+	if strings.HasPrefix(err, "yaml: invalid map key") {
+		if diagnostics := collectionKeyErrors(rootNode); len(diagnostics) > 0 {
+			return diagnostics, nil
+		}
 	}
 
 	reError, _ := regexp.Compile(`(?s)^yaml: line (?P<Lines>\d+):\s(?P<Error>.+)`)

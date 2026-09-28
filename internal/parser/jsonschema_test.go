@@ -736,3 +736,37 @@ jobs:
 		})
 	}
 }
+
+func Test_HandleYAMLErrors_CollectionKey(t *testing.T) {
+	content := []byte(`workflows:
+  main:
+    jobs:
+      - build:
+          context: {{ .ContextName }}
+      - test:
+          matrix: { [a, b]: 1 }
+`)
+
+	var file interface{}
+	yamlErr := yaml.Unmarshal(content, &file)
+	assert.Assert(t, yamlErr != nil)
+
+	context := testHelpers.DefaultSettings()
+	yamlDocument, _ := ParseFromContent(content, context, uri.File(""), protocol.Position{})
+
+	diagnostics, err := handleYAMLErrors(yamlErr.Error(), content, yamlDocument.RootNode)
+	assert.NilError(t, err)
+
+	expected := []protocol.Diagnostic{
+		diagnostic.Error(protocol.Range{
+			Start: protocol.Position{Line: 4, Character: 20},
+			End:   protocol.Position{Line: 4, Character: 36},
+		}, "A map can't be used as a key; quote it if it's meant as text"),
+		diagnostic.Error(protocol.Range{
+			Start: protocol.Position{Line: 6, Character: 20},
+			End:   protocol.Position{Line: 6, Character: 26},
+		}, "A list can't be used as a key; quote it if it's meant as text"),
+	}
+	assert.Check(t, cmp.Len(diagnostics, len(expected)))
+	expect.DiagnosticList(t, diagnostics).To.IncludeAll(expected)
+}
