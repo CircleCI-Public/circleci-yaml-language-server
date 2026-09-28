@@ -22,7 +22,7 @@ import (
 func (val Validate) ValidateExecutors() {
 	if len(val.Doc.Executors) == 0 && !position.IsDefaultRange(val.Doc.ExecutorsRange) {
 		val.addDiagnostic(
-			diagnostic.EmptyAssignationWarning(val.Doc.ExecutorsRange),
+			diagnostic.EmptySectionWarning(val.Doc.ExecutorsRange, "executors"),
 		)
 
 		return

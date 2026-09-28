@@ -26,7 +26,7 @@ var (
 func (val Validate) ValidatePipelineParameters() {
 	if len(val.Doc.PipelineParameters) == 0 && !position.IsDefaultRange(val.Doc.PipelineParametersRange) {
 		val.addDiagnostic(
-			diagnostic.EmptyAssignationWarning(val.Doc.PipelineParametersRange),
+			diagnostic.EmptySectionWarning(val.Doc.PipelineParametersRange, "parameters"),
 		)
 	}
 }

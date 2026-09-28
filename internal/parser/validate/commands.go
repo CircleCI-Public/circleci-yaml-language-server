@@ -14,7 +14,7 @@ import (
 func (val Validate) ValidateCommands() {
 	if len(val.Doc.Commands) == 0 && !position.IsDefaultRange(val.Doc.CommandsRange) {
 		val.addDiagnostic(
-			diagnostic.EmptyAssignationWarning(val.Doc.CommandsRange),
+			diagnostic.EmptySectionWarning(val.Doc.CommandsRange, "commands"),
 		)
 
 		return
