@@ -10,7 +10,7 @@ import (
 // resource classes a config may name, and fetches them for completion.
 func (methods *Methods) SetResourceClassOfFile(params protocol.DidOpenTextDocumentParams) {
 	textDocumentUri := params.TextDocument.URI
-	orgSlug := projectslug.OrgSlug(projectslug.FromRepo(textDocumentUri.FsPath()))
+	orgSlug := projectslug.OrgSlug(methods.Cache.ProjectSlugOfFile(textDocumentUri.FsPath()))
 
 	methods.Cache.SetOrgOfFile(methods.Settings().V3Client(), textDocumentUri, orgSlug)
 }

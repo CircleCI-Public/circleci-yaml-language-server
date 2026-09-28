@@ -6,7 +6,6 @@ import (
 	"go.lsp.dev/protocol"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/projectslug"
 )
 
 func (methods *Methods) getAllEnvVariables(textDocument protocol.TextDocumentItem) {
@@ -16,7 +15,7 @@ func (methods *Methods) getAllEnvVariables(textDocument protocol.TextDocumentIte
 		return
 	}
 	if cachedFile.Project.Slug == "" {
-		projectSlug := projectslug.FromRepo(textDocument.URI.FsPath())
+		projectSlug := methods.Cache.ProjectSlugOfFile(textDocument.URI.FsPath())
 		if projectSlug == "" {
 			return
 		}

@@ -7,6 +7,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/httpcl"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/memo"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/projectslug"
 )
 
 // Projects remembers the project each slug names, and that a slug names none.
@@ -15,6 +16,10 @@ import (
 type Projects struct {
 	// projects holds the zero Project for a slug that names none.
 	projects *memo.Memo[circleci.Project]
+
+	// slugs holds the slug each repository's remote names, by the
+	// repository's directory, and "" for one whose remote names none.
+	slugs *memo.Memo[string]
 }
 
 func projectLifetime(project circleci.Project) time.Duration {
@@ -35,6 +40,17 @@ func (c *Cache) Project(api circleci.Config, slug string) (circleci.Project, err
 		}
 		return project, err
 	})
+}
+
+// ProjectSlugOfFile returns the project slug the remote of a config's
+// repository names, or "" when it names none, such as when the config is not
+// in a repository. Reading it opens the repository, so the answer is
+// remembered.
+func (c *Cache) ProjectSlugOfFile(configPath string) string {
+	slug, _ := c.ProjectCache.slugs.Get(projectslug.RepoDir(configPath), func() (string, error) {
+		return projectslug.FromRepo(configPath), nil
+	})
+	return slug
 }
 
 // LoadProjectEnvVariables caches the names of a project's environment

@@ -8,8 +8,16 @@ import (
 	"github.com/go-git/go-git/v6"
 )
 
+// RepoDir is the directory of the repository a config belongs to: the one
+// holding its .circleci directory.
+func RepoDir(configPath string) string {
+	return strings.Split(configPath, ".circleci")[0]
+}
+
+// FromRepo returns the project slug the remote of a config's repository names,
+// or "" when it names none: origin, or the only remote there is.
 func FromRepo(configPath string) string {
-	repo, err := git.PlainOpen(strings.Split(configPath, ".circleci")[0])
+	repo, err := git.PlainOpen(RepoDir(configPath))
 	if err != nil {
 		return ""
 	}

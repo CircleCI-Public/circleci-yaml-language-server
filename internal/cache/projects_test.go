@@ -2,6 +2,8 @@ package cache
 
 import (
 	"net/http"
+	"os"
+	"path/filepath"
 	"sync"
 	"testing"
 
@@ -13,6 +15,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/httpcl"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/fakes"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/workspace"
 )
 
 const (
@@ -240,5 +243,38 @@ func TestProject(t *testing.T) {
 			assert.NilError(t, err)
 			assert.Check(t, cmp.Equal(project.Slug, rocketSlug))
 		})
+	})
+}
+
+func TestProjectSlugOfFile(t *testing.T) {
+	t.Run("reads the slug from the repository once", func(t *testing.T) {
+		project := workspace.New(t, "version: 2.1\n")
+		c := New()
+
+		assert.Check(t, cmp.Equal(c.ProjectSlugOfFile(project.ConfigPath), workspace.DefaultSlug))
+
+		// With the repository gone, only a remembered answer can name it.
+		err := os.RemoveAll(filepath.Join(project.Root, ".git"))
+		assert.NilError(t, err)
+		assert.Check(t, cmp.Equal(c.ProjectSlugOfFile(project.ConfigPath), workspace.DefaultSlug))
+	})
+
+	t.Run("shares the answer between the configs of a repository", func(t *testing.T) {
+		project := workspace.New(t, "version: 2.1\n")
+		c := New()
+
+		c.ProjectSlugOfFile(project.ConfigPath)
+		err := os.RemoveAll(filepath.Join(project.Root, ".git"))
+		assert.NilError(t, err)
+
+		other := filepath.Join(project.Root, ".circleci", "other.yml")
+		assert.Check(t, cmp.Equal(c.ProjectSlugOfFile(other), workspace.DefaultSlug))
+	})
+
+	t.Run("names none for a config outside a repository", func(t *testing.T) {
+		c := New()
+
+		slug := c.ProjectSlugOfFile(filepath.Join(t.TempDir(), ".circleci", "config.yml"))
+		assert.Check(t, cmp.Equal(slug, ""))
 	})
 }
