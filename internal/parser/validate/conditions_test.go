@@ -96,6 +96,57 @@ parameters:
 			OnlyErrors:  true,
 			Diagnostics: []protocol.Diagnostic{},
 		},
+		{
+			Name: "Variables a workflow doesn't have, at the name",
+			YamlContent: `version: 2.1
+
+parameters:
+  deploy:
+    type: boolean
+    default: false
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - checkout
+
+workflows:
+  main:
+    when: pipeline.parameters.deploi and pipeline.parameters.deploy
+    jobs:
+      - build:
+          filters: parameters.branch == "main"
+  quoted:
+    when: "yes"
+    jobs:
+      - build
+  bare-word:
+    unless: always
+    jobs:
+      - build
+`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(protocol.Range{
+					Start: protocol.Position{Line: 16, Character: 10},
+					End:   protocol.Position{Line: 16, Character: 36},
+				}, "Pipeline parameter deploi is not defined"),
+				diagnostic.Error(protocol.Range{
+					Start: protocol.Position{Line: 21, Character: 11},
+					End:   protocol.Position{Line: 21, Character: 14},
+				}, "Invalid condition expression: yes is not a pipeline value or parameter"),
+				diagnostic.Error(protocol.Range{
+					Start: protocol.Position{Line: 25, Character: 12},
+					End:   protocol.Position{Line: 25, Character: 18},
+				}, "Invalid condition expression: always is not a pipeline value or parameter"),
+				diagnostic.Error(protocol.Range{
+					Start: protocol.Position{Line: 19, Character: 19},
+					End:   protocol.Position{Line: 19, Character: 36},
+				}, "Invalid filter expression: parameters.branch is not a pipeline value or parameter"),
+			},
+		},
 	})
 }
 
