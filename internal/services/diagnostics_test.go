@@ -494,6 +494,27 @@ run: gotestsum -- ./...
 	t.Run("a file with a pipeline key is validated", func(t *testing.T) {
 		assert.Check(t, len(diagnose(t, "continue.yml", "jobs:\n  build: {}\n")) != 0)
 	})
+
+	t.Run("a ytt template is not validated, whatever its name", func(t *testing.T) {
+		const template = `#@ load("@ytt:data", "data")
+version: 2.1
+jobs:
+  lint:
+    docker:
+      - image: cimg/base:current
+    parameters:
+      partition:
+        type: enum
+        enum: #@ data.values.partitions
+    steps:
+      - checkout
+`
+		assert.Check(t, cmp.Len(diagnose(t, "config.yml", template), 0))
+	})
+
+	t.Run("a comment that only mentions #@ is not a ytt annotation", func(t *testing.T) {
+		assert.Check(t, len(diagnose(t, "config.yml", "# see #@ docs\njobs:\n  build: {}\n")) != 0)
+	})
 }
 
 // configErrors returns the messages of the errors reported for content, as
