@@ -14,6 +14,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/parser"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/session"
 )
 
@@ -859,6 +860,58 @@ workflows:
 		t.Run(tc.name, func(t *testing.T) {
 			got := hinted(t, tc.config)
 			assert.Check(t, cmp.Equal(got, tc.hinted))
+		})
+	}
+}
+
+func TestJobWithoutAMappingIsReportedAtItsName(t *testing.T) {
+	tests := []struct {
+		name string
+		yaml string
+		// The lines, zero-based, of the jobs expected to be reported.
+		lines []uint32
+	}{
+		{
+			name: "steps indented as a job",
+			yaml: `version: 2.1
+jobs:
+  build:
+    docker:
+      - image: cimg/base:current
+    steps: [checkout]
+  steps:
+    - checkout
+workflows:
+  main:
+    jobs:
+      - build
+`,
+			lines: []uint32{6},
+		},
+		{
+			name: "two jobs without a value",
+			yaml: `version: 2.1
+jobs:
+  deploy:
+  test:
+`,
+			lines: []uint32{2, 3},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			diags := validateYAML(t, tt.yaml)
+
+			var lines []uint32
+			for _, d := range *diags {
+				assert.Check(t, !position.IsDefaultRange(d.Range), "%q is at the start of the file", diagnostic.MessageText(d))
+				if diagnostic.MessageText(d) == "Job is unused" {
+					lines = append(lines, d.Range.Start.Line)
+				}
+			}
+			slices.Sort(lines)
+			assert.Check(t, cmp.DeepEqual(lines, tt.lines))
 		})
 	}
 }
