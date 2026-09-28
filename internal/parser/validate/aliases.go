@@ -28,15 +28,17 @@ func (val Validate) validateExecutorAliases(used map[string]bool) {
 			continue
 		}
 
-		message := val.executorAliasProblem(alias)
-		if message == "" {
-			continue
-		}
-		if used[alias.Name] {
-			val.addDiagnostic(diagnostic.Error(alias.TargetRange, message))
-		} else {
-			val.addDiagnostic(diagnostic.Warning(alias.TargetRange, message))
-		}
+		val.reportAliasProblem(alias, val.executorAliasProblem(alias), used[alias.Name])
+	}
+}
+
+func (val Validate) reportAliasProblem(alias ast.Alias, message string, used bool) {
+	switch {
+	case message == "":
+	case used:
+		val.addDiagnostic(diagnostic.Error(alias.TargetRange, message))
+	default:
+		val.addDiagnostic(diagnostic.Warning(alias.TargetRange, message))
 	}
 }
 
@@ -65,3 +67,47 @@ func (val Validate) executorAliasProblem(alias ast.Alias) string {
 // malformedAliasMessage is the compiler's error for an alias whose target
 // isn't a single `orb-alias/element-name`.
 const malformedAliasMessage = "Invalid orb element alias, expected a single 'orb-alias/element-name' reference"
+
+// validateCommandAliases reports a command alias that names nothing. Its
+// target must be an orb's command, `orb-alias/command-name`.
+func (val Validate) validateCommandAliases() {
+	for _, alias := range val.Doc.Aliases.Commands {
+		if _, ok := val.Doc.Commands[alias.Name]; ok {
+			continue
+		}
+
+		val.warnShadowedPrimitive(alias.Name, alias.NameRange)
+
+		used := val.checkIfCommandIsUsed(ast.Command{Name: alias.Name})
+		if !used && !val.IsLocalOrb {
+			val.commandIsUnused(ast.Command{Name: alias.Name, NameRange: alias.NameRange})
+		}
+
+		// The compiler rejects a malformed alias named after the `run` step
+		// even when nothing uses it.
+		if _, _, ok := alias.OrbTarget(); !ok && !used && alias.Name != "run" {
+			val.addDiagnostic(diagnostic.Warning(alias.TargetRange, malformedAliasWarning(alias)))
+			continue
+		}
+		val.reportAliasProblem(alias, val.commandAliasProblem(alias), used || alias.Name == "run")
+	}
+}
+
+func (val Validate) commandAliasProblem(alias ast.Alias) string {
+	orbName, _, ok := alias.OrbTarget()
+	if !ok {
+		return malformedAliasMessage
+	}
+	if _, ok := val.Doc.Orbs[orbName]; !ok {
+		return fmt.Sprintf("Unable to determine target for step invocation %s (renamed from local command %s)",
+			alias.Target, alias.Name)
+	}
+	return val.unknownStepMessage(alias.Target)
+}
+
+// malformedAliasWarning is the compiler's warning for a malformed alias
+// that nothing uses.
+func malformedAliasWarning(alias ast.Alias) string {
+	return fmt.Sprintf("`%s` is not a valid orb element alias, so this entry is ignored unless it is invoked. "+
+		"An alias must be a single `orb-alias/element-name` reference.", alias.Target)
+}

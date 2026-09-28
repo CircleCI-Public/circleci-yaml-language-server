@@ -33,7 +33,7 @@ executors:
 `
 	doc, err := ParseFromContent([]byte(config), testHelpers.DefaultSettings(), uri.File(""), protocol.Position{})
 	assert.NilError(t, err)
-	defer doc.Close()
+	t.Cleanup(doc.Close)
 
 	t.Run("string entries are aliases", func(t *testing.T) {
 		assert.Check(t, cmp.DeepEqual(targets(doc.Aliases.Executors), map[string]string{
@@ -56,6 +56,26 @@ executors:
 			End:   protocol.Position{Line: 2, Character: 14},
 		}))
 	})
+}
+
+func TestCommandAliasesParse(t *testing.T) {
+	const config = `version: 2.1
+commands:
+  renamed-c: orb/c
+  malformed: 45m
+  real:
+    steps:
+      - checkout
+`
+	doc, err := ParseFromContent([]byte(config), testHelpers.DefaultSettings(), uri.File(""), protocol.Position{})
+	assert.NilError(t, err)
+	t.Cleanup(doc.Close)
+
+	assert.Check(t, cmp.DeepEqual(targets(doc.Aliases.Commands), map[string]string{
+		"renamed-c": "orb/c",
+		"malformed": "45m",
+	}))
+	assert.Check(t, cmp.Len(doc.Commands, 1))
 }
 
 func TestAliasOrbTarget(t *testing.T) {

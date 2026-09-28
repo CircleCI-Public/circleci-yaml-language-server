@@ -6,13 +6,15 @@ import (
 	"slices"
 	"strings"
 
+	"go.lsp.dev/protocol"
+
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 )
 
 func (val Validate) ValidateCommands() {
-	if len(val.Doc.Commands) == 0 && !position.IsDefaultRange(val.Doc.CommandsRange) {
+	if len(val.Doc.Commands) == 0 && len(val.Doc.Aliases.Commands) == 0 && !position.IsDefaultRange(val.Doc.CommandsRange) {
 		val.addDiagnostic(
 			diagnostic.EmptySectionWarning(val.Doc.CommandsRange, "commands"),
 		)
@@ -24,6 +26,7 @@ func (val Validate) ValidateCommands() {
 		val.validateSingleCommand(command)
 	}
 	val.validateCommandRecursion()
+	val.validateCommandAliases()
 }
 
 // validateCommandRecursion reports each command that calls itself, directly
@@ -102,15 +105,7 @@ var primitiveSteps = []string{
 func (val Validate) validateSingleCommand(command ast.Command) {
 	val.validateSteps(command.Steps, command.Name, command.Parameters)
 
-	if slices.Contains(primitiveSteps, command.Name) {
-		path := "commands"
-		if val.Doc.LocalOrbName != "" {
-			path = "orbs." + val.Doc.LocalOrbName + ".commands"
-		}
-		val.addDiagnostic(diagnostic.Warning(command.NameRange, fmt.Sprintf(
-			"Command '%s' in %s.%s shadows built-in CircleCI command '%s'",
-			command.Name, path, command.Name, command.Name)))
-	}
+	val.warnShadowedPrimitive(command.Name, command.NameRange)
 
 	// Local orbs do not need unused checks because those checks collides with the overall YAML unused checks
 	if !val.IsLocalOrb && !val.checkIfCommandIsUsed(command) {
@@ -118,7 +113,28 @@ func (val Validate) validateSingleCommand(command ast.Command) {
 	}
 }
 
+func (val Validate) warnShadowedPrimitive(name string, rng protocol.Range) {
+	if !slices.Contains(primitiveSteps, name) {
+		return
+	}
+	path := "commands"
+	if val.Doc.LocalOrbName != "" {
+		path = "orbs." + val.Doc.LocalOrbName + ".commands"
+	}
+	val.addDiagnostic(diagnostic.Warning(rng, fmt.Sprintf(
+		"Command '%s' in %s.%s shadows built-in CircleCI command '%s'",
+		name, path, name, name)))
+}
+
 func (val Validate) checkIfCommandIsUsed(command ast.Command) bool {
+	// An orb's command is used by an alias of it that is used.
+	for _, alias := range val.Doc.Aliases.Commands {
+		if alias.Target == command.Name && alias.Name != command.Name &&
+			val.checkIfCommandIsUsed(ast.Command{Name: alias.Name}) {
+			return true
+		}
+	}
+
 	for _, definedCommand := range val.Doc.Commands {
 		if val.checkIfStepsContainStep(definedCommand.Steps, command.Name) {
 			return true
