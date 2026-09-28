@@ -52,12 +52,11 @@ jobs:
 		Severity: protocol.DiagnosticSeverityWarning,
 		Message:  protocol.String(parser2.MachineTrueMessage(img)),
 		Data: codeaction.Data([]protocol.CodeAction{
-			codeaction.TextEdit("Replace with most updated ubuntu image", yamlDocument.URI,
+			codeaction.TextEdit("Replace with current Ubuntu image", yamlDocument.URI,
 				[]protocol.TextEdit{
 					{
-						Range: machineRange,
-						NewText: `machine:
-		` + strings.Repeat(" ", int(machineRange.Start.Character)) + `  image: ` + circleci.CurrentLinuxImage,
+						Range:   machineRange,
+						NewText: "machine:\n" + strings.Repeat(" ", int(machineRange.Start.Character)) + "  image: " + circleci.CurrentLinuxImage,
 					},
 				}, false),
 		}),
@@ -140,12 +139,11 @@ jobs:
 			Severity: protocol.DiagnosticSeverityWarning,
 			Message:  protocol.String(parser2.MachineTrueMessage(img)),
 			Data: codeaction.Data([]protocol.CodeAction{
-				codeaction.TextEdit("Replace with most updated ubuntu image", yamlDocument.URI,
+				codeaction.TextEdit("Replace with current Ubuntu image", yamlDocument.URI,
 					[]protocol.TextEdit{
 						{
-							Range: machineRange,
-							NewText: `machine:
-		` + strings.Repeat(" ", int(machineRange.Start.Character)) + `  image: ` + circleci.CurrentLinuxImage,
+							Range:   machineRange,
+							NewText: "machine:\n" + strings.Repeat(" ", int(machineRange.Start.Character)) + "  image: " + circleci.CurrentLinuxImage,
 						},
 					}, false),
 			}),
@@ -292,12 +290,11 @@ jobs:
 			Severity: protocol.DiagnosticSeverityWarning,
 			Message:  protocol.String(parser2.MachineTrueMessage(img)),
 			Data: codeaction.Data([]protocol.CodeAction{
-				codeaction.TextEdit("Replace with most updated ubuntu image", yamlDocument.URI,
+				codeaction.TextEdit("Replace with current Ubuntu image", yamlDocument.URI,
 					[]protocol.TextEdit{
 						{
-							Range: machineRange,
-							NewText: `machine:
-		` + strings.Repeat(" ", int(machineRange.Start.Character)) + `  image: ` + circleci.CurrentLinuxImage,
+							Range:   machineRange,
+							NewText: "machine:\n" + strings.Repeat(" ", int(machineRange.Start.Character)) + "  image: " + circleci.CurrentLinuxImage,
 						},
 					}, false),
 			}),
