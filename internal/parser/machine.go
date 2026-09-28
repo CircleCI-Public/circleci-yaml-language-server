@@ -1,13 +1,11 @@
 package parser
 
-const machineTrueAdvice = `CircleCI advises against using "machine: true", as support for this feature is not guaranteed to continue in the future.
-		
-	`
+const machineTrueAdvice = "CircleCI advises against using \"machine: true\", as support for this feature is not guaranteed to continue in the future.\n\n"
 
 func MachineTrueMessage(img string) string {
-	return machineTrueAdvice + `You can replace it with the following explicit declaration, which uses the same image.
-	machine:
-		image: ` + img
+	return machineTrueAdvice + "You can replace it with the following explicit declaration, which uses the same image.\n" +
+		"machine:\n" +
+		"  image: " + img
 }
 
 // MachineTrueWindowsMessage names no image: the one `machine: true` gets on a
