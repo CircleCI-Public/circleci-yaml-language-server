@@ -9,6 +9,7 @@ package cache
 import (
 	"slices"
 	"sync"
+	"time"
 
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
@@ -88,6 +89,7 @@ func (c *Cache) init() {
 	c.ContextCache.orgs = memo.New(memo.Fixed[*orgContexts](listLifetime), nil)
 	c.MachineOfferingsCache.catalog = memo.New(offeringsLifetime, nil)
 	c.ProjectCache.projects = memo.New(projectLifetime, nil)
+	c.ProjectCache.slugs = memo.New(func(slug string) time.Duration { return memo.Existence(slug != "") }, nil)
 
 	c.ResourceClassCache.orgOfFile = make(map[uri.URI]string)
 	c.ResourceClassCache.classes = memo.New(memo.Fixed[[]string](listLifetime), nil)
