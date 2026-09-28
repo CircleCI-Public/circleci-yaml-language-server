@@ -282,6 +282,8 @@ func (val Validate) validateDockerExecutor(executor ast.DockerExecutor) {
 	}
 
 	for _, img := range executor.Image {
+		// Needs no lookup, so it holds for the images the lookups skip too.
+		val.checkDeprecatedNamespace(img)
 
 		if !isDockerImageCheckable(&img) {
 			// When a Docker image can't be checked, skip it (consider it valid)
@@ -350,28 +352,32 @@ func (val Validate) validateDockerExecutor(executor ast.DockerExecutor) {
 				}
 			}
 		}
-
-		if img.Image.Namespace == "circleci" {
-			val.addDiagnostic(
-				diagnostic.New(
-					img.ImageRange,
-					protocol.DiagnosticSeverityWarning,
-					"Docker images from `circleci` namespace are deprecated. Please use its `cimg` namespace's alternative.",
-					[]protocol.CodeAction{
-						codeaction.TextEdit(
-							"Use `cimg` namespace's alternative",
-							val.Doc.URI, []protocol.TextEdit{
-								{
-									Range:   img.ImageRange,
-									NewText: fmt.Sprintf("image: %s", strings.Replace(img.Image.FullPath, "circleci", "cimg", 1)),
-								},
-							}, true,
-						),
-					},
-				),
-			)
-		}
 	}
+}
+
+func (val Validate) checkDeprecatedNamespace(img ast.DockerImage) {
+	if img.Image.Namespace != "circleci" {
+		return
+	}
+
+	val.addDiagnostic(
+		diagnostic.New(
+			img.ImageRange,
+			protocol.DiagnosticSeverityWarning,
+			"Docker images from `circleci` namespace are deprecated. Please use its `cimg` namespace's alternative.",
+			[]protocol.CodeAction{
+				codeaction.TextEdit(
+					"Use `cimg` namespace's alternative",
+					val.Doc.URI, []protocol.TextEdit{
+						{
+							Range:   img.ImageRange,
+							NewText: fmt.Sprintf("image: %s", strings.Replace(img.Image.FullPath, "circleci", "cimg", 1)),
+						},
+					}, true,
+				),
+			},
+		),
+	)
 }
 
 func (val Validate) checkIfValidResourceClass(
