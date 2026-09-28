@@ -67,6 +67,27 @@ func TestSearch(t *testing.T) {
 		assert.Check(t, cmp.Equal(after, before))
 	})
 
+	// A namespace gains and loses repositories, so what was read of it is
+	// not kept for good.
+	t.Run("reads a namespace again once it is an hour old", func(t *testing.T) {
+		fake := cimgFake(t)
+		api := apiFor(fake)
+		now := time.Now()
+		api.now = func() time.Time { return now }
+
+		assert.Assert(t, api.Search("cimg/python").HasNext())
+		before := fake.RequestCount(http.MethodGet, cimgReposPath)
+
+		now = now.Add(59 * time.Minute)
+		assert.Check(t, api.Search("cimg/go").HasNext())
+		assert.Check(t, cmp.Equal(fake.RequestCount(http.MethodGet, cimgReposPath), before), "an hour has not passed")
+
+		fake.AddRepository("cimg", "rust")
+		now = now.Add(time.Minute)
+		assert.Check(t, api.Search("cimg/rust").HasNext(), "a repository added since must be found")
+		assert.Check(t, fake.RequestCount(http.MethodGet, cimgReposPath) > before)
+	})
+
 	t.Run("walks every match in order", func(t *testing.T) {
 		fake := cimgFake(t)
 		fake.SetPageLimit(2)

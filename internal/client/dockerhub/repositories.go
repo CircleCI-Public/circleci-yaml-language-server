@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"time"
 )
 
 type BaseHUBResponse struct {
@@ -36,6 +37,8 @@ type HubResponse struct {
 type HubNamespace struct {
 	api       *dockerHubAPI
 	namespace string
+	// created is when the namespace began to be read. It is set once.
+	created time.Time
 
 	// mutex guards everything below. Completion searches a namespace from
 	// several goroutines at once, so a search holds it for as long as it
