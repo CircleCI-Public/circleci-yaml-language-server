@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -104,7 +105,7 @@ func (c *Cache) WriteOrbSource(orbID, source string) (string, error) {
 		s.dir = dir
 	}
 
-	path := filepath.Join(s.dir, filepath.FromSlash(orbID)+".yml")
+	path := filepath.Join(s.dir, filepath.FromSlash(sourceFileName.Replace(orbID))+".yml")
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return "", err
 	}
@@ -128,8 +129,19 @@ func (c *Cache) OrbIDOfSource(path string) (string, bool) {
 		return "", false
 	}
 
-	return strings.TrimSuffix(filepath.ToSlash(rel), ".yml"), true
+	orbID, err := url.PathUnescape(strings.TrimSuffix(filepath.ToSlash(rel), ".yml"))
+	if err != nil {
+		return "", false
+	}
+
+	return orbID, true
 }
+
+// sourceFileName escapes what Windows refuses in a file name from the
+// reference a source is written for: the : of a development version, such as
+// circleci/go@dev:alpha. The % is escaped too, so OrbIDOfSource can read the
+// reference back from the name.
+var sourceFileName = strings.NewReplacer("%", "%25", ":", "%3A")
 
 // remove removes the directory and everything written to it.
 func (s *orbSources) remove() {

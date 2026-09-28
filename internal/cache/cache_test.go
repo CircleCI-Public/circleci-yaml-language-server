@@ -2,6 +2,8 @@ package cache
 
 import (
 	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"go.lsp.dev/protocol"
@@ -198,6 +200,16 @@ func TestOrbSources(t *testing.T) {
 
 		_, ok = cache.OrbIDOfSource("/workspace/.circleci/config.yml")
 		assert.Check(t, !ok, "a config is not an orb's source")
+	})
+
+	t.Run("a development version is written to a name Windows accepts", func(t *testing.T) {
+		dev, err := cache.WriteOrbSource("circleci/go@dev:alpha", "dev")
+		assert.NilError(t, err)
+		assert.Check(t, !strings.Contains(filepath.Base(dev), ":"), dev)
+
+		orbID, ok := cache.OrbIDOfSource(dev)
+		assert.Check(t, ok)
+		assert.Check(t, cmp.Equal(orbID, "circleci/go@dev:alpha"))
 	})
 
 	t.Run("another cache writes somewhere of its own", func(t *testing.T) {
