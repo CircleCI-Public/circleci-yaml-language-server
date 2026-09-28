@@ -81,6 +81,70 @@ workflows:
 	})
 }
 
+func TestCompleteBareExpressions(t *testing.T) {
+	const config = `version: 2.1
+
+parameters:
+  deploy:
+    type: boolean
+    default: false
+
+jobs:
+  build:
+    parameters:
+      os:
+        type: string
+        default: linux
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - when:
+          condition: pipeline.
+          steps:
+            - checkout
+
+workflows:
+  main:
+    when: pipeline.git.
+    jobs:
+      - build:
+          filters: pipeline.git.branch == "main" and pipeline.parameters.
+  other:
+    unless: pip
+    jobs:
+      - build:
+          filters: parameters.
+`
+	t.Run("in a workflow's condition, a value isn't closed with >>", func(t *testing.T) {
+		items := completionItemsAfter(t, config, "when: pipeline.git.")
+		branch := findItem(t, items, "branch")
+		assert.Check(t, cmp.Equal(branch.InsertText, protocol.NewOptional("branch")))
+	})
+
+	t.Run("in a filter, the pipeline parameters are offered", func(t *testing.T) {
+		items := completionItemsAfter(t, config, "and pipeline.parameters.")
+		assert.Check(t, cmp.DeepEqual(labelsOf(items), []string{"deploy"}))
+		deploy := findItem(t, items, "deploy")
+		assert.Check(t, cmp.Equal(deploy.InsertText, protocol.NewOptional("deploy")))
+	})
+
+	t.Run("a word being started is offered pipeline", func(t *testing.T) {
+		items := completionItemsAfter(t, config, "unless: pip")
+		pipeline := findItem(t, items, "pipeline")
+		assert.Check(t, cmp.Equal(pipeline.InsertText, protocol.NewOptional("pipeline.")))
+	})
+
+	t.Run("a job's parameters aren't offered, since a workflow has none", func(t *testing.T) {
+		got := labelsOf(completionItemsAfter(t, config, "filters: parameters."))
+		assert.Check(t, !slices.Contains(got, "os"))
+	})
+
+	t.Run("a step's condition isn't an expression, so nothing is offered", func(t *testing.T) {
+		got := labelsOf(completionItemsAfter(t, config, "condition: pipeline."))
+		assert.Check(t, !slices.Contains(got, "git"))
+	})
+}
+
 // completionItemsAfter are the items offered with the cursor straight after
 // text, on the first line of config that contains it.
 func completionItemsAfter(t *testing.T, config, text string) []protocol.CompletionItem {
