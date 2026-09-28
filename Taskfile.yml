@@ -139,7 +139,7 @@ tasks:
       - go tool -modfile tools/go.mod gotestsum -- -race -count=1 {{.ARGS}}
 
   cover:
-    desc: Run the tests with coverage, the acceptance tier's servers included, and report it
+    desc: Run the tests with coverage, the acceptance tier's servers included, and report it (test-reports/coverage.html)
     vars:
       COVER_DIR: '{{.RESULTS_DIR}}/coverage'
       ARGS: '{{default "./..." .CLI_ARGS}}'
@@ -151,6 +151,7 @@ tasks:
       - go test -race -count=1 -coverpkg=./... {{.ARGS}} -args -test.gocoverdir="{{.ROOT_DIR}}/{{.COVER_DIR}}"
       - go tool covdata textfmt -i="{{.COVER_DIR}}" -o "{{.RESULTS_DIR}}/coverage.out"
       - go tool covdata percent -i="{{.COVER_DIR}}"
+      - go tool cover -html="{{.RESULTS_DIR}}/coverage.out" -o "{{.RESULTS_DIR}}/coverage.html"
 
   probe:
     desc: Run every contract probe against the real APIs
