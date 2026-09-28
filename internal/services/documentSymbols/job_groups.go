@@ -32,6 +32,7 @@ func resolveJobGroupsSymbols(document *parser.YamlDocument) []protocol.DocumentS
 
 func singleJobGroupSymbols(jobGroup ast.JobGroup) protocol.DocumentSymbol {
 	symbol := symbolFromRange(jobGroup.Range, jobGroup.Name, WorkflowSymbol)
+	symbol.SelectionRange = selectionRange(jobGroup.Range, jobGroup.NameRange)
 
 	if len(jobGroup.JobInvocations) > 0 {
 		symbol.Children = append(symbol.Children, protocol.DocumentSymbol{
@@ -56,7 +57,7 @@ func jobGroupJobInvocationsSymbols(jobGroup ast.JobGroup) []protocol.DocumentSym
 				Name:           jobInvocation.StepName,
 				Kind:           InvocationSymbol,
 				Range:          jobInvocation.JobInvocationRange,
-				SelectionRange: jobInvocation.JobInvocationRange,
+				SelectionRange: selectionRange(jobInvocation.JobInvocationRange, jobInvocation.StepNameRange),
 			},
 		)
 	}
