@@ -185,8 +185,6 @@ func (val Validate) validateRemoteDockerOnce(job ast2.Job) {
 	}
 }
 
-// validateExecutorOverrides warns about a setting given both on the job and on
-// its executor, where the job's silently wins.
 // validateExecutorHasType checks that a job using an executor with no
 // docker, machine or macos key gives one itself.
 func (val Validate) validateExecutorHasType(job ast2.Job, executor ast2.Executor) {
@@ -201,23 +199,12 @@ func (val Validate) validateExecutorHasType(job ast2.Job, executor ast2.Executor
 		`Executor %s is missing a required key: "docker", "machine", or "macos"`, executor.GetName())))
 }
 
+// validateExecutorOverrides reports a resource_class or shell given inside the
+// executor's machine map when the job also gives it. For one given both on
+// the job and on its executor, see checkOverriddenExecutorSettings.
 func (val Validate) validateExecutorOverrides(job ast2.Job, executor ast2.Executor) {
 	if machine, ok := executor.(ast2.MachineExecutor); ok {
 		val.validateMachineMapClashes(machine, job.ResourceClass != "", job.Shell != "", false)
-	}
-
-	if job.ResourceClass != "" && executor.GetResourceClass() != "" {
-		val.addDiagnostic(diagnostic.Warning(job.ResourceClassRange,
-			"resource_class is set both on the job and on the executor; the job's "+
-				"value is used and the executor's is ignored. See "+
-				"https://circleci.com/docs/reference/configuration-reference/#executors"))
-	}
-
-	if job.Shell != "" && executor.GetShell() != "" {
-		val.addDiagnostic(diagnostic.Warning(job.ShellRange,
-			"shell is set both on the job and on the executor; the job's value is "+
-				"used and the executor's is ignored. See "+
-				"https://circleci.com/docs/reference/configuration-reference/#executors"))
 	}
 }
 

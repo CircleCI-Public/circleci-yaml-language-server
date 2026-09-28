@@ -42,6 +42,7 @@ func (val Validate) ValidateExecutors() {
 
 	values := val.valuesOutsideExecutors()
 	val.validateExecutorAliases(values)
+	val.checkOverriddenExecutorSettings(values)
 
 	// Local orbs do not need unused checks because those checks collides with the overall YAML unused checks
 	if !val.IsLocalOrb {
@@ -52,31 +53,80 @@ func (val Validate) ValidateExecutors() {
 // checkUnusedExecutors warns about an executor or an alias whose name is not
 // among values, once there are jobs to use it. An alias that is used uses its
 // target.
-func (val Validate) checkUnusedExecutors(values map[string]bool) {
+func (val Validate) checkUnusedExecutors(values map[string]int) {
 	if len(val.Doc.Jobs) == 0 {
 		return
 	}
 
 	for _, alias := range val.Doc.Aliases.Executors {
-		if values[alias.Name] {
-			values[alias.Target] = true
+		if values[alias.Name] > 0 {
+			values[alias.Target] = 1
 		} else {
 			val.addDiagnostic(diagnostic.Warning(alias.NameRange, "Executor is unused"))
 		}
 	}
 
 	for _, executor := range val.Doc.Executors {
-		if !values[executor.GetName()] {
+		if values[executor.GetName()] == 0 {
 			val.addDiagnostic(diagnostic.Warning(executor.GetNameRange(), "Executor is unused"))
 		}
 	}
 }
 
-// valuesOutsideExecutors are the config's scalar values outside its
+// checkOverriddenExecutorSettings reports a resource_class or shell given both
+// on a job and on its executor, where the job's wins. Overriding an executor's
+// setting is how a job adjusts it, so that is only a hint, unless every use of
+// the executor overrides the setting and the executor's is never used. values
+// counts the uses, as valuesOutsideExecutors does.
+func (val Validate) checkOverriddenExecutorSettings(values map[string]int) {
+	uses := map[string]int{}
+	for name := range val.Doc.Executors {
+		uses[name] += values[name]
+	}
+	for _, alias := range val.Doc.Aliases.Executors {
+		uses[alias.Target] += values[alias.Name]
+	}
+
+	type override struct {
+		executor, setting string
+		rng               protocol.Range
+	}
+	var overrides []override
+	count := map[[2]string]int{}
+	add := func(executor, setting string, rng protocol.Range) {
+		overrides = append(overrides, override{executor, setting, rng})
+		count[[2]string{executor, setting}]++
+	}
+	for _, job := range val.Doc.Jobs {
+		executor, ok := val.localExecutor(job.Executor)
+		if !ok {
+			continue
+		}
+		if job.ResourceClass != "" && executor.GetResourceClass() != "" {
+			add(executor.GetName(), "resource_class", job.ResourceClassRange)
+		}
+		if job.Shell != "" && executor.GetShell() != "" {
+			add(executor.GetName(), "shell", job.ShellRange)
+		}
+	}
+
+	for _, o := range overrides {
+		severity := protocol.DiagnosticSeverityHint
+		if count[[2]string{o.executor, o.setting}] >= uses[o.executor] {
+			severity = protocol.DiagnosticSeverityWarning
+		}
+		val.addDiagnostic(diagnostic.New(o.rng, severity, fmt.Sprintf(
+			"%s is set both on the job and on the executor; the job's value is used and the "+
+				"executor's is ignored. See https://circleci.com/docs/reference/configuration-reference/#executors",
+			o.setting), nil))
+	}
+}
+
+// valuesOutsideExecutors counts the config's scalar values outside its
 // executors. An executor's name can reach a job through a parameter, as an
 // enum, a default or a matrix's values, so any of them is taken as a use.
-func (val Validate) valuesOutsideExecutors() map[string]bool {
-	values := map[string]bool{}
+func (val Validate) valuesOutsideExecutors() map[string]int {
+	values := map[string]int{}
 	for node := range yamltree.Walk(val.Doc.RootNode) {
 		switch node.Kind() {
 		case "plain_scalar", "single_quote_scalar", "double_quote_scalar":
@@ -86,7 +136,7 @@ func (val Validate) valuesOutsideExecutors() map[string]bool {
 		if isKey(node) || position.InRange(val.Doc.ExecutorsRange, position.Start(node)) {
 			continue
 		}
-		values[strings.Trim(val.Doc.GetNodeText(node), `"'`)] = true
+		values[strings.Trim(val.Doc.GetNodeText(node), `"'`)]++
 	}
 	return values
 }

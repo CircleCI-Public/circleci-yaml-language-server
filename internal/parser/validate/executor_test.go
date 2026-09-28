@@ -592,3 +592,71 @@ workflows:
 		assert.Check(t, cmp.Len(got, 0))
 	})
 }
+
+func TestOverriddenExecutorSettings(t *testing.T) {
+	const message = "resource_class is set both on the job and on the executor; the job's value is used " +
+		"and the executor's is ignored. See https://circleci.com/docs/reference/configuration-reference/#executors"
+	severities := func(t *testing.T, yaml string) []protocol.DiagnosticSeverity {
+		t.Helper()
+		var got []protocol.DiagnosticSeverity
+		for _, d := range *validateYAML(t, yaml) {
+			if diagnostic.MessageText(d) == message {
+				got = append(got, d.Severity)
+			}
+		}
+		return got
+	}
+	const config = `version: 2.1
+executors:
+  box:
+    docker:
+      - image: cimg/base:current
+    resource_class: large
+  alias-box: box
+jobs:
+  big:
+    executor: box
+    resource_class: xlarge
+    steps: [checkout]
+`
+
+	t.Run("every use overrides it", func(t *testing.T) {
+		got := severities(t, config+`  bigger:
+    executor:
+      name: box
+    resource_class: 2xlarge
+    steps: [checkout]
+`)
+		assert.Check(t, cmp.DeepEqual(got, []protocol.DiagnosticSeverity{
+			protocol.DiagnosticSeverityWarning, protocol.DiagnosticSeverityWarning,
+		}))
+	})
+
+	t.Run("another job uses the executor's", func(t *testing.T) {
+		got := severities(t, config+`  small:
+    executor: box
+    steps: [checkout]
+`)
+		assert.Check(t, cmp.DeepEqual(got, []protocol.DiagnosticSeverity{protocol.DiagnosticSeverityHint}))
+	})
+
+	t.Run("an alias uses the executor's", func(t *testing.T) {
+		got := severities(t, config+`  small:
+    executor: alias-box
+    steps: [checkout]
+`)
+		assert.Check(t, cmp.DeepEqual(got, []protocol.DiagnosticSeverity{protocol.DiagnosticSeverityHint}))
+	})
+
+	t.Run("a parameter can use the executor's", func(t *testing.T) {
+		got := severities(t, config+`  any:
+    parameters:
+      executor:
+        type: executor
+        default: box
+    executor: << parameters.executor >>
+    steps: [checkout]
+`)
+		assert.Check(t, cmp.DeepEqual(got, []protocol.DiagnosticSeverity{protocol.DiagnosticSeverityHint}))
+	})
+}
