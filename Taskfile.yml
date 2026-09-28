@@ -102,6 +102,7 @@ tasks:
         vars:
           CLI_ARGS: -diff
       - task: release-check
+      - task: commitlint
 
   fix:
     desc: Auto-fix static checks
@@ -197,6 +198,7 @@ tasks:
         vars:
           CLI_ARGS: -diff
       - task: release-check
+      - task: ci:commitlint
 
   ci:commitlint:
     desc: Lint the message of each commit not on main
