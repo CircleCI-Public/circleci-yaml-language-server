@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strings"
 
+	sitter "github.com/tree-sitter/go-tree-sitter"
 	"go.lsp.dev/protocol"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
@@ -15,6 +16,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/paramref"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/yamltree"
 )
 
 func (val Validate) ValidateExecutors() {
@@ -37,6 +39,53 @@ func (val Validate) ValidateExecutors() {
 			val.validateDockerExecutor(executor)
 		}
 	}
+
+	// Local orbs do not need unused checks because those checks collides with the overall YAML unused checks
+	if !val.IsLocalOrb {
+		val.checkUnusedExecutors()
+	}
+}
+
+// checkUnusedExecutors warns about an executor whose name is no value
+// outside the executors, once there are jobs to use it. Its name can reach a
+// job through a parameter, as an enum, a default or a matrix's values, so any
+// value is taken as a use.
+func (val Validate) checkUnusedExecutors() {
+	if len(val.Doc.Jobs) == 0 {
+		return
+	}
+
+	values := map[string]bool{}
+	for node := range yamltree.Walk(val.Doc.RootNode) {
+		switch node.Kind() {
+		case "plain_scalar", "single_quote_scalar", "double_quote_scalar":
+		default:
+			continue
+		}
+		if isKey(node) || position.InRange(val.Doc.ExecutorsRange, position.Start(node)) {
+			continue
+		}
+		values[strings.Trim(val.Doc.GetNodeText(node), `"'`)] = true
+	}
+
+	for _, executor := range val.Doc.Executors {
+		if !values[executor.GetName()] {
+			val.addDiagnostic(diagnostic.Warning(executor.GetNameRange(), "Executor is unused"))
+		}
+	}
+}
+
+func isKey(scalar *sitter.Node) bool {
+	node := scalar.Parent()
+	if node == nil {
+		return false
+	}
+	pair := node.Parent()
+	if pair == nil || (pair.Kind() != "block_mapping_pair" && pair.Kind() != "flow_pair") {
+		return false
+	}
+	key := pair.ChildByFieldName("key")
+	return key != nil && key.Id() == node.Id()
 }
 
 // MacOSExecutor
