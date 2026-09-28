@@ -249,7 +249,7 @@ func (val Validate) jobUse(name string) (bool, []string) {
 	// Used directly in a workflow
 	for _, workflow := range val.Doc.Workflows {
 		for _, jobInvocation := range workflow.JobInvocations {
-			if jobInvocation.JobName == name {
+			if jobInvocation.JobName == name || jobInvocation.OverrideWith == name {
 				return true, nil
 			}
 		}
@@ -262,7 +262,7 @@ func (val Validate) jobUse(name string) (bool, []string) {
 			// We compare against JobName (the original definition name), not StepName,
 			// because StepName is just a user-chosen alias for the invocation - the
 			// underlying job being referenced is always identified by JobName.
-			if jobInvocation.JobName == name {
+			if jobInvocation.JobName == name || jobInvocation.OverrideWith == name {
 				if val.isJobGroupUsedInWorkflows(groupName) {
 					// At least one group containing this job is used — job counts as used
 					return true, nil

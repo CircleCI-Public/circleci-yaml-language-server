@@ -103,6 +103,11 @@ workflows:
 		{
 			Name: "Job override",
 			YamlContent: `version: 2.1
+orbs:
+  local:
+    jobs:
+      deploy:
+        type: no-op
 jobs:
   deploy:
     type: no-op
@@ -2213,6 +2218,155 @@ workflows:
 			Diagnostics: []protocol.Diagnostic{
 				diagnostic.Error(span(33, 14, 51),
 					"Cannot find declaration for job invocation \"build-<< pipeline.parameters.place >>\""),
+			},
+		},
+	}
+
+	CheckYamlErrors(t, testCases)
+}
+
+func TestOverrideWith(t *testing.T) {
+	const orbAndJob = `version: 2.1
+orbs:
+  foo:
+    jobs:
+      build:
+        parameters:
+          word:
+            type: string
+        machine: true
+        steps:
+          - run: echo << parameters.word >>
+jobs:
+  build:
+    parameters:
+      local-word:
+        type: string
+    machine: true
+    steps:
+      - run: echo << parameters.local-word >>
+`
+	testCases := []ValidateTestCase{
+		{
+			Name: "arguments are the orb job's parameters",
+			YamlContent: orbAndJob + `workflows:
+  workflow:
+    jobs:
+      - build:
+          override-with: foo/build
+          word: hello
+`,
+		},
+		{
+			Name: "a job group member overridden by an orb job",
+			YamlContent: orbAndJob + `job-groups:
+  group:
+    jobs:
+      - build:
+          override-with: foo/build
+          word: hello
+workflows:
+  workflow:
+    jobs:
+      - group
+`,
+		},
+		{
+			Name: "an argument the orb job doesn't take",
+			YamlContent: orbAndJob + `workflows:
+  workflow:
+    jobs:
+      - build:
+          override-with: foo/build
+          word: hello
+          local-word: hello
+`,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(span(25, 10, 27), "Parameter local-word is not defined for foo/build"),
+			},
+		},
+		{
+			Name: "a matrix parameter the orb job doesn't take",
+			YamlContent: orbAndJob + `workflows:
+  workflow:
+    jobs:
+      - build:
+          override-with: foo/build
+          word: hello
+          matrix:
+            parameters:
+              local-word: [hello, goodbye]
+`,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(span(27, 14, 42), "Parameter local-word is not defined for foo/build"),
+			},
+		},
+		{
+			Name: "the orb job's required parameter",
+			YamlContent: orbAndJob + `workflows:
+  workflow:
+    jobs:
+      - build:
+          override-with: foo/build
+          local-word: hello
+`,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(protocol.Range{
+					Start: protocol.Position{Line: 22, Character: 6},
+					End:   protocol.Position{Line: 25, Character: 0},
+				}, "Parameter word is required for foo/build"),
+				diagnostic.Error(span(24, 10, 27), "Parameter local-word is not defined for foo/build"),
+			},
+		},
+		{
+			Name: "a value that isn't an orb job",
+			YamlContent: orbAndJob + `workflows:
+  workflow:
+    jobs:
+      - build:
+          override-with: build
+          local-word: hello
+`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(span(23, 25, 30), `override-with: "build" does not reference a job definition in an orb`),
+			},
+		},
+		{
+			Name: "an orb without the job runs the job named",
+			YamlContent: orbAndJob + `workflows:
+  workflow:
+    jobs:
+      - build:
+          override-with: foo/deploy
+          local-word: hello
+`,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Warning(span(4, 6, 11), "Job is unused"),
+				diagnostic.Warning(span(23, 25, 35), "override-with: orb foo has no job deploy, so this runs the job build"),
+			},
+		},
+		{
+			Name: "an orb the config doesn't declare",
+			YamlContent: orbAndJob + `workflows:
+  workflow:
+    jobs:
+      - build:
+          override-with: nope/build
+          word: hello
+`,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Warning(protocol.Range{
+					Start: protocol.Position{Line: 2, Character: 2},
+					End:   protocol.Position{Line: 10, Character: 43},
+				}, "Orb is unused"),
+				diagnostic.Warning(span(4, 6, 11), "Job is unused"),
+				diagnostic.Warning(span(23, 25, 35), "override-with: orb nope is not declared, so this runs the job build"),
+				diagnostic.Error(span(24, 10, 21), "Parameter word is not defined for build"),
+				diagnostic.Error(protocol.Range{
+					Start: protocol.Position{Line: 22, Character: 6},
+					End:   protocol.Position{Line: 25, Character: 0},
+				}, "Parameter local-word is required for build"),
 			},
 		},
 	}
