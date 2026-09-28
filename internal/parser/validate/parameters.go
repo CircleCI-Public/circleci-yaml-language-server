@@ -11,6 +11,7 @@ import (
 	ast2 "github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/paramref"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/pipelinevalues"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/yamltree"
 )
@@ -109,24 +110,6 @@ func (val Validate) checkParamSimpleType(param ast2.ParameterValue, stepName str
 	}
 }
 
-// pipelineValueTypes are the types of the pipeline values, as far as they
-// are known. See https://circleci.com/docs/pipeline-variables/
-var pipelineValueTypes = map[string]string{
-	"pipeline.id":                    "string",
-	"pipeline.number":                "integer",
-	"pipeline.project.git_url":       "string",
-	"pipeline.project.type":          "string",
-	"pipeline.git.tag":               "string",
-	"pipeline.git.branch":            "string",
-	"pipeline.git.branch.is_default": "boolean",
-	"pipeline.git.revision":          "string",
-	"pipeline.git.base_revision":     "string",
-	"pipeline.in_setup":              "boolean",
-	"pipeline.trigger_source":        "string",
-	"pipeline.schedule.name":         "string",
-	"pipeline.schedule.id":           "string",
-}
-
 // checkPipelineValueType checks a parameter given a pipeline value, such as
 // << pipeline.number >>, against the type that value will have. Any value can
 // be written into a string, and the other types are checked only once the
@@ -138,12 +121,24 @@ func (val Validate) checkPipelineValueType(param ast2.ParameterValue, name strin
 		return
 	}
 
-	valueType, known := pipelineValueTypes[name]
-	if !known || valueType == wanted {
+	value, known := pipelinevalues.Lookup(name)
+	if !known || parameterTypeOf(value) == wanted {
 		return
 	}
 
 	val.createParameterError(param, stepName, wanted)
+}
+
+// parameterTypeOf returns the parameter type a pipeline value fits.
+func parameterTypeOf(value pipelinevalues.Value) string {
+	switch value.Type {
+	case "boolean":
+		return "boolean"
+	case "uint":
+		return "integer"
+	default:
+		return "string"
+	}
 }
 
 func checkParamType(paramType string, val Validate, param ast2.ParameterValue, stepName string, definedParam ast2.Parameter) {

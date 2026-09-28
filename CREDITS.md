@@ -12,6 +12,7 @@ Developer Experience team of CircleCI
 |--------------------------------------------------------------|--------------|-----------------------------------------------------------------------------|
 | charm.land/lipgloss/v2                                       | MIT          | https://github.com/charmbracelet/lipgloss/blob/HEAD/LICENSE                 |
 | charm.land/log/v2                                            | MIT          | https://github.com/charmbracelet/log/blob/HEAD/LICENSE                      |
+| github.com/CircleCI-Public/expr/domains                      | MIT          | https://github.com/CircleCI-Public/expr/blob/HEAD/LICENSE                   |
 | github.com/Masterminds/semver/v3                             | MIT          | https://github.com/Masterminds/semver/blob/HEAD/LICENSE.txt                 |
 | github.com/ProtonMail/go-crypto                              | BSD-3-Clause | https://github.com/ProtonMail/go-crypto/blob/HEAD/LICENSE                   |
 | github.com/bep/debounce                                      | MIT          | https://github.com/bep/debounce/blob/HEAD/LICENSE                           |
