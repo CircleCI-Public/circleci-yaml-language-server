@@ -45,7 +45,7 @@
             "./cmd/dev/parse_yaml",
             "./cmd/dev/dockerhub",
             "./cmd/dev/orb",
-            "./cmd/ci/get_next_release",
+            "./cmd/ci/release_version",
             "./internal/services/hover"
         ]
     },

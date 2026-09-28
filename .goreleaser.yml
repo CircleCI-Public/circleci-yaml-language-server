@@ -1,6 +1,7 @@
-# Builds and packages the language server. It doesn't publish: CI runs
-# `goreleaser release --snapshot` with VERSION set (see `task ci:build`), and
-# the release jobs in .circleci/config.yml upload what it leaves in dist/.
+# Builds, packages and publishes the language server. On main, `task
+# ci:release` tags the commit locally and runs `goreleaser release`, which
+# publishes to GitHub. Branch builds are a dry run, `goreleaser release
+# --snapshot` at 0.0.0-dev (see `task snapshot`), which publishes nowhere.
 #
 # The server needs cgo (go-tree-sitter compiles its C parser in), so every
 # target is cross-compiled from Linux with Zig as the C compiler.
@@ -85,8 +86,8 @@ archives:
 
   # The bare binaries under the names every release has had, which the VS Code
   # extension and circleci-yaml-mode.el download: {os}-{arch}-lsp[.exe].
-  # `task ci:build` copies them out of dist/, since goreleaser only renames
-  # them when it uploads.
+  # Goreleaser only renames them when it uploads, so `task snapshot` copies
+  # them out of dist/ for the dry run.
   - id: binary
     formats: [binary]
     name_template: '{{ .Os }}-{{ .Arch }}-lsp'
@@ -98,4 +99,18 @@ changelog:
   disable: true
 
 release:
-  disable: true
+  github:
+    owner: CircleCI-Public
+    name: circleci-yaml-language-server
+  # release-please's draft of a stable release is named v<version>, so it's
+  # found and published, keeping release-please's notes. Prereleases get a
+  # release of their own.
+  name_template: 'v{{ .Version }}'
+  use_existing_draft: true
+  mode: keep-existing
+  prerelease: auto
+  # The tag is only made locally, so GitHub makes it when the release is
+  # published.
+  target_commitish: '{{ .FullCommit }}'
+  extra_files:
+    - glob: ./schema.json

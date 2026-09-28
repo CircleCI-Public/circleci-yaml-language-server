@@ -5,9 +5,7 @@ vars:
   LINT_REPORT: test-reports/lint.xml
   # Where `task snapshot` leaves the release, under its published names.
   RELEASE_DIR: dist/release
-  # The release CI builds is in ~/version, written by its `Create version
-  # file` job. Branch builds have none.
-  VERSION_CMD: cat "$HOME/version" 2>/dev/null || echo 0.0.0-dev
+  REPO: CircleCI-Public/circleci-yaml-language-server
 
 tasks:
   build:
@@ -210,18 +208,62 @@ tasks:
           BASE: FETCH_HEAD
 
   ci:build:
-    desc: Build and package the release at the version in ~/version
+    desc: Build and package a dry run of the release, at 0.0.0-dev and unsigned
     cmds:
       - task: snapshot
+
+  ci:release:
+    desc: Publish this commit's release, stable or pre, then update the release PR
+    vars:
+      RELEASE_PLEASE_ARGS: >-
+        --token "$GITHUB_TOKEN"
+        --repo-url {{.REPO}}
+        --target-branch "$CIRCLE_BRANCH"
+        --config-file .circleci/release/release-please-config.json
+        --manifest-file .circleci/release/release-please-manifest.json
+    cmds:
+      # A no-op unless a release PR was just merged, when it drafts that release.
+      - npx release-please github-release --draft {{.RELEASE_PLEASE_ARGS}}
+      - task: ci:release:publish
+      - npx release-please release-pr {{.RELEASE_PLEASE_ARGS}}
+
+  ci:release:publish:
+    internal: true
+    vars:
+      # Read after release-please has drafted, so it sees the draft.
+      VERSION:
+        sh: go run ./cmd/ci/release_version -repo {{.REPO}}
+      ZIG:
+        sh: go run ./cmd/ci/install_zig
+    env:
+      ZIG: '{{.ZIG}}'
+      # In case another tag points at this commit too.
+      GORELEASER_CURRENT_TAG: '{{.VERSION}}'
+    cmds:
+      - git tag --no-sign {{.VERSION}}
+      - go tool -modfile tools/go.mod goreleaser release --clean
+
+  ci:smoke-test:published:
+    desc: Download the binaries `task ci:release` published, as the extension does, and smoke-test them
+    vars:
+      METADATA:
+        sh: cat dist/metadata.json
+      TAG: '{{(.METADATA | fromJson).tag}}'
+      NAME: '{{OS}}-{{ARCH}}-lsp{{exeExt}}'
+    cmds:
+      - curl --fail --silent --show-error --location --retry 5 --create-dirs
+        --output "{{.RELEASE_DIR}}/{{.NAME}}"
+        "https://github.com/{{.REPO}}/releases/download/{{.TAG}}/{{.NAME}}"
+      - cmd: chmod +x "{{.RELEASE_DIR}}/{{.NAME}}"
+        platforms: [linux, darwin]
+      - task: ci:smoke-test
         vars:
-          VERSION:
-            sh: '{{.VERSION_CMD}}'
+          VERSION: '{{(.METADATA | fromJson).version}}'
 
   ci:smoke-test:
-    desc: Check the staged binaries run here and report the version being released
+    desc: Check the binaries in dist/release run here and report VERSION (default 0.0.0-dev)
     vars:
-      VERSION:
-        sh: '{{.VERSION_CMD}}'
+      VERSION: '{{default "0.0.0-dev" .VERSION}}'
       BINARY: '{{.RELEASE_DIR}}/{{OS}}-{{ARCH}}-lsp{{exeExt}}'
       # The oldest glibc anyone asked for (#266), and musl.
       IMAGES: centos:7 amazonlinux:2 ubuntu:20.04 alpine:3.20

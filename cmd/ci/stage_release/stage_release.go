@@ -1,9 +1,10 @@
 // Command stage_release copies what a release publishes out of goreleaser's
-// dist/ into one flat directory, under the names it is published as.
+// dist/ into one flat directory, under the names it is published as, for the
+// dry run's smoke tests.
 //
 // Goreleaser only gives the bare binaries their release names
-// ({os}-{arch}-lsp[.exe]) when it uploads them itself, which this project
-// doesn't have it do, so their names come from dist/artifacts.json. The
+// ({os}-{arch}-lsp[.exe]) when it uploads them itself, which a snapshot
+// doesn't, so their names come from dist/artifacts.json. The
 // archives and checksums.txt are copied beside them, with schema.json, which
 // editors download on its own.
 package main

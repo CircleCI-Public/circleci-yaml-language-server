@@ -3,8 +3,8 @@ version: 2.1
 # Expected environment variables:
 #
 # GITHUB_TOKEN:
-#   Github token with "repo" rights on the project.
-#   Used for release
+#   Github token with "repo" rights on the project, from the devex-release
+#   context. Used by `task ci:release`.
 #
 
 parameters:
@@ -26,7 +26,6 @@ parameters:
 
 orbs:
   snyk: snyk/snyk@2.2.0
-  github-cli: circleci/github-cli@2.2.0
 
 executors:
   default:
@@ -101,40 +100,6 @@ commands:
           path: ./test-reports
 
 jobs:
-  Create version file:
-    executor: default
-    description: |
-      Write the version being released to ~/version, for `task ci:build` and
-      `task ci:smoke-test`.
-    parameters:
-      is-prerelease:
-        type: boolean
-        description: |
-          When set to true will set a prerelease in the version file.
-          Else will set the version from the release-please manifest
-    steps:
-      - setup
-      - when:
-          condition: << parameters.is-prerelease >>
-          steps:
-            - run:
-                name: Write the pre-release version in the version file
-                command: |
-                  go run ~/project/cmd/ci/get_next_release/get_next_release.go > ~/version
-      - when:
-          condition:
-            not: << parameters.is-prerelease >>
-          steps:
-            - run:
-                name: Write the next release version in the version file
-                command: |
-                  version=$(jq -r '.["."]' ~/project/.circleci/release/release-please-manifest.json)
-                  echo "$version" > ~/version
-      - persist_to_workspace:
-          root: ~/
-          paths:
-            - version
-
   check:
     executor: linux
     steps:
@@ -155,23 +120,12 @@ jobs:
             - run: task ci:test
       - store_results
 
-  # Cross-compiles and packages every target with goreleaser, leaving the
-  # release in dist/release. Signs the darwin binaries when the
-  # macos-codesigning context is attached.
+  # The dry run of the release: cross-compiles and packages every target with
+  # goreleaser at 0.0.0-dev, unsigned, leaving the release in dist/release.
   build:
-    parameters:
-      release:
-        type: boolean
-        default: false
-        description: Build the version in the workspace's version file, rather than 0.0.0-dev.
     executor: linux
     steps:
       - setup
-      - when:
-          condition: << parameters.release >>
-          steps:
-            - attach_workspace:
-                at: ~/
       - with-zig-cache:
           steps:
             - run: task ci:build
@@ -182,108 +136,46 @@ jobs:
           paths:
             - project/dist/release
 
+  # Runs the dry run's binaries, or with `published` downloads the release's.
   smoke-test:
     parameters:
       executor:
         type: enum
         enum: [linux, linux-arm, macos, windows]
+      published:
+        type: boolean
+        default: false
     executor: << parameters.executor >>
     steps:
       - checkout
       - install-task
       - attach_workspace:
           at: ~/
-      - run: task ci:smoke-test
+      - when:
+          condition: << parameters.published >>
+          steps:
+            - run: task ci:smoke-test:published
+      - unless:
+          condition: << parameters.published >>
+          steps:
+            - run: task ci:smoke-test
 
-  Github Release:
-    docker:
-      - image: cimg/node:lts
-    steps:
-      - run:
-          name: "Releasing"
-          command: |
-            npx release-please github-release \
-              --draft \
-              --token $GITHUB_TOKEN \
-              --repo-url $CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME \
-              --target-branch $CIRCLE_BRANCH \
-              --config-file .circleci/release/release-please-config.json \
-              --manifest-file .circleci/release/release-please-manifest.json
-
-  Prepare next release PR:
-    docker:
-      - image: cimg/node:lts
-    steps:
-      - run:
-          name: "Creating/updating Release PR"
-          command: |
-            npx release-please release-pr \
-                --token $GITHUB_TOKEN \
-                --repo-url $CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME \
-                --target-branch $CIRCLE_BRANCH \
-                --config-file .circleci/release/release-please-config.json \
-                --manifest-file .circleci/release/release-please-manifest.json
-
-  Pre-Release:
-    executor: default
+  # Publishes this commit's release with goreleaser: the stable release when a
+  # release PR was just merged, and otherwise the next prerelease. Signs and
+  # notarises the darwin binaries.
+  release:
+    executor: linux
     steps:
       - setup
-      - attach_workspace:
-          at: ~/
-      - run:
-          name: Install ghr
-          command: go install github.com/tcnksm/ghr@latest
-      - run:
-          name: Clone the public repo
-          command: |
-            REPO_PATH=$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME
-            git clone https://${GITHUB_TOKEN}@github.com/$REPO_PATH.git /tmp/to-deploy
-      - run:
-          name: Set global user git config
-          command: |
-            git config --global user.name "CircleCI"
-            git config --global user.email "developer_experience@circleci.com"
-      - run:
-          name: Publish the binaries
-          command: |
-            set -ex
-            cd /tmp/to-deploy
-            export TAG=$(cat ~/version)
-            ghr -name v$TAG -prerelease -delete -replace -c `git rev-parse HEAD` $TAG ~/project/dist/release/
-
-  Upload artifacts:
-    docker:
-      - image: cimg/base:stable
-    steps:
-      - github-cli/install:
-          version: "2.37.0"
-      - checkout
-      - attach_workspace:
-          at: ~/
-      - run:
-          name: Extract version from manifest
-          command: |
-            version=$(jq -r '.["."]' ~/project/.circleci/release/release-please-manifest.json)
-            echo "export VERSION=$version" >> "$BASH_ENV"
-      - run:
-          name: Stop job if release is not a draft
-          command: |
-            is_draft=$(gh release view --json isDraft --jq '.isDraft' $VERSION)
-            [ x$is_draft = "xtrue" ] || circleci-agent step halt
-      - run:
-          name: Uploading to GitHub Release
-          command: |
-            GITHUB_REPO_URL=$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME
-            cd ~/project/dist/release
-            for FILE in *; do
-                gh release upload --repo $GITHUB_REPO_URL $VERSION "$FILE"
-            done
-            gh release edit --repo $GITHUB_REPO_URL $VERSION --draft=false
-
+      - with-zig-cache:
+          steps:
+            - run: task ci:release
       - store_artifacts:
-          name: Saving the release
-          path: dist/release
-          destination: .
+          path: dist
+      - persist_to_workspace:
+          root: ~/
+          paths:
+            - project/dist/metadata.json
 
   Security Scan release:
     executor: default
@@ -300,7 +192,7 @@ jobs:
           project: "${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}"
 
 workflows:
-  Build and prerelease:
+  Build and release:
     when: &release-conditions
       or:
         - equal:
@@ -319,76 +211,23 @@ workflows:
           context:
             - devex-release
             - org-global-employees
-      - Create version file:
-          is-prerelease: true
+      - release:
+          # One release at a time, so two merges can't both take a version.
+          serial-group: << pipeline.project.slug >>/release
+          requires:
+            - check
+            - test
+            - Security Scan release
           context:
             - devex-release
-      - build:
-          release: true
-          requires:
-            - Create version file
-          context:
             - macos-codesigning
       - smoke-test:
           matrix:
             parameters:
               executor: [linux, linux-arm, macos, windows]
+          published: true
           requires:
-            - build
-      - Pre-Release:
-          requires:
-            - check
-            - test
-            - Security Scan release
-            - smoke-test
-          context:
-            - devex-release
-
-  Build and release:
-    when: *release-conditions
-    jobs:
-      - check
-      - test:
-          matrix:
-            parameters:
-              os: [linux, macos, windows]
-      - Security Scan release:
-          context:
-            - devex-release
-            - org-global-employees
-      - Create version file:
-          is-prerelease: false
-      - build:
-          release: true
-          requires:
-            - Create version file
-          context:
-            - macos-codesigning
-      - smoke-test:
-          matrix:
-            parameters:
-              executor: [linux, linux-arm, macos, windows]
-          requires:
-            - build
-      - Github Release:
-          requires:
-            - check
-            - test
-            - Security Scan release
-            - smoke-test
-          context:
-            - devex-release
-      - Upload artifacts:
-          requires:
-            - Github Release
-          context:
-            - devex-release
-      - Prepare next release PR:
-          name: Create/update release PR
-          requires:
-            - Upload artifacts
-          context:
-            - devex-release
+            - release
 
   # A dry run of the release: the same build and smoke tests, at 0.0.0-dev,
   # unsigned, and published nowhere.
