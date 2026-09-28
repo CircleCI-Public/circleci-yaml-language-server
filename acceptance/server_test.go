@@ -282,6 +282,37 @@ func TestUnknownContextIsADiagnostic(t *testing.T) {
 	assert.Check(t, cmp.Contains(diagnostics, "Context nope does not exist"))
 }
 
+const resultsThroughCommandConfig = `version: 2.1
+
+commands:
+  store_results:
+    steps:
+      - store_test_results:
+          path: ./test-reports
+
+jobs:
+  test:
+    machine:
+      image: ubuntu-2404:current
+    steps:
+      - run: go test ./...
+      - store_results
+
+workflows:
+  main:
+    jobs:
+      - test
+`
+
+func TestResultsStoredThroughACommand(t *testing.T) {
+	fake := linkedProjectFake(t)
+	session := start(t, fake, resultsThroughCommandConfig, testToken)
+
+	diagnostics := session.open(t, resultsThroughCommandConfig)
+
+	assert.Check(t, cmp.Len(diagnostics, 0))
+}
+
 // runnerClassConfig leaves a machine job's resource class to be completed.
 const runnerClassConfig = `version: 2.1
 
