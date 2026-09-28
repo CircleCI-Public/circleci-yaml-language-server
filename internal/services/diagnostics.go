@@ -76,7 +76,6 @@ func DiagnosticYAML(yamlDocument parser.YamlDocument, cache *cache.Cache, contex
 		yamlDocument: yamlDocument,
 	}
 
-	yamlDocument.ValidateYAML()
 	diag.addDiagnostics(*yamlDocument.Diagnostics)
 
 	validator := parser.JSONSchemaValidator{
@@ -94,9 +93,15 @@ func DiagnosticYAML(yamlDocument parser.YamlDocument, cache *cache.Cache, contex
 		return []protocol.Diagnostic{}, err
 	}
 
-	diag.addDiagnostics(
-		validator.ValidateWithJSONSchema(diag.yamlDocument.RootNode, diag.yamlDocument.Content),
-	)
+	schemaDiagnostics, yamlDiagnostics := validator.ValidateWithJSONSchema(diag.yamlDocument.RootNode, diag.yamlDocument.Content)
+	// go-yaml's error says what's wrong, but stops at the first. tree-sitter's
+	// add only vaguer errors about the same thing.
+	if len(yamlDiagnostics) > 0 {
+		diag.addDiagnostics(yamlDiagnostics)
+	} else {
+		diag.addDiagnostics(yamlDocument.SyntaxErrors())
+	}
+	diag.addDiagnostics(schemaDiagnostics)
 
 	validateStruct := validate.Validate{
 		APIs: validate.ValidateAPIs{

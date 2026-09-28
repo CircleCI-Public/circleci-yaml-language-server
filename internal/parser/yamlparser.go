@@ -153,22 +153,22 @@ func (doc *YamlDocument) ParseYAML(context *session.Settings, offset protocol.Po
 
 var errorsQuery = yamltree.MustCompileQuery("(ERROR) @flows")
 
-func (doc *YamlDocument) ValidateYAML() {
+// SyntaxErrors are where tree-sitter couldn't parse the document.
+func (doc *YamlDocument) SyntaxErrors() []protocol.Diagnostic {
 	rootNode := doc.RootNode
+	diagnostics := []protocol.Diagnostic{}
 
 	errorsQuery.Run(rootNode, func(match *sitter.QueryMatch) {
 		for _, capture := range match.Captures {
-			node := &capture.Node
-			diag := diagnostic.ErrorFromNode(node, "Error! Please fix your yaml file")
-			doc.addDiagnostic(diag)
+			diagnostics = append(diagnostics, diagnostic.ErrorFromNode(&capture.Node, "Error! Please fix your yaml file"))
 		}
 	})
 
 	// rootNode should be of type "stream"
 	if document := GetChildOfType(rootNode, "document"); document == nil {
-		diag := diagnostic.ErrorFromNode(rootNode, "Invalid yaml file")
-		doc.addDiagnostic(diag)
+		diagnostics = append(diagnostics, diagnostic.ErrorFromNode(rootNode, "Invalid yaml file"))
 	}
+	return diagnostics
 }
 
 func ParseFromURI(URI uri.URI, context *session.Settings) (YamlDocument, error) {
