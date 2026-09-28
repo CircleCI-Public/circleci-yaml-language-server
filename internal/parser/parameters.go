@@ -394,7 +394,13 @@ func (doc *YamlDocument) parseParameterValue(child *sitter.Node) (ast2.Parameter
 		}, nil
 	}
 
-	return ast2.ParameterValue{Name: paramName}, nil // not supported atm by the parser
+	// A value the parser doesn't read yet, such as a flow mapping, still has
+	// a range to report a diagnostic at.
+	return ast2.ParameterValue{
+		Name:       paramName,
+		ValueRange: doc.NodeToRange(flowNodeChild),
+		Range:      rng,
+	}, nil
 }
 
 func (doc *YamlDocument) parseArrayParameterValue(paramName string, arrayParamNode *sitter.Node, rng protocol.Range, forceSteps bool) (ast2.ParameterValue, error) {

@@ -68,6 +68,33 @@ func TestJobParameterType(t *testing.T) {
 				}, "Parameter skip for build must be a boolean"),
 			},
 		},
+		{
+			Name: "A flow mapping given for a string parameter is reported where it's given",
+			YamlContent: `version: 2.1
+
+jobs:
+  build:
+    parameters:
+      target:
+        type: string
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo << parameters.target >>
+
+workflows:
+  main:
+    jobs:
+      - build:
+          target: { a: 1 }
+`,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(protocol.Range{
+					Start: protocol.Position{Line: 16, Character: 10},
+					End:   protocol.Position{Line: 16, Character: 26},
+				}, "Parameter target for build must be a string"),
+			},
+		},
 	}
 
 	CheckYamlErrors(t, testCases)
