@@ -18,6 +18,7 @@ func (val Validate) ValidateJobs() {
 	for _, job := range val.Doc.Jobs {
 		val.validateSingleJob(job)
 	}
+	val.validateJobAliases()
 }
 
 func (val Validate) validateSingleJob(job ast2.Job) {
@@ -221,22 +222,48 @@ func (val Validate) validateExecutorOverrides(job ast2.Job, executor ast2.Execut
 }
 
 func (val Validate) checkAndReportUnusedJob(job ast2.Job) {
-	if job.Name == "build" && val.Doc.HasNoWorkflows() {
-		return
+	used, unusedGroups := val.jobUse(job.Name)
+	switch {
+	case used:
+	case len(unusedGroups) > 0:
+		sort.Strings(unusedGroups)
+		val.addDiagnostic(diagnostic.Warning(
+			job.NameRange,
+			fmt.Sprintf("Job \"%s\" is used in job group \"%s\", but that group is never invoked in a workflow", job.Name, unusedGroups[0]),
+		))
+	default:
+		val.addDiagnostic(diagnostic.Warning(job.NameRange, "Job is unused"))
+	}
+}
+
+// jobUse reports whether a job is used, and if it isn't, the job groups that
+// invoke it but that no workflow invokes.
+func (val Validate) jobUse(name string) (bool, []string) {
+	if name == "build" && val.Doc.HasNoWorkflows() {
+		return true, nil
+	}
+
+	// An orb's job is used by an alias of it that is used.
+	for _, alias := range val.Doc.Aliases.Jobs {
+		if alias.Target == name && alias.Name != name {
+			if used, _ := val.jobUse(alias.Name); used {
+				return true, nil
+			}
+		}
 	}
 
 	// Used directly in another job's steps
 	for _, definedJob := range val.Doc.Jobs {
-		if val.checkIfStepsContainStep(definedJob.Steps, job.Name) {
-			return
+		if val.checkIfStepsContainStep(definedJob.Steps, name) {
+			return true, nil
 		}
 	}
 
 	// Used directly in a workflow
 	for _, workflow := range val.Doc.Workflows {
 		for _, jobInvocation := range workflow.JobInvocations {
-			if jobInvocation.JobName == job.Name {
-				return
+			if jobInvocation.JobName == name {
+				return true, nil
 			}
 		}
 	}
@@ -248,27 +275,17 @@ func (val Validate) checkAndReportUnusedJob(job ast2.Job) {
 			// We compare against JobName (the original definition name), not StepName,
 			// because StepName is just a user-chosen alias for the invocation - the
 			// underlying job being referenced is always identified by JobName.
-			if jobInvocation.JobName == job.Name {
+			if jobInvocation.JobName == name {
 				if val.isJobGroupUsedInWorkflows(groupName) {
 					// At least one group containing this job is used — job counts as used
-					return
+					return true, nil
 				}
 				unusedGroups = append(unusedGroups, groupName)
 			}
 		}
 	}
 
-	if len(unusedGroups) > 0 {
-		sort.Strings(unusedGroups)
-		val.addDiagnostic(diagnostic.Warning(
-			job.NameRange,
-			fmt.Sprintf("Job \"%s\" is used in job group \"%s\", but that group is never invoked in a workflow", job.Name, unusedGroups[0]),
-		))
-		return
-	}
-
-	// Not referenced anywhere
-	val.addDiagnostic(diagnostic.Warning(job.NameRange, "Job is unused"))
+	return false, unusedGroups
 }
 
 // isJobGroupUsedInWorkflows returns true if any workflow references the given

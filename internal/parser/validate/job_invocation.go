@@ -340,20 +340,39 @@ func (val Validate) validateSingleJobInvocation(jobInvocation ast2.JobInvocation
 		return
 	}
 
-	if !val.Doc.DoesJobExist(jobInvocation.JobName) && !val.Doc.IsOrbJob(jobInvocation.JobName, val.Cache) {
-		message := fmt.Sprintf("Cannot find declaration for job \"%s\"", jobInvocation.JobName)
-		if val.Doc.DoesCommandExist(jobInvocation.JobName) || val.Doc.IsOrbCommand(jobInvocation.JobName, val.Cache) {
-			message = fmt.Sprintf("%s is a command, not a job: a workflow runs jobs", jobInvocation.JobName)
-		}
+	if message := val.unknownJobMessage(jobInvocation.JobName); message != "" {
 		val.addDiagnostic(diagnostic.Error(jobInvocation.JobInvocationRange, message))
 		return
 	}
 
-	if !val.Doc.IsBuiltIn(jobInvocation.JobName) {
+	// An alias that names nothing is reported where it is declared.
+	alias, isAlias := val.Doc.JobAlias(jobInvocation.JobName)
+	if !val.Doc.IsBuiltIn(jobInvocation.JobName) && (!isAlias || val.jobAliasProblem(alias) == "") {
 		val.validateJobInvocationParameters(jobInvocation)
 	}
 
 	val.validateInvocationContexts(jobInvocation)
+}
+
+func (val Validate) isKnownJob(name string) bool {
+	_, isJobAlias := val.Doc.JobAlias(name)
+	return val.Doc.DoesJobExist(name) || isJobAlias || val.Doc.IsOrbJob(name, val.Cache)
+}
+
+func (val Validate) isCommand(name string) bool {
+	_, isCommandAlias := val.Doc.CommandAlias(name)
+	return val.Doc.DoesCommandExist(name) || isCommandAlias || val.Doc.IsOrbCommand(name, val.Cache)
+}
+
+func (val Validate) unknownJobMessage(name string) string {
+	switch {
+	case val.isKnownJob(name):
+		return ""
+	case val.isCommand(name):
+		return fmt.Sprintf("%s is a command, not a job: a workflow runs jobs", name)
+	default:
+		return fmt.Sprintf("Cannot find declaration for job \"%s\"", name)
+	}
 }
 
 // matrixKeyRange is the range of an invocation's `matrix` key.

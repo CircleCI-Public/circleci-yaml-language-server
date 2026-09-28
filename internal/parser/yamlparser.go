@@ -448,6 +448,12 @@ func (doc *YamlDocument) CommandAlias(name string) (ast2.Alias, bool) {
 	return lookupAlias(doc.Commands, doc.Aliases.Commands, name)
 }
 
+// JobAlias returns the alias a name stands for, when no job of that name is
+// defined.
+func (doc *YamlDocument) JobAlias(name string) (ast2.Alias, bool) {
+	return lookupAlias(doc.Jobs, doc.Aliases.Jobs, name)
+}
+
 func lookupAlias[T any](defined map[string]T, aliases map[string]ast2.Alias, name string) (ast2.Alias, bool) {
 	if _, ok := defined[name]; ok {
 		return ast2.Alias{}, false
@@ -711,6 +717,8 @@ const (
 // reported where its existence is checked. An alias refers to its target.
 func (doc *YamlDocument) GetDefinedParams(entityName string, kind EntityKind, cache *cache.Cache) map[string]ast2.Parameter {
 	if alias, ok := doc.CommandAlias(entityName); ok && kind == CommandEntity {
+		entityName = alias.Target
+	} else if alias, ok := doc.JobAlias(entityName); ok && kind == JobEntity {
 		entityName = alias.Target
 	}
 	attributes := doc.ToOrbParsedAttributes()

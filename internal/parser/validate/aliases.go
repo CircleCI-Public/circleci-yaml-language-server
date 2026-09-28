@@ -111,3 +111,39 @@ func malformedAliasWarning(alias ast.Alias) string {
 	return fmt.Sprintf("`%s` is not a valid orb element alias, so this entry is ignored unless it is invoked. "+
 		"An alias must be a single `orb-alias/element-name` reference.", alias.Target)
 }
+
+// validateJobAliases reports a job alias that names nothing. Its target must
+// be an orb's job, `orb-alias/job-name`.
+func (val Validate) validateJobAliases() {
+	for _, alias := range val.Doc.Aliases.Jobs {
+		if _, ok := val.Doc.Jobs[alias.Name]; ok {
+			continue
+		}
+
+		if !val.IsLocalOrb {
+			val.checkAndReportUnusedJob(ast.Job{Name: alias.Name, NameRange: alias.NameRange})
+		}
+
+		used, _ := val.jobUse(alias.Name)
+		if _, _, ok := alias.OrbTarget(); !ok && !used {
+			val.addDiagnostic(diagnostic.Warning(alias.TargetRange, malformedAliasWarning(alias)))
+			continue
+		}
+		val.reportAliasProblem(alias, val.jobAliasProblem(alias), used)
+	}
+}
+
+func (val Validate) jobAliasProblem(alias ast.Alias) string {
+	orbName, _, ok := alias.OrbTarget()
+	if !ok {
+		return malformedAliasMessage
+	}
+	if _, ok := val.Doc.Orbs[orbName]; !ok {
+		return fmt.Sprintf("Unable to determine target for job invocation %s (renamed from local job %s)",
+			alias.Target, alias.Name)
+	}
+	if val.Doc.IsFromUnfetchableOrb(alias.Target, val.Cache) {
+		return ""
+	}
+	return val.unknownJobMessage(alias.Target)
+}
