@@ -52,7 +52,14 @@ executors:
   macos-ios-executor:
     macos:
       xcode: 26.5.0
-    resource_class: large`,
+    resource_class: large
+
+jobs:
+  build:
+    executor: macos-ios-executor
+    steps:
+      - checkout
+`,
 			Diagnostics: []protocol.Diagnostic{
 				diagnostic.Error(protocol.Range{
 					Start: protocol.Position{Line: 6, Character: 4},
@@ -72,7 +79,14 @@ executors:
         default: 26.5.0
     macos:
       xcode: << parameters.xcode >>
-    resource_class: m4pro.medium`,
+    resource_class: m4pro.medium
+
+jobs:
+  build:
+    executor: macos-ios-executor
+    steps:
+      - checkout
+`,
 			Diagnostics: []protocol.Diagnostic{},
 		},
 		{
@@ -87,7 +101,24 @@ executors:
   second:
     macos:
       xcode: *xcode
-    resource_class: m4pro.large`,
+    resource_class: m4pro.large
+
+jobs:
+  first:
+    executor: first
+    steps:
+      - checkout
+  second:
+    executor: second
+    steps:
+      - checkout
+
+workflows:
+  workflow:
+    jobs:
+      - first
+      - second
+`,
 			Diagnostics: []protocol.Diagnostic{},
 		},
 		{
@@ -146,6 +177,11 @@ func yamlForMachine(resourceClass, image string) string {
 			fmt.Fprintf(&builder, "      image: %#v\n", image)
 		}
 	}
+	fmt.Fprint(&builder, "jobs:\n")
+	fmt.Fprint(&builder, "  build:\n")
+	fmt.Fprint(&builder, "    executor: toto\n")
+	fmt.Fprint(&builder, "    steps:\n")
+	fmt.Fprint(&builder, "      - checkout\n")
 	return builder.String()
 }
 
@@ -391,9 +427,15 @@ func TestMachineExecutor(t *testing.T) {
 		{
 			name: "machine:true",
 			yamlContent: `version: 2.1
-		executors:
-		  toto:
-		    machine: true`,
+executors:
+  toto:
+    machine: true
+jobs:
+  build:
+    executor: toto
+    steps:
+      - checkout
+`,
 		},
 		{
 			name:        "rc:undefined img:undefined",

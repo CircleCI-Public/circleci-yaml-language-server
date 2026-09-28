@@ -41,7 +41,14 @@ orbs:
     executors:
       localexecutor:
         docker:
-          - image: circleci/node`,
+          - image: circleci/node
+
+jobs:
+  build:
+    executor: localorb/localexecutor
+    steps:
+      - checkout
+`,
 			Diagnostics: []protocol.Diagnostic{},
 		},
 		{
@@ -53,12 +60,15 @@ orbs:
     executors:
       localmacexecutor:
         macos:
-          xcode: 12.5`,
+          xcode: 12.5
+
+jobs:
+  build:
+    executor: localorb/localmacexecutor
+    steps:
+      - checkout
+`,
 			Diagnostics: []protocol.Diagnostic{
-				diagnostic.Warning(protocol.Range{
-					Start: protocol.Position{Line: 3, Character: 2},
-					End:   protocol.Position{Line: 7, Character: 21},
-				}, "Orb is unused"),
 				diagnostic.Warning(protocol.Range{
 					Start: protocol.Position{Line: 7, Character: 10},
 					End:   protocol.Position{Line: 7, Character: 21},
@@ -78,7 +88,15 @@ orbs:
       localcommand:
         steps:
           - run: echo "Hello world"
-          - localorb/echo`,
+          - localorb/echo
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - localorb/localcommand
+`,
 			Diagnostics: []protocol.Diagnostic{
 				diagnostic.Error(protocol.Range{
 					Start: protocol.Position{Line: 9, Character: 12},
@@ -99,7 +117,13 @@ orbs:
         docker:
           - image: cimg/base:edge
         steps:
-          - run: echo "Hello world"`,
+          - run: echo "Hello world"
+
+workflows:
+  workflow:
+    jobs:
+      - localorb/localjob
+`,
 			Diagnostics: []protocol.Diagnostic{},
 		},
 		{
@@ -111,7 +135,7 @@ orbs:
   slack: circleci/toto@1.0.0
 
 jobs:
-  localjob:
+  build:
     executor: slack/exec
     steps:
       - run: echo "Hello world"`,
@@ -127,11 +151,6 @@ jobs:
 					End:   protocol.Position{Line: 7, Character: 24},
 				},
 					"Invalid orb or error trying to fetch it: could not find orb circleci/toto@1.0.0"),
-				diagnostic.Warning(protocol.Range{
-					Start: protocol.Position{Line: 6, Character: 2},
-					End:   protocol.Position{Line: 6, Character: 10},
-				},
-					"Job is unused"),
 			},
 		},
 		{

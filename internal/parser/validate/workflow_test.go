@@ -512,3 +512,73 @@ workflows:
 		},
 	})
 }
+
+func TestImplicitWorkflow(t *testing.T) {
+	const message = "There are no workflows or build jobs in the config."
+	testCases := []ValidateTestCase{
+		{
+			Name: "runs the job named build",
+			YamlContent: `version: 2.1
+jobs:
+  build:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+`,
+			OnlyErrors: true,
+		},
+		{
+			Name: "has no job named build to run",
+			YamlContent: `version: 2.1
+jobs:
+  test:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(span(1, 0, 4), message),
+			},
+		},
+		{
+			Name: "has an empty workflows section and no job named build",
+			YamlContent: `version: 2.1
+jobs:
+  test:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+workflows:
+`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(span(7, 0, 9), message),
+			},
+		},
+		{
+			Name:        "has no jobs",
+			YamlContent: "version: 2.1\n",
+			OnlyErrors:  true,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(span(0, 0, 7), message),
+			},
+		},
+		{
+			Name: "isn't needed by an orb",
+			YamlContent: `version: 2.1
+description: An orb
+commands:
+  greet:
+    steps:
+      - run: echo hello
+`,
+			OnlyErrors: true,
+		},
+	}
+
+	CheckYamlErrors(t, testCases)
+}
