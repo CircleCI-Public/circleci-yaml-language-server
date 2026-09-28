@@ -1,6 +1,7 @@
 package diagnostic
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/codeaction"
@@ -49,8 +50,9 @@ func Warning(rng protocol.Range, msg string) protocol.Diagnostic {
 	)
 }
 
-func EmptyAssignationWarning(rng protocol.Range) protocol.Diagnostic {
-	return Warning(rng, "Empty assignation")
+// EmptySectionWarning is for a section, such as `orbs:`, given no entries.
+func EmptySectionWarning(rng protocol.Range, key string) protocol.Diagnostic {
+	return Warning(rng, fmt.Sprintf("`%s` is empty", key))
 }
 
 func Deprecated(rng protocol.Range, msg string) protocol.Diagnostic {
