@@ -14,14 +14,13 @@ type namedEntity struct {
 	kind      string
 }
 
-// Adds diagnostics for duplicate names of workflows, jobs,
-// commands, and job-groups in the config.
+// Adds diagnostics for a job, command or job-group named like one of
+// another kind, as a step or workflow job can refer to more than one of
+// them. Nothing refers to a workflow by name, so a workflow named like its
+// job, as `setup` often is, is left alone.
 func (val Validate) CheckNames() {
 	var entities []namedEntity
 
-	for _, w := range val.Doc.Workflows {
-		entities = append(entities, namedEntity{w.Name, w.NameRange, "workflow"})
-	}
 	for _, j := range val.Doc.Jobs {
 		entities = append(entities, namedEntity{j.Name, j.NameRange, "job"})
 	}
