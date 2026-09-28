@@ -25,6 +25,7 @@ func resolveCommandsSymbols(document *parser.YamlDocument) []protocol.DocumentSy
 	for _, command := range document.Commands {
 		children = append(children, singleCommandSymbols(command))
 	}
+	children = append(children, aliasSymbols(document.Aliases.Commands, CommandSymbol)...)
 
 	commandsSymbols.Children = children
 

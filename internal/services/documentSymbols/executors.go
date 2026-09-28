@@ -25,6 +25,7 @@ func resolveExecutorsSymbols(document *parser.YamlDocument) []protocol.DocumentS
 	for _, executor := range document.Executors {
 		children = append(children, singleExecutorSymbols(executor))
 	}
+	children = append(children, aliasSymbols(document.Aliases.Executors, ExecutorSymbol)...)
 
 	executorsSymbol.Children = children
 
