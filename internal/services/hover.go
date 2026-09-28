@@ -21,6 +21,7 @@ var referenceHovers = []func(parser.YamlDocument, *cache.Cache, protocol.Positio
 	hover.FunctionStep,
 	hover.FunctionDeclaration,
 	hover.OrbDeclaration,
+	hover.ParameterReference,
 	hover.PipelineValue,
 }
 
