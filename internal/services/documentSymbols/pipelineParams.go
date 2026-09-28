@@ -24,7 +24,7 @@ func resolvePipelineParametersSymbols(document *parser.YamlDocument) []protocol.
 	return []protocol.DocumentSymbol{
 		{
 			Name:           "Pipeline Parameters",
-			Kind:           1,
+			Kind:           SectionSymbol,
 			Range:          document.PipelineParametersRange,
 			SelectionRange: document.PipelineParametersRange,
 			Children:       children,
@@ -49,6 +49,6 @@ func parameterDefinitionSymbols(parameter ast.Parameter) protocol.DocumentSymbol
 		Range:          parameter.GetRange(),
 		SelectionRange: parameter.GetRange(),
 		Detail:         unlessZero(detail),
-		Kind:           protocol.SymbolKind(PropertySymbol),
+		Kind:           PropertySymbol,
 	}
 }

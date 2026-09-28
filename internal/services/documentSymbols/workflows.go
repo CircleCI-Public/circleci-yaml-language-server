@@ -18,7 +18,7 @@ func resolveWorkflowsSymbols(document *parser.YamlDocument) []protocol.DocumentS
 	workflowsSymbols := symbolFromRange(
 		document.WorkflowRange,
 		"Workflows",
-		ListSymbol,
+		SectionSymbol,
 	)
 
 	children := []protocol.DocumentSymbol{}
@@ -33,7 +33,7 @@ func resolveWorkflowsSymbols(document *parser.YamlDocument) []protocol.DocumentS
 }
 
 func singleWorkflowSymbols(workflow ast.Workflow) protocol.DocumentSymbol {
-	symbol := symbolFromRange(workflow.Range, workflow.Name, WorkflowsSymbol)
+	symbol := symbolFromRange(workflow.Range, workflow.Name, WorkflowSymbol)
 
 	if len(workflow.JobInvocations) > 0 {
 		symbol.Children = append(symbol.Children, protocol.DocumentSymbol{
@@ -41,7 +41,7 @@ func singleWorkflowSymbols(workflow ast.Workflow) protocol.DocumentSymbol {
 			Range:          workflow.JobsRange,
 			SelectionRange: workflow.JobsRange,
 			Children:       workflowJobsSymbols(workflow),
-			Kind:           protocol.SymbolKind(ListSymbol),
+			Kind:           ListSymbol,
 		})
 	}
 
@@ -50,7 +50,7 @@ func singleWorkflowSymbols(workflow ast.Workflow) protocol.DocumentSymbol {
 			Name:           "Triggers",
 			Range:          workflow.TriggersRange,
 			SelectionRange: workflow.TriggersRange,
-			Kind:           protocol.SymbolKind(TriggerSymbol),
+			Kind:           TriggerSymbol,
 			Children:       workflowTriggersSymbols(workflow.Triggers),
 		})
 	}
@@ -69,7 +69,7 @@ func workflowJobsSymbols(workflow ast.Workflow) []protocol.DocumentSymbol {
 				Name:           "Pre-Steps",
 				Range:          j.PreStepsRange,
 				SelectionRange: j.PreStepsRange,
-				Kind:           protocol.SymbolKind(ListSymbol),
+				Kind:           ListSymbol,
 				Children:       stepsSymbols(j.PreSteps),
 			})
 		}
@@ -79,7 +79,7 @@ func workflowJobsSymbols(workflow ast.Workflow) []protocol.DocumentSymbol {
 				Name:           "Post-Steps",
 				Range:          j.PostStepsRange,
 				SelectionRange: j.PostStepsRange,
-				Kind:           protocol.SymbolKind(ListSymbol),
+				Kind:           ListSymbol,
 				Children:       stepsSymbols(j.PostSteps),
 			})
 		}
@@ -88,6 +88,7 @@ func workflowJobsSymbols(workflow ast.Workflow) []protocol.DocumentSymbol {
 			jobs,
 			protocol.DocumentSymbol{
 				Name:           j.StepName,
+				Kind:           InvocationSymbol,
 				Range:          j.JobInvocationRange,
 				SelectionRange: j.JobInvocationRange,
 				Children:       children,
@@ -121,6 +122,7 @@ func workflowTriggersSymbols(triggers []ast.WorkflowTrigger) []protocol.Document
 
 		symbols = append(symbols, protocol.DocumentSymbol{
 			Name:           name,
+			Kind:           TriggerSymbol,
 			Detail:         unlessZero(detail),
 			Children:       children,
 			Range:          trigger.Range,
@@ -143,7 +145,7 @@ func filterSymbols(filter ast.WorkflowFilters) protocol.DocumentSymbol {
 		Range:          filter.Range,
 		SelectionRange: filter.Range,
 		Children:       children,
-		Kind:           protocol.SymbolKind(FilterSymbol),
+		Kind:           FilterSymbol,
 	}
 }
 
@@ -154,7 +156,7 @@ func branchesFiltersSymbols(branchesFilters ast.BranchesFilter) protocol.Documen
 		children = append(children, protocol.DocumentSymbol{
 			Name:           "Ignore",
 			Detail:         unlessZero(fmt.Sprintf("%d total", len(branchesFilters.Ignore))),
-			Kind:           protocol.SymbolKind(BranchSymbol),
+			Kind:           ListSymbol,
 			Range:          branchesFilters.IgnoreRange,
 			SelectionRange: branchesFilters.IgnoreRange,
 		})
@@ -164,7 +166,7 @@ func branchesFiltersSymbols(branchesFilters ast.BranchesFilter) protocol.Documen
 		children = append(children, protocol.DocumentSymbol{
 			Name:           "Only",
 			Detail:         unlessZero(fmt.Sprintf("%d total", len(branchesFilters.Only))),
-			Kind:           protocol.SymbolKind(BranchSymbol),
+			Kind:           ListSymbol,
 			Range:          branchesFilters.OnlyRange,
 			SelectionRange: branchesFilters.OnlyRange,
 		})
@@ -175,6 +177,6 @@ func branchesFiltersSymbols(branchesFilters ast.BranchesFilter) protocol.Documen
 		Range:          branchesFilters.Range,
 		SelectionRange: branchesFilters.Range,
 		Children:       children,
-		Kind:           protocol.SymbolKind(BranchSymbol),
+		Kind:           FilterSymbol,
 	}
 }

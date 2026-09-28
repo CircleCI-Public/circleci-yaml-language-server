@@ -9,6 +9,7 @@ import (
 func macosExecutorSymbols(macos ast.MacOSExecutor) protocol.DocumentSymbol {
 	return protocol.DocumentSymbol{
 		Name:           "xcode",
+		Kind:           PropertySymbol,
 		Range:          macos.GetRange(),
 		SelectionRange: macos.GetRange(),
 		Detail:         unlessZero(macos.Xcode),

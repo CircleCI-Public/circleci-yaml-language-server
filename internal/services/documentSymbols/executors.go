@@ -16,7 +16,7 @@ func resolveExecutorsSymbols(document *parser.YamlDocument) []protocol.DocumentS
 	executorsSymbol := symbolFromRange(
 		document.ExecutorsRange,
 		"Executors",
-		ListSymbol,
+		SectionSymbol,
 	)
 
 	children := []protocol.DocumentSymbol{}
@@ -62,7 +62,7 @@ func singleExecutorSymbols(executor ast2.Executor) protocol.DocumentSymbol {
 		Range:          executor.GetRange(),
 		SelectionRange: executor.GetRange(),
 		Detail:         unlessZero(execType),
-		Kind:           protocol.SymbolKind(ExecutorsSymbol),
+		Kind:           ExecutorSymbol,
 		Children:       childrens,
 	}
 
@@ -75,6 +75,7 @@ func envsSymbols(env ast2.Environment) protocol.DocumentSymbol {
 	for _, key := range env.Keys {
 		children = append(children, protocol.DocumentSymbol{
 			Name:           key,
+			Kind:           VariableSymbol,
 			Range:          env.Range,
 			SelectionRange: env.Range,
 		})
@@ -82,6 +83,7 @@ func envsSymbols(env ast2.Environment) protocol.DocumentSymbol {
 
 	return protocol.DocumentSymbol{
 		Name:           "Environments",
+		Kind:           ListSymbol,
 		Range:          env.Range,
 		SelectionRange: env.Range,
 		Children:       children,

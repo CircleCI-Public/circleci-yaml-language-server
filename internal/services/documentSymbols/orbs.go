@@ -15,7 +15,7 @@ func resolveOrbSymbols(document *parser.YamlDocument) []protocol.DocumentSymbol 
 	symbol := symbolFromRange(
 		document.OrbsRange,
 		"Orbs",
-		ListSymbol,
+		SectionSymbol,
 	)
 
 	children := []protocol.DocumentSymbol{}
@@ -25,7 +25,7 @@ func resolveOrbSymbols(document *parser.YamlDocument) []protocol.DocumentSymbol 
 			children,
 			protocol.DocumentSymbol{
 				Name:           orb.Name,
-				Kind:           protocol.SymbolKind(OrbSymbol),
+				Kind:           OrbSymbol,
 				Range:          orb.Range,
 				SelectionRange: orb.Range,
 				Detail:         unlessZero(orb.Url.Version),
@@ -38,10 +38,10 @@ func resolveOrbSymbols(document *parser.YamlDocument) []protocol.DocumentSymbol 
 	return []protocol.DocumentSymbol{symbol}
 }
 
-func symbolFromRange(rng protocol.Range, label string, symbol float64) protocol.DocumentSymbol {
+func symbolFromRange(rng protocol.Range, label string, kind protocol.SymbolKind) protocol.DocumentSymbol {
 	return protocol.DocumentSymbol{
 		Name:           label,
-		Kind:           protocol.SymbolKind(symbol),
+		Kind:           kind,
 		Range:          rng,
 		SelectionRange: rng,
 	}
