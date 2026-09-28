@@ -96,3 +96,38 @@ workflows:
 		},
 	})
 }
+
+func TestExpressionValues(t *testing.T) {
+	CheckYamlErrors(t, []ValidateTestCase{
+		{
+			Name: "A value that's all one expression takes the expression's type",
+			YamlContent: `version: 2.1
+
+commands:
+  retry:
+    parameters:
+      attempts:
+        type: integer
+        default: 1
+    steps:
+      - run: echo << parameters.attempts >>
+
+jobs:
+  build:
+    parallelism: << pipeline.git.branch == "main" and 10 or 1 >>
+    docker:
+      - image: cimg/base:current
+    steps:
+      - retry:
+          attempts: << pipeline.git.branch == "main" and 3 or 1 >>
+
+workflows:
+  main:
+    jobs:
+      - build
+`,
+			OnlyErrors:  true,
+			Diagnostics: []protocol.Diagnostic{},
+		},
+	})
+}

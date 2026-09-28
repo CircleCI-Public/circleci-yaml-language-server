@@ -153,8 +153,9 @@ func checkParamType(paramType string, val Validate, param ast2.ParameterValue, s
 		return
 	}
 
-	// A reference written into a longer string is still a string.
-	if paramType == "string" && isString && paramref.ContainsReference(value) {
+	// A reference written into a longer string is still a string, and an
+	// expression's type is only known once the config is compiled.
+	if isString && (paramType == "string" && paramref.ContainsReference(value) || paramref.IsOnlyReference(value)) {
 		return
 	}
 

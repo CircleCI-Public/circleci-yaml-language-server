@@ -10,6 +10,7 @@ import (
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/template"
 )
 
 var paramRegex = regexp.MustCompile(`<<\s*(parameters|pipeline.parameters)\.([A-Za-z0-9-_]*)\s*>>`)
@@ -135,13 +136,11 @@ func IsOnlyParameter(content string) bool {
 	return onlyParamRegex.MatchString(content)
 }
 
-var onlyReferenceRegex = regexp.MustCompile(`^<<\s*[A-Za-z][A-Za-z0-9_.-]*\s*>>$`)
-
 // IsOnlyReference reports whether content is nothing but a single `<< ... >>`
-// reference of any kind: a parameter, a pipeline value or a matrix value.
-// What such a value will be is only known once the config is compiled.
+// tag: a parameter, a pipeline value, a matrix value or an expression over
+// them. What such a value will be is only known once the config is compiled.
 func IsOnlyReference(content string) bool {
-	return onlyReferenceRegex.MatchString(unquote(content))
+	return template.IsOnlyTag(unquote(content))
 }
 
 var onlyPipelineValueRegex = regexp.MustCompile(`^<<\s*(pipeline\.[A-Za-z0-9_.-]+)\s*>>$`)
