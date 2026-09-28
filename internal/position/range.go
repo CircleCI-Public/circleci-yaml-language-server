@@ -1,6 +1,7 @@
 package position
 
 import (
+	"cmp"
 	"strings"
 
 	"go.lsp.dev/protocol"
@@ -93,7 +94,7 @@ func AreRangeEqual(a protocol.Range, b protocol.Range) bool {
 		return false
 	}
 
-	return Equal(b.End, b.End)
+	return Equal(a.End, b.End)
 }
 
 func IsDefaultRange(rng protocol.Range) bool {
@@ -103,34 +104,11 @@ func IsDefaultRange(rng protocol.Range) bool {
 	return (rng.Start.Character + rng.Start.Line + rng.End.Character + rng.End.Line) == 0
 }
 
-// Compare two positions.
-// Return 0 if the two position are the same
-// Return 1 if a is before b
-// Return -1 if a is after b
+// Compare returns -1 if a is before b, 0 if they're the same position, and
+// 1 if a is after b.
 func Compare(a protocol.Position, b protocol.Position) int {
-	if a.Line == b.Line {
-		diff := b.Character - a.Character
-
-		if diff == 0 {
-			return 0
-		}
-
-		if diff > 0 {
-			return 1
-		}
-
-		return -1
-	}
-
-	diff := b.Line - a.Line
-
-	if diff == 0 {
-		return 0
-	}
-
-	if diff > 0 {
-		return 1
-	}
-
-	return -1
+	return cmp.Or(
+		cmp.Compare(a.Line, b.Line),
+		cmp.Compare(a.Character, b.Character),
+	)
 }
