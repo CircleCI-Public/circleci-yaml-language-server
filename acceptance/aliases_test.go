@@ -3,6 +3,7 @@ package acceptance
 import (
 	"testing"
 
+	"go.lsp.dev/protocol"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
 )
@@ -146,6 +147,30 @@ jobs:
   build: orb/build
 `
 
+// registryAliasesConfig renames a published orb's command and job.
+const registryAliasesConfig = `version: 2.1
+
+orbs:
+  tools: acme/tools@1.0.0
+
+commands:
+  install: tools/install
+
+jobs:
+  test: tools/test
+  build:
+    machine:
+      image: ubuntu-2404:current
+    steps:
+      - install
+
+workflows:
+  main:
+    jobs:
+      - build
+      - test
+`
+
 func TestOrbElementAliases(t *testing.T) {
 	fake := linkedProjectFake(t)
 
@@ -168,6 +193,29 @@ func TestOrbElementAliases(t *testing.T) {
 		diagnostics := session.open(t, jobAliasesConfig)
 
 		assert.Check(t, cmp.DeepEqual(diagnostics, []string{}))
+	})
+
+	t.Run("a published orb's command and job", func(t *testing.T) {
+		fake.AddNamespace("ns-acme", "acme")
+		fake.AddOrbPackage("orb-tools", "ns-acme", "acme", "tools", false, true)
+		fake.AddOrbVersion("ver-tools", "orb-tools", "acme/tools", "1.0.0", toolsOrbSource, "")
+
+		session := start(t, fake, registryAliasesConfig, testToken)
+		diagnostics := session.open(t, registryAliasesConfig)
+
+		t.Run("have nothing wrong with them", func(t *testing.T) {
+			assert.Check(t, cmp.DeepEqual(diagnostics, []string{}))
+		})
+
+		t.Run("a step shows the command its alias names", func(t *testing.T) {
+			hover, err := session.client.Hover(session.workspace.URI(), position(14, 10))
+			assert.NilError(t, err)
+			assert.Assert(t, hover != nil, "no hover")
+			markup, ok := hover.Contents.(*protocol.MarkupContent)
+			assert.Assert(t, ok, "hover contents are %T, not markup", hover.Contents)
+			assert.Check(t, cmp.Equal(markup.Value,
+				"**install** command\n\nInstall the tools.\n\nParameters:\n\n- `version` (string, default `latest`)"))
+		})
 	})
 
 	t.Run("a job run by the implicit workflow", func(t *testing.T) {

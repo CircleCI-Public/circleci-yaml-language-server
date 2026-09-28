@@ -50,6 +50,9 @@ func (ch *CompletionHandler) userDefinedCommands() {
 	for _, cmd := range ch.Doc.Commands {
 		ch.addCompletionItem(cmd.Name)
 	}
+	for _, alias := range ch.Doc.Aliases.Commands {
+		ch.addCompletionItem(alias.Name)
+	}
 }
 
 func (ch *CompletionHandler) orbCommands(nodeToComplete *sitter.Node) []protocol.CompletionItem {

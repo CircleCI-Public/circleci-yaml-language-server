@@ -10,28 +10,17 @@ import (
 )
 
 // Executor is the hover for the executor a job names, whether the config's
-// own, an inline orb's or an orb's: the executor's description and
-// parameters.
+// own, an inline orb's or an orb's, directly or through an alias: the
+// executor's description and parameters.
 func Executor(doc yamlparser.YamlDocument, c *cache.Cache, pos protocol.Position) (string, bool) {
 	if name, ok := executorNamedAt(pos, doc.Jobs); ok {
-		if executor, ok := doc.Executors[name]; ok {
-			return describeExecutor(name, executor), true
-		}
-		if orb, executorName, ok := orbOf(doc, c, name); ok {
-			if executor, ok := orb.Executors[executorName]; ok {
-				return describeExecutor(name, executor), true
-			}
-		}
-		return "", false
+		return describeExecutor(doc, c, name)
 	}
 
 	// An inline orb's jobs name its executors without the orb's prefix.
 	for _, orb := range doc.LocalOrbInfo {
 		if name, ok := executorNamedAt(pos, orb.Jobs); ok {
-			if executor, ok := orb.Executors[name]; ok {
-				return describeExecutor(name, executor), true
-			}
-			return "", false
+			return describeExecutor(doc.FromOrbParsedAttributesToYamlDocument(orb.OrbParsedAttributes), c, name)
 		}
 	}
 	return "", false
@@ -49,6 +38,10 @@ func executorNamedAt(pos protocol.Position, jobs map[string]ast.Job) (string, bo
 	return "", false
 }
 
-func describeExecutor(name string, executor ast.Executor) string {
-	return describe(name, "executor", executor.GetDescription(), executor.GetParameters())
+func describeExecutor(doc yamlparser.YamlDocument, c *cache.Cache, name string) (string, bool) {
+	executor, ok := doc.ResolveExecutor(name, c)
+	if !ok {
+		return "", false
+	}
+	return describe(name, "executor", executor.GetDescription(), executor.GetParameters()), true
 }

@@ -75,6 +75,9 @@ func (ch *CompletionHandler) addExecutorsCompletion() {
 	for _, executor := range ch.Doc.Executors {
 		ch.addCompletionItem(executor.GetName())
 	}
+	for _, alias := range ch.Doc.Aliases.Executors {
+		ch.addCompletionItem(alias.Name)
+	}
 
 	for _, orb := range ch.Doc.Orbs {
 		executor := ch.getOrbExecutors(orb)
@@ -106,21 +109,9 @@ func (ch *CompletionHandler) completeExecutorMapping(name string, executorLine i
 }
 
 // executorParameters are the parameters a local, inline-orb or orb executor
-// declares.
+// declares, named directly or through an alias.
 func (ch *CompletionHandler) executorParameters(name string) map[string]ast2.Parameter {
-	if executor, ok := ch.Doc.Executors[name]; ok {
-		return executor.GetParameters()
-	}
-
-	orbName, executorName, ok := strings.Cut(name, "/")
-	if !ok {
-		return nil
-	}
-	orbInfo, err := ch.Doc.GetOrbInfoFromName(orbName, ch.Cache)
-	if err != nil || orbInfo == nil {
-		return nil
-	}
-	if executor, ok := orbInfo.Executors[executorName]; ok {
+	if executor, ok := ch.Doc.ResolveExecutor(name, ch.Cache); ok {
 		return executor.GetParameters()
 	}
 	return nil
