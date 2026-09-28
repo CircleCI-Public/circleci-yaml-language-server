@@ -175,7 +175,19 @@ func TestYamlDocument_parseExecutors(t *testing.T) {
 									Character: 47,
 								},
 							},
-							Keys: []string{"AWS_ECR_REGISTRY_ID"},
+							Variables: []ast2.EnvironmentVariable{
+								{
+									Name: "AWS_ECR_REGISTRY_ID",
+									Range: protocol.Range{
+										Start: protocol.Position{Line: 16, Character: 12},
+										End:   protocol.Position{Line: 16, Character: 47},
+									},
+									NameRange: protocol.Range{
+										Start: protocol.Position{Line: 16, Character: 12},
+										End:   protocol.Position{Line: 16, Character: 31},
+									},
+								},
+							},
 						},
 					},
 				},

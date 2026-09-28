@@ -71,18 +71,12 @@ func singleJobSymbols(job ast2.Job) protocol.DocumentSymbol {
 	}
 
 	if !position.IsDefaultRange(job.EnvironmentRange) {
-		keys := []string{}
-
-		for k := range job.Environment {
-			keys = append(keys, k)
-		}
-
 		jobSymbol.Children = append(
 			jobSymbol.Children,
 			envsSymbols(
 				ast2.Environment{
-					Range: job.EnvironmentRange,
-					Keys:  keys,
+					Range:     job.EnvironmentRange,
+					Variables: job.EnvironmentVariables,
 				},
 			),
 		)

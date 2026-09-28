@@ -181,8 +181,51 @@ jobs:
 		got := names(child(test, "Parameters"))
 		assert.Check(t, cmp.DeepEqual(got, []string{"z", "a"}))
 	})
-	t.Run("environment keys, which share a range, by name", func(t *testing.T) {
+	t.Run("environment keys", func(t *testing.T) {
 		got := names(child(test, "Environments"))
-		assert.Check(t, cmp.DeepEqual(got, []string{"A", "Z"}))
+		assert.Check(t, cmp.DeepEqual(got, []string{"Z", "A"}))
 	})
+}
+
+func TestSymbolsForDocument_EnvironmentKeysOnTheirOwnLines(t *testing.T) {
+	doc := parseDoc(t, `version: 2.1
+executors:
+  small:
+    docker:
+      - image: cimg/base:current
+    environment:
+      ONE: "1"
+      TWO: "2"
+jobs:
+  build:
+    executor: small
+    environment:
+      THREE: "3"
+      FOUR: "4"
+    steps:
+      - checkout
+`)
+	symbols := SymbolsForDocument(&doc)
+
+	// Each key's symbol spans its line, 0-based, and selects just the key.
+	source := strings.Split(string(doc.Content), "\n")
+	lines := map[string]uint32{}
+	selections := map[string]string{}
+	var walk func([]protocol.DocumentSymbol)
+	walk = func(symbols []protocol.DocumentSymbol) {
+		for _, symbol := range symbols {
+			if symbol.Name == "Environments" {
+				for _, key := range symbol.Children {
+					lines[key.Name] = key.Range.Start.Line
+					selection := key.SelectionRange
+					selections[key.Name] = source[selection.Start.Line][selection.Start.Character:selection.End.Character]
+				}
+			}
+			walk(symbol.Children)
+		}
+	}
+	walk(symbols)
+
+	assert.Check(t, cmp.DeepEqual(lines, map[string]uint32{"ONE": 6, "TWO": 7, "THREE": 12, "FOUR": 13}))
+	assert.Check(t, cmp.DeepEqual(selections, map[string]string{"ONE": "ONE", "TWO": "TWO", "THREE": "THREE", "FOUR": "FOUR"}))
 }
