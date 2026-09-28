@@ -27,6 +27,7 @@ func resolveJobsSymbols(document *parser.YamlDocument) []protocol.DocumentSymbol
 	for _, job := range document.Jobs {
 		children = append(children, singleJobSymbols(job))
 	}
+	children = append(children, aliasSymbols(document.Aliases.Jobs, JobSymbol)...)
 
 	jobsSymbols.Children = children
 
