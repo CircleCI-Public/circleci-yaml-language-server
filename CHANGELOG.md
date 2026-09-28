@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 0.43.1 (2026-09-28)
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+* fix: only warn about the legacy circleci images by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/689
+* fix: only hint at a job overriding its executor's settings by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/690
+
+
+**Full Changelog**: https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.43.0...0.43.1
+
 ## 0.43.0 (2026-09-28)
 
 <!-- Release notes generated using configuration in .github/release.yml at main -->
