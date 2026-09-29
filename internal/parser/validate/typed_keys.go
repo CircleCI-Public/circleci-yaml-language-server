@@ -78,6 +78,13 @@ var typedKeys = []typedKey{
 		message: "setup_remote_docker: docker_layer_caching must be a boolean",
 	},
 	{
+		under: "machine",
+		name:  "docker_layer_caching",
+		fits:  "boolean",
+		// %s is the executor's name, or <inline> for a job's own machine.
+		message: "Executor %s: docker_layer_caching must be a boolean",
+	},
+	{
 		under:   "setup_remote_docker",
 		name:    "prefer_same_region",
 		fits:    "boolean",
@@ -115,9 +122,9 @@ func checkAutoRerunDelay(value any) string {
 	return ""
 }
 
-// ValidateTypedKeyReferences checks the settings of jobs and commands whose
-// value is only a parameter, such as `parallelism: << parameters.n >>`. The
-// parameter must be of a type the setting takes, and its default and every
+// ValidateTypedKeyReferences checks the settings of jobs, commands and
+// executors whose value is only a parameter, such as
+// `parallelism: << parameters.n >>`. The parameter must be of a type the setting takes, and its default and every
 // argument a job invocation or a step gives it must be a value the setting
 // allows. A default or an argument used by several settings is reported
 // once.
@@ -166,6 +173,21 @@ func (val Validate) typedKeyOf(pair *sitter.Node, name string) (typedKey, bool) 
 		if key.name != name {
 			continue
 		}
+		if key.under == "machine" {
+			if val.pairKey(parent) != "machine" {
+				continue
+			}
+			owner := enclosingPair(parent)
+			switch val.pairKey(enclosingPair(owner)) {
+			case "jobs":
+				key.message = fmt.Sprintf(key.message, "<inline>")
+			case "executors":
+				key.message = fmt.Sprintf(key.message, val.pairKey(owner))
+			default:
+				continue
+			}
+			return key, true
+		}
 		if key.under != "" && key.under == val.pairKey(parent) ||
 			key.under == "" && val.pairKey(enclosingPair(parent)) == "jobs" {
 			return key, true
@@ -178,8 +200,8 @@ func (val Validate) typedKeyOf(pair *sitter.Node, name string) (typedKey, bool) 
 func (val Validate) checkTypedKeyReference(key typedKey, reference string, rng protocol.Range) []protocol.Diagnostic {
 	fullName, name := paramref.ExtractName(reference)
 
-	// Each inline orb is checked on its own, so only this document's jobs
-	// and commands are looked at.
+	// Each inline orb is checked on its own, so only this document's jobs,
+	// commands and executors are looked at.
 	var params map[string]ast2.Parameter
 	var arguments []ast2.ParameterValue
 	if job, ok := val.jobAt(rng.Start); ok {
@@ -188,6 +210,8 @@ func (val Validate) checkTypedKeyReference(key typedKey, reference string, rng p
 	} else if command, ok := val.commandAt(rng.Start); ok {
 		params = command.Parameters
 		arguments = val.commandArguments(command.Name, name)
+	} else if executor, ok := val.executorAt(rng.Start); ok {
+		params = executor.GetParameters()
 	} else {
 		return nil
 	}
@@ -265,6 +289,15 @@ func (val Validate) jobAt(pos protocol.Position) (ast2.Job, bool) {
 		}
 	}
 	return ast2.Job{}, false
+}
+
+func (val Validate) executorAt(pos protocol.Position) (ast2.Executor, bool) {
+	for _, executor := range val.Doc.Executors {
+		if position.InRange(executor.GetRange(), pos) {
+			return executor, true
+		}
+	}
+	return nil, false
 }
 
 func (val Validate) commandAt(pos protocol.Position) (ast2.Command, bool) {

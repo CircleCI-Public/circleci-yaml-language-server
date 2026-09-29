@@ -250,6 +250,79 @@ workflows:
 					"auto_rerun_delay must match ^((10|[1-9])m|([1-9][0-9]*)s)$, but parameter delay is of type integer"),
 			},
 		},
+		{
+			Name: "a machine's docker_layer_caching",
+			YamlContent: `version: 2.1
+parameters:
+  dlc:
+    type: string
+    default: "yes"
+executors:
+  my-exec:
+    parameters:
+      dlc:
+        type: boolean
+        default: true
+      text:
+        type: string
+        default: "true"
+    machine:
+      image: ubuntu-2404:current
+      docker_layer_caching: << parameters.text >>
+  pipeline-exec:
+    machine:
+      image: ubuntu-2404:current
+      docker_layer_caching: << pipeline.parameters.dlc >>
+  fine-exec:
+    parameters:
+      dlc:
+        type: boolean
+        default: true
+    machine:
+      image: ubuntu-2404:current
+      docker_layer_caching: << parameters.dlc >>
+jobs:
+  build:
+    parameters:
+      dlc:
+        type: enum
+        enum: ["true", "false"]
+        default: "true"
+    machine:
+      image: ubuntu-2404:current
+      docker_layer_caching: << parameters.dlc >>
+    steps:
+      - checkout
+  test:
+    executor: my-exec
+    steps:
+      - checkout
+  lint:
+    executor: pipeline-exec
+    steps:
+      - checkout
+  deploy:
+    executor: fine-exec
+    steps:
+      - checkout
+workflows:
+  workflow:
+    jobs:
+      - build
+      - test
+      - lint
+      - deploy
+`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(span(16, 28, 49),
+					"Executor my-exec: docker_layer_caching must be a boolean, but parameter text is of type string"),
+				diagnostic.Error(span(20, 28, 57),
+					"Executor pipeline-exec: docker_layer_caching must be a boolean, but parameter dlc is of type string"),
+				diagnostic.Error(span(38, 28, 48),
+					"Executor <inline>: docker_layer_caching must be a boolean, but parameter dlc is of type enum"),
+			},
+		},
 	}
 
 	CheckYamlErrors(t, testCases)
