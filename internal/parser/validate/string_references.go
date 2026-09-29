@@ -10,6 +10,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/paramref"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/parser"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/pipelinevalues"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/yamltree"
@@ -79,4 +80,54 @@ func (val Validate) ValidateMatchesValues() {
 				"matches: value must produce a string, but the referenced parameter is not of type string"))
 		}
 	}
+}
+
+// validateExecutorArgumentReference reports an executor argument given as a
+// map whose name refers to something that can't be an executor's name. The
+// compiler reads that map inside the invoked job, so its parameters are the
+// job's.
+func (val Validate) validateExecutorArgumentReference(arg ast.ParameterValue, jobParameters map[string]ast.Parameter) {
+	fields, ok := arg.Value.(map[string]ast.ParameterValue)
+	if !ok {
+		return
+	}
+	name, ok := fields["name"].Value.(string)
+	if !ok {
+		return
+	}
+	paramType, ok := val.referencedType(name, jobParameters)
+	if !ok || paramType == "executor" || slices.Contains(textualTypes, paramType) {
+		return
+	}
+	val.addDiagnostic(diagnostic.Error(fields["name"].ValueRange,
+		"Executor invocation "+strings.TrimSpace(name)+" must resolve to an executor name"))
+}
+
+// executorArgumentParametersAt returns the parameters of the job invoked
+// around pos when pos is in an executor argument given as a map, which the
+// compiler reads inside that job.
+func (val Validate) executorArgumentParametersAt(pos protocol.Position) (map[string]ast.Parameter, bool) {
+	invocations := []ast.JobInvocation{}
+	for _, workflow := range val.Doc.Workflows {
+		invocations = append(invocations, workflow.JobInvocations...)
+	}
+	for _, group := range val.Doc.JobGroups {
+		invocations = append(invocations, group.JobInvocations...)
+	}
+
+	for _, invocation := range invocations {
+		if !position.InRange(invocation.JobInvocationRange, pos) {
+			continue
+		}
+		for _, arg := range invocation.Parameters {
+			if arg.Type != "map" || !position.InRange(arg.Range, pos) {
+				continue
+			}
+			jobParameters := val.Doc.GetDefinedParams(invocation.JobName, parser.JobEntity, val.Cache)
+			if param, ok := jobParameters[arg.Name]; ok && param.GetType() == "executor" {
+				return jobParameters, true
+			}
+		}
+	}
+	return nil, false
 }

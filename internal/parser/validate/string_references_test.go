@@ -220,3 +220,111 @@ workflows:
 		},
 	})
 }
+
+func TestExecutorArgumentFromANonStringReference(t *testing.T) {
+	const jobs = `version: 2.1
+executors:
+  target:
+    docker:
+      - image: cimg/base:2024.01
+jobs:
+  build:
+    parameters:
+      e:
+        type: executor
+      q:
+        type: integer
+        default: 5
+      s:
+        type: string
+        default: target
+      other:
+        type: executor
+        default: target
+    executor: << parameters.e >>
+    steps:
+      - run: echo hi
+`
+	CheckYamlErrors(t, []ValidateTestCase{
+		{
+			Name: "a parameter of the job that isn't a string",
+			YamlContent: jobs + `workflows:
+  w:
+    jobs:
+      - build:
+          e:
+            name: << parameters.q >>
+`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(span(27, 18, 36),
+					"Executor invocation << parameters.q >> must resolve to an executor name"),
+			},
+		},
+		{
+			Name: "a pipeline value that isn't a string",
+			YamlContent: jobs + `workflows:
+  w:
+    jobs:
+      - build:
+          e:
+            name: << pipeline.number >>
+`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(span(27, 18, 39),
+					"Executor invocation << pipeline.number >> must resolve to an executor name"),
+			},
+		},
+		{
+			Name: "a parameter of the job group member's job that isn't a string",
+			YamlContent: jobs + `job-groups:
+  group:
+    jobs:
+      - build:
+          e:
+            name: << parameters.q >>
+workflows:
+  w:
+    jobs:
+      - group
+`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(span(27, 18, 36),
+					"Executor invocation << parameters.q >> must resolve to an executor name"),
+			},
+		},
+		{
+			Name: "parameters of the job that can name an executor",
+			YamlContent: jobs + `workflows:
+  w:
+    jobs:
+      - build:
+          name: from-a-string
+          e:
+            name: << parameters.s >>
+      - build:
+          name: from-an-executor
+          e:
+            name: << parameters.other >>
+`,
+			OnlyErrors:  true,
+			Diagnostics: []protocol.Diagnostic{},
+		},
+		{
+			Name: "a parameter the job doesn't have",
+			YamlContent: jobs + `workflows:
+  w:
+    jobs:
+      - build:
+          e:
+            name: << parameters.nope >>
+`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(span(27, 21, 36), "Parameter nope is not defined"),
+			},
+		},
+	})
+}
