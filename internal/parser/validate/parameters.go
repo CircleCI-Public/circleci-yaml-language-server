@@ -223,6 +223,9 @@ func (val Validate) CheckIfParamsExist() {
 					reference.Name = name
 				} else if name, ok := strings.CutPrefix(reference.Name, "parameters."); ok {
 					parameters = val.Doc.GetParamsWithPosition(val.Doc.NodeToRange(node).Start)
+					if jobParameters, ok := val.executorArgumentParametersAt(val.Doc.NodeToRange(node).Start); ok {
+						parameters = jobParameters
+					}
 					message = fmt.Sprintf("Parameter %s is not defined", name)
 					reference.Name = name
 				} else if name, ok := strings.CutPrefix(reference.Name, "matrix."); ok {

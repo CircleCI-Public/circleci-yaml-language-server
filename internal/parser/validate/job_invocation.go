@@ -156,6 +156,9 @@ func (val Validate) validateJobInvocationParameters(jobInvocation ast2.JobInvoca
 			}
 		} else if okParams {
 			val.checkParamSimpleType(jobInvocation.Parameters[definedParam.GetName()], jobName, definedParam)
+			if definedParam.GetType() == "executor" {
+				val.validateExecutorArgumentReference(jobInvocation.Parameters[definedParam.GetName()], definedParams)
+			}
 		}
 	}
 
