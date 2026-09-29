@@ -300,6 +300,10 @@ workflows:
 	CheckYamlErrors(t, testCases)
 }
 
+func nullBody(step string) string {
+	return fmt.Sprintf("Step '%s' has a null body; treating as a no-argument invocation. Write `- %s` instead.", step, step)
+}
+
 func TestStepShapeWarnings(t *testing.T) {
 	const greet = `version: 2.1
 
@@ -385,6 +389,159 @@ workflows:
 					End:   protocol.Position{Line: 23, Character: 19},
 				}, "Step 'greet' has a null body; treating as a no-argument invocation. Write `- greet` instead."),
 			},
+		},
+		{
+			Name: "A step with an explicit null body in post-steps is a bare invocation",
+			YamlContent: greet + `jobs:
+  build:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - greet
+
+workflows:
+  main:
+    jobs:
+      - build:
+          post-steps:
+            - greet: ~
+            - greet: null
+`,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Warning(span(23, 14, 19), nullBody("greet")),
+				diagnostic.Warning(span(24, 14, 19), nullBody("greet")),
+			},
+		},
+		{
+			Name: "A step with a null body in a steps argument is a bare invocation",
+			YamlContent: greet + `  with-auth:
+    parameters:
+      auth:
+        type: steps
+    steps:
+      - steps: << parameters.auth >>
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - with-auth:
+          auth:
+            - greet:
+            - greet: ~
+
+workflows:
+  main:
+    jobs:
+      - build
+`,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Warning(span(25, 14, 19), nullBody("greet")),
+				diagnostic.Warning(span(26, 14, 19), nullBody("greet")),
+			},
+		},
+		{
+			Name: "A step with a null body in a nested steps argument is a bare invocation",
+			YamlContent: greet + `  with-auth:
+    parameters:
+      auth:
+        type: steps
+    steps:
+      - steps: << parameters.auth >>
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - with-auth:
+          auth:
+            - with-auth:
+                auth:
+                  - greet:
+
+workflows:
+  main:
+    jobs:
+      - build
+`,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Warning(span(27, 20, 25), nullBody("greet")),
+			},
+		},
+		{
+			Name: "A step with a null body in a job's steps argument is a bare invocation",
+			YamlContent: greet + `jobs:
+  build:
+    parameters:
+      setup:
+        type: steps
+    docker:
+      - image: cimg/base:current
+    steps:
+      - steps: << parameters.setup >>
+
+workflows:
+  main:
+    jobs:
+      - build:
+          setup:
+            - greet:
+`,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Warning(span(26, 14, 19), nullBody("greet")),
+			},
+		},
+		{
+			Name: "A step with a null body in an orb command's steps argument is a bare invocation",
+			YamlContent: `version: 2.1
+
+orbs:
+  my-orb:
+    commands:
+      build-and-push:
+        parameters:
+          auth:
+            type: steps
+        steps:
+          - steps: << parameters.auth >>
+      setup:
+        steps:
+          - run: echo setup
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - my-orb/build-and-push:
+          auth:
+            - my-orb/setup:
+
+workflows:
+  main:
+    jobs:
+      - build
+`,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Warning(span(22, 14, 26), nullBody("my-orb/setup")),
+			},
+		},
+		{
+			Name: "A step with a null body in a job's steps is left to the schema",
+			YamlContent: greet + `jobs:
+  build:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - greet: ~
+
+workflows:
+  main:
+    jobs:
+      - build
+`,
 		},
 		{
 			Name: "A command named after a built-in step shadows it",

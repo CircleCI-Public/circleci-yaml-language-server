@@ -164,15 +164,18 @@ func (doc *YamlDocument) parseStep(blockMapping *sitter.Node) []ast.Step {
 	case "<<":
 		return doc.parseAnchorStep(valueNode)
 	default:
+		if doc.isNullValue(valueNode) {
+			return doc.parseNullBodyStep(blockMapping, keyNode)
+		}
 		return []ast.Step{doc.parseNamedStepWithParameters(keyName, valueNode)}
 	}
 }
 
-// parseNullBodyStep reads a step whose first key has no value. The compiler
-// takes a command or job name written that way as a bare invocation, keeping
-// it and ignoring any other keys, which are usually its parameters indented
-// level with it. A built-in step written that way is an error, left to the
-// schema.
+// parseNullBodyStep reads a step whose first key has no value, or is written
+// `null` or `~`. The compiler takes a command or job name written that way as
+// a bare invocation, keeping it and ignoring any other keys, which are usually
+// its parameters indented level with it. A built-in step written that way is
+// an error, left to the schema.
 func (doc *YamlDocument) parseNullBodyStep(blockMapping *sitter.Node, keyNode *sitter.Node) []ast.Step {
 	name := doc.GetNodeText(keyNode)
 	if keyNode == nil || name == "<<" || doc.IsBuiltIn(name) {

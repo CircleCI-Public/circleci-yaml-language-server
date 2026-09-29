@@ -101,6 +101,7 @@ func (val Validate) checkParamSimpleType(param ast2.ParameterValue, stepName str
 				val.createParameterError(value, stepName, definedParam.GetType())
 			}
 		}
+		val.warnNullBodyArguments(values)
 
 	case "env_var_name":
 		if param.Type != "string" && param.Type != "integer" {
