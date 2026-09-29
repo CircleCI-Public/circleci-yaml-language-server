@@ -20,6 +20,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/paramref"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/yamlbool"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/yamltree"
 )
 
@@ -249,7 +250,7 @@ func handleYAMLErrors(err string, content []byte, rootNode *sitter.Node) ([]prot
 func (validator *JSONSchemaValidator) ValidateWithJSONSchema(rootNode *sitter.Node, content []byte) (schemaDiagnostics, yamlDiagnostics []protocol.Diagnostic) {
 	var file interface{}
 
-	if err := yaml.Unmarshal(content, &file); err != nil {
+	if err := decodeAsCompiled(content, &file); err != nil {
 		yamlDiagnostics, _ = handleYAMLErrors(err.Error(), content, rootNode)
 		if file == nil {
 			return nil, yamlDiagnostics
@@ -333,6 +334,12 @@ func (validator *JSONSchemaValidator) ValidateWithJSONSchema(rootNode *sitter.No
 				continue
 			}
 
+			if text, ok := validator.yaml11Boolean(node); ok && resErr.Type() == "invalid_type" {
+				jsonSchemaDiags = append(jsonSchemaDiags, diagnostic.ErrorFromNode(node, fmt.Sprintf(
+					"`%s` is read as a boolean; quote it if it's meant as text.", text)))
+				continue
+			}
+
 			diag := diagnostic.ErrorFromNode(node, resErr.Description())
 			if isCombinatorError(resErr) {
 				combinators = append(combinators, diag)
@@ -356,6 +363,53 @@ func (validator *JSONSchemaValidator) ValidateWithJSONSchema(rootNode *sitter.No
 	}
 
 	return removeUselessMustValidateError(jsonSchemaDiags), yamlDiagnostics
+}
+
+// decodeAsCompiled decodes a config as the compiler reads it. The compiler's
+// parser is YAML 1.1's, which reads a plain yes, no, on or off as a boolean.
+func decodeAsCompiled(content []byte, out *interface{}) error {
+	var root yaml.Node
+	if err := yaml.Unmarshal(content, &root); err != nil {
+		return err
+	}
+	if root.Kind == 0 {
+		return nil
+	}
+	resolveYAML11Booleans(&root)
+	return root.Decode(out)
+}
+
+// resolveYAML11Booleans tags each plain value that is a boolean in YAML 1.1 as
+// one. Keys are left as they are.
+func resolveYAML11Booleans(node *yaml.Node) {
+	switch node.Kind {
+	case yaml.ScalarNode:
+		if node.Style == 0 && node.ShortTag() == "!!str" && yamlbool.IsYAML11(node.Value) {
+			node.Tag = "!!bool"
+			node.Value = strconv.FormatBool(yamlbool.Value(strings.ToLower(node.Value)))
+		}
+	case yaml.MappingNode:
+		for i := 1; i < len(node.Content); i += 2 {
+			resolveYAML11Booleans(node.Content[i])
+		}
+	case yaml.DocumentNode, yaml.SequenceNode:
+		for _, child := range node.Content {
+			resolveYAML11Booleans(child)
+		}
+	}
+}
+
+// yaml11Boolean is the text of a value that is a boolean only in YAML 1.1,
+// given it or the pair it is the value of.
+func (validator *JSONSchemaValidator) yaml11Boolean(node *sitter.Node) (string, bool) {
+	if node.Kind() == "block_mapping_pair" || node.Kind() == "flow_pair" {
+		_, node = validator.Doc.GetKeyValueNodes(node)
+		if node == nil {
+			return "", false
+		}
+	}
+	text := validator.Doc.GetRawNodeText(node)
+	return text, yamlbool.IsYAML11(text)
 }
 
 // openSteps are the built-in steps whose options the compiler doesn't close,

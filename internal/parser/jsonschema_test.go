@@ -613,7 +613,7 @@ workflows:
 `
 	}
 
-	for _, value := range []string{"true", "<< parameters.dlc >>"} {
+	for _, value := range []string{"true", "yes", "On", "<< parameters.dlc >>"} {
 		t.Run("accepts "+value, func(t *testing.T) {
 			said := schemaMessages(t, config(value))
 			assert.Check(t, cmp.Len(said, 0))
@@ -884,4 +884,59 @@ workflows:
 			assert.Check(t, cmp.Equal(covered, tc.covers))
 		})
 	}
+}
+
+// The compiler reads a plain yes, no, on or off as a boolean, as YAML 1.1 does.
+func Test_YAML11Booleans(t *testing.T) {
+	job := func(body string) string {
+		return `version: 2.1
+jobs:
+  build:
+    docker:
+      - image: cimg/base:current
+` + body + `
+workflows:
+  w:
+    jobs: [build]
+`
+	}
+
+	t.Run("rejected where text is wanted", func(t *testing.T) {
+		for _, value := range []string{"yes", "No", "on", "OFF"} {
+			content := job("    working_directory: " + value + "\n    steps: [checkout]")
+			diagnostics := schemaDiagnostics(t, content)
+			assert.Assert(t, cmp.Len(diagnostics, 1), value)
+
+			message := diagnostic.MessageText(diagnostics[0])
+			assert.Check(t, cmp.Equal(message, "`"+value+"` is read as a boolean; quote it if it's meant as text."))
+			rng := diagnostics[0].Range
+			line := strings.Split(content, "\n")[rng.Start.Line]
+			covered := line[rng.Start.Character:rng.End.Character]
+			assert.Check(t, cmp.Contains(covered, value))
+		}
+	})
+
+	t.Run("text when quoted", func(t *testing.T) {
+		for _, value := range []string{`"yes"`, `'off'`} {
+			said := schemaMessages(t, job("    working_directory: "+value+"\n    steps: [checkout]"))
+			assert.Check(t, cmp.Len(said, 0), value)
+		}
+	})
+
+	t.Run("text when not a YAML 1.1 boolean", func(t *testing.T) {
+		for _, value := range []string{"y", "n", "yess", "onward"} {
+			said := schemaMessages(t, job("    working_directory: "+value+"\n    steps: [checkout]"))
+			assert.Check(t, cmp.Len(said, 0), value)
+		}
+	})
+
+	t.Run("accepted where a boolean may be", func(t *testing.T) {
+		said := schemaMessages(t, job(`    environment:
+      DEBUG: yes
+    steps:
+      - run:
+          command: sleep 10
+          background: on`))
+		assert.Check(t, cmp.Len(said, 0))
+	})
 }
