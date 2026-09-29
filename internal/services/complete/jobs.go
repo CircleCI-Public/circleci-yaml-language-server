@@ -55,7 +55,9 @@ func (ch *CompletionHandler) completeJobs() {
 		return
 	}
 
-	ch.Items = append(ch.Items, (*job.CompletionItem)...)
+	if _, parent := ch.keyParent(); parent == startLine(job.NameRange) {
+		ch.Items = append(ch.Items, (*job.CompletionItem)...)
+	}
 }
 
 func (ch *CompletionHandler) orbsJobs() {

@@ -55,6 +55,9 @@ func (ch *CompletionHandler) completeParameterDefinitions(parameters map[string]
 				}
 			}
 
+			if _, parent := ch.keyParent(); parent != startLine(param.GetNameRange()) {
+				return
+			}
 			if param.GetTypeRange().Start.Line == 0 && param.GetTypeRange().Start.Character == 0 {
 				ch.addCompletionItemField("type")
 			} else {
