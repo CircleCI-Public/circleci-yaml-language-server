@@ -57,6 +57,7 @@ workflows:
 func TestRequestsCloseTheTreesTheyParse(t *testing.T) {
 	fake := fakes.NewCircleCI(t)
 	settings := testHelpers.SettingsForHost(fake.URL())
+	settings.SchemaHovers = true
 
 	docURI := uri.File("/workspace/.circleci/config.yml")
 	c := cache.New()

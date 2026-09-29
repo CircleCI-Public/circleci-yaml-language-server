@@ -156,11 +156,19 @@ func start(t *testing.T, fake *fakes.CircleCI, config, token string) *session {
 func startIn(t *testing.T, fake *fakes.CircleCI, project *workspace.Workspace, token string) *session {
 	t.Helper()
 
+	return startWithOptions(t, fake, project, token, map[string]any{"isCciExtension": true})
+}
+
+// startWithOptions is startIn for a client that sends other
+// initializationOptions than the extension does.
+func startWithOptions(t *testing.T, fake *fakes.CircleCI, project *workspace.Workspace, token string, options map[string]any) *session {
+	t.Helper()
+
 	dockerHub := fakes.NewDockerHub(t)
 	server := runner.StartStdio(t, serverBinary, dockerHubEnv(dockerHub))
 	client := lspclient.New(t, context.Background(), server.Stream())
 
-	_, err := client.Initialize(project.RootURI())
+	_, err := client.InitializeWithOptions(project.RootURI(), options)
 	assert.NilError(t, err)
 
 	err = client.ExecuteCommand("setSelfHostedUrl", fake.URL())

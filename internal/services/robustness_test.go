@@ -268,6 +268,7 @@ func hermeticSettings(t testing.TB) *session.Settings {
 
 	settings := testHelpers.SettingsForHost(circleci.URL())
 	settings.DockerHub = dockerhub.Config{BaseURL: hub.URL()}
+	settings.SchemaHovers = true
 
 	return settings
 }

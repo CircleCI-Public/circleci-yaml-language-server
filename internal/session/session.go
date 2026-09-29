@@ -11,6 +11,11 @@ type Settings struct {
 	UserIdForTelemetry string
 	IsCciExtension     bool
 
+	// SchemaHovers is whether hovering a key shows what the schema says of
+	// it. A client that shows the schema's descriptions itself turns it off,
+	// so that each isn't shown twice.
+	SchemaHovers bool
+
 	// DockerHub configures where the server asks Docker Hub. The zero value is
 	// the public Docker Hub; it exists so that a test can point the server at
 	// a fake.

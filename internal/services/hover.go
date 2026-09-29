@@ -2,6 +2,7 @@ package languageservice
 
 import (
 	"fmt"
+	"slices"
 
 	sitter "github.com/tree-sitter/go-tree-sitter"
 	"go.lsp.dev/protocol"
@@ -41,7 +42,11 @@ func Hover(params protocol.HoverParams, cache *cache.Cache, context *session.Set
 		}, nil
 	}
 
-	for _, reference := range referenceHovers {
+	hovers := referenceHovers
+	if context.SchemaHovers {
+		hovers = append(slices.Clip(hovers), hover.SchemaKey)
+	}
+	for _, reference := range hovers {
 		if text, ok := reference(doc, cache, params.Position); ok {
 			return protocol.Hover{
 				Contents: &protocol.MarkupContent{Kind: protocol.MarkupKindMarkdown, Value: text},

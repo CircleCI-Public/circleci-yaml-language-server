@@ -6,6 +6,8 @@ import (
 	"go.lsp.dev/protocol"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
+
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/workspace"
 )
 
 // toolsOrbSource is an orb with a description, and a command and a job with
@@ -88,5 +90,57 @@ func TestHover(t *testing.T) {
 		got := markdownAt(t, position(3, 12))
 		assert.Check(t, cmp.Equal(got,
 			"**tools** orb `acme/tools@1.0.0`\n\nTools for acme.\n\nCommands: `install`\n\nJobs: `test`"))
+	})
+}
+
+// resourceClassConfig has a job whose resource_class is on line 6.
+const resourceClassConfig = `version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:stable
+    resource_class: large
+    steps:
+      - checkout
+
+workflows:
+  main:
+    jobs:
+      - build
+`
+
+func TestSchemaKeyHovers(t *testing.T) {
+	resourceClass := position(6, 8)
+
+	hoverAt := func(t *testing.T, options map[string]any) *protocol.Hover {
+		t.Helper()
+		fake := linkedProjectFake(t)
+		session := startWithOptions(t, fake, workspace.New(t, resourceClassConfig), testToken, options)
+		session.open(t, resourceClassConfig)
+
+		hover, err := session.client.Hover(session.workspace.URI(), resourceClass)
+		assert.NilError(t, err)
+		assert.Assert(t, hover != nil)
+		return hover
+	}
+
+	described := map[string]map[string]any{
+		"a client that sends no options":       {},
+		"the extension, when it asks for them": {"isCciExtension": true, "schemaHovers": true},
+	}
+	for name, options := range described {
+		t.Run(name+" is shown the schema's description of a key", func(t *testing.T) {
+			hover := hoverAt(t, options)
+			markup, ok := hover.Contents.(*protocol.MarkupContent)
+			assert.Assert(t, ok, "hover contents are %T, not markup", hover.Contents)
+			assert.Check(t, cmp.Equal(markup.Kind, protocol.MarkupKindMarkdown))
+			assert.Check(t, cmp.Contains(markup.Value, "Resource class for the job."))
+		})
+	}
+
+	t.Run("an extension that shows them itself is not", func(t *testing.T) {
+		hover := hoverAt(t, map[string]any{"isCciExtension": true})
+		assert.Check(t, cmp.Nil(hover.Contents))
 	})
 }
