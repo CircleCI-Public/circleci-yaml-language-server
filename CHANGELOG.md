@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## 0.45.2 (2026-09-29)
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+* test: cover the schema's fixed false errors in acceptance tests by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/728
+* test: keep the survey's parameter false errors fixed end to end by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/729
+* test: open workflows and steps the survey found wrongly reported by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/730
+* test: keep orb and file false errors from the config survey fixed by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/732
+
+
+**Full Changelog**: https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.45.1...0.45.2
+
 ## 0.45.1 (2026-09-29)
 
 <!-- Release notes generated using configuration in .github/release.yml at main -->
