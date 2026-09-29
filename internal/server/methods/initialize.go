@@ -67,7 +67,9 @@ func (methods *Methods) Initialize(_ context.Context, params *protocol.Initializ
 				WorkDoneProgressOptions: workDoneProgress,
 			},
 			CompletionProvider: &protocol.CompletionOptions{
-				// TriggerCharacters: []string{":"},
+				// After `pipeline.` or `parameters.`, and between the parts
+				// of a pipeline value.
+				TriggerCharacters: []string{"."},
 			},
 			HoverProvider: &protocol.HoverOptions{
 				WorkDoneProgressOptions: workDoneProgress,
