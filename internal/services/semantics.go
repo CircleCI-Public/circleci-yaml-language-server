@@ -101,6 +101,7 @@ func (sem SemanticTokenStruct) highlightBuiltInKeywords(keyNode *sitter.Node) {
 	if keyName := sem.doc.GetNodeText(keyNode); keyNode.Kind() == "flow_node" && slices.Contains(KEYWORDS, keyName) {
 		length := position.End(keyNode).Character - position.Start(keyNode).Character
 		sem.addToken(protocol.Position{Line: position.Start(keyNode).Line, Character: position.Start(keyNode).Character}, length, 0, 0)
+		return
 	}
 
 	// Needed in order to make sure we are at the top level of the YAML file
@@ -138,29 +139,49 @@ func (sem SemanticTokenStruct) highlightCacheKeys(valueNode *sitter.Node) {
 }
 
 func (sem SemanticTokenStruct) highlightOrbs(valueNode *sitter.Node) {
-	if valueNode.Kind() == "flow_node" {
-		content := sem.doc.GetRawNodeText(valueNode)
-		if sem.doc.IsOrbReference(content) {
-			// Orb method
-			slashIdx := strings.Index(content, "/")
-			if slashIdx == -1 {
-				// Should never happen
-				return
-			}
+	if valueNode.Kind() != "flow_node" {
+		return
+	}
 
-			orbMethodLength := position.End(valueNode).Character - position.Start(valueNode).Character - uint32(slashIdx) - 1
-			orbNameLength := uint32(slashIdx) + 1 // +1 for the slash
+	content := sem.doc.ScalarText(valueNode)
+	start := position.Start(valueNode)
+	if child := parser2.GetFirstChild(valueNode); child != nil && (child.Kind() == "double_quote_scalar" || child.Kind() == "single_quote_scalar") {
+		start.Character++
+	}
+	orbs, orbsRange := sem.orbsInScope(start)
 
-			// Highlight orb name
-			sem.addToken(protocol.Position{Line: position.Start(valueNode).Line, Character: position.Start(valueNode).Character}, orbNameLength, 1, 0)
-
-			// Highlight orb method
-			sem.addToken(protocol.Position{Line: position.Start(valueNode).Line, Character: position.Start(valueNode).Character + orbNameLength}, orbMethodLength, 0, 0)
-		} else if _, ok := sem.doc.Orbs[content]; ok && position.InRange(sem.doc.OrbsRange, sem.doc.NodeToRange(valueNode).Start) {
-			// Orb definition in the orbs section
-			rng := sem.doc.NodeToRange(valueNode)
-			sem.addToken(rng.Start, rng.End.Character-rng.Start.Character, 1, 0)
+	if orbName, method, ok := strings.Cut(content, "/"); ok && !strings.Contains(method, "/") {
+		if _, declared := orbs[orbName]; !declared {
+			return
 		}
+		orbNameLength := uint32(len(orbName)) + 1 // +1 for the slash
+
+		sem.addToken(start, orbNameLength, 1, 0)
+		sem.addToken(protocol.Position{Line: start.Line, Character: start.Character + orbNameLength}, uint32(len(method)), 0, 0)
+	} else if _, ok := orbs[content]; ok && position.InRange(orbsRange, start) {
+		// Orb definition in the orbs section
+		sem.addToken(start, uint32(len(content)), 1, 0)
+	}
+}
+
+// orbsInScope returns the orbs that can be named at pos, and the range of the
+// section declaring them: an inline orb's own orbs inside it, and the config's
+// elsewhere.
+func (sem SemanticTokenStruct) orbsInScope(pos protocol.Position) (map[string]ast.Orb, protocol.Range) {
+	orbs, orbsRange, inlineOrbs := sem.doc.Orbs, sem.doc.OrbsRange, sem.doc.LocalOrbInfo
+
+	for {
+		var inner *ast.OrbInfo
+		for name, orb := range orbs {
+			if orb.Url.IsLocal && position.InRange(orb.ValueRange, pos) {
+				inner = inlineOrbs[name]
+				break
+			}
+		}
+		if inner == nil {
+			return orbs, orbsRange
+		}
+		orbs, orbsRange, inlineOrbs = inner.Orbs, inner.OrbsRange, inner.LocalOrbInfo
 	}
 }
 
