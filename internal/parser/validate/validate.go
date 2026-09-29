@@ -21,6 +21,9 @@ type Validate struct {
 	Cache       *cache.Cache
 	Context     *session.Settings
 	IsLocalOrb  bool
+	// Outer is the config an inline orb is declared in, as OrbName.
+	Outer   *parser.YamlDocument
+	OrbName string
 }
 
 func (val *Validate) Validate() {

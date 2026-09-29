@@ -13,6 +13,7 @@ import (
 	ast2 "github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/paramref"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/parser"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/yamltree"
 )
@@ -309,13 +310,53 @@ func (val Validate) commandAt(pos protocol.Position) (ast2.Command, bool) {
 	return ast2.Command{}, false
 }
 
-// jobArguments returns the values the workflows give a job's parameter,
-// directly or through a matrix.
+// A caller is a document that can call this document's jobs and commands,
+// and the names it calls one by.
+type caller struct {
+	doc   parser.YamlDocument
+	names []string
+}
+
+// callers returns the documents that call the job or command name: this one,
+// and for an inline orb the config, which calls it by `orb/name` or through
+// an alias of that.
+func (val Validate) callers(name string, aliases func(parser.YamlDocument) map[string]ast2.Alias) []caller {
+	callers := []caller{{doc: val.Doc, names: []string{name}}}
+	if val.Outer == nil {
+		return callers
+	}
+
+	outer := caller{doc: *val.Outer, names: []string{val.OrbName + "/" + name}}
+	for _, alias := range aliases(*val.Outer) {
+		if alias.Target == outer.names[0] {
+			outer.names = append(outer.names, alias.Name)
+		}
+	}
+	return append(callers, outer)
+}
+
+func jobAliases(doc parser.YamlDocument) map[string]ast2.Alias     { return doc.Aliases.Jobs }
+func commandAliases(doc parser.YamlDocument) map[string]ast2.Alias { return doc.Aliases.Commands }
+
+// invocations returns a document's workflow jobs and job group members.
+func invocations(doc parser.YamlDocument) []ast2.JobInvocation {
+	var invocations []ast2.JobInvocation
+	for _, workflow := range doc.Workflows {
+		invocations = append(invocations, workflow.JobInvocations...)
+	}
+	for _, group := range doc.JobGroups {
+		invocations = append(invocations, group.JobInvocations...)
+	}
+	return invocations
+}
+
+// jobArguments returns the values the workflows and job groups give a job's
+// parameter, directly or through a matrix.
 func (val Validate) jobArguments(jobName, paramName string) []ast2.ParameterValue {
 	var arguments []ast2.ParameterValue
-	for _, workflow := range val.Doc.Workflows {
-		for _, invocation := range workflow.JobInvocations {
-			if invocation.JobName != jobName {
+	for _, caller := range val.callers(jobName, jobAliases) {
+		for _, invocation := range invocations(caller.doc) {
+			if !slices.Contains(caller.names, invocation.JobName) {
 				continue
 			}
 			if argument, ok := invocation.Parameters[paramName]; ok {
@@ -335,23 +376,23 @@ func (val Validate) jobArguments(jobName, paramName string) []ast2.ParameterValu
 // parameter.
 func (val Validate) commandArguments(commandName, paramName string) []ast2.ParameterValue {
 	var arguments []ast2.ParameterValue
-	collect := func(step ast2.Step) bool {
-		if named, ok := step.(ast2.NamedStep); ok && named.Name == commandName {
-			if argument, ok := named.Parameters[paramName]; ok {
-				arguments = append(arguments, argument)
+	for _, caller := range val.callers(commandName, commandAliases) {
+		collect := func(step ast2.Step) bool {
+			if named, ok := step.(ast2.NamedStep); ok && slices.Contains(caller.names, named.Name) {
+				if argument, ok := named.Parameters[paramName]; ok {
+					arguments = append(arguments, argument)
+				}
 			}
+			return false
 		}
-		return false
-	}
 
-	for _, job := range val.Doc.Jobs {
-		anyStep(job.Steps, collect)
-	}
-	for _, command := range val.Doc.Commands {
-		anyStep(command.Steps, collect)
-	}
-	for _, workflow := range val.Doc.Workflows {
-		for _, invocation := range workflow.JobInvocations {
+		for _, job := range caller.doc.Jobs {
+			anyStep(job.Steps, collect)
+		}
+		for _, command := range caller.doc.Commands {
+			anyStep(command.Steps, collect)
+		}
+		for _, invocation := range invocations(caller.doc) {
 			anyStep(invocation.PreSteps, collect)
 			anyStep(invocation.PostSteps, collect)
 		}

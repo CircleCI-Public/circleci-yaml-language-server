@@ -323,6 +323,99 @@ workflows:
 					"Executor <inline>: docker_layer_caching must be a boolean, but parameter dlc is of type enum"),
 			},
 		},
+		{
+			Name: "an argument a job group member gives",
+			YamlContent: `version: 2.1
+jobs:
+  build:
+    parameters:
+      n:
+        type: integer
+        default: 1
+    machine: true
+    parallelism: << parameters.n >>
+    steps:
+      - checkout
+job-groups:
+  group:
+    jobs:
+      - build:
+          n: 0
+workflows:
+  workflow:
+    jobs:
+      - group
+`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(span(15, 13, 14),
+					"parallelism must be a positive integer: parameter n is used for parallelism, and is given 0"),
+			},
+		},
+		{
+			Name: "arguments the config gives an inline orb's job and command",
+			YamlContent: `version: 2.1
+orbs:
+  inline:
+    commands:
+      c:
+        parameters:
+          delay:
+            type: string
+            default: 10s
+        steps:
+          - run:
+              command: echo hi
+              max_auto_reruns: 3
+              auto_rerun_delay: << parameters.delay >>
+    jobs:
+      build:
+        parameters:
+          reruns:
+            type: integer
+            default: 1
+        machine: true
+        steps:
+          - run:
+              command: echo hi
+              max_auto_reruns: << parameters.reruns >>
+commands:
+  renamed-c: inline/c
+jobs:
+  renamed-build: inline/build
+  test:
+    machine: true
+    steps:
+      - inline/c:
+          delay: 11m
+      - renamed-c:
+          delay: 1s
+      - renamed-c:
+          delay: 1h
+workflows:
+  workflow:
+    jobs:
+      - inline/build:
+          reruns: 6
+      - renamed-build:
+          reruns: 2
+      - renamed-build:
+          name: again
+          reruns: 7
+      - test
+`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(span(33, 17, 20),
+					"auto_rerun_delay must match ^((10|[1-9])m|([1-9][0-9]*)s)$: parameter delay is used for auto_rerun_delay, and is given 11m"),
+				diagnostic.Error(span(37, 17, 19),
+					"auto_rerun_delay must match ^((10|[1-9])m|([1-9][0-9]*)s)$: parameter delay is used for auto_rerun_delay, and is given 1h"),
+				diagnostic.Error(span(42, 18, 19),
+					"max_auto_reruns must be an integer between 1 and 5: parameter reruns is used for max_auto_reruns, and is given 6"),
+				diagnostic.Error(span(47, 18, 19),
+					"max_auto_reruns must be an integer between 1 and 5: parameter reruns is used for max_auto_reruns, and is given 7"),
+			},
+		},
 	}
 
 	CheckYamlErrors(t, testCases)
