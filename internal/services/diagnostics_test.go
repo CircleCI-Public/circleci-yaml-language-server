@@ -1001,15 +1001,20 @@ workflows:
 		assert.Check(t, cmp.DeepEqual(errors, []string{}))
 	})
 
-	t.Run("pre-steps and post-steps, one given no arguments", func(t *testing.T) {
+	t.Run("pre-steps and post-steps", func(t *testing.T) {
 		errors := configErrors(t, fake, workflowJob(`          pre-steps:
             - checkout
             - run: echo before
           post-steps:
             - store_artifacts:
-                path: out
-            - run:`))
+                path: out`))
 		assert.Check(t, cmp.DeepEqual(errors, []string{}))
+	})
+
+	t.Run("a built-in step with no body in post-steps", func(t *testing.T) {
+		errors := configErrors(t, fake, workflowJob(`          post-steps:
+            - run:`))
+		assert.Check(t, cmp.DeepEqual(errors, []string{"Incorrectly formed step: built-in step 'run' has no body"}))
 	})
 
 	t.Run("a name that is only spaces", func(t *testing.T) {

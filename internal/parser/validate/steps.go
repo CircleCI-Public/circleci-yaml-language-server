@@ -53,15 +53,22 @@ func (val Validate) validateSteps(steps []ast2.Step, name string, jobOrCommandPa
 	}
 }
 
-// warnNullBodySteps warns about `- name:` in steps the compiler passes as
-// arguments, such as pre-steps, where it takes them as bare invocations. In
-// a job's or a command's steps the schema rejects them.
+// warnNullBodySteps checks `- name:` in steps the compiler passes as
+// arguments, such as pre-steps, where the schema doesn't. The compiler takes
+// a command or job written that way as a bare invocation, and rejects a
+// built-in step. In a job's or a command's steps the schema rejects both.
 func (val Validate) warnNullBodySteps(steps []ast2.Step) {
 	for _, step := range steps {
-		if step, ok := step.(ast2.NamedStep); ok && step.NullBody {
-			val.addDiagnostic(diagnostic.Warning(step.Range, fmt.Sprintf(
-				"Step '%s' has a null body; treating as a no-argument invocation. Write `- %s` instead.",
-				step.Name, step.Name)))
+		switch step := step.(type) {
+		case ast2.NamedStep:
+			if step.NullBody {
+				val.addDiagnostic(diagnostic.Warning(step.Range, fmt.Sprintf(
+					"Step '%s' has a null body; treating as a no-argument invocation. Write `- %s` instead.",
+					step.Name, step.Name)))
+			}
+		case ast2.BodylessStep:
+			val.addDiagnostic(diagnostic.Error(step.Range, fmt.Sprintf(
+				"Incorrectly formed step: built-in step '%s' has no body", step.Name)))
 		}
 	}
 }

@@ -304,6 +304,10 @@ func nullBody(step string) string {
 	return fmt.Sprintf("Step '%s' has a null body; treating as a no-argument invocation. Write `- %s` instead.", step, step)
 }
 
+func bodyless(step string) string {
+	return fmt.Sprintf("Incorrectly formed step: built-in step '%s' has no body", step)
+}
+
 func TestStepShapeWarnings(t *testing.T) {
 	const greet = `version: 2.1
 
@@ -536,6 +540,82 @@ workflows:
       - image: cimg/base:current
     steps:
       - greet: ~
+
+workflows:
+  main:
+    jobs:
+      - build
+`,
+		},
+		{
+			Name: "A built-in step with no body in a steps argument is an error",
+			YamlContent: greet + `  with-auth:
+    parameters:
+      auth:
+        type: steps
+    steps:
+      - steps: << parameters.auth >>
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - with-auth:
+          auth:
+            - run:
+            - checkout: ~
+            - when:
+                condition: true
+                steps:
+                  - save_cache: null
+
+workflows:
+  main:
+    jobs:
+      - build
+`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(span(25, 14, 17), bodyless("run")),
+				diagnostic.Error(span(26, 14, 22), bodyless("checkout")),
+				diagnostic.Error(span(30, 20, 30), bodyless("save_cache")),
+			},
+		},
+		{
+			Name: "A built-in step with no body in pre-steps and post-steps is an error",
+			YamlContent: greet + `jobs:
+  build:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - greet
+
+workflows:
+  main:
+    jobs:
+      - build:
+          pre-steps:
+            - run:
+          post-steps:
+            - store_artifacts: ~
+`,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(span(23, 14, 17), bodyless("run")),
+				diagnostic.Error(span(25, 14, 29), bodyless("store_artifacts")),
+			},
+		},
+		{
+			Name: "A built-in step with no body in a job's steps is left to the schema",
+			YamlContent: `version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - run:
+      - checkout: ~
 
 workflows:
   main:
