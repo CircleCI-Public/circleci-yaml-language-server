@@ -52,6 +52,7 @@ func TestSchemaKeysAt(t *testing.T) {
 		{name: "an executor", fields: []string{"executors", "e"}, has: []string{"resource_class", "docker"}},
 		{name: "a Docker image", fields: []string{"jobs", "build", "docker", "0"}, has: []string{"image", "entrypoint", "auth"}},
 		{name: "a run step", fields: []string{"jobs", "build", "steps", "0", "run"}, has: []string{"command", "shell"}},
+		{name: "a deploy step", fields: []string{"jobs", "build", "steps", "0", "deploy"}, has: []string{"command", "shell"}},
 		{name: "the root", fields: []string{"(root)"}, has: []string{"version", "jobs", "workflows"}},
 	}
 

@@ -668,6 +668,49 @@ workflows:
 	})
 }
 
+func Test_DeploySteps(t *testing.T) {
+	config := func(step string) string {
+		return `
+version: 2.1
+jobs:
+  j:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - ` + step + `
+workflows:
+  w:
+    jobs:
+      - j
+`
+	}
+
+	accepted := []string{
+		`deploy: ./deploy.sh`,
+		`deploy: {command: ./deploy.sh}`,
+		`deploy: {name: Deploy, command: ./deploy.sh, shell: /bin/bash, working_directory: ~/app}`,
+		`deploy: {command: ./deploy.sh, background: true, no_output_timeout: 20m, when: on_success}`,
+		`deploy: {command: ./deploy.sh, environment: {STAGE: prod}}`,
+		`deploy: {command: ./deploy.sh, max_auto_reruns: 2, auto_rerun_delay: 30s}`,
+	}
+	for _, step := range accepted {
+		t.Run("accepts "+step, func(t *testing.T) {
+			said := schemaMessages(t, config(step))
+			assert.Check(t, cmp.Len(said, 0))
+		})
+	}
+
+	t.Run("checks its options as run's", func(t *testing.T) {
+		said := schemaMessages(t, config(`deploy: {command: ./deploy.sh, max_auto_reruns: 9}`))
+		assert.Check(t, cmp.DeepEqual(said, []string{"Must be less than or equal to 5"}))
+	})
+
+	t.Run("suggests the run option a misspelt one was meant to be", func(t *testing.T) {
+		said := schemaMessages(t, config(`deploy: {command: ./deploy.sh, shel: /bin/bash}`))
+		assert.Check(t, cmp.DeepEqual(said, []string{"deploy has no shel option, so this is ignored. Did you mean `shell`?"}))
+	})
+}
+
 func Test_InvalidNames(t *testing.T) {
 	diags := schemaDiagnostics(t, `
 version: 2.1

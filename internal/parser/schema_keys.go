@@ -133,7 +133,7 @@ func (keys *schemaKeys) expand(schemas []map[string]any) []map[string]any {
 }
 
 // resolve returns the schema a $ref within the document points at, such as
-// #/definitions/step.
+// #/definitions/step or #/definitions/step/oneOf/1/properties/run.
 func (keys *schemaKeys) resolve(ref string) map[string]any {
 	pointer, ok := strings.CutPrefix(ref, "#/")
 	if !ok {
@@ -143,11 +143,18 @@ func (keys *schemaKeys) resolve(ref string) map[string]any {
 	var node any = keys.root
 	for _, token := range strings.Split(pointer, "/") {
 		token = strings.ReplaceAll(strings.ReplaceAll(token, "~1", "/"), "~0", "~")
-		object, ok := node.(map[string]any)
-		if !ok {
+		switch parent := node.(type) {
+		case map[string]any:
+			node = parent[token]
+		case []any:
+			index, err := strconv.Atoi(token)
+			if err != nil || index < 0 || index >= len(parent) {
+				return nil
+			}
+			node = parent[index]
+		default:
 			return nil
 		}
-		node = object[token]
 	}
 
 	schema, _ := node.(map[string]any)

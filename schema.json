@@ -215,6 +215,7 @@
                                     "markdownDescription": "Validation: The job must adhere to the structure of a build job.",
                                     "properties": {
                                         "description": {
+                                            "markdownDescription": "A description of the job.",
                                             "type": "string"
                                         },
                                         "type": {
@@ -234,6 +235,7 @@
                                             ]
                                         },
                                         "macos": {
+                                            "markdownDescription": "Options for the [macOS executor](https://circleci.com/docs/configuration-reference#macos)",
                                             "type": "object",
                                             "properties": {
                                                 "xcode": {
@@ -274,9 +276,11 @@
                                             "additionalProperties": false
                                         },
                                         "resource_class": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "markdownDescription": "https://circleci.com/docs/reference/configuration-reference/#resourceclass\n\nResource class for the job. Can be either a predefined resource class (e.g., `medium`, `large`) or a self-hosted runner in the format `<namespace>/<runner-name>`."
                                         },
                                         "docker": {
+                                            "markdownDescription": "Options for the [docker executor](https://circleci.com/docs/configuration-reference#docker)",
                                             "type": "array",
                                             "minItems": 1,
                                             "items": {
@@ -424,6 +428,7 @@
                                             }
                                         },
                                         "steps": {
+                                            "markdownDescription": "https://circleci.com/docs/reference/configuration-reference/#steps\n\nThe steps the job runs, in order.",
                                             "type": "array",
                                             "items": {
                                                 "$ref": "#/definitions/step"
@@ -534,6 +539,7 @@
                                             ]
                                         },
                                         "environment": {
+                                            "markdownDescription": "A map of environment variable names and values, for every step of the job.",
                                             "oneOf": [
                                                 {
                                                     "markdownDescription": "A map of environment variable names and values.",
@@ -564,6 +570,7 @@
                                             ]
                                         },
                                         "executor": {
+                                            "markdownDescription": "https://circleci.com/docs/reference/reusing-config/#executor\n\nThe executor to run the job in, defined in the top-level `executors` map or by an orb.",
                                             "oneOf": [
                                                 {
                                                     "type": "string",
@@ -586,6 +593,7 @@
                                             ]
                                         },
                                         "shell": {
+                                            "markdownDescription": "Shell to use for execution command in all steps. Can be overridden by shell in each step (default: See [Default Shell Options](https://circleci.com/docs/configuration-reference#default-shell-options)",
                                             "oneOf": [
                                                 {
                                                     "type": "string"
@@ -1585,6 +1593,10 @@
                                     "additionalProperties": false
                                 }
                             ]
+                        },
+                        "deploy": {
+                            "markdownDescription": "https://circleci.com/docs/reference/configuration-reference/#deploy-deprecated\n\n**Deprecated.** Replace it with `run`, which takes the same options.",
+                            "$ref": "#/definitions/step/oneOf/1/properties/run"
                         },
                         "checkout": {
                             "markdownDescription": "https://circleci.com/docs/configuration-reference#checkout\n\nSpecial step used to check out source code to the configured `path` (defaults to the `working_directory`). The reason this is a special step is because it is more of a helper function designed to make checking out code easy for you. If you require doing git over HTTPS you should not use this step as it configures git to checkout over ssh.",
