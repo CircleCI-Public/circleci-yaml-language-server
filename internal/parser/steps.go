@@ -124,7 +124,7 @@ func (doc *YamlDocument) parseStep(blockMapping *sitter.Node) []ast.Step {
 	}
 	keyNode, valueNode := doc.GetKeyValueNodes(blockMappingPair)
 	keyName := doc.GetNodeText(keyNode)
-	if valueNode == nil {
+	if valueNode == nil || (doc.IsBuiltIn(keyName) && doc.isNullValue(valueNode)) {
 		return doc.parseNullBodyStep(blockMapping, keyNode)
 	}
 	switch keyName {
@@ -175,11 +175,14 @@ func (doc *YamlDocument) parseStep(blockMapping *sitter.Node) []ast.Step {
 // `null` or `~`. The compiler takes a command or job name written that way as
 // a bare invocation, keeping it and ignoring any other keys, which are usually
 // its parameters indented level with it. A built-in step written that way is
-// an error, left to the schema.
+// an error.
 func (doc *YamlDocument) parseNullBodyStep(blockMapping *sitter.Node, keyNode *sitter.Node) []ast.Step {
 	name := doc.GetNodeText(keyNode)
-	if keyNode == nil || name == "<<" || doc.IsBuiltIn(name) {
+	if keyNode == nil || name == "<<" {
 		return nil
+	}
+	if doc.IsBuiltIn(name) {
+		return []ast.Step{ast.BodylessStep{Name: name, Range: doc.NodeToRange(keyNode)}}
 	}
 
 	siblings := []string{}

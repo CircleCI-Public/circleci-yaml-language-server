@@ -38,6 +38,21 @@ func (step NamedStep) GetName() string {
 	return step.Name
 }
 
+// BodylessStep is a built-in step written with no body, such as `- run:` or
+// `- checkout: ~`, which the compiler rejects.
+type BodylessStep struct {
+	Name  string
+	Range protocol.Range
+}
+
+func (step BodylessStep) GetRange() protocol.Range {
+	return step.Range
+}
+
+func (step BodylessStep) GetName() string {
+	return step.Name
+}
+
 type Steps struct {
 	Name            string
 	Parameters      map[string]ParameterValue // Handle more values than just strings
