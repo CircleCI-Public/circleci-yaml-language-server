@@ -491,6 +491,15 @@ func (doc *YamlDocument) parseSimpleParameterValue(paramName string, simpleParam
 		}, nil
 
 	case "string_scalar":
+		if text := doc.GetRawNodeText(simpleParamNodeChild); yamlbool.IsYAML11(text) {
+			return ast2.ParameterValue{
+				Value:      yamlbool.Value(strings.ToLower(text)),
+				ValueRange: doc.NodeToRange(simpleParamNode),
+				Name:       paramName,
+				Type:       "boolean",
+				Range:      rng,
+			}, nil
+		}
 		return ast2.ParameterValue{
 			Value:      doc.GetNodeText(simpleParamNode),
 			ValueRange: doc.NodeToRange(simpleParamNode),
@@ -557,13 +566,6 @@ func (doc *YamlDocument) getDefaultParameterRange(child *sitter.Node) protocol.R
 }
 
 var envVarNamePattern = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
-
-// yaml11Booleans are the plain scalars the compiler's YAML 1.1 parser reads
-// as booleans.
-var yaml11Booleans = []string{
-	"yes", "Yes", "YES", "no", "No", "NO",
-	"on", "On", "ON", "off", "Off", "OFF",
-}
 
 // checkParameterDefault reports a default that isn't of the parameter's type,
 // as the compiler does, and returns whether it is. A templated default isn't
@@ -636,7 +638,7 @@ func (doc *YamlDocument) defaultKind(valueNode *sitter.Node) string {
 		case "null_scalar":
 			return "null"
 		}
-		if slices.Contains(yaml11Booleans, doc.GetRawNodeText(node)) {
+		if yamlbool.IsYAML11(doc.GetRawNodeText(node)) {
 			return "boolean"
 		}
 		return "string"

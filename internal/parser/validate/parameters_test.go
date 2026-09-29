@@ -100,6 +100,53 @@ workflows:
 	CheckYamlErrors(t, testCases)
 }
 
+// The compiler reads a plain yes, no, on or off as a boolean, as YAML 1.1 does.
+func TestYAML11BooleanArguments(t *testing.T) {
+	config := func(paramType, value string) string {
+		return `version: 2.1
+
+jobs:
+  build:
+    parameters:
+      p:
+        type: ` + paramType + `
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo << parameters.p >>
+
+workflows:
+  main:
+    jobs:
+      - build:
+          p: ` + value + `
+`
+	}
+
+	testCases := []ValidateTestCase{
+		{
+			Name:        "given for a string parameter",
+			YamlContent: config("string", "yes"),
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(protocol.Range{
+					Start: protocol.Position{Line: 16, Character: 10},
+					End:   protocol.Position{Line: 16, Character: 16},
+				}, "Parameter p for build must be a string. `yes` is read as a boolean; quote it if it's meant as text."),
+			},
+		},
+		{
+			Name:        "quoted for a string parameter",
+			YamlContent: config("string", `"yes"`),
+		},
+		{
+			Name:        "given for a boolean parameter",
+			YamlContent: config("boolean", "Off"),
+		},
+	}
+
+	CheckYamlErrors(t, testCases)
+}
+
 func TestJobInvocationMissingRequiredParameter(t *testing.T) {
 	testCases := []ValidateTestCase{
 		{
