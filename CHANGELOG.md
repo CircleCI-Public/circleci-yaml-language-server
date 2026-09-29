@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 0.45.0 (2026-09-29)
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+* fix: only offer keys where a key is being written by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/720
+* feat: complete as a dot is typed by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/721
+
+
+**Full Changelog**: https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.44.0...0.45.0
+
 ## 0.44.0 (2026-09-29)
 
 <!-- Release notes generated using configuration in .github/release.yml at main -->
