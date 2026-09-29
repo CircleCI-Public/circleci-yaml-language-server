@@ -219,6 +219,60 @@ parameters:
 			},
 		},
 		{
+			Name: "commands called inside when, unless and with_tool_cache steps",
+			YamlContent: `version: 2.1
+commands:
+  c:
+    parameters:
+      n:
+        type: integer
+        default: 2
+    steps:
+      - run:
+          command: echo hi
+          max_auto_reruns: << parameters.n >>
+jobs:
+  build:
+    machine: true
+    steps:
+      - when:
+          condition: true
+          steps:
+            - c:
+                n: 6
+            - unless:
+                condition: false
+                steps:
+                  - c:
+                      n: 7
+      - with_tool_cache:
+          steps:
+            - c:
+                n: 8
+workflows:
+  workflow:
+    jobs:
+      - build:
+          pre-steps:
+            - when:
+                condition: true
+                steps:
+                  - c:
+                      n: 0
+`,
+			OnlyErrors: true,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(span(19, 19, 20),
+					"max_auto_reruns must be an integer between 1 and 5: parameter n is used for max_auto_reruns, and is given 6"),
+				diagnostic.Error(span(24, 25, 26),
+					"max_auto_reruns must be an integer between 1 and 5: parameter n is used for max_auto_reruns, and is given 7"),
+				diagnostic.Error(span(28, 19, 20),
+					"max_auto_reruns must be an integer between 1 and 5: parameter n is used for max_auto_reruns, and is given 8"),
+				diagnostic.Error(span(38, 25, 26),
+					"max_auto_reruns must be an integer between 1 and 5: parameter n is used for max_auto_reruns, and is given 0"),
+			},
+		},
+		{
 			Name: "an inline orb's command",
 			YamlContent: `version: 2.1
 orbs:
