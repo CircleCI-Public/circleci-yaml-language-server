@@ -3,22 +3,21 @@ package hover
 import (
 	"bytes"
 	"fmt"
-	"regexp"
 	"strings"
 
 	"go.lsp.dev/protocol"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/paramref"
 	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/internal/parser"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 )
 
-var parameterReference = regexp.MustCompile(`<<\s*(pipeline\.parameters|parameters)\.([A-Za-z0-9_-]+)\s*>>`)
-
 // ParameterReference is the hover for a reference to a parameter, such as
-// `<< parameters.os >>` or `<< pipeline.parameters.setup_go >>`: the type,
-// default and description of the parameter it names.
+// `<< parameters.os >>`, `<<# parameters.verbose >>` or
+// `<< pipeline.parameters.setup_go >>`: the type, default and description of
+// the parameter it names.
 func ParameterReference(doc yamlparser.YamlDocument, _ *cache.Cache, pos protocol.Position) (string, bool) {
 	lineStart := position.ToIndex(protocol.Position{Line: pos.Line}, doc.Content)
 	lineEnd := bytes.IndexByte(doc.Content[lineStart:], '\n')
@@ -28,7 +27,7 @@ func ParameterReference(doc yamlparser.YamlDocument, _ *cache.Cache, pos protoco
 	line := doc.Content[lineStart : lineStart+lineEnd]
 	column := int(pos.Character)
 
-	for _, match := range parameterReference.FindAllSubmatchIndex(line, -1) {
+	for _, match := range paramref.Pattern.FindAllSubmatchIndex(line, -1) {
 		if column < match[0] || column > match[1] {
 			continue
 		}
