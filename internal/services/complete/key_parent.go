@@ -3,6 +3,8 @@ package complete
 import (
 	"regexp"
 	"strings"
+
+	"go.lsp.dev/protocol"
 )
 
 var keyBeingWritten = regexp.MustCompile(`^\s*[\w-]*$`)
@@ -18,13 +20,22 @@ func (ch *CompletionHandler) keyParent() ([]string, int) {
 		return lines, -1
 	}
 
-	line := lines[pos.Line]
-	before := line[:min(int(pos.Character), len(line))]
+	before := textBeforeCursor(lines[pos.Line], pos)
 	if !keyBeingWritten.MatchString(before) {
 		return lines, -1
 	}
 
 	return lines, lineAbove(lines, int(pos.Line), indentation(before))
+}
+
+// textBeforeCursor is the text of the cursor's line before it. A cursor past
+// the end of a blank line is indented that far, as in an editor that doesn't
+// write the indentation until something is typed.
+func textBeforeCursor(line string, pos protocol.Position) string {
+	if strings.TrimSpace(line) == "" {
+		return strings.Repeat(" ", int(pos.Character))
+	}
+	return line[:min(int(pos.Character), len(line))]
 }
 
 // parentLine is the line of the key or list item a line is in the body of,

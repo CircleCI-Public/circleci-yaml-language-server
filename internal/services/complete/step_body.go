@@ -100,12 +100,11 @@ func (ch *CompletionHandler) stepAt() (stepPosition, string, int) {
 		return elsewhere, "", 0
 	}
 
-	line := lines[pos.Line]
-	before := line[:min(int(pos.Character), len(line))]
+	before := textBeforeCursor(lines[pos.Line], pos)
 	if stepNameBeingWritten.MatchString(before) {
 		return atStepName, "", 0
 	}
-	if stepWithValue.MatchString(before) {
+	if stepWithValue.MatchString(before) || !keyBeingWritten.MatchString(before) {
 		return elsewhere, "", 0
 	}
 
