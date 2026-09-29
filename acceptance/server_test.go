@@ -222,6 +222,12 @@ func TestInitialize(t *testing.T) {
 		assert.Check(t, result.Capabilities.SemanticTokensProvider != nil, "semantic tokens")
 	})
 
+	t.Run("asks for completion as a dot is typed", func(t *testing.T) {
+		assert.Assert(t, result.Capabilities.CompletionProvider != nil)
+		triggers := result.Capabilities.CompletionProvider.TriggerCharacters
+		assert.Check(t, cmp.Contains(triggers, "."))
+	})
+
 	// Nothing has been opened, so nothing should have been read from the API.
 	t.Run("reads nothing from the API", func(t *testing.T) {
 		requests := fake.Requests()
