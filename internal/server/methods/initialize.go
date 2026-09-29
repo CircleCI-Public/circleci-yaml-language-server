@@ -28,11 +28,16 @@ func (methods *Methods) Initialize(_ context.Context, params *protocol.Initializ
 		// Options that are not an object carry nothing we read.
 		_ = protocol.Unmarshal(params.InitializationOptions, &options)
 	}
-	if isCciExtension, ok := options["isCciExtension"]; ok && isCciExtension == true {
-		methods.updateSettings(func(settings *session.Settings) {
-			settings.IsCciExtension = true
-		})
+	isCciExtension := options["isCciExtension"] == true
+	// Off for the VS Code extension unless it asks for them.
+	schemaHovers, ok := options["schemaHovers"].(bool)
+	if !ok {
+		schemaHovers = !isCciExtension
 	}
+	methods.updateSettings(func(settings *session.Settings) {
+		settings.IsCciExtension = settings.IsCciExtension || isCciExtension
+		settings.SchemaHovers = schemaHovers
+	})
 	if userAgent, ok := options["userAgent"].(string); ok {
 		version.UserAgent += " " + userAgent
 	}

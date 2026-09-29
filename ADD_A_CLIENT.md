@@ -18,8 +18,38 @@ also included in every GitHub release for reference.
 
 ### Hover
 
-The [`textDocument/hover`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_hover) functionality is not yet implemented by the LS. The VS Code extension currently works around this by implementing hover hints client-side using the
-[vscode-json-languageservice](https://github.com/microsoft/vscode-json-languageservice).
+The server answers
+[`textDocument/hover`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_hover)
+with Markdown:
+
+- On a name, what it refers to: a step's command, a job, an executor, a
+  function, an orb, a parameter or a pipeline value.
+- On a key, such as `resource_class` or `run`, the built-in schema's
+  description of it. A name the config chooses, such as a job's, isn't
+  described this way.
+
+A client that already shows the schema's descriptions itself, from
+`schema.json`, can turn the key hovers off with the `schemaHovers`
+initialization option, so that each isn't shown twice.
+
+### Initialization options
+
+The server reads these from the `initialize` request's
+`initializationOptions`:
+
+| Option           | Type    | Meaning                                                                                                                                                                                                                      |
+| ---------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `schemaHovers`   | boolean | Whether hovering a key shows the schema's description of it. On by default, except with `isCciExtension`.                                                                                                                    |
+| `isCciExtension` | boolean | Set by CircleCI's VS Code extension: an orb that can't be found tells the user to sign in there. Without `schemaHovers`, it also turns the key hovers off, as versions of the extension that don't send it show them itself. |
+| `userAgent`      | string  | Appended to the server's user agent in its requests to CircleCI.                                                                                                                                                             |
+
+Example Typescript usage:
+
+```typescript
+const clientOptions: LanguageClientOptions = {
+  initializationOptions: { schemaHovers: false },
+};
+```
 
 ### Configuration
 

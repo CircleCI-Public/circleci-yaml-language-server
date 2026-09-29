@@ -75,11 +75,18 @@ func New(t *testing.T, ctx context.Context, stream io.ReadWriteCloser) *Client {
 
 // --- Requests ---
 
-// Initialize performs the handshake, rooted at the workspace directory.
+// Initialize performs the handshake, rooted at the workspace directory, as
+// the VS Code extension does.
 func (c *Client) Initialize(rootURI uri.URI) (*protocol.InitializeResult, error) {
-	options, err := protocol.Marshal(map[string]any{
+	return c.InitializeWithOptions(rootURI, map[string]any{
 		"isCciExtension": true,
 	})
+}
+
+// InitializeWithOptions performs the handshake with the initializationOptions
+// given.
+func (c *Client) InitializeWithOptions(rootURI uri.URI, initializationOptions map[string]any) (*protocol.InitializeResult, error) {
+	options, err := protocol.Marshal(initializationOptions)
 	if err != nil {
 		return nil, err
 	}

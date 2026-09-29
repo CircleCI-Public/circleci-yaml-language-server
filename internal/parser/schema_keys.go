@@ -57,6 +57,56 @@ func (keys *schemaKeys) at(fields []string) []string {
 	return slices.Compact(names)
 }
 
+// SchemaKeyDescription is what the built-in schema says of the key at the end
+// of fields, a path such as jobs.build.steps.0.run, or "" when it says
+// nothing.
+func SchemaKeyDescription(fields []string) string {
+	return embeddedSchemaKeys().description(fields)
+}
+
+// description is the first description of the key at the end of fields, in
+// every schema that might apply there. Only a key the schema names is
+// described: a name the config chooses, such as a job's, falls under
+// patternProperties or additionalProperties, whose description is of the
+// value rather than of that name.
+func (keys *schemaKeys) description(fields []string) string {
+	if keys == nil || len(fields) == 0 {
+		return ""
+	}
+
+	schemas := keys.expand([]map[string]any{keys.root})
+	for _, field := range fields[:len(fields)-1] {
+		var children []map[string]any
+		for _, schema := range schemas {
+			children = append(children, child(schema, field)...)
+		}
+		schemas = keys.expand(children)
+	}
+
+	key := fields[len(fields)-1]
+	for _, schema := range schemas {
+		properties, _ := schema["properties"].(map[string]any)
+		property, ok := properties[key].(map[string]any)
+		if !ok {
+			continue
+		}
+		for _, described := range keys.expand([]map[string]any{property}) {
+			if text := describedAs(described); text != "" {
+				return text
+			}
+		}
+	}
+	return ""
+}
+
+func describedAs(schema map[string]any) string {
+	if text, ok := schema["markdownDescription"].(string); ok && text != "" {
+		return text
+	}
+	text, _ := schema["description"].(string)
+	return text
+}
+
 // child returns the schemas for field in a value schema describes.
 func child(schema map[string]any, field string) []map[string]any {
 	if _, err := strconv.Atoi(field); err == nil {

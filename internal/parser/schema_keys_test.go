@@ -90,3 +90,55 @@ func TestSchemaKeysFromEachLoader(t *testing.T) {
 		})
 	}
 }
+
+func TestSchemaKeyDescription(t *testing.T) {
+	keys := newSchemaKeys([]byte(`{
+  "definitions": {
+    "job": {
+      "oneOf": [
+        {"type": "string", "markdownDescription": "A job's name."},
+        {"type": "object", "properties": {
+          "size": {"markdownDescription": "How big.", "type": "string"},
+          "plain": {"description": "Only a description.", "type": "string"},
+          "linked": {"$ref": "#/definitions/linked"},
+          "bare": {"type": "string"}
+        }}
+      ]
+    },
+    "linked": {"markdownDescription": "Described where it's defined."}
+  },
+  "properties": {
+    "jobs": {
+      "markdownDescription": "The jobs.",
+      "additionalProperties": {"$ref": "#/definitions/job"}
+    }
+  }
+}`))
+	assert.Assert(t, keys != nil)
+
+	testCases := []struct {
+		name   string
+		fields []string
+		want   string
+	}{
+		{name: "a top-level key", fields: []string{"jobs"}, want: "The jobs."},
+		{name: "a key in one branch of a oneOf", fields: []string{"jobs", "build", "size"}, want: "How big."},
+		{name: "a key with only a description", fields: []string{"jobs", "build", "plain"}, want: "Only a description."},
+		{name: "a key described by its $ref", fields: []string{"jobs", "build", "linked"}, want: "Described where it's defined."},
+		{name: "a key with no description", fields: []string{"jobs", "build", "bare"}, want: ""},
+		{name: "a name the config chooses", fields: []string{"jobs", "build"}, want: ""},
+		{name: "a key the schema doesn't have", fields: []string{"jobs", "build", "nope"}, want: ""},
+		{name: "no key", fields: nil, want: ""},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := keys.description(tc.fields)
+			assert.Check(t, cmp.Equal(got, tc.want))
+		})
+	}
+
+	t.Run("the built-in schema describes a step's option", func(t *testing.T) {
+		got := SchemaKeyDescription([]string{"jobs", "build", "steps", "0", "run", "command"})
+		assert.Check(t, cmp.Equal(got, "Command to run via the shell"))
+	})
+}
