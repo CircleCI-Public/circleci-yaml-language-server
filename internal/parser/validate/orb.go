@@ -309,6 +309,8 @@ func (val Validate) ValidateLocalOrbs() {
 				Cache:       val.Cache,
 				Context:     val.Context,
 				IsLocalOrb:  true,
+				Outer:       &val.Doc,
+				OrbName:     orb.Name,
 			}
 			validateStruct.Validate()
 
