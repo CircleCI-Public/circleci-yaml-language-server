@@ -66,6 +66,29 @@ func (val Validate) warnNullBodySteps(steps []ast2.Step) {
 	}
 }
 
+// warnNullBodyArguments warns about null-body steps in a steps argument,
+// including those in the arguments of the steps it passes.
+func (val Validate) warnNullBodyArguments(values []ast2.ParameterValue) {
+	for _, value := range values {
+		steps, ok := value.Value.([]ast2.Step)
+		if value.Type != "steps" || !ok {
+			continue
+		}
+		val.warnNullBodySteps(steps)
+		for _, step := range steps {
+			step, ok := step.(ast2.NamedStep)
+			if !ok {
+				continue
+			}
+			for _, param := range step.Parameters {
+				if nested, ok := param.Value.([]ast2.ParameterValue); ok {
+					val.warnNullBodyArguments(nested)
+				}
+			}
+		}
+	}
+}
+
 func (val Validate) validateSetupRemoteDocker(step ast2.SetupRemoteDocker) {
 	if step.ResourceClass.Text != "" {
 		val.addDiagnostic(diagnostic.Warning(
