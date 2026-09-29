@@ -103,3 +103,44 @@ workflows:
 		assert.Check(t, !ok)
 	})
 }
+
+func TestParameterReferenceInASection(t *testing.T) {
+	const config = `version: 2.1
+
+parameters:
+  quiet:
+    type: boolean
+    default: false
+
+commands:
+  greet:
+    parameters:
+      loud:
+        type: boolean
+        default: false
+    steps:
+      - run: echo <<# parameters.loud >>-v<</ parameters.loud >> <<^ pipeline.parameters.quiet >>-n<</ pipeline.parameters.quiet >>
+`
+	doc, err := yamlparser.ParseFromContent([]byte(config), testHelpers.DefaultSettings(), uri.File("/config.yml"), protocol.Position{})
+	assert.NilError(t, err)
+	t.Cleanup(doc.Close)
+
+	line := strings.Split(config, "\n")[14]
+	at := func(text string) protocol.Position {
+		return protocol.Position{Line: 14, Character: uint32(strings.Index(line, text) + 1)}
+	}
+
+	for _, tag := range []string{"<<# parameters.loud", "<</ parameters.loud"} {
+		t.Run(tag, func(t *testing.T) {
+			got, ok := ParameterReference(doc, cache.New(), at(tag))
+			assert.Assert(t, ok)
+			assert.Check(t, cmp.Contains(got, "A parameter of the command `greet`."))
+		})
+	}
+
+	t.Run("an inverted section of a pipeline parameter", func(t *testing.T) {
+		got, ok := ParameterReference(doc, cache.New(), at("<<^ pipeline.parameters.quiet"))
+		assert.Assert(t, ok)
+		assert.Check(t, cmp.Contains(got, "A pipeline parameter."))
+	})
+}

@@ -138,3 +138,29 @@ func TestSemanticTokensOfAliases(t *testing.T) {
 		}
 	})
 }
+
+func TestSemanticTokensOfSections(t *testing.T) {
+	tokens := semanticTokens(t, `version: 2.1
+
+jobs:
+  build:
+    parameters:
+      loud:
+        type: boolean
+        default: false
+    docker:
+      - image: cimg/base:current
+    working_directory: <<# parameters.loud >>/tmp<</ parameters.loud >><<^ parameters.loud >>/src<</ parameters.loud >>
+    steps:
+      - checkout
+`)
+
+	for _, want := range []string{
+		"10:23 keyword <<# parameters.loud >>",
+		"10:49 keyword <</ parameters.loud >>",
+		"10:71 keyword <<^ parameters.loud >>",
+		"10:97 keyword <</ parameters.loud >>",
+	} {
+		assert.Check(t, cmp.Contains(tokens, want))
+	}
+}

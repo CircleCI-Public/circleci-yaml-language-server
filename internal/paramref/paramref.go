@@ -13,10 +13,14 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/template"
 )
 
-var paramRegex = regexp.MustCompile(`<<\s*(parameters|pipeline.parameters)\.([A-Za-z0-9-_]*)\s*>>`)
+// Pattern matches a reference to a parameter: a tag, such as
+// `<< parameters.x >>`, or a section's opening or closing tag, such as
+// `<<# parameters.x >>`, `<<^ parameters.x >>` or `<</ parameters.x >>`. Its
+// groups are the path to the parameter and its name.
+var Pattern = regexp.MustCompile(`<<[#^/]?\s*(parameters|pipeline\.parameters)\.([A-Za-z0-9_-]*)\s*>>`)
 
 func Contains(content string) bool {
-	return paramRegex.MatchString(content)
+	return Pattern.MatchString(content)
 }
 
 // Return the name of the parameter used at the given position
@@ -43,7 +47,7 @@ func NameUsedAtPos(content []byte, pos protocol.Position) (string, bool) {
 		lineEnd = lineStart + lineEndRel
 	}
 
-	if !paramRegex.Match(content[lineStart:lineEnd]) {
+	if !Pattern.Match(content[lineStart:lineEnd]) {
 		return "", isPipelineParam
 	}
 
@@ -59,7 +63,7 @@ func NameUsedAtPos(content []byte, pos protocol.Position) (string, bool) {
 
 	endOfParam := startOfParam + endOfParamRel + 2
 
-	param := paramRegex.Find(content[startOfParam:endOfParam])
+	param := Pattern.Find(content[startOfParam:endOfParam])
 
 	// Not a parameter if the regex does not match
 	if param == nil {
@@ -88,7 +92,7 @@ func ReferencesInRange(content []byte, paramName string, rng protocol.Range) ([]
 	startIndex := position.ToIndex(rng.Start, content)
 	endIndex := position.ToIndex(rng.End, content)
 
-	paramRegex, err := regexp.Compile(fmt.Sprintf("<<\\s*(parameters|pipeline.parameters).%s\\s*>>", paramName))
+	paramRegex, err := regexp.Compile(fmt.Sprintf(`<<[#^/]?\s*(parameters|pipeline\.parameters)\.%s\s*>>`, regexp.QuoteMeta(paramName)))
 	if err != nil {
 		return [][]int{}, fmt.Errorf("error while compiling regex: %s", err)
 	}
@@ -190,13 +194,15 @@ func IsMatrixPartiallyReferenced(content string) bool {
 	return partialMatrixRegex.Find([]byte(content)) != nil
 }
 
-// Given a correct parameter string (example: << parameters.something >>)
+// Given a correct parameter string (example: << parameters.something >> or
+// <<# parameters.something >>)
 // will return a pair of strings
 //
 // The first returned value is the full path to the parameter (in example above: parameters.something)
 // The second returned value is the parameter name
 func ExtractName(parameter string) (string, string) {
 	full := strings.Trim(parameter, "<")
+	full = strings.TrimLeft(full, "#^/")
 	full = strings.Trim(full, ">")
 	full = strings.Trim(full, " ")
 

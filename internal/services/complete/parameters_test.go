@@ -72,6 +72,8 @@ jobs:
       - run: echo << parameters.
       - run: echo << parameters.go-
       - run: echo << parameters.os == "linux" and parameters. >>
+      - run: echo <<# parameters.
+      - run: echo <<# parameters.os >>-v<</ parameters.
 
 workflows:
   main:
@@ -99,6 +101,13 @@ workflows:
 		items := completionItemsAfter(t, config, `"linux" and parameters.`)
 		os := findItem(t, items, "os")
 		assert.Check(t, cmp.Equal(os.InsertText, protocol.NewOptional("os")))
+	})
+
+	t.Run("a section's tags offer the job's parameters", func(t *testing.T) {
+		opening := labelsOf(completionItemsAfter(t, config, "echo <<# parameters."))
+		assert.Check(t, cmp.DeepEqual(opening, []string{"go-version", "os"}))
+		closing := labelsOf(completionItemsAfter(t, config, "-v<</ parameters."))
+		assert.Check(t, cmp.DeepEqual(closing, []string{"go-version", "os"}))
 	})
 
 	t.Run("in an expression, the pipeline parameters are offered", func(t *testing.T) {

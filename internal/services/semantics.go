@@ -11,6 +11,7 @@ import (
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/paramref"
 	parser2 "github.com/CircleCI-Public/circleci-yaml-language-server/internal/parser"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/session"
@@ -30,8 +31,6 @@ type SemanticTokenStruct struct {
 	doc             parser2.YamlDocument
 	tokens          *[]Tokens
 }
-
-var PARAM_REGEX, _ = regexp.Compile(`<<\s*(parameters|pipeline.parameters)\.([A-z0-9-_]*)\s*>>`)
 
 func SemanticTokens(params protocol.SemanticTokensParams, cache *cache.Cache, context *session.Settings) protocol.SemanticTokens {
 	doc, err := parser2.ParseFromUriWithCache(params.TextDocument.URI, cache, context)
@@ -129,7 +128,7 @@ func (sem SemanticTokenStruct) highlightBuiltInKeywords(keyNode *sitter.Node) {
 }
 
 func (sem SemanticTokenStruct) highlightParameters(valueNode *sitter.Node) {
-	sem.highlightWithRegex(valueNode, PARAM_REGEX)
+	sem.highlightWithRegex(valueNode, paramref.Pattern)
 }
 
 var cacheKeyTemplateRegex = regexp.MustCompile(`{{ ?(.Branch|.BuildNum|.Revision|.CheckoutKey|.Environment.variableName|checksum .*|epoch|arch) ?}}`)
@@ -265,7 +264,7 @@ func (sem SemanticTokenStruct) highlightCommand(rawCommand string, commandRange 
 		}
 
 		// Find parameters match indexes to add tokens on ranges in between
-		matches := PARAM_REGEX.FindAllIndex([]byte(cmd), -1)
+		matches := paramref.Pattern.FindAllIndex([]byte(cmd), -1)
 
 		// Filling an additional (fake) match to reach end of line
 		matches = append(

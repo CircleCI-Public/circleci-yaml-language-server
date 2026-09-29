@@ -1,6 +1,7 @@
 package paramref
 
 import (
+	"strings"
 	"testing"
 
 	"go.lsp.dev/protocol"
@@ -153,4 +154,41 @@ func TestCouldBothExpandTo(t *testing.T) {
 		got := CouldBothExpandTo(tt.a, tt.b)
 		assert.Check(t, cmp.Equal(got, tt.want), "CouldBothExpandTo(%q, %q)", tt.a, tt.b)
 	}
+}
+
+func TestSections(t *testing.T) {
+	const content = `run: echo <<# parameters.loud >>-v<</ parameters.loud >> <<^ pipeline.parameters.quiet >>-n<</ pipeline.parameters.quiet >>`
+	// at is the end of text, on the name of the parameter it ends with.
+	at := func(text string) protocol.Position {
+		return protocol.Position{Character: uint32(strings.Index(content, text) + len(text))}
+	}
+
+	t.Run("a section's opening tag names its parameter", func(t *testing.T) {
+		name, isPipelineParam := NameUsedAtPos([]byte(content), at("<<# parameters.loud"))
+		assert.Check(t, cmp.Equal(name, "loud"))
+		assert.Check(t, !isPipelineParam)
+	})
+
+	t.Run("a section's closing tag names its parameter", func(t *testing.T) {
+		name, isPipelineParam := NameUsedAtPos([]byte(content), at("<</ parameters.loud"))
+		assert.Check(t, cmp.Equal(name, "loud"))
+		assert.Check(t, !isPipelineParam)
+	})
+
+	t.Run("an inverted section names a pipeline parameter", func(t *testing.T) {
+		name, isPipelineParam := NameUsedAtPos([]byte(content), at("<<^ pipeline.parameters.quiet"))
+		assert.Check(t, cmp.Equal(name, "quiet"))
+		assert.Check(t, isPipelineParam)
+	})
+
+	t.Run("both of a section's tags are references", func(t *testing.T) {
+		whole := protocol.Range{End: protocol.Position{Character: uint32(len(content))}}
+		got, err := ReferencesInRange([]byte(content), "loud", whole)
+		assert.NilError(t, err)
+		texts := []string{}
+		for _, reference := range got {
+			texts = append(texts, content[reference[0]:reference[1]])
+		}
+		assert.Check(t, cmp.DeepEqual(texts, []string{"<<# parameters.loud >>", "<</ parameters.loud >>"}))
+	})
 }
