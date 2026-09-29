@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## 0.45.1 (2026-09-29)
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+* test: check typed keys in commands called under conditional steps by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/723
+* fix: treat a section's tags as references to its parameter by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/724
+* fix: report a built-in step with no body in steps arguments by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/725
+* fix: read a plain yes, no, on or off as a boolean by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/727
+
+
+**Full Changelog**: https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.45.0...0.45.1
+
 ## 0.45.0 (2026-09-29)
 
 <!-- Release notes generated using configuration in .github/release.yml at main -->
