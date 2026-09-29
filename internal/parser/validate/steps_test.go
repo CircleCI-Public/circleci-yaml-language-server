@@ -131,7 +131,8 @@ workflows:
 				diagnostic.Deprecated(protocol.Range{
 					Start: protocol.Position{Line: 7, Character: 8},
 					End:   protocol.Position{Line: 7, Character: 14},
-				}, "The `deploy` step is deprecated. Please use the `run` step instead."),
+				}, "The `deploy` step is deprecated. Replace it with `run`. See "+
+					"https://circleci.com/docs/reference/configuration-reference/#deploy-deprecated"),
 			},
 		},
 	}

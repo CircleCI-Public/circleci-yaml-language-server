@@ -78,7 +78,8 @@ func (val Validate) validateSetupRemoteDocker(step ast2.SetupRemoteDocker) {
 func (val Validate) validateRunCommand(step ast2.Run, jobOrCommandParameters map[string]ast2.Parameter) {
 	if step.IsDeployStep {
 		val.addDiagnostic(diagnostic.Deprecated(step.Range,
-			"The `deploy` step is deprecated. Please use the `run` step instead."))
+			"The `deploy` step is deprecated. Replace it with `run`. See "+
+				"https://circleci.com/docs/reference/configuration-reference/#deploy-deprecated"))
 	}
 
 	// Validate that background steps cannot use max_auto_reruns or auto_rerun_delay
