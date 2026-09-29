@@ -1,5 +1,22 @@
 # CHANGELOG
 
+## 0.44.0 (2026-09-29)
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+* fix: word the deploy step's warning as the compiler does by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/711
+* fix: warn about a null-body step passed in a steps argument by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/712
+* fix: read an executor argument's name in the job it's passed to by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/713
+* fix: check a machine's docker_layer_caching given by a parameter by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/715
+* fix: check the arguments job groups and the config give typed settings by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/716
+* fix: highlight an orb element alias's target in the orb it's declared in by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/717
+* fix: describe a job's resource_class and accept deploy as a step by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/718
+* feat: hover a key to see the schema's description of it by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/719
+
+
+**Full Changelog**: https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.43.2...0.44.0
+
 ## 0.43.2 (2026-09-28)
 
 <!-- Release notes generated using configuration in .github/release.yml at main -->
