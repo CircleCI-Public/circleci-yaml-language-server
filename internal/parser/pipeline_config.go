@@ -24,7 +24,7 @@ var pipelineConfigKeys = map[string]bool{
 }
 
 // IsPipelineConfig reports whether the document is pipeline config. The
-// client sends every YAML file under .circleci/, which also holds files for
+// server serves every YAML file under .circleci/, which also holds files for
 // other tools, such as test-suites.yml for Smarter Testing. A mapping with
 // none of the pipeline's top-level keys is one of those, unless the file is
 // named config.yml, which is config however unfinished it is. A ytt template
