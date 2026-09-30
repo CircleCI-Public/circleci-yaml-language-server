@@ -95,6 +95,26 @@ func TestResourceClassesOfFile(t *testing.T) {
 		assert.Check(t, cmp.Len(unknownClasses, 0))
 	})
 
+	t.Run("asks nothing without a token", func(t *testing.T) {
+		fake, client := runnerFake(t)
+		anonymous := circleci.NewV3Client(client.Host, "", "", false)
+		c := New()
+
+		t.Run("open a file anonymously", func(t *testing.T) {
+			c.SetOrgOfFile(anonymous, rocketConfig, "gh/acme")
+			classes := c.ResourceClassesOfFile(anonymous, rocketConfig)
+			requests := fake.Requests()
+
+			assert.Check(t, cmp.Len(classes, 0))
+			assert.Check(t, cmp.Len(requests, 0))
+		})
+
+		t.Run("check the classes are listed once a token is set", func(t *testing.T) {
+			classes := c.ResourceClassesOfFile(client, rocketConfig)
+			assert.Check(t, cmp.DeepEqual(classes, acmeClasses))
+		})
+	})
+
 	// A repository whose organization CircleCI has never seen has no runners,
 	// and asking again will not change that.
 	t.Run("remembers an organization CircleCI does not know", func(t *testing.T) {
