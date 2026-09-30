@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 0.45.4 (2026-09-30)
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+* fix(deps): update dependencies, bump golang.org/x/crypto to v0.57.0 by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/738
+* test: keep unit tests off the production CircleCI API by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/737
+
+
+**Full Changelog**: https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.45.3...0.45.4
+
 ## 0.45.3 (2026-09-30)
 
 <!-- Release notes generated using configuration in .github/release.yml at main -->
