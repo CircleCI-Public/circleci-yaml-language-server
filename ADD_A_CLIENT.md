@@ -6,6 +6,18 @@ create one, please open an issue so that we can
 this document before starting implementation as there are some specifities to be
 aware of.
 
+### Which files the server serves
+
+The server only answers for files in a `.circleci` directory, such as
+`.circleci/config.yml` or a config under `.circleci/continue/`, and for the orb
+sources it writes out itself for go-to-definition. Any other document is left
+alone: it isn't checked, nothing is published for it, and every request about
+it is answered with `null`.
+
+So a client that can only pick a server by file extension, as Claude Code and
+other coding agents do, can send it every `.yml` and `.yaml` file. GitHub
+workflows, Compose files and Kubernetes manifests won't get false errors.
+
 ### `schema.json`
 
 The [`schema.json`](/schema.json) used for YAML validation is **embedded in the

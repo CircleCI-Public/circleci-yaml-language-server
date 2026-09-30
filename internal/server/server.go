@@ -2,18 +2,21 @@ package languageserver
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log/slog"
 	"net"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
 
 	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/protocol"
+	"go.lsp.dev/uri"
 
 	"github.com/rollbar/rollbar-go"
 
@@ -42,7 +45,7 @@ func (server JSONRPCServer) serve(stream jsonrpc2.Stream) error {
 	// sign every other client in with it.
 	lsp := methods.New(server.ctx, protocol.ClientDispatcher(conn), cache.New(), *server.lsContext, server.SchemaLocation)
 	handler := protocol.ServerHandler(lsp, jsonrpc2.MethodNotFoundHandler)
-	conn.Go(server.ctx, recoverPanics(dropFailedNotifications(logMethods(releaseQueries(handler)))))
+	conn.Go(server.ctx, recoverPanics(dropFailedNotifications(logMethods(servedDocuments(lsp, releaseQueries(handler))))))
 
 	select {
 	case <-lsp.Exited():
@@ -83,6 +86,27 @@ func releaseQueries(handler jsonrpc2.Handler) jsonrpc2.Handler {
 	return func(ctx context.Context, req *jsonrpc2.Request) (any, error) {
 		if queries[req.Method()] {
 			jsonrpc2.Async(ctx)
+		}
+		return handler(ctx, req)
+	}
+}
+
+// servedDocuments leaves out every document the session doesn't serve (see
+// methods.Serves). A request about one is answered with null, which every
+// textDocument request allows, and a notification about one is dropped, so
+// such a document is never cached, checked or published for.
+func servedDocuments(lsp *methods.Methods, handler jsonrpc2.Handler) jsonrpc2.Handler {
+	return func(ctx context.Context, req *jsonrpc2.Request) (any, error) {
+		if strings.HasPrefix(req.Method(), "textDocument/") {
+			var params struct {
+				TextDocument struct {
+					URI uri.URI `json:"uri"`
+				} `json:"textDocument"`
+			}
+			if err := json.Unmarshal(req.Params(), &params); err == nil && !lsp.Serves(params.TextDocument.URI) {
+				slog.Debug("ignoring a document that isn't CircleCI config", "method", req.Method(), "uri", params.TextDocument.URI)
+				return nil, nil
+			}
 		}
 		return handler(ctx, req)
 	}

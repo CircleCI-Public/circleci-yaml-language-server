@@ -1,10 +1,12 @@
 package acceptance
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
@@ -239,6 +241,17 @@ name: windows
 run: gotestsum -- ./...
 `
 
+// gitHubWorkflow is a GitHub Actions workflow. It has jobs and steps, as
+// pipeline config does, so checked as config it would get errors.
+const gitHubWorkflow = `name: CI
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+`
+
 func TestNoFalseErrorsFromOrbs(t *testing.T) {
 	fake := linkedProjectFake(t)
 	// acme/tools, released as 1.0.0 and as the development version
@@ -298,5 +311,42 @@ func TestFilesThatAreNotConfig(t *testing.T) {
 		assert.NilError(t, err)
 
 		assert.Check(t, cmp.DeepEqual(messages(diagnostics), []string{}))
+	})
+
+	t.Run("YAML outside .circleci is left alone", func(t *testing.T) {
+		session := start(t, fake, validConfig, testToken)
+		workflow := uri.File(filepath.Join(session.workspace.Root, ".github", "workflows", "ci.yml"))
+
+		t.Run("open a GitHub workflow, and then the config", func(t *testing.T) {
+			err := session.client.DidOpen(workflow, gitHubWorkflow)
+			assert.NilError(t, err)
+
+			// The workflow was opened first, so checking it would have been
+			// done by the time the config's diagnostics arrive.
+			assert.Check(t, cmp.DeepEqual(session.open(t, validConfig), []string{}))
+		})
+
+		t.Run("nothing is published for the workflow", func(t *testing.T) {
+			_, err := session.client.WaitForDiagnosticsWithin(workflow, 0)
+			assert.Check(t, cmp.ErrorContains(err, "no diagnostics published"))
+		})
+
+		t.Run("requests about the workflow are answered with null", func(t *testing.T) {
+			document := protocol.TextDocumentIdentifier{URI: workflow}
+			at := protocol.TextDocumentPositionParams{TextDocument: document, Position: position(2, 2)}
+			for method, params := range map[string]any{
+				protocol.MethodTextDocumentHover:              protocol.HoverParams{TextDocumentPositionParams: at},
+				protocol.MethodTextDocumentDefinition:         protocol.DefinitionParams{TextDocumentPositionParams: at},
+				protocol.MethodTextDocumentReferences:         protocol.ReferenceParams{TextDocumentPositionParams: at},
+				protocol.MethodTextDocumentCompletion:         protocol.CompletionParams{TextDocumentPositionParams: at},
+				protocol.MethodTextDocumentDocumentSymbol:     protocol.DocumentSymbolParams{TextDocument: document},
+				protocol.MethodTextDocumentSemanticTokensFull: protocol.SemanticTokensParams{TextDocument: document},
+			} {
+				var result json.RawMessage
+				err := session.client.Call(method, params, &result)
+				assert.Check(t, err, method)
+				assert.Check(t, cmp.Equal(string(result), "null"), method)
+			}
+		})
 	})
 }
