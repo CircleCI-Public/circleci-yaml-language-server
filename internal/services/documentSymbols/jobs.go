@@ -72,6 +72,16 @@ func singleJobSymbols(job ast2.Job) protocol.DocumentSymbol {
 		jobSymbol.Children = append(jobSymbol.Children, dockerExecutorSymbols(job.Docker))
 	}
 
+	if !position.IsDefaultRange(job.MachineRange) {
+		jobSymbol.Children = append(jobSymbol.Children, protocol.DocumentSymbol{
+			Name:           "Machine",
+			Range:          job.MachineRange,
+			SelectionRange: job.MachineRange,
+			Kind:           ExecutorSymbol,
+			Children:       []protocol.DocumentSymbol{machineExecutorSymbols(job.Machine)},
+		})
+	}
+
 	if !position.IsDefaultRange(job.EnvironmentRange) {
 		jobSymbol.Children = append(
 			jobSymbol.Children,

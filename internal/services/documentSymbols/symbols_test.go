@@ -69,6 +69,17 @@ executors:
 			want: "Executors > vm",
 		},
 		{
+			name: "job machine without an image",
+			yaml: `version: 2.1
+jobs:
+  build:
+    machine:
+      image:
+    steps: [checkout]
+`,
+			want: "Jobs > build > Machine",
+		},
+		{
 			name: "job without a name",
 			yaml: `version: 2.1
 jobs:
@@ -296,4 +307,22 @@ workflows:
 
 	assert.Check(t, cmp.DeepEqual(lines, wantLines))
 	assert.Check(t, cmp.DeepEqual(keys, wantKeys))
+}
+
+func TestSymbolsForDocument_JobMachine(t *testing.T) {
+	doc := parseDoc(t, `version: 2.1
+jobs:
+  image:
+    machine:
+      image: ubuntu-2204:current
+    steps: [checkout]
+  default:
+    machine: true
+    steps: [checkout]
+`)
+	paths, blank := symbolPaths(SymbolsForDocument(&doc), nil)
+
+	assert.Check(t, cmp.Len(blank, 0))
+	assert.Check(t, cmp.Contains(paths, "Jobs > image > Machine > ubuntu-2204"))
+	assert.Check(t, cmp.Contains(paths, "Jobs > default > Machine > default machine"))
 }
