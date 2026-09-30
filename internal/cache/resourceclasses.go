@@ -37,13 +37,16 @@ func (cache *Cache) SetOrgOfFile(client *circleci.V3Client, file uri.URI, orgSlu
 // ResourceClassesOfFile returns the resource classes of the organization a
 // file belongs to, fetching them only when none are remembered. It returns
 // none when the organization is not known or the fetch fails.
+//
+// Without a token it returns none and asks nothing. Nothing is remembered, so
+// the classes are fetched once a token is set.
 func (cache *Cache) ResourceClassesOfFile(client *circleci.V3Client, file uri.URI) []string {
 	c := &cache.ResourceClassCache
 	c.mutex.Lock()
 	orgSlug := c.orgOfFile[file]
 	c.mutex.Unlock()
 
-	if orgSlug == "" {
+	if orgSlug == "" || client.Token == "" {
 		return nil
 	}
 
