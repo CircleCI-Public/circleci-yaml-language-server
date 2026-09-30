@@ -115,7 +115,18 @@ jobs:
     executor: << parameters.os >>
     steps:
       - setup
-      - with-zig-cache:
+      # Only Windows compiles with Zig. Elsewhere bin/zig is never made, and
+      # its cache would be saved empty under the key the other jobs restore.
+      - when:
+          condition:
+            equal: [windows, << parameters.os >>]
+          steps:
+            - with-zig-cache:
+                steps:
+                  - run: task ci:test
+      - unless:
+          condition:
+            equal: [windows, << parameters.os >>]
           steps:
             - run: task ci:test
       - store_results
