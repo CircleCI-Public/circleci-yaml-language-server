@@ -54,6 +54,7 @@ The server reads these from the `initialize` request's
 | `schemaHovers`   | boolean | Whether hovering a key shows the schema's description of it. On by default, except with `isCciExtension`.                                                                                                                    |
 | `isCciExtension` | boolean | Set by CircleCI's VS Code extension: an orb that can't be found tells the user to sign in there. Without `schemaHovers`, it also turns the key hovers off, as versions of the extension that don't send it show them itself. |
 | `userAgent`      | string  | Appended to the server's user agent in its requests to CircleCI.                                                                                                                                                             |
+| `gitHubSignInCommand` | string | A command of the client's that signs the user in to GitHub and sends the server a token with `setGitHubToken`. An orb on GitHub that can't be fetched without a token then tells the user to sign in, with a quick fix that runs the command, rather than to set `GH_TOKEN`. |
 | `editDebounceMs` | number  | How many milliseconds after a change the document is checked, 1000 by default, so that a burst of keystrokes is checked once. A client whose changes each carry a whole edit, as an agent's do, can set it to 0 to have each checked at once. |
 
 Example Typescript usage:

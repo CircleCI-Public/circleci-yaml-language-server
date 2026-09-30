@@ -17,8 +17,10 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/dockerhub"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/orburl"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/codeaction"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/parser"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/session"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/fakes"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/testHelpers"
 )
@@ -712,6 +714,17 @@ func (a asGitHub) RoundTrip(r *http.Request) (*http.Response, error) {
 func validateWithURLOrb(t *testing.T, orbURLs orburl.Config, orbURL string, steps string) []protocol.Diagnostic {
 	t.Helper()
 
+	settings := testHelpers.DefaultSettings()
+	settings.Api.Token = ""
+	settings.OrbURLs = orbURLs
+
+	return validateWithURLOrbIn(t, settings, orbURL, steps)
+}
+
+// validateWithURLOrbIn is validateWithURLOrb with the server's settings.
+func validateWithURLOrbIn(t *testing.T, settings *session.Settings, orbURL string, steps string) []protocol.Diagnostic {
+	t.Helper()
+
 	yamlContent := `version: 2.1
 
 orbs:
@@ -729,10 +742,6 @@ workflows:
       - bp-go/lint:
           name: lint
 `
-
-	settings := testHelpers.DefaultSettings()
-	settings.Api.Token = ""
-	settings.OrbURLs = orbURLs
 
 	doc, err := parser.ParseFromContent([]byte(yamlContent), settings, uri.File(""), protocol.Position{})
 	assert.NilError(t, err)
@@ -803,6 +812,32 @@ func TestURLOrb(t *testing.T) {
 `)
 		assert.Check(t, cmp.Len(orbWarnings(diags), 0))
 		assert.Check(t, cmp.Len(getErrorDiagnostic(&diags), 1))
+	})
+
+	t.Run("a private orb on GitHub, without a GitHub token, offers the client's sign-in", func(t *testing.T) {
+		settings := testHelpers.DefaultSettings()
+		settings.OrbURLs = orburl.Config{Transport: asGitHub{srv}}
+		settings.GitHubSignInCommand = "acme.signInToGitHub"
+
+		diags := validateWithURLOrbIn(t, settings, onGitHub, `      - bp-go/private-mod-init:
+          private-modules: github.com/circleci/*
+`)
+		assert.Check(t, cmp.DeepEqual(orbWarnings(diags), []string{
+			"This orb could not be fetched: it doesn't exist, or it is private, so nothing used from it is checked." +
+				" Sign in to GitHub to fetch private orbs from it.",
+		}))
+
+		var commands []string
+		for _, diag := range diags {
+			actions, err := codeaction.FromData(diag.Data)
+			assert.NilError(t, err)
+			for _, action := range actions {
+				commands = append(commands, action.Title+": "+action.Command.Command)
+			}
+		}
+		assert.Check(t, cmp.DeepEqual(commands, []string{
+			"Sign in to GitHub to check private orbs: acme.signInToGitHub",
+		}))
 	})
 
 	cases := []struct {

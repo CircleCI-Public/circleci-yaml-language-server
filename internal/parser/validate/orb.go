@@ -136,12 +136,20 @@ func (val Validate) validateURLOrb(orb ast.Orb) {
 	}
 
 	message := reason + ", so nothing used from it is checked."
+	actions := []protocol.CodeAction{}
 	if orbInfo == nil && err == nil && orburl.NeedsGitHubToken(val.Context.OrbURLs, orb.Url.Name) {
-		message += " Set GH_TOKEN or GITHUB_TOKEN for the language server to fetch private orbs from GitHub."
+		if command := val.Context.GitHubSignInCommand; command != "" {
+			message += " Sign in to GitHub to fetch private orbs from it."
+			actions = append(actions, codeaction.Command(gitHubSignInTitle, command))
+		} else {
+			message += " Set GH_TOKEN or GITHUB_TOKEN for the language server to fetch private orbs from GitHub."
+		}
 	}
 
-	val.addDiagnostic(diagnostic.Warning(orb.ValueRange, message))
+	val.addDiagnostic(diagnostic.New(orb.ValueRange, protocol.DiagnosticSeverityWarning, message, actions))
 }
+
+const gitHubSignInTitle = "Sign in to GitHub to check private orbs"
 
 type OrbVersionCodeActionCreator struct {
 	OrbVersion     string
