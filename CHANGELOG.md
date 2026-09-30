@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 0.47.0 (2026-09-30)
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+* feat: check setup_remote_docker's Docker version against the catalog by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/744
+* feat: answer workspace/symbol with the jobs, commands and more of every config by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/745
+
+
+**Full Changelog**: https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.46.0...0.47.0
+
 ## 0.46.0 (2026-09-30)
 
 <!-- Release notes generated using configuration in .github/release.yml at main -->
