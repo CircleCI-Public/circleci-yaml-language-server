@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## 0.48.0 (2026-09-30)
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+* fix: skip the organization lookup when there is no token by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/748
+* feat: offer the client's GitHub sign-in for a private orb on GitHub by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/750
+* ci: stop the release job hanging on a slow Zig download by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/751
+
+
+**Full Changelog**: https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.47.0...0.48.0
+
 ## 0.47.0 (2026-09-30)
 
 <!-- Release notes generated using configuration in .github/release.yml at main -->
