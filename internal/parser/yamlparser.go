@@ -44,6 +44,7 @@ func ParseFile(content []byte, context *session.Settings) YamlDocument {
 
 		LocalOrbInfo: make(map[string]*ast2.OrbInfo),
 	}
+	doc.unreadRanges = doc.unreadTopLevelRanges()
 
 	return doc
 }
@@ -222,8 +223,11 @@ type YamlDocument struct {
 	Content []byte
 	// tree owns RootNode and every node under it. Copies of a document share
 	// it, and it is freed by Close.
-	tree           *yamltree.Tree
-	RootNode       *sitter.Node
+	tree     *yamltree.Tree
+	RootNode *sitter.Node
+	// unreadRanges are the byte ranges of the top-level pairs the compiler
+	// doesn't read, for IsUnderUnreadTopLevelKey.
+	unreadRanges   [][2]uint
 	Version        float32
 	Description    string
 	URI            uri.URI
@@ -780,8 +784,9 @@ func (doc *YamlDocument) FromOrbParsedAttributesToYamlDocument(orb ast2.OrbParse
 		URI:          orb.URI,
 		LocalOrbName: orb.Name,
 
-		RootNode: doc.RootNode,
-		Context:  doc.Context,
+		RootNode:     doc.RootNode,
+		unreadRanges: doc.unreadRanges,
+		Context:      doc.Context,
 
 		Commands:           orb.Commands,
 		Jobs:               orb.Jobs,

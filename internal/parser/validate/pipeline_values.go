@@ -10,7 +10,6 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/pipelinevalues"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/template"
 )
 
@@ -29,12 +28,8 @@ func (val Validate) ValidatePipelineValues() {
 			if val.Doc.IsUnderUnreadTopLevelKey(node) {
 				continue
 			}
-			start := int(node.StartByte())
 			for _, reference := range template.References(val.Doc.GetRawNodeText(node)) {
-				val.checkPipelineValue(reference.Name, protocol.Range{
-					Start: position.FromIndex(start+reference.Start, val.Doc.Content),
-					End:   position.FromIndex(start+reference.End, val.Doc.Content),
-				})
+				val.checkPipelineValue(reference.Name, val.rangeInNode(node, reference.Start, reference.End))
 			}
 		}
 	}

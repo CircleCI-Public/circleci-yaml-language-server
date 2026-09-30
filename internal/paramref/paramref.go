@@ -121,11 +121,25 @@ func CouldExpandTo(content, s string) bool {
 	if !ContainsReference(content) {
 		return content == s
 	}
+	// The text around the references must be in s, in order. What a
+	// reference expands to is taken to be on one line, as a regular
+	// expression's `.*` would. Taking each literal's first place in s leaves
+	// the most of s for the rest.
 	literals := referenceRegex.Split(content, -1)
-	for i, literal := range literals {
-		literals[i] = regexp.QuoteMeta(literal)
+	first, last := literals[0], literals[len(literals)-1]
+	rest, ok := strings.CutPrefix(s, first)
+	if !ok {
+		return false
 	}
-	return regexp.MustCompile("^" + strings.Join(literals, ".*") + "$").MatchString(s)
+	for _, literal := range literals[1 : len(literals)-1] {
+		at := strings.Index(rest, literal)
+		if at < 0 || strings.Contains(rest[:at], "\n") {
+			return false
+		}
+		rest = rest[at+len(literal):]
+	}
+	expanded, ok := strings.CutSuffix(rest, last)
+	return ok && !strings.Contains(expanded, "\n")
 }
 
 // CouldBothExpandTo reports whether a and b, each holding references, could

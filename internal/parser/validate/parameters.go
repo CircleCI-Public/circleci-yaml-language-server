@@ -244,11 +244,7 @@ func (val Validate) CheckIfParamsExist() {
 					continue
 				}
 
-				start := int(node.StartByte())
-				val.addDiagnostic(diagnostic.Error(protocol.Range{
-					Start: position.FromIndex(start+reference.Start, val.Doc.Content),
-					End:   position.FromIndex(start+reference.End, val.Doc.Content),
-				}, message))
+				val.addDiagnostic(diagnostic.Error(val.rangeInNode(node, reference.Start, reference.End), message))
 			}
 		}
 	}
@@ -341,15 +337,7 @@ func (val Validate) checkExecutorParamValue(param ast2.ParameterValue) {
 // only within a job invocation that has a matrix. It reports whether pos is in
 // such an invocation.
 func (val Validate) matrixParametersAt(pos protocol.Position) (map[string]ast2.Parameter, bool) {
-	invocations := []ast2.JobInvocation{}
-	for _, workflow := range val.Doc.Workflows {
-		invocations = append(invocations, workflow.JobInvocations...)
-	}
-	for _, group := range val.Doc.JobGroups {
-		invocations = append(invocations, group.JobInvocations...)
-	}
-
-	for _, invocation := range invocations {
+	for invocation := range invocations(&val.Doc) {
 		rng := invocation.JobInvocationRange
 		if !invocation.HasMatrix || position.Compare(pos, rng.Start) < 0 || position.Compare(pos, rng.End) > 0 {
 			continue

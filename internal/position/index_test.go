@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"go.lsp.dev/protocol"
+	"gotest.tools/v3/assert"
+	"gotest.tools/v3/assert/cmp"
 )
 
 func TestIndexToPos(t *testing.T) {
@@ -113,6 +115,28 @@ func TestPosToIndexRoundTrip(t *testing.T) {
 		pos := FromIndex(index, content)
 		if got := ToIndex(pos, content); got != index {
 			t.Errorf("round trip failed at index %d: got %d", index, got)
+		}
+	}
+}
+
+func TestLinesToIndex(t *testing.T) {
+	for _, content := range []string{"", "foo", "foo\nbar\n\nbaz", "foo\n", "\n\n"} {
+		lines := NewLines([]byte(content))
+		for line := uint32(0); line < 6; line++ {
+			for character := uint32(0); character < 6; character++ {
+				pos := protocol.Position{Line: line, Character: character}
+				assert.Check(t, cmp.Equal(lines.ToIndex(pos), ToIndex(pos, []byte(content))), "content %q, position %v", content, pos)
+			}
+		}
+	}
+}
+
+func TestAdvance(t *testing.T) {
+	content := []byte("foo\nbar\nbaz")
+	for from := 0; from <= len(content); from++ {
+		for to := from; to <= len(content); to++ {
+			got := Advance(FromIndex(from, content), content[from:to])
+			assert.Check(t, cmp.Equal(got, FromIndex(to, content)), "from %d to %d", from, to)
 		}
 	}
 }

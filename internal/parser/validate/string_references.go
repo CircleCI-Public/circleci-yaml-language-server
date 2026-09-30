@@ -107,15 +107,7 @@ func (val Validate) validateExecutorArgumentReference(arg ast.ParameterValue, jo
 // around pos when pos is in an executor argument given as a map, which the
 // compiler reads inside that job.
 func (val Validate) executorArgumentParametersAt(pos protocol.Position) (map[string]ast.Parameter, bool) {
-	invocations := []ast.JobInvocation{}
-	for _, workflow := range val.Doc.Workflows {
-		invocations = append(invocations, workflow.JobInvocations...)
-	}
-	for _, group := range val.Doc.JobGroups {
-		invocations = append(invocations, group.JobInvocations...)
-	}
-
-	for _, invocation := range invocations {
+	for invocation := range invocations(&val.Doc) {
 		if !position.InRange(invocation.JobInvocationRange, pos) {
 			continue
 		}

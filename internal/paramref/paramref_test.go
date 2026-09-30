@@ -131,6 +131,11 @@ func TestCouldExpandTo(t *testing.T) {
 		{"deploy-<< pipeline.parameters.env >>", "build-prod", false},
 		{"<< pipeline.git.branch >> (<< matrix.os >>)", "main (linux)", true},
 		{"a.b-<< pipeline.parameters.x >>", "aXb-1", false},
+		{"<< matrix.a >>-<< matrix.b >>", "x-y", true},
+		{"<< matrix.a >>-<< matrix.b >>", "xy", false},
+		{"a-<< matrix.a >>-a", "a-a", false},
+		{"a-<< matrix.a >>-a", "a--a", true},
+		{"a<< matrix.a >>b", "a\nb", false},
 	}
 	for _, tt := range tests {
 		got := CouldExpandTo(tt.content, tt.s)

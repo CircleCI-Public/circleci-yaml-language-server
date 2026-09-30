@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"bytes"
 	"fmt"
 	"net/url"
 	"os"
@@ -131,22 +132,31 @@ func collectionKeyErrors(rootNode *sitter.Node) []protocol.Diagnostic {
 	return diagnostics
 }
 
+var (
+	yamlLineErrorRegex      = regexp.MustCompile(`(?s)^yaml: line (?P<Lines>\d+):\s(?P<Error>.+)`)
+	yamlMultilineErrorRegex = regexp.MustCompile(`(?s)^yaml:\s(?P<Error>[\w\d\s]+):\n(?P<Lines>\s+line \d+:.+\n?)+`)
+	yamlErrorLineRegex      = regexp.MustCompile(`^\s+line\s+(\d+):\s(.+)$`)
+)
+
 func handleYAMLErrors(err string, content []byte, rootNode *sitter.Node) ([]protocol.Diagnostic, error) {
 	diagnostics := []protocol.Diagnostic{}
 
 	if strings.Contains(err, "yaml: unknown anchor") {
 		anchorName := strings.Split(err, "'")[1]
-		regex, _ := regexp.Compile(anchorName)
-		res := regex.FindAllStringIndex(string(content), -1)
-
-		if len(res) == 0 {
+		if !bytes.Contains(content, []byte(anchorName)) {
 			return []protocol.Diagnostic{}, nil
 		}
 
-		for _, match := range res {
+		for from := 0; ; {
+			at := bytes.Index(content[from:], []byte(anchorName))
+			if at < 0 || anchorName == "" {
+				break
+			}
+			start := from + at
+			from = start + len(anchorName)
 			rng := protocol.Range{
-				Start: position.FromIndex(match[0], content),
-				End:   position.FromIndex(match[1], content),
+				Start: position.FromIndex(start, content),
+				End:   position.FromIndex(from, content),
 			}
 			// The name is found wherever it is in the text, which can be
 			// somewhere no node is, as where tree-sitter recovered from an
@@ -170,10 +180,8 @@ func handleYAMLErrors(err string, content []byte, rootNode *sitter.Node) ([]prot
 		}
 	}
 
-	reError, _ := regexp.Compile(`(?s)^yaml: line (?P<Lines>\d+):\s(?P<Error>.+)`)
-
-	if reError.MatchString(err) {
-		info := reError.FindAllStringSubmatch(err, -1)[0]
+	if yamlLineErrorRegex.MatchString(err) {
+		info := yamlLineErrorRegex.FindAllStringSubmatch(err, -1)[0]
 		lineError := info[2]
 		lineNumber, error := strconv.Atoi(info[1])
 
@@ -193,24 +201,20 @@ func handleYAMLErrors(err string, content []byte, rootNode *sitter.Node) ([]prot
 		return []protocol.Diagnostic{diag}, nil
 	}
 
-	reMultilineError, _ := regexp.Compile(`(?s)^yaml:\s(?P<Error>[\w\d\s]+):\n(?P<Lines>\s+line \d+:.+\n?)+`)
-
-	if !reMultilineError.MatchString(err) {
+	if !yamlMultilineErrorRegex.MatchString(err) {
 		return []protocol.Diagnostic{diagnostic.ErrorFromNode(rootNode, err)}, nil
 	}
 
 	// For errors providing line numbers, we add a diagnostic on the
 	// specified lines
-	mes := reMultilineError.FindAllStringSubmatch(err, -1)[0]
+	mes := yamlMultilineErrorRegex.FindAllStringSubmatch(err, -1)[0]
 	lines := strings.Split(mes[2], "\n")
-
-	re := regexp.MustCompile(`^\s+line\s+(\d+):\s(.+)$`)
 
 	lineIndexes := []int{}
 	lineErrors := []string{}
 
 	for _, line := range lines {
-		info := re.FindAllStringSubmatch(line, -1)[0]
+		info := yamlErrorLineRegex.FindAllStringSubmatch(line, -1)[0]
 
 		lineError := info[2]
 		lineNumber, error := strconv.Atoi(info[1])
