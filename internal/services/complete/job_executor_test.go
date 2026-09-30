@@ -49,8 +49,9 @@ jobs:
 `
 	fake := fakes.NewCircleCI(t)
 	fake.SetMachineOfferings(fakes.MachineOfferings{
-		Linux: map[string][]string{"medium": {"ubuntu-2404:current"}, "large": {"ubuntu-2404:current", "ubuntu-2204:current"}},
-		MacOS: map[string][]string{"m4pro.medium": {"xcode:16.0.0", "xcode:26.0.0"}},
+		Linux:  map[string][]string{"medium": {"ubuntu-2404:current"}, "large": {"ubuntu-2404:current", "ubuntu-2204:current"}},
+		MacOS:  map[string][]string{"m4pro.medium": {"xcode:16.0.0", "xcode:26.0.0"}},
+		Docker: map[string][]string{"medium": {}, "medium+": {}},
 	})
 	settings := testHelpers.SettingsForHost(fake.URL())
 	labels := func(pos protocol.Position) []string {
@@ -67,7 +68,7 @@ jobs:
 
 	t.Run("a docker job's resource class is offered docker's", func(t *testing.T) {
 		got := labels(endOf("resource_class:"))
-		assert.Check(t, cmp.Contains(got, "medium+"))
+		assert.Check(t, cmp.DeepEqual(got, []string{"medium", "medium+"}))
 		assert.Check(t, !slices.Contains(got, "m4pro.medium"), "macOS class offered to a docker job")
 	})
 

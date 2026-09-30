@@ -911,3 +911,93 @@ jobs:
 		})
 	}
 }
+
+func TestValidateRemoteDockerVersion(t *testing.T) {
+	// messages validates a config whose build job runs on executor, with
+	// setup_remote_docker given the body step. The gen2 executor goes unused
+	// by all but one, which isn't what's being checked.
+	messages := func(t *testing.T, executor, step string) []string {
+		t.Helper()
+		val := CreateValidateFromYAML(`version: 2.1
+
+executors:
+  gen2:
+    docker:
+      - image: cimg/base:stable
+    resource_class: medium.gen2
+
+jobs:
+  build:
+` + executor + `
+    steps:
+      - setup_remote_docker:
+` + step + `
+
+workflows:
+  main:
+    jobs:
+      - build
+`)
+		val.Validate()
+		return slices.DeleteFunc(getDiagnosticMessages(val.Diagnostics), func(message string) bool {
+			return message == "Executor is unused"
+		})
+	}
+	const onDocker = "    docker:\n      - image: cimg/base:stable"
+
+	t.Run("a version the class offers", func(t *testing.T) {
+		got := messages(t, onDocker, "          version: docker29")
+		assert.Check(t, cmp.Len(got, 0))
+	})
+
+	t.Run("a version the class doesn't offer", func(t *testing.T) {
+		got := messages(t, onDocker, "          version: 24.0.9")
+		assert.Check(t, cmp.DeepEqual(got, []string{
+			`Docker version "24.0.9" isn't available to setup_remote_docker on resource class "medium"`,
+		}))
+	})
+
+	t.Run("a deprecated version", func(t *testing.T) {
+		got := messages(t, onDocker, "          version: docker24")
+		assert.Check(t, cmp.DeepEqual(got, []string{
+			`Docker version "docker24" is deprecated`,
+		}))
+	})
+
+	t.Run("versions the default is run for", func(t *testing.T) {
+		for _, step := range []string{"          docker_layer_caching: true", "          version: stable"} {
+			got := messages(t, onDocker, step)
+			assert.Check(t, cmp.Len(got, 0), step)
+		}
+	})
+
+	t.Run("a version from a parameter", func(t *testing.T) {
+		got := messages(t, "    parameters:\n      docker:\n        type: string\n        default: nope\n"+onDocker,
+			"          version: << parameters.docker >>")
+		assert.Check(t, cmp.Len(got, 0))
+	})
+
+	t.Run("small runs remote Docker on a medium machine", func(t *testing.T) {
+		got := messages(t, onDocker+"\n    resource_class: small", "          version: nope")
+		assert.Check(t, cmp.DeepEqual(got, []string{
+			`Docker version "nope" isn't available to setup_remote_docker on resource class "small"`,
+		}))
+	})
+
+	t.Run("a named executor's class", func(t *testing.T) {
+		got := messages(t, "    executor: gen2", "          version: docker28")
+		assert.Check(t, cmp.DeepEqual(got, []string{
+			`Docker version "docker28" isn't available to setup_remote_docker on resource class "medium.gen2"`,
+		}))
+	})
+
+	t.Run("a class that can't run remote Docker", func(t *testing.T) {
+		got := messages(t, onDocker+"\n    resource_class: small.gen2", "          version: default")
+		assert.Check(t, cmp.DeepEqual(got, []string{`Resource class "small.gen2" can't run setup_remote_docker`}))
+	})
+
+	t.Run("a machine job isn't checked", func(t *testing.T) {
+		got := messages(t, "    machine:\n      image: ubuntu-2404:current", "          version: nope")
+		assert.Check(t, cmp.Len(got, 0))
+	})
+}

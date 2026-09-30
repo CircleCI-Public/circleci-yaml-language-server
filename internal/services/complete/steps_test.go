@@ -202,7 +202,8 @@ func TestCompleteBuiltInStepValues(t *testing.T) {
 		{"run", "when", []string{"always", "on_success", "on_fail"}},
 		{"save_cache", "when", []string{"always", "on_success", "on_fail"}},
 		{"run", "background", []string{"true", "false"}},
-		{"setup_remote_docker", "version", []string{"default", "24.0.9"}},
+		// The catalog's, for the medium class a Docker job runs on by default.
+		{"setup_remote_docker", "version", []string{"default", "docker28", "docker29", "edge", "previous"}},
 		{"setup_remote_docker", "prefer_same_region", []string{"true", "false"}},
 		{"with_tool_cache", "tool", []string{"gradle", "bazel", "turborepo", "xcode"}},
 		{"run", "command", []string{}},
@@ -221,7 +222,46 @@ jobs:
           ` + tt.key + `: 
 `
 			pos := positionBelow(t, config, "- "+tt.step+":", uint32(len("          "+tt.key+": ")))
-			assert.Check(t, cmp.DeepEqual(completionLabels(t, config, pos), tt.want))
+			got := completionLabelsWith(t, testHelpers.DefaultSettings(), testHelpers.DefaultCache(), config, pos)
+			assert.Check(t, cmp.DeepEqual(got, tt.want))
 		})
 	}
+}
+
+func TestCompleteRemoteDockerVersion(t *testing.T) {
+	versions := func(t *testing.T, executor string) []string {
+		t.Helper()
+		config := `version: 2.1
+
+executors:
+  gen2:
+    docker:
+      - image: cimg/base:stable
+    resource_class: medium.gen2
+
+jobs:
+  build:
+` + executor + `
+    steps:
+      - setup_remote_docker:
+          version: 
+`
+		pos := positionBelow(t, config, "- setup_remote_docker:", uint32(len("          version: ")))
+		return completionLabelsWith(t, testHelpers.DefaultSettings(), testHelpers.DefaultCache(), config, pos)
+	}
+
+	t.Run("a named executor's class gives the versions", func(t *testing.T) {
+		got := versions(t, "    executor: gen2")
+		assert.Check(t, cmp.DeepEqual(got, []string{"default", "docker29", "edge"}))
+	})
+
+	t.Run("a class that can't run remote Docker is offered only the default", func(t *testing.T) {
+		got := versions(t, "    docker:\n      - image: cimg/base:stable\n    resource_class: small.gen2")
+		assert.Check(t, cmp.DeepEqual(got, []string{"default"}))
+	})
+
+	t.Run("a machine job is offered only the default", func(t *testing.T) {
+		got := versions(t, "    machine:\n      image: ubuntu-2404:current")
+		assert.Check(t, cmp.DeepEqual(got, []string{"default"}))
+	})
 }

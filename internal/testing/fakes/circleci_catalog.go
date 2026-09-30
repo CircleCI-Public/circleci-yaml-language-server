@@ -11,12 +11,16 @@ type catalogState struct {
 }
 
 // MachineOfferings is the machine catalog GET /api/v3/catalog/offerings
-// reports. Linux, Windows and MacOS are keyed by resource class; Deprecated is
-// keyed by executor, which is how the real API reports it.
+// reports. Each group is keyed by resource class, except Deprecated, which is
+// keyed by executor.
 type MachineOfferings struct {
-	Linux      map[string][]string
-	Windows    map[string][]string
-	MacOS      map[string][]string
+	Linux   map[string][]string
+	Windows map[string][]string
+	MacOS   map[string][]string
+	// RemoteDocker holds Docker versions rather than images.
+	RemoteDocker map[string][]string
+	// Docker's lists are empty: a Docker class takes any image.
+	Docker     map[string][]string
 	Deprecated map[string][]string
 }
 
@@ -40,10 +44,12 @@ func (f *CircleCI) handleGetOfferings(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
 		"data": map[string]any{
 			"attributes": map[string]any{
-				"linux":      orEmpty(offerings.Linux),
-				"windows":    orEmpty(offerings.Windows),
-				"macos":      orEmpty(offerings.MacOS),
-				"deprecated": orEmpty(offerings.Deprecated),
+				"linux":         orEmpty(offerings.Linux),
+				"windows":       orEmpty(offerings.Windows),
+				"macos":         orEmpty(offerings.MacOS),
+				"remote_docker": orEmpty(offerings.RemoteDocker),
+				"docker":        orEmpty(offerings.Docker),
+				"deprecated":    orEmpty(offerings.Deprecated),
 			},
 		},
 	})

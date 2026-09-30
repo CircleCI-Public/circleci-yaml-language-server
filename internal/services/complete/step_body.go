@@ -34,7 +34,7 @@ var builtInStepKeys = map[string][]string{
 var builtInStepKeyValues = map[string]map[string][]string{
 	"run": {"background": {"true", "false"}},
 	"setup_remote_docker": {
-		"version":              {"default", "24.0.9"},
+		"version":              {"default"},
 		"docker_layer_caching": {"true", "false"},
 		"prefer_same_region":   {"true", "false"},
 	},
@@ -42,10 +42,18 @@ var builtInStepKeyValues = map[string]map[string][]string{
 }
 
 // builtInStepValues is empty for a key whose values can't be listed, such
-// as run's command.
-func builtInStepValues(step, key string) []string {
+// as run's command. setup_remote_docker's versions are the catalog's for the
+// resource class of the job it is in, when that can be told.
+func (ch *CompletionHandler) builtInStepValues(step, key, job string) []string {
 	if key == "when" && slices.Contains(builtInStepKeys[step], "when") {
 		return []string{"always", "on_success", "on_fail"}
+	}
+	if step == "setup_remote_docker" && key == "version" {
+		if class, ok := ch.Doc.DockerResourceClass(ch.Doc.Jobs[job], ch.Cache); ok {
+			if versions := ch.Cache.Offerings(ch.Context.Api).RemoteDockerVersions(class); len(versions) > 0 {
+				return versions
+			}
+		}
 	}
 	return builtInStepKeyValues[step][key]
 }

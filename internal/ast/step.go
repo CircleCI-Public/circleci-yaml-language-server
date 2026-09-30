@@ -119,7 +119,7 @@ type SetupRemoteDocker struct {
 	protocol.Range
 	DockerLayerCaching bool
 	PreferSameRegion   bool
-	Version            string
+	Version            TextAndRange
 	// ResourceClass is not a setup_remote_docker option: the compiler lets it
 	// through, and nothing reads it.
 	ResourceClass TextAndRange

@@ -47,7 +47,7 @@ func (ch *CompletionHandler) completeInJobInvocations(invocations []ast.JobInvoc
 	}
 
 	if isInPreOrPostSteps(ch.Params.Position, invocations) {
-		ch.completeStepList(ch.nodeToComplete())
+		ch.completeStepList(ch.nodeToComplete(), "")
 		return true
 	}
 

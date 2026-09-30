@@ -27,6 +27,7 @@ func (val Validate) validateSingleJob(job ast2.Job) {
 
 	val.validateSteps(job.Steps, job.Name, job.Parameters)
 	val.validateRemoteDockerOnce(job)
+	val.validateRemoteDockerVersion(job)
 
 	if job.Steps != nil && job.Type != "" && job.Type != "build" {
 		val.addDiagnostic(
@@ -183,6 +184,55 @@ func (val Validate) validateRemoteDockerOnce(job ast2.Job) {
 				"More than one setup_remote_docker is not valid, please adjust in job %s.", job.Name)))
 		}
 		seen = true
+	}
+}
+
+// validateRemoteDockerVersion checks a job's setup_remote_docker against the
+// catalog: the machine provisioner rejects a job whose resource class can't
+// run remote Docker, or doesn't offer the Docker version it asks for.
+func (val Validate) validateRemoteDockerVersion(job ast2.Job) {
+	var steps []ast2.SetupRemoteDocker
+	for _, step := range job.Steps {
+		if step, ok := step.(ast2.SetupRemoteDocker); ok {
+			steps = append(steps, step)
+		}
+	}
+	// Resolving the executor can fetch an orb, and the catalog be fetched, so
+	// neither is done for the jobs that don't need them.
+	if len(steps) == 0 {
+		return
+	}
+	class, ok := val.Doc.DockerResourceClass(job, val.Cache)
+	if !ok {
+		return
+	}
+	offerings := val.Cache.Offerings(val.Context.Api)
+	versions := offerings.RemoteDockerVersions(class)
+	if versions == nil {
+		return
+	}
+
+	for _, step := range steps {
+		if len(versions) == 0 {
+			val.addDiagnostic(diagnostic.Error(step.Range, fmt.Sprintf(
+				"Resource class %q can't run setup_remote_docker", class)))
+			continue
+		}
+
+		version := step.Version.Text
+		// Any version the distributor can't use runs the default instead:
+		// none, and "stable".
+		if version == "" || version == "stable" || paramref.ContainsReference(version) ||
+			slices.Contains(versions, version) {
+			continue
+		}
+		if slices.Contains(offerings.DeprecatedRemoteDockerVersions(), version) {
+			val.addDiagnostic(diagnostic.Deprecated(step.Version.Range, fmt.Sprintf(
+				"Docker version %q is deprecated", version)))
+			continue
+		}
+		val.addDiagnostic(diagnostic.Error(step.Version.Range, fmt.Sprintf(
+			"Docker version %q isn't available to setup_remote_docker on resource class %q", version, class)))
 	}
 }
 

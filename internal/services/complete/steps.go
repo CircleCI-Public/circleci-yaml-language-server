@@ -20,19 +20,23 @@ func (ch *CompletionHandler) completeSteps(entityName string, inJob bool, comple
 		ch.addCheckoutMethodCompletion()
 		return
 	}
-	ch.completeStepList(completionNode)
+	job := ""
+	if inJob {
+		job = entityName
+	}
+	ch.completeStepList(completionNode, job)
 }
 
 // completeStepList offers the steps of a list of steps, or the keys of the
-// step whose body the cursor is in.
-func (ch *CompletionHandler) completeStepList(completionNode *sitter.Node) {
+// step whose body the cursor is in. job is the job the steps are in, if any.
+func (ch *CompletionHandler) completeStepList(completionNode *sitter.Node, job string) {
 	if ch.completeFunctionFlags() {
 		return
 	}
 
 	if key, lines, parent := ch.valueAt(); parent != -1 {
 		if match := stepWithBody.FindStringSubmatch(lines[parent]); match != nil {
-			for _, value := range builtInStepValues(match[2], key) {
+			for _, value := range ch.builtInStepValues(match[2], key, job) {
 				ch.addCompletionItem(value)
 			}
 			params := ch.Doc.GetDefinedParams(match[2], yamlparser.CommandEntity, ch.Cache)
