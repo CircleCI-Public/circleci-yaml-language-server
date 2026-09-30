@@ -52,6 +52,11 @@ func (methods *Methods) Initialize(_ context.Context, params *protocol.Initializ
 		methods.debounceEdit = debounce.New(methods.editDebounce)
 	}
 
+	folders, _ := params.WorkspaceFolders.Get()
+	for _, folder := range folders {
+		methods.workspaceFolders = append(methods.workspaceFolders, folder.URI)
+	}
+
 	yes := true
 	incremental := protocol.TextDocumentSyncKindIncremental
 	workDoneProgress := protocol.WorkDoneProgressOptions{WorkDoneProgress: &yes}
@@ -93,7 +98,8 @@ func (methods *Methods) Initialize(_ context.Context, params *protocol.Initializ
 				},
 				ResolveProvider: &yes,
 			},
-			DocumentSymbolProvider: protocol.Boolean(true),
+			DocumentSymbolProvider:  protocol.Boolean(true),
+			WorkspaceSymbolProvider: protocol.Boolean(true),
 		},
 		ServerInfo: protocol.ServerInfo{
 			Name:    "circleci-language-server",

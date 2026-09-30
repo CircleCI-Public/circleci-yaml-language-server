@@ -221,6 +221,7 @@ func TestInitialize(t *testing.T) {
 		assert.Check(t, result.Capabilities.CodeActionProvider != nil, "code actions")
 		assert.Check(t, len(result.Capabilities.ExecuteCommandProvider.Commands) > 0, "commands")
 		assert.Check(t, result.Capabilities.SemanticTokensProvider != nil, "semantic tokens")
+		assert.Check(t, result.Capabilities.WorkspaceSymbolProvider != nil, "workspace symbols")
 	})
 
 	t.Run("asks for completion as a dot is typed", func(t *testing.T) {

@@ -179,6 +179,17 @@ func (c *Client) Hover(docURI uri.URI, position protocol.Position) (*protocol.Ho
 	return result, nil
 }
 
+// WorkspaceSymbols asks for the symbols across the workspace that match a
+// query.
+func (c *Client) WorkspaceSymbols(query string) ([]protocol.SymbolInformation, error) {
+	var result []protocol.SymbolInformation
+	if err := c.call(protocol.MethodWorkspaceSymbol, protocol.WorkspaceSymbolParams{Query: query}, &result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
 // ExecuteCommand runs one of the server's commands, which is how a client
 // configures the host and token it should use.
 func (c *Client) ExecuteCommand(command string, arguments ...any) error {
