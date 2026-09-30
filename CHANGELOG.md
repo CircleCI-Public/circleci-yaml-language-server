@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## 0.45.3 (2026-09-30)
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+* fix: update resource classes in schema by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/733
+* perf: stop reading up the tree for every node when validating by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/735
+* fix: only serve documents in a .circleci directory by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/736
+
+
+**Full Changelog**: https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.45.2...0.45.3
+
 ## 0.45.2 (2026-09-29)
 
 <!-- Release notes generated using configuration in .github/release.yml at main -->
