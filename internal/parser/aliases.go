@@ -1,10 +1,15 @@
 package parser
 
 import (
+	"cmp"
+	"strings"
+
 	sitter "github.com/tree-sitter/go-tree-sitter"
 
 	ast2 "github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/paramref"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 )
 
 // parseAlias reads an entry of `commands`, `jobs` or `executors` whose value
@@ -87,4 +92,31 @@ func resolveElement[T any](doc *YamlDocument, name string, cache *cache.Cache, e
 	}
 	element, ok := elements(orbInfo.OrbParsedAttributes)[elementName]
 	return element, ok
+}
+
+// DockerResourceClass is the resource class of a job on the Docker executor,
+// given in place or through the executor it names. It is false for a job on
+// another executor, and for a class that can't be read: a parameter, or a
+// self-hosted runner's.
+func (doc *YamlDocument) DockerResourceClass(job ast2.Job, cache *cache.Cache) (string, bool) {
+	class := ""
+	if !position.IsDefaultRange(job.DockerRange) {
+		class = job.Docker.ResourceClass
+	} else {
+		if job.Executor == "" || paramref.ContainsReference(job.Executor) {
+			return "", false
+		}
+		executor, ok := doc.ResolveExecutor(job.Executor, cache)
+		docker, isDocker := executor.(ast2.DockerExecutor)
+		if !ok || !isDocker {
+			return "", false
+		}
+		class = cmp.Or(job.ResourceClass, docker.ResourceClass)
+	}
+
+	if paramref.ContainsReference(class) || strings.Contains(class, "/") {
+		return "", false
+	}
+	// The class a Docker job runs on when it gives none.
+	return cmp.Or(class, "medium"), true
 }

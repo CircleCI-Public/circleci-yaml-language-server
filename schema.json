@@ -1658,13 +1658,12 @@
                                             "markdownDescription": "Set this to `true` to pull images from the same region as the VM where possible. If the pull fails, CircleCI falls back to the image's original region"
                                         },
                                         "version": {
-                                            "markdownDescription": "Version string of Docker you would like to use, or `default` (default: `24.0.9`)",
+                                            "markdownDescription": "The Docker version to use, such as `docker29`, `edge` or `previous`, or `default`. The versions offered depend on the job's resource class.",
                                             "anyOf": [
                                                 {
                                                     "type": "string",
                                                     "enum": [
-                                                        "default",
-                                                        "24.0.9"
+                                                        "default"
                                                     ]
                                                 },
                                                 {

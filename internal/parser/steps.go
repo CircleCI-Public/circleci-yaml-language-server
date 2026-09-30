@@ -416,7 +416,7 @@ func (doc *YamlDocument) parseSetupRemoteDockerStep(setupRemoteDockerNode *sitte
 			case "prefer_same_region":
 				res.PreferSameRegion = (doc.GetNodeText(valueNode) == "true")
 			case "version":
-				res.Version = doc.GetNodeText(valueNode)
+				res.Version = ast.TextAndRange{Text: doc.GetNodeText(valueNode), Range: doc.NodeToRange(child)}
 			case "resource_class":
 				res.ResourceClass = ast.TextAndRange{Text: doc.GetNodeText(valueNode), Range: doc.NodeToRange(child)}
 			}

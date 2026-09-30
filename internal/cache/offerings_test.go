@@ -168,6 +168,7 @@ func TestOfferingAccessors(t *testing.T) {
 		MacOS: map[string][]string{
 			"m4pro.medium": {"xcode:16.4.0"},
 		},
+		Docker: map[string][]string{"small": {}, "medium": {}, "medium+.gen2": {}},
 	})
 	ctx := configFor("")
 
@@ -191,14 +192,62 @@ func TestOfferingAccessors(t *testing.T) {
 	macOSClasses := cache.Offerings(ctx).MacOSResourceClasses()
 	assert.Check(t, cmp.DeepEqual(macOSClasses, []string{"m4pro.medium"}, anyOrder))
 
-	// Docker excludes machine-only .gen/.multi/gpu variants from offerings, and
-	// includes Docker-only sizes (small, medium+, and the .gen2 family).
 	dockerClasses := cache.Offerings(ctx).DockerResourceClasses()
-	assert.Check(t, cmp.DeepEqual(dockerClasses, []string{
-		"large", "medium", "medium+", "small",
-		"small.gen2", "medium.gen2", "medium+.gen2", "large.gen2",
-		"xlarge.gen2", "2xlarge.gen2", "2xlarge+.gen2",
-	}, anyOrder))
+	assert.Check(t, cmp.DeepEqual(dockerClasses, []string{"small", "medium", "medium+.gen2"}, anyOrder))
+}
+
+func TestDockerResourceClasses_NilWithoutDocker(t *testing.T) {
+	// As a catalog from before the Docker executor was added to it: its
+	// classes are then not checked, rather than all flagged.
+	offerings := &circleci.Offerings{Linux: map[string][]string{"medium": {"ubuntu-2404:current"}}}
+	classes := offerings.DockerResourceClasses()
+	assert.Check(t, cmp.Nil(classes))
+}
+
+func TestRemoteDockerVersions(t *testing.T) {
+	offerings := &circleci.Offerings{
+		Docker: map[string][]string{
+			"small": {}, "medium": {}, "medium+": {}, "large": {}, "small.gen2": {},
+		},
+		RemoteDocker: map[string][]string{
+			"medium": {"default", "docker28"},
+			"large":  {"default", "docker29"},
+		},
+		Deprecated: map[string][]string{"remote_docker": {"docker24"}},
+	}
+
+	t.Run("a class's own versions", func(t *testing.T) {
+		got := offerings.RemoteDockerVersions("large")
+		assert.Check(t, cmp.DeepEqual(got, []string{"default", "docker29"}))
+	})
+
+	t.Run("small and medium+ run on medium and large machines", func(t *testing.T) {
+		small := offerings.RemoteDockerVersions("small")
+		assert.Check(t, cmp.DeepEqual(small, []string{"default", "docker28"}))
+		mediumPlus := offerings.RemoteDockerVersions("medium+")
+		assert.Check(t, cmp.DeepEqual(mediumPlus, []string{"default", "docker29"}))
+	})
+
+	t.Run("a Docker class without remote Docker has none", func(t *testing.T) {
+		got := offerings.RemoteDockerVersions("small.gen2")
+		assert.Check(t, cmp.DeepEqual(got, []string{}))
+	})
+
+	t.Run("a class the catalog doesn't know isn't said", func(t *testing.T) {
+		got := offerings.RemoteDockerVersions("xlarge")
+		assert.Check(t, cmp.Nil(got))
+	})
+
+	t.Run("a catalog without remote Docker says nothing", func(t *testing.T) {
+		without := &circleci.Offerings{Docker: offerings.Docker}
+		got := without.RemoteDockerVersions("medium")
+		assert.Check(t, cmp.Nil(got))
+	})
+
+	t.Run("deprecated versions are listed apart", func(t *testing.T) {
+		got := offerings.DeprecatedRemoteDockerVersions()
+		assert.Check(t, cmp.DeepEqual(got, []string{"docker24"}))
+	})
 }
 
 func TestMachinePairs_NilWhenUnavailable(t *testing.T) {

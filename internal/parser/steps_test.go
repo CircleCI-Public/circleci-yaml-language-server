@@ -116,7 +116,7 @@ func TestYamlDocument_parseSteps(t *testing.T) {
 				ast.NamedStep{Name: "setup_remote_docker"},
 				ast.SetupRemoteDocker{
 					DockerLayerCaching: true,
-					Version:            "1.12.6",
+					Version:            ast.TextAndRange{Text: "1.12.6"},
 				},
 				ast.SaveCache{
 					Paths:     []string{"/home/user/project/cache", "/home/user/project/cache2"},

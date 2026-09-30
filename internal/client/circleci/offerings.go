@@ -18,6 +18,12 @@ type Offerings struct {
 	Linux   map[string][]string `json:"linux"`
 	Windows map[string][]string `json:"windows"`
 	MacOS   map[string][]string `json:"macos"`
+	// RemoteDocker is the Docker versions setup_remote_docker takes, by the
+	// resource class of the remote machine.
+	RemoteDocker map[string][]string `json:"remote_docker"`
+	// Docker is the Docker executor's resource classes. They take any image,
+	// so their lists are empty.
+	Docker map[string][]string `json:"docker"`
 	// Unlike the lists above, Deprecated is keyed by executor, not resource class, and
 	// excludes images already present there.
 	Deprecated map[string][]string `json:"deprecated"`
@@ -161,31 +167,50 @@ func (o *Offerings) MacOSResourceClasses() []string {
 	return slices.Collect(maps.Keys(o.MacOS))
 }
 
-// DockerResourceClasses is the base Linux classes plus Docker-only sizes.
-// The offerings API only returns machine resource classes, so Docker-only classes
-// (small, medium+, and the .gen2 family) are added here. Machine-only Linux
-// variants (.gen*, .multi, gpu.*) from that API are excluded.
-// See https://circleci.com/docs/configuration-reference/#docker-execution-environment
+// DockerResourceClasses is nil for a catalog that doesn't list the Docker
+// executor's classes, so that they aren't checked.
 func (o *Offerings) DockerResourceClasses() []string {
+	if o == nil || len(o.Docker) == 0 {
+		return nil
+	}
+	return slices.Collect(maps.Keys(o.Docker))
+}
+
+// remoteDockerClasses are the Docker executor's classes that run
+// setup_remote_docker on a machine of another class, as the machine
+// provisioner routes them.
+var remoteDockerClasses = map[string]string{
+	"small":   "medium",
+	"medium+": "large",
+}
+
+// RemoteDockerVersions is the Docker versions setup_remote_docker takes on a
+// Docker job of a resource class, except deprecated ones. It is empty for a
+// class that can't run setup_remote_docker, and nil when the catalog doesn't
+// say: it doesn't list the class as a Docker one, or has no remote Docker
+// versions at all.
+func (o *Offerings) RemoteDockerVersions(dockerClass string) []string {
+	if o == nil || len(o.RemoteDocker) == 0 {
+		return nil
+	}
+	if _, ok := o.Docker[dockerClass]; !ok {
+		return nil
+	}
+	if class, ok := remoteDockerClasses[dockerClass]; ok {
+		dockerClass = class
+	}
+	versions, ok := o.RemoteDocker[dockerClass]
+	if !ok {
+		return []string{}
+	}
+	return versions
+}
+
+// DeprecatedRemoteDockerVersions isn't by resource class: the catalog lists
+// them for remote Docker as a whole.
+func (o *Offerings) DeprecatedRemoteDockerVersions() []string {
 	if o == nil {
 		return nil
 	}
-	classes := []string{
-		"small",
-		"medium+",
-		"small.gen2",
-		"medium.gen2",
-		"medium+.gen2",
-		"large.gen2",
-		"xlarge.gen2",
-		"2xlarge.gen2",
-		"2xlarge+.gen2",
-	}
-	for class := range o.Linux {
-		if strings.Contains(class, ".gen") || strings.Contains(class, ".multi") || strings.HasPrefix(class, "gpu.") {
-			continue
-		}
-		classes = append(classes, class)
-	}
-	return classes
+	return o.Deprecated["remote_docker"]
 }
