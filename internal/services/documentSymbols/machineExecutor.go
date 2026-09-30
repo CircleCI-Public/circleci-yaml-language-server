@@ -6,9 +6,12 @@ import (
 	"go.lsp.dev/protocol"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 )
 
-func machineExecutorSymbols(machineExec ast.MachineExecutor) protocol.DocumentSymbol {
+// machineExecutorSymbols is at the machine's image, or, for `machine: true`,
+// which has none, at given, where the machine is given.
+func machineExecutorSymbols(machineExec ast.MachineExecutor, given protocol.Range) protocol.DocumentSymbol {
 	splits := strings.Split(machineExec.Image, ":")
 
 	machineName := ""
@@ -29,10 +32,15 @@ func machineExecutorSymbols(machineExec ast.MachineExecutor) protocol.DocumentSy
 		}
 	}
 
+	rng := machineExec.ImageRange
+	if position.IsDefaultRange(rng) {
+		rng = given
+	}
+
 	symbol := protocol.DocumentSymbol{
 		Name:           machineName,
-		Range:          machineExec.Range,
-		SelectionRange: machineExec.Range,
+		Range:          rng,
+		SelectionRange: rng,
 		Detail:         unlessZero(machineVersion),
 		Kind:           DockerSymbol,
 		Deprecated:     unlessZero(deprecated), //nolint:staticcheck

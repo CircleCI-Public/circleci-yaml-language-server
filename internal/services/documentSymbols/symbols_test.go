@@ -326,3 +326,42 @@ jobs:
 	assert.Check(t, cmp.Contains(paths, "Jobs > image > Machine > ubuntu-2204"))
 	assert.Check(t, cmp.Contains(paths, "Jobs > default > Machine > default machine"))
 }
+
+func TestSymbolsForDocument_MachineImageOnItsLine(t *testing.T) {
+	doc := parseDoc(t, `version: 2.1
+executors:
+  windows:
+    machine:
+      image: windows-server-2022-gui:current
+jobs:
+  image:
+    machine:
+      image: windows-server-2022-gui:current
+    resource_class: windows.medium
+    steps: [checkout]
+  default:
+    machine: true
+    steps: [checkout]
+`)
+	symbols := SymbolsForDocument(&doc)
+
+	// lines are where the image each machine holds starts, by its path.
+	lines := map[string]uint32{}
+	var visit func(symbols []protocol.DocumentSymbol, parent string)
+	visit = func(symbols []protocol.DocumentSymbol, parent string) {
+		for _, symbol := range symbols {
+			path := parent + " > " + symbol.Name
+			if strings.HasSuffix(parent, " > Machine") || strings.HasSuffix(parent, "windows") {
+				lines[path] = symbol.SelectionRange.Start.Line
+			}
+			visit(symbol.Children, path)
+		}
+	}
+	visit(symbols, "")
+
+	assert.Check(t, cmp.DeepEqual(lines, map[string]uint32{
+		" > Executors > windows > windows-server-2022-gui":    4,
+		" > Jobs > image > Machine > windows-server-2022-gui": 8,
+		" > Jobs > default > Machine > default machine":       12,
+	}))
+}
