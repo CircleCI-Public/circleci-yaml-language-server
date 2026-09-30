@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
@@ -557,4 +558,27 @@ func TestSocketTransport(t *testing.T) {
 		assert.NilError(t, err)
 		assert.Check(t, cmp.Len(diagnostics, 0))
 	})
+}
+
+func TestEditsCheckedAtOnceWhenAsked(t *testing.T) {
+	fake := linkedProjectFake(t)
+	session := startWithOptions(t, fake, workspace.New(t, validConfig), testToken, map[string]any{"editDebounceMs": 0})
+	opened := session.open(t, validConfig)
+	assert.Check(t, cmp.DeepEqual(opened, []string{}))
+
+	// Setting the host and the token each re-check every open document. Wait
+	// for that, so what arrives next is from the change.
+	_, err := session.client.WaitForDiagnostics(session.workspace.URI())
+	assert.NilError(t, err)
+
+	started := time.Now()
+	err = session.client.DidChange(session.workspace.URI(), 2, unknownContextConfig)
+	assert.NilError(t, err)
+
+	diagnostics, err := session.client.WaitForDiagnostics(session.workspace.URI())
+	assert.NilError(t, err)
+	took := time.Since(started)
+
+	assert.Check(t, took < time.Second, "checked after %s", took)
+	assert.Check(t, cmp.Len(diagnostics, 1), "the change is what was checked")
 }

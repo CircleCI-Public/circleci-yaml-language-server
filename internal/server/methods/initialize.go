@@ -2,7 +2,9 @@ package methods
 
 import (
 	"context"
+	"time"
 
+	"github.com/bep/debounce"
 	"go.lsp.dev/protocol"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/session"
@@ -22,6 +24,10 @@ var TokenModifiers = []string{
 	string(protocol.SemanticTokenModifiersAbstract),
 }
 
+// maxEditDebounceMs bounds the editDebounceMs a client can choose. A longer
+// wait than this reads as a mistake, so the default is kept instead.
+const maxEditDebounceMs = 10_000
+
 func (methods *Methods) Initialize(_ context.Context, params *protocol.InitializeParams) (*protocol.InitializeResult, error) {
 	options := map[string]interface{}{}
 	if len(params.InitializationOptions) > 0 {
@@ -40,6 +46,10 @@ func (methods *Methods) Initialize(_ context.Context, params *protocol.Initializ
 	})
 	if userAgent, ok := options["userAgent"].(string); ok {
 		version.UserAgent += " " + userAgent
+	}
+	if ms, ok := options["editDebounceMs"].(float64); ok && ms >= 0 && ms <= maxEditDebounceMs {
+		methods.editDebounce = time.Duration(ms) * time.Millisecond
+		methods.debounceEdit = debounce.New(methods.editDebounce)
 	}
 
 	yes := true

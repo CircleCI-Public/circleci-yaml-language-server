@@ -33,7 +33,10 @@ type Methods struct {
 	settingsUpdates sync.Mutex
 
 	// debounceEdit and debounceRevalidation each run only the last of a burst
-	// of calls, once the burst is over.
+	// of calls, once the burst is over. How long an edit waits is the
+	// client's to choose (see Initialize), so it is set before any document
+	// can change.
+	editDebounce         time.Duration
 	debounceEdit         func(func())
 	debounceRevalidation func(func())
 
@@ -43,13 +46,19 @@ type Methods struct {
 
 var _ protocol.Server = (*Methods)(nil)
 
+// defaultEditDebounce is how long a document is left after a change before it
+// is checked, unless the client chooses otherwise. It is sized for typing, so
+// that a burst of keystrokes is checked once.
+const defaultEditDebounce = time.Second
+
 func New(ctx context.Context, client protocol.Client, cache *cache.Cache, settings session.Settings, schemaLocation string) *Methods {
 	methods := &Methods{
 		Ctx:                  ctx,
 		Client:               client,
 		Cache:                cache,
 		SchemaLocation:       schemaLocation,
-		debounceEdit:         debounce.New(1000 * time.Millisecond),
+		editDebounce:         defaultEditDebounce,
+		debounceEdit:         debounce.New(defaultEditDebounce),
 		debounceRevalidation: debounce.New(1000 * time.Millisecond),
 		exited:               make(chan struct{}),
 	}
