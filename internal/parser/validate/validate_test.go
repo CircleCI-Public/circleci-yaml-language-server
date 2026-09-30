@@ -10,9 +10,10 @@ import (
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
 
-	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/parser"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/session"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/fakes"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/testHelpers"
 )
 
@@ -25,7 +26,12 @@ type ValidateTestCase struct {
 }
 
 func CreateValidateFromYAML(yaml string) Validate {
-	context := testHelpers.DefaultSettings()
+	return createValidate(yaml, testHelpers.DefaultSettings())
+}
+
+// createValidate validates yaml against the API that context names, signed
+// out.
+func createValidate(yaml string, context *session.Settings) Validate {
 	context.Api.Token = ""
 	doc, _ := parser.ParseFromContent([]byte(yaml), context, uri.File(""), protocol.Position{})
 	val := Validate{
@@ -33,7 +39,7 @@ func CreateValidateFromYAML(yaml string) Validate {
 			DockerHub: DockerHubMock{},
 		},
 		Diagnostics: &[]protocol.Diagnostic{},
-		Cache:       cache.New(),
+		Cache:       testHelpers.DefaultCache(),
 		Doc:         doc,
 		Context:     context,
 	}
@@ -47,15 +53,23 @@ func CompareDiagnostics(t *testing.T, expected, actual *[]protocol.Diagnostic) {
 }
 
 func CheckYamlErrors(t *testing.T, testCases []ValidateTestCase) {
-	context := testHelpers.DefaultSettings()
-	context.Api.Token = ""
+	checkYamlErrors(t, testHelpers.DefaultSettings, testCases)
+}
+
+// CheckYamlErrorsAgainst is CheckYamlErrors against a fake CircleCI API, for
+// cases whose orbs are fetched.
+func CheckYamlErrorsAgainst(t *testing.T, fake *fakes.CircleCI, testCases []ValidateTestCase) {
+	isolateOrbSources(t)
+	checkYamlErrors(t, func() *session.Settings { return testHelpers.SettingsForHost(fake.URL()) }, testCases)
+}
+
+func checkYamlErrors(t *testing.T, settings func() *session.Settings, testCases []ValidateTestCase) {
 	for _, tt := range testCases {
 		t.Run(tt.Name, func(t *testing.T) {
 			if strings.Contains(tt.YamlContent, "\t") {
 				t.Fatal("Test YAML content contains tab characters -- YAML does not allow tabs for indentation. Use spaces instead.")
 			}
-			val := CreateValidateFromYAML(tt.YamlContent)
-			val.Cache.MachineOfferingsCache.Set(testMachineOfferings())
+			val := createValidate(tt.YamlContent, settings())
 			val.Validate()
 
 			diags := *val.Diagnostics

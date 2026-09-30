@@ -12,6 +12,7 @@ import (
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
@@ -185,24 +186,6 @@ func yamlForMachine(resourceClass, image string) string {
 	return builder.String()
 }
 
-// testMachineOfferings is a minimal offerings set: separate linux, windows, and macOS
-// classes, so a linux class paired with a windows image is an invalid pair.
-func testMachineOfferings() *circleci.Offerings {
-	return &circleci.Offerings{
-		Linux:   map[string][]string{"medium": {circleci.CurrentLinuxImage}},
-		Windows: map[string][]string{"windows.medium": {"windows-server-2022-gui:current"}},
-		MacOS: map[string][]string{
-			"m4pro.medium": {"xcode:26.5.0"},
-			"m4pro.large":  {"xcode:26.5.0"},
-		},
-		Deprecated: map[string][]string{
-			"linux":   {"ubuntu-2004:2024.04.4"},
-			"windows": {},
-			"macos":   {"xcode:26.0.1"},
-		},
-	}
-}
-
 func TestUnknownMachineImageSeverity(t *testing.T) {
 	severities := map[string]protocol.DiagnosticSeverity{
 		"bad-image":              protocol.DiagnosticSeverityError,
@@ -215,7 +198,6 @@ func TestUnknownMachineImageSeverity(t *testing.T) {
 	for image, want := range severities {
 		t.Run(image, func(t *testing.T) {
 			val := CreateValidateFromYAML(yamlForMachine("", image))
-			val.Cache.MachineOfferingsCache.Set(testMachineOfferings())
 			val.Validate()
 
 			assert.Assert(t, cmp.Len(*val.Diagnostics, 1))
@@ -236,6 +218,7 @@ func TestMachineExecutorSkipsWhenOfferingsUnavailable(t *testing.T) {
 
 	val := CreateValidateFromYAML(yamlForMachine("toto", "bogus:image"))
 	val.Context.Api.HostUrl = server.URL
+	val.Cache = cache.New() // no catalog, so it is fetched from the failing server
 	val.Validate()
 
 	assert.Check(t, cmp.Len(*val.Diagnostics, 0))
@@ -266,7 +249,6 @@ executors:
 	for _, c := range testCases {
 		t.Run(c.name, func(t *testing.T) {
 			val := CreateValidateFromYAML(c.yamlContent)
-			val.Cache.MachineOfferingsCache.Set(testMachineOfferings())
 			val.Validate()
 
 			var found *protocol.Diagnostic
@@ -513,7 +495,6 @@ jobs:
 	for _, c := range testCases {
 		t.Run(c.name, func(t *testing.T) {
 			val := CreateValidateFromYAML(c.yamlContent)
-			val.Cache.MachineOfferingsCache.Set(testMachineOfferings())
 			val.Validate()
 
 			if c.errRegex == "" {

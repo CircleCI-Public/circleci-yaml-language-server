@@ -410,7 +410,7 @@ workflows:
 		Doc:         doc,
 		Context:     lsContext,
 	}
-	val.Cache.MachineOfferingsCache.Set(testMachineOfferings())
+	val.Cache.MachineOfferingsCache.Set(testHelpers.MachineOfferings())
 	val.Validate()
 
 	errors := []string{}

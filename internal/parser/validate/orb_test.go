@@ -77,35 +77,6 @@ jobs:
 			},
 		},
 		{
-			Name:       "Local orb step should give well located errors",
-			OnlyErrors: true,
-			YamlContent: `version: 2.1
-
-orbs:
-  slack: circleci/slack@4.10.1
-  localorb:
-    commands:
-      localcommand:
-        steps:
-          - run: echo "Hello world"
-          - localorb/echo
-
-jobs:
-  build:
-    docker:
-      - image: cimg/base:stable
-    steps:
-      - localorb/localcommand
-`,
-			Diagnostics: []protocol.Diagnostic{
-				diagnostic.Error(protocol.Range{
-					Start: protocol.Position{Line: 9, Character: 12},
-					End:   protocol.Position{Line: 9, Character: 25},
-				},
-					"Cannot find declaration for step localorb/echo"),
-			},
-		},
-		{
 			Name:       "Local orb job should give well located errors",
 			OnlyErrors: true,
 			YamlContent: `version: 2.1
@@ -125,33 +96,6 @@ workflows:
       - localorb/localjob
 `,
 			Diagnostics: []protocol.Diagnostic{},
-		},
-		{
-			// This test is mainly here because checking an orb's executor would cause a crash
-			Name: "Invalid remote orb",
-			YamlContent: `version: 2.1
-
-orbs:
-  slack: circleci/toto@1.0.0
-
-jobs:
-  build:
-    executor: slack/exec
-    steps:
-      - run: echo "Hello world"`,
-			// We want an error on the orb and a warning on the executor
-			Diagnostics: []protocol.Diagnostic{
-				diagnostic.Error(protocol.Range{
-					Start: protocol.Position{Line: 3, Character: 2},
-					End:   protocol.Position{Line: 3, Character: 28},
-				},
-					"Orb circleci/toto does not exist or is private."),
-				diagnostic.Warning(protocol.Range{
-					Start: protocol.Position{Line: 7, Character: 4},
-					End:   protocol.Position{Line: 7, Character: 24},
-				},
-					"Invalid orb or error trying to fetch it: could not find orb circleci/toto@1.0.0"),
-			},
 		},
 		{
 			Name: "Local orb with job",
@@ -296,10 +240,103 @@ workflows:
 	CheckYamlErrors(t, testCases)
 }
 
+// slackOrbSource stands in for circleci/slack@4.10.1: only its notify command,
+// with the parameters these tests pass it.
+const slackOrbSource = `version: 2.1
+
+commands:
+  notify:
+    parameters:
+      custom:
+        type: string
+        default: ""
+      event:
+        type: enum
+        enum: [fail, pass, always]
+        default: always
+    steps:
+      - run: echo notify
+`
+
+// slackOrbFake serves circleci/slack@4.10.1 and nothing else, so circleci/toto
+// is an orb that doesn't exist.
+func slackOrbFake(t *testing.T) *fakes.CircleCI {
+	t.Helper()
+
+	fake := fakes.NewCircleCI(t)
+	fake.AddNamespace("ns-circleci", "circleci")
+	fake.AddOrbPackage("orb-slack", "ns-circleci", "circleci", "slack", false, true)
+	fake.AddOrbVersion("ver-slack-4-10-1", "orb-slack", "circleci/slack", "4.10.1", slackOrbSource, "")
+	return fake
+}
+
+func TestRemoteOrbValidation(t *testing.T) {
+	CheckYamlErrorsAgainst(t, slackOrbFake(t), []ValidateTestCase{
+		{
+			Name:       "Local orb step should give well located errors",
+			OnlyErrors: true,
+			YamlContent: `version: 2.1
+
+orbs:
+  slack: circleci/slack@4.10.1
+  localorb:
+    commands:
+      localcommand:
+        steps:
+          - run: echo "Hello world"
+          - localorb/echo
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - localorb/localcommand
+`,
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(protocol.Range{
+					Start: protocol.Position{Line: 9, Character: 12},
+					End:   protocol.Position{Line: 9, Character: 25},
+				},
+					"Cannot find declaration for step localorb/echo"),
+			},
+		},
+		{
+			// This test is mainly here because checking an orb's executor would cause a crash
+			Name: "Invalid remote orb",
+			YamlContent: `version: 2.1
+
+orbs:
+  slack: circleci/toto@1.0.0
+
+jobs:
+  build:
+    executor: slack/exec
+    steps:
+      - run: echo "Hello world"`,
+			// We want an error on the orb and a warning on the executor
+			Diagnostics: []protocol.Diagnostic{
+				diagnostic.Error(protocol.Range{
+					Start: protocol.Position{Line: 3, Character: 2},
+					End:   protocol.Position{Line: 3, Character: 28},
+				},
+					"Orb circleci/toto does not exist or is private."),
+				diagnostic.Warning(protocol.Range{
+					Start: protocol.Position{Line: 7, Character: 4},
+					End:   protocol.Position{Line: 7, Character: 24},
+				},
+					"Invalid orb or error trying to fetch it: could not find orb circleci/toto@1.0.0"),
+			},
+		},
+	})
+}
+
 func TestOrbStepsUsedInParameters(t *testing.T) {
+	isolateOrbSources(t)
+
 	content, err := os.ReadFile("testdata/orb_steps_used_in_params.yml")
 	assert.Check(t, err)
-	val := CreateValidateFromYAML(string(content))
+	val := createValidate(string(content), testHelpers.SettingsForHost(slackOrbFake(t).URL()))
 	val.Validate()
 	for _, diag := range *val.Diagnostics {
 		if diag.Message == protocol.String("Orb is unused") {
@@ -322,7 +359,7 @@ func TestLocalOrbUsedPartsFalsePositive(t *testing.T) {
 			DockerHub: dockerhub.NewAPI(),
 		},
 		Diagnostics: &[]protocol.Diagnostic{},
-		Cache:       cache.New(),
+		Cache:       testHelpers.DefaultCache(),
 		Doc:         doc,
 		Context:     context,
 	}
@@ -344,7 +381,7 @@ func TestLocalOrbUnusedPartsFalseNegative(t *testing.T) {
 			DockerHub: dockerhub.NewAPI(),
 		},
 		Diagnostics: &[]protocol.Diagnostic{},
-		Cache:       cache.New(),
+		Cache:       testHelpers.DefaultCache(),
 		Doc:         doc,
 		Context:     context,
 	}
@@ -837,7 +874,7 @@ workflows:
       - build
       - param
 `)
-		val.Cache.MachineOfferingsCache.Set(testMachineOfferings())
+		val.Cache.MachineOfferingsCache.Set(testHelpers.MachineOfferings())
 		val.Validate()
 
 		said := []string{}
