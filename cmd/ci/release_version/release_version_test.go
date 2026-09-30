@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -11,6 +12,8 @@ import (
 
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
+
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/httpcl"
 )
 
 func TestNextVersion(t *testing.T) {
@@ -97,13 +100,15 @@ func TestListReleases(t *testing.T) {
 	t.Cleanup(server.Close)
 
 	t.Run("Every page", func(t *testing.T) {
-		got, err := listReleases(server.Client(), server.URL, "owner/repo", "token")
+		cl := httpcl.New(httpcl.Config{BaseURL: server.URL, AuthToken: "token"})
+		got, err := listReleases(context.Background(), cl, "owner/repo")
 		assert.NilError(t, err)
 		assert.Check(t, cmp.DeepEqual(got, append(pages[0], pages[1]...)))
 	})
 
 	t.Run("An error response", func(t *testing.T) {
-		_, err := listReleases(server.Client(), server.URL, "owner/other", "token")
+		cl := httpcl.New(httpcl.Config{BaseURL: server.URL, AuthToken: "token"})
+		_, err := listReleases(context.Background(), cl, "owner/other")
 		assert.Check(t, cmp.ErrorContains(err, "404"))
 	})
 }

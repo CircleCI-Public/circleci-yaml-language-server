@@ -1,6 +1,12 @@
 package main
 
 import (
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"net/http"
+	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -36,5 +42,57 @@ func TestWithin(t *testing.T) {
 			_, err := within(dir, name)
 			assert.Check(t, cmp.ErrorContains(err, "escapes"), "entry %q", name)
 		}
+	})
+}
+
+func TestParseMirrors(t *testing.T) {
+	list := "https://pkg.example.org/zig\n\n# retired\nhttps://zig.example.net/\n"
+
+	mirrors := parseMirrors(list)
+
+	assert.Check(t, cmp.DeepEqual(mirrors, []string{"https://pkg.example.org/zig", "https://zig.example.net"}))
+}
+
+func TestFetch(t *testing.T) {
+	const file = "zig-x86_64-linux-" + version + ".tar.xz"
+	archive := []byte("an archive")
+	sum := sha256.Sum256(archive)
+	want := hex.EncodeToString(sum[:])
+
+	serving := func(t *testing.T, body []byte) string {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path != "/"+file || r.URL.Query().Get("source") != source {
+				http.NotFound(w, r)
+				return
+			}
+			_, _ = w.Write(body)
+		}))
+		t.Cleanup(server.Close)
+		return server.URL
+	}
+
+	t.Run("the first source that serves the archive is used", func(t *testing.T) {
+		dir := t.TempDir()
+		wrong := serving(t, []byte("something else"))
+		right := serving(t, archive)
+
+		path, err := fetch(context.Background(), dir, file, want, []string{wrong, right})
+		assert.NilError(t, err)
+
+		got, err := os.ReadFile(path)
+		assert.NilError(t, err)
+		assert.Check(t, cmp.DeepEqual(got, archive))
+	})
+
+	t.Run("it fails when no source does", func(t *testing.T) {
+		dir := t.TempDir()
+		wrong := serving(t, []byte("something else"))
+
+		_, err := fetch(context.Background(), dir, file, want, []string{wrong})
+		assert.Check(t, cmp.ErrorContains(err, "no source served "+file))
+
+		leftover, err := os.ReadDir(dir)
+		assert.NilError(t, err)
+		assert.Check(t, cmp.Len(leftover, 0), "a failed download leaves nothing behind")
 	})
 }

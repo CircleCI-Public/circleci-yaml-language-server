@@ -9,21 +9,38 @@ package main
 import (
 	"archive/tar"
 	"archive/zip"
+	"bufio"
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
+	"math/rand/v2"
 	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/ulikunitz/xz"
+
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/httpcl"
 )
 
 const version = "0.16.0"
+
+const (
+	officialURL = "https://ziglang.org/download/" + version
+	mirrorsURL  = "https://ziglang.org/download/community-mirrors.txt"
+	// downloadTimeout is how long one source has to serve the archive, about
+	// 50 MB, which a healthy mirror serves in a couple of seconds.
+	downloadTimeout = time.Minute
+	// source identifies these downloads to the mirrors, as they ask.
+	source = "circleci-yaml-language-server"
+)
 
 // checksums are the SHA-256 of each host's archive, keyed by Zig's
 // <arch>-<os> name for it.
@@ -75,7 +92,8 @@ func install(dir, goos, goarch string) (string, error) {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return "", err
 	}
-	archive, err := download(dir, "https://ziglang.org/download/"+version+"/"+name+ext, checksums[host])
+	ctx := context.Background()
+	archive, err := fetch(ctx, dir, name+ext, checksums[host], sources(ctx, mirrorsURL))
 	if err != nil {
 		return "", err
 	}
@@ -118,8 +136,56 @@ func zigHost(goos, goarch string) (string, error) {
 	return host, nil
 }
 
+// sources are the base URLs to fetch the archive from: the community mirrors
+// listed at mirrorsURL, shuffled, and then ziglang.org, as the Zig project
+// asks. When the list can't be read, ziglang.org is the only one.
+func sources(ctx context.Context, mirrorsURL string) []string {
+	var list string
+	_, err := httpcl.New(httpcl.Config{BaseURL: mirrorsURL}).
+		Call(ctx, httpcl.NewRequest(http.MethodGet, "", httpcl.StringDecoder(&list)))
+	if err != nil {
+		logf("listing mirrors: %v", err)
+		return []string{officialURL}
+	}
+
+	mirrors := parseMirrors(list)
+	rand.Shuffle(len(mirrors), func(i, j int) { mirrors[i], mirrors[j] = mirrors[j], mirrors[i] })
+	return append(mirrors, officialURL)
+}
+
+// parseMirrors reads a list of mirrors, one base URL a line.
+func parseMirrors(list string) []string {
+	var mirrors []string
+	scanner := bufio.NewScanner(strings.NewReader(list))
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		mirrors = append(mirrors, strings.TrimSuffix(line, "/"))
+	}
+	return mirrors
+}
+
+// fetch downloads file from the first of bases that serves it with sha256
+// want, into dir.
+func fetch(ctx context.Context, dir, file, want string, bases []string) (string, error) {
+	var errs []error
+	for _, base := range bases {
+		url := base + "/" + file
+		logf("downloading %s", url)
+		archive, err := download(ctx, dir, url, want)
+		if err == nil {
+			return archive, nil
+		}
+		logf("%v", err)
+		errs = append(errs, err)
+	}
+	return "", fmt.Errorf("no source served %s: %w", file, errors.Join(errs...))
+}
+
 // download fetches url into dir and checks it against sha256.
-func download(dir, url, want string) (_ string, err error) {
+func download(ctx context.Context, dir, url, want string) (_ string, err error) {
 	f, err := os.CreateTemp(dir, ".download-")
 	if err != nil {
 		return "", err
@@ -131,23 +197,25 @@ func download(dir, url, want string) (_ string, err error) {
 		}
 	}()
 
-	resp, err := http.Get(url) //nolint:gosec,noctx // a pinned URL, and a one-shot command
-	if err != nil {
-		return "", err
-	}
-	defer func() { _ = resp.Body.Close() }()
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("downloading %s: %s", url, resp.Status)
-	}
-
 	sum := sha256.New()
-	if _, err := io.Copy(io.MultiWriter(f, sum), resp.Body); err != nil {
+	cl := httpcl.New(httpcl.Config{BaseURL: url, Timeout: downloadTimeout})
+	_, err = cl.Call(ctx, httpcl.NewRequest(http.MethodGet, "",
+		httpcl.QueryParam("source", source),
+		httpcl.CopyDecoder(io.MultiWriter(f, sum)),
+	))
+	if err != nil {
 		return "", fmt.Errorf("downloading %s: %w", url, err)
 	}
 	if got := hex.EncodeToString(sum.Sum(nil)); got != want {
 		return "", fmt.Errorf("%s has checksum %s, want %s", url, got, want)
 	}
 	return f.Name(), f.Close()
+}
+
+// logf reports progress on stderr, which the task running this shows, so a
+// slow download says what it is waiting on.
+func logf(format string, args ...any) {
+	_, _ = fmt.Fprintf(os.Stderr, "install_zig: "+format+"\n", args...)
 }
 
 func untarXZ(archive, dest string) error {

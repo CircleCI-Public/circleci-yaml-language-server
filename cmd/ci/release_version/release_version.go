@@ -8,6 +8,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -17,6 +18,8 @@ import (
 	"strconv"
 
 	"github.com/Masterminds/semver/v3"
+
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/httpcl"
 )
 
 // release is the part of a GitHub release this command reads.
@@ -47,7 +50,8 @@ func run(api, repo, manifest string) error {
 	if err != nil {
 		return err
 	}
-	releases, err := listReleases(http.DefaultClient, api, repo, token)
+	cl := httpcl.New(httpcl.Config{BaseURL: api, AuthToken: token})
+	releases, err := listReleases(context.Background(), cl, repo)
 	if err != nil {
 		return err
 	}
@@ -77,23 +81,16 @@ func manifestVersion(path string) (string, error) {
 
 // listReleases reads every page of the repository's releases, drafts and
 // prereleases included.
-func listReleases(client *http.Client, api, repo, token string) ([]release, error) {
+func listReleases(ctx context.Context, cl *httpcl.Client, repo string) ([]release, error) {
 	var all []release
 	for page := 1; ; page++ {
-		url := fmt.Sprintf("%s/repos/%s/releases?per_page=100&page=%d", api, repo, page)
-		req, err := http.NewRequest(http.MethodGet, url, nil)
-		if err != nil {
-			return nil, err
-		}
-		req.Header.Set("Accept", "application/vnd.github+json")
-		req.Header.Set("Authorization", "Bearer "+token)
-
-		resp, err := client.Do(req)
-		if err != nil {
-			return nil, err
-		}
 		var releases []release
-		err = decode(resp, &releases)
+		_, err := cl.Call(ctx, httpcl.NewRequest(http.MethodGet, "/repos/"+repo+"/releases",
+			httpcl.Header("Accept", "application/vnd.github+json"),
+			httpcl.QueryParam("per_page", "100"),
+			httpcl.QueryParam("page", strconv.Itoa(page)),
+			httpcl.JSONDecoder(&releases),
+		))
 		if err != nil {
 			return nil, fmt.Errorf("listing releases: %w", err)
 		}
@@ -102,14 +99,6 @@ func listReleases(client *http.Client, api, repo, token string) ([]release, erro
 		}
 		all = append(all, releases...)
 	}
-}
-
-func decode(resp *http.Response, v any) error {
-	defer func() { _ = resp.Body.Close() }()
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("GitHub API returned %s", resp.Status)
-	}
-	return json.NewDecoder(resp.Body).Decode(v)
 }
 
 var prereleaseNumber = regexp.MustCompile(`^pre\.(\d+)$`)
