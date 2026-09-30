@@ -2,6 +2,7 @@ package validate
 
 import (
 	"fmt"
+	"iter"
 	"regexp"
 	"slices"
 	"strconv"
@@ -140,13 +141,15 @@ func (val Validate) ValidateTypedKeyReferences() {
 		if keyNode == nil || valueNode == nil {
 			continue
 		}
-		key, ok := val.typedKeyOf(node, val.Doc.GetNodeText(keyNode))
-		if !ok {
+		// The value is checked first: finding the key's place reads up the
+		// tree, which costs more.
+		value := val.Doc.GetNodeText(valueNode)
+		if !paramref.IsOnlyParameter(value) {
 			continue
 		}
 
-		value := val.Doc.GetNodeText(valueNode)
-		if !paramref.IsOnlyParameter(value) {
+		key, ok := val.typedKeyOf(node, val.Doc.GetNodeText(keyNode))
+		if !ok {
 			continue
 		}
 
@@ -338,16 +341,25 @@ func (val Validate) callers(name string, aliases func(parser.YamlDocument) map[s
 func jobAliases(doc parser.YamlDocument) map[string]ast2.Alias     { return doc.Aliases.Jobs }
 func commandAliases(doc parser.YamlDocument) map[string]ast2.Alias { return doc.Aliases.Commands }
 
-// invocations returns a document's workflow jobs and job group members.
-func invocations(doc parser.YamlDocument) []ast2.JobInvocation {
-	var invocations []ast2.JobInvocation
-	for _, workflow := range doc.Workflows {
-		invocations = append(invocations, workflow.JobInvocations...)
+// invocations yields a document's workflow jobs and job group members, in
+// place rather than copied.
+func invocations(doc *parser.YamlDocument) iter.Seq[*ast2.JobInvocation] {
+	return func(yield func(*ast2.JobInvocation) bool) {
+		for _, workflow := range doc.Workflows {
+			for i := range workflow.JobInvocations {
+				if !yield(&workflow.JobInvocations[i]) {
+					return
+				}
+			}
+		}
+		for _, group := range doc.JobGroups {
+			for i := range group.JobInvocations {
+				if !yield(&group.JobInvocations[i]) {
+					return
+				}
+			}
+		}
 	}
-	for _, group := range doc.JobGroups {
-		invocations = append(invocations, group.JobInvocations...)
-	}
-	return invocations
 }
 
 // jobArguments returns the values the workflows and job groups give a job's
@@ -355,7 +367,7 @@ func invocations(doc parser.YamlDocument) []ast2.JobInvocation {
 func (val Validate) jobArguments(jobName, paramName string) []ast2.ParameterValue {
 	var arguments []ast2.ParameterValue
 	for _, caller := range val.callers(jobName, jobAliases) {
-		for _, invocation := range invocations(caller.doc) {
+		for invocation := range invocations(&caller.doc) {
 			if !slices.Contains(caller.names, invocation.JobName) {
 				continue
 			}
@@ -392,7 +404,7 @@ func (val Validate) commandArguments(commandName, paramName string) []ast2.Param
 		for _, command := range caller.doc.Commands {
 			anyStep(command.Steps, collect)
 		}
-		for _, invocation := range invocations(caller.doc) {
+		for invocation := range invocations(&caller.doc) {
 			anyStep(invocation.PreSteps, collect)
 			anyStep(invocation.PostSteps, collect)
 		}

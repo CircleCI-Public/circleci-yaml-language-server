@@ -59,23 +59,26 @@ func (t *Tree) Close() {
 // and parents before children.
 func Walk(root *sitter.Node) iter.Seq[*sitter.Node] {
 	return func(yield func(*sitter.Node) bool) {
-		walk(root, yield)
-	}
-}
+		if root == nil {
+			return
+		}
+		cursor := root.Walk()
+		defer cursor.Close()
 
-func walk(node *sitter.Node, yield func(*sitter.Node) bool) bool {
-	if node == nil {
-		return true
-	}
-	if !yield(node) {
-		return false
-	}
-	for i := uint(0); i < node.ChildCount(); i++ {
-		if !walk(node.Child(i), yield) {
-			return false
+		for {
+			if !yield(cursor.Node()) {
+				return
+			}
+			if cursor.GotoFirstChild() {
+				continue
+			}
+			for !cursor.GotoNextSibling() {
+				if !cursor.GotoParent() {
+					return
+				}
+			}
 		}
 	}
-	return true
 }
 
 // Query is a compiled query.

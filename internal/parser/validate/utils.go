@@ -3,6 +3,7 @@ package validate
 import (
 	"fmt"
 
+	sitter "github.com/tree-sitter/go-tree-sitter"
 	"go.lsp.dev/protocol"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
@@ -26,6 +27,16 @@ func (val Validate) textAt(rng protocol.Range) string {
 		return ""
 	}
 	return string(val.Doc.Content[start:end])
+}
+
+// rangeInNode is the range of node's text from byte start to byte end.
+func (val Validate) rangeInNode(node *sitter.Node, start, end int) protocol.Range {
+	from := int(node.StartByte())
+	startPos := position.Advance(position.Start(node), val.Doc.Content[from:from+start])
+	return protocol.Range{
+		Start: startPos,
+		End:   position.Advance(startPos, val.Doc.Content[from+start:from+end]),
+	}
 }
 
 func (val Validate) addDiagnostic(diag protocol.Diagnostic) {

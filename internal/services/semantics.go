@@ -29,6 +29,7 @@ type SemanticTokenStruct struct {
 	prev            *[]uint32
 	processedTokens *[]uint32
 	doc             parser2.YamlDocument
+	lines           position.Lines
 	tokens          *[]Tokens
 }
 
@@ -44,6 +45,7 @@ func SemanticTokens(params protocol.SemanticTokensParams, cache *cache.Cache, co
 		processedTokens: &[]uint32{},
 		tokens:          &[]Tokens{},
 		doc:             doc,
+		lines:           position.NewLines(doc.Content),
 	}
 
 	for node := range yamltree.Walk(doc.RootNode) {
@@ -97,9 +99,17 @@ var ROOT_KEYWORDS = []string{
 }
 
 func (sem SemanticTokenStruct) highlightBuiltInKeywords(keyNode *sitter.Node) {
-	if keyName := sem.doc.GetNodeText(keyNode); keyNode.Kind() == "flow_node" && slices.Contains(KEYWORDS, keyName) {
+	keyName := sem.doc.GetNodeText(keyNode)
+	if keyNode.Kind() != "flow_node" {
+		return
+	}
+	if slices.Contains(KEYWORDS, keyName) {
 		length := position.End(keyNode).Character - position.Start(keyNode).Character
 		sem.addToken(protocol.Position{Line: position.Start(keyNode).Line, Character: position.Start(keyNode).Character}, length, 0, 0)
+		return
+	}
+	// Only a root keyword is worth reading up the tree for.
+	if !slices.Contains(ROOT_KEYWORDS, keyName) {
 		return
 	}
 
@@ -121,7 +131,7 @@ func (sem SemanticTokenStruct) highlightBuiltInKeywords(keyNode *sitter.Node) {
 		return
 	}
 
-	if keyName := sem.doc.GetNodeText(keyNode); document.Kind() == "document" && keyNode.Kind() == "flow_node" && slices.Contains(ROOT_KEYWORDS, keyName) {
+	if document.Kind() == "document" {
 		length := position.End(keyNode).Character - position.Start(keyNode).Character
 		sem.addToken(protocol.Position{Line: position.Start(keyNode).Line, Character: position.Start(keyNode).Character}, length, 0, 0)
 	}
@@ -293,10 +303,9 @@ func (sem SemanticTokenStruct) highlightCommand(rawCommand string, commandRange 
 	}
 }
 
-// Because it's not very well optimized, use this function only if you're not sure that the element is on a single line
 func (sem SemanticTokenStruct) addTokenRange(rng protocol.Range, tokenType uint32, tokenModifiers uint32) {
-	startIdx := position.ToIndex(rng.Start, sem.doc.Content)
-	endIdx := position.ToIndex(rng.End, sem.doc.Content)
+	startIdx := sem.lines.ToIndex(rng.Start)
+	endIdx := sem.lines.ToIndex(rng.End)
 
 	sem.addToken(rng.Start, uint32(endIdx-startIdx), tokenType, tokenModifiers)
 }

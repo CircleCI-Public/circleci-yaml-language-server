@@ -7,12 +7,16 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 // schemaKeys finds the keys a schema allows at a place in a config, so that a
 // key it doesn't allow can be matched to the one that was probably meant.
 type schemaKeys struct {
 	root map[string]any
+	// patterns are the schema's patternProperties, compiled once each, or
+	// nil for one that doesn't compile.
+	patterns sync.Map
 }
 
 // newSchemaKeys reads a schema's JSON. It is nil when that isn't a schema,
@@ -40,7 +44,7 @@ func (keys *schemaKeys) at(fields []string) []string {
 		}
 		var children []map[string]any
 		for _, schema := range schemas {
-			children = append(children, child(schema, field)...)
+			children = append(children, keys.child(schema, field)...)
 		}
 		schemas = keys.expand(children)
 	}
@@ -78,7 +82,7 @@ func (keys *schemaKeys) description(fields []string) string {
 	for _, field := range fields[:len(fields)-1] {
 		var children []map[string]any
 		for _, schema := range schemas {
-			children = append(children, child(schema, field)...)
+			children = append(children, keys.child(schema, field)...)
 		}
 		schemas = keys.expand(children)
 	}
@@ -108,7 +112,7 @@ func describedAs(schema map[string]any) string {
 }
 
 // child returns the schemas for field in a value schema describes.
-func child(schema map[string]any, field string) []map[string]any {
+func (keys *schemaKeys) child(schema map[string]any, field string) []map[string]any {
 	if _, err := strconv.Atoi(field); err == nil {
 		if items, ok := schema["items"].(map[string]any); ok {
 			return []map[string]any{items}
@@ -124,8 +128,8 @@ func child(schema map[string]any, field string) []map[string]any {
 	var matched []map[string]any
 	if patterns, ok := schema["patternProperties"].(map[string]any); ok {
 		for pattern, property := range patterns {
-			re, err := regexp.Compile(pattern)
-			if property, ok := property.(map[string]any); ok && err == nil && re.MatchString(field) {
+			re := keys.pattern(pattern)
+			if property, ok := property.(map[string]any); ok && re != nil && re.MatchString(field) {
 				matched = append(matched, property)
 			}
 		}
@@ -266,4 +270,16 @@ func editDistance(a, b string) int {
 	}
 
 	return rows[len(x)][len(y)]
+}
+
+func (keys *schemaKeys) pattern(pattern string) *regexp.Regexp {
+	if re, ok := keys.patterns.Load(pattern); ok {
+		return re.(*regexp.Regexp)
+	}
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		re = nil
+	}
+	keys.patterns.Store(pattern, re)
+	return re
 }

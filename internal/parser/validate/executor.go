@@ -133,7 +133,7 @@ func (val Validate) valuesOutsideExecutors() map[string]int {
 		default:
 			continue
 		}
-		if isKey(node) || position.InRange(val.Doc.ExecutorsRange, position.Start(node)) {
+		if position.InRange(val.Doc.ExecutorsRange, position.Start(node)) || isKey(node) {
 			continue
 		}
 		values[strings.Trim(val.Doc.GetNodeText(node), `"'`)]++

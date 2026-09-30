@@ -77,20 +77,34 @@ func (doc *YamlDocument) isYttTemplate() bool {
 // elsewhere. The compiler only reads that content where an alias brings it
 // into a job or a command.
 func (doc *YamlDocument) IsUnderUnreadTopLevelKey(node *sitter.Node) bool {
-	rootMapping := GetBlockMappingNode(doc.RootNode)
-	if rootMapping == nil {
-		return false
-	}
-
-	for n := node; n != nil; n = n.Parent() {
-		parent := n.Parent()
-		if n.Kind() == "block_mapping_pair" && parent != nil && parent.Id() == rootMapping.Id() {
-			keyNode, _ := doc.GetKeyValueNodes(n)
-			return keyNode != nil && !pipelineConfigKeys[doc.GetNodeText(keyNode)]
+	start, end := node.StartByte(), node.EndByte()
+	for _, rng := range doc.unreadRanges {
+		if start >= rng[0] && end <= rng[1] {
+			return true
 		}
 	}
-
 	return false
+}
+
+// unreadTopLevelRanges finds the byte ranges of the top-level pairs the
+// compiler doesn't read.
+func (doc *YamlDocument) unreadTopLevelRanges() [][2]uint {
+	rootMapping := GetBlockMappingNode(doc.RootNode)
+	if rootMapping == nil {
+		return nil
+	}
+
+	var ranges [][2]uint
+	for i := uint(0); i < rootMapping.NamedChildCount(); i++ {
+		pair := rootMapping.NamedChild(i)
+		if pair.Kind() != "block_mapping_pair" {
+			continue
+		}
+		if keyNode, _ := doc.GetKeyValueNodes(pair); keyNode != nil && !pipelineConfigKeys[doc.GetNodeText(keyNode)] {
+			ranges = append(ranges, [2]uint{pair.StartByte(), pair.EndByte()})
+		}
+	}
+	return ranges
 }
 
 // HasNoWorkflows reports whether the config leaves out `workflows`, or gives
