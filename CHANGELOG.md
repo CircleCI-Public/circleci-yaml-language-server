@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 0.46.0 (2026-09-30)
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+* feat: let a client choose how long after a change a document is checked by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/740
+* fix: show a job's inline machine executor in the outline by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/741
+
+
+**Full Changelog**: https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.45.4...0.46.0
+
 ## 0.45.4 (2026-09-30)
 
 <!-- Release notes generated using configuration in .github/release.yml at main -->
