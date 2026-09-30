@@ -40,9 +40,11 @@ func (methods *Methods) Initialize(_ context.Context, params *protocol.Initializ
 	if !ok {
 		schemaHovers = !isCciExtension
 	}
+	gitHubSignInCommand, _ := options["gitHubSignInCommand"].(string)
 	methods.updateSettings(func(settings *session.Settings) {
 		settings.IsCciExtension = settings.IsCciExtension || isCciExtension
 		settings.SchemaHovers = schemaHovers
+		settings.GitHubSignInCommand = gitHubSignInCommand
 	})
 	if userAgent, ok := options["userAgent"].(string); ok {
 		version.UserAgent += " " + userAgent

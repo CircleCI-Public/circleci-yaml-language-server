@@ -25,6 +25,11 @@ type Settings struct {
 	// value fetches them from wherever they are; it exists so that a test can
 	// point the server at a fake.
 	OrbURLs orburl.Config
+
+	// GitHubSignInCommand is a command of the client's that signs the user in
+	// to GitHub, and so gives the server a GitHub token. Empty when the
+	// client has none.
+	GitHubSignInCommand string
 }
 
 // OrbRegistry returns the orb registry for the configured host and token.

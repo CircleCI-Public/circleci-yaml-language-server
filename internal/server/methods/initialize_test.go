@@ -76,3 +76,33 @@ func TestInitializeEditDebounce(t *testing.T) {
 		})
 	}
 }
+
+func TestInitializeGitHubSignInCommand(t *testing.T) {
+	testCases := []struct {
+		name    string
+		options map[string]any
+		want    string
+	}{
+		{name: "none for a client that sends no options", options: nil, want: ""},
+		{name: "the command a client names", options: map[string]any{"gitHubSignInCommand": "acme.signIn"}, want: "acme.signIn"},
+		{name: "none for a command that isn't a string", options: map[string]any{"gitHubSignInCommand": true}, want: ""},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			methods := New(context.Background(), nil, cache.New(), session.Settings{}, "")
+			params := &protocol.InitializeParams{}
+			if tc.options != nil {
+				options, err := protocol.Marshal(tc.options)
+				assert.NilError(t, err)
+				params.InitializationOptions = options
+			}
+
+			_, err := methods.Initialize(context.Background(), params)
+			assert.NilError(t, err)
+
+			got := methods.Settings().GitHubSignInCommand
+			assert.Check(t, cmp.Equal(got, tc.want))
+		})
+	}
+}

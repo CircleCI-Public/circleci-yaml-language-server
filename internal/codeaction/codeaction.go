@@ -25,6 +25,17 @@ func TextEdit(title string, textDocumentUri uri.URI, textEdits []protocol.TextEd
 	return action
 }
 
+// Command is a quick fix that runs one of the client's commands, with no
+// arguments.
+func Command(title, command string) protocol.CodeAction {
+	kind := protocol.CodeActionKindQuickFix
+	return protocol.CodeAction{
+		Title:   title,
+		Kind:    &kind,
+		Command: protocol.Command{Title: title, Command: command},
+	}
+}
+
 // Data carries code actions in a diagnostic's data, for the codeAction request
 // to hand back with FromData when the client asks for fixes.
 func Data(actions []protocol.CodeAction) protocol.LSPAny {
