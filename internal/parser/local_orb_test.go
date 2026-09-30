@@ -260,7 +260,7 @@ workflows:
 			DockerHub: dockerhub.NewAPI(),
 		},
 		Diagnostics: &[]protocol.Diagnostic{},
-		Cache:       cache.New(),
+		Cache:       testHelpers.DefaultCache(),
 		Doc:         doc,
 		Context:     context,
 	}

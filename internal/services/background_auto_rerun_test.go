@@ -13,7 +13,7 @@ import (
 )
 
 func TestBackgroundAutoRerunValidation(t *testing.T) {
-	c := cache.New()
+	c := testHelpers.DefaultCache()
 	context := testHelpers.DefaultSettings()
 	context.Api.Token = ""
 

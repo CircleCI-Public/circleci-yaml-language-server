@@ -10,6 +10,7 @@ import (
 	"gotest.tools/v3/assert/cmp"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/testHelpers"
 )
 
 var (
@@ -724,7 +725,7 @@ workflows:
       - build
       - test
 `)
-	val.Cache.MachineOfferingsCache.Set(testMachineOfferings())
+	val.Cache.MachineOfferingsCache.Set(testHelpers.MachineOfferings())
 	val.Validate()
 
 	errors := []string{}
@@ -761,7 +762,7 @@ workflows:
     jobs:
       - build
 `)
-	val.Cache.MachineOfferingsCache.Set(testMachineOfferings())
+	val.Cache.MachineOfferingsCache.Set(testHelpers.MachineOfferings())
 	val.Validate()
 
 	assert.Check(t, cmp.Len(getErrorDiagnostic(val.Diagnostics), 0))

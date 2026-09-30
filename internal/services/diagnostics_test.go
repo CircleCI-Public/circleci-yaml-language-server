@@ -21,8 +21,60 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/testHelpers"
 )
 
+// noErrorsOrbs serves the orbs testdata/noErrors.yml uses, reduced to the
+// commands, jobs and parameters it calls on them.
+func noErrorsOrbs(t *testing.T) *fakes.CircleCI {
+	t.Helper()
+	t.Setenv("TMPDIR", t.TempDir()) // fetched orb sources are written under it
+
+	fake := fakes.NewCircleCI(t)
+	fake.AddNamespace("ns-atlassian-labs", "atlassian-labs")
+	fake.AddOrbPackage("orb-compass", "ns-atlassian-labs", "atlassian-labs", "compass", false, true)
+	fake.AddOrbVersion("ver-compass-0-1-3", "orb-compass", "atlassian-labs/compass", "0.1.3", `version: 2.1
+
+commands:
+  notify_deployment:
+    parameters:
+      token_name:
+        type: string
+      environment_type:
+        type: string
+      environment:
+        type: string
+    steps:
+      - run: echo notify
+`, "")
+	fake.AddNamespace("ns-circleci", "circleci")
+	fake.AddOrbPackage("orb-shellcheck", "ns-circleci", "circleci", "shellcheck", false, true)
+	fake.AddOrbVersion("ver-shellcheck-3-4-0", "orb-shellcheck", "circleci/shellcheck", "3.4.0", `version: 2.1
+
+commands:
+  check:
+    parameters:
+      dir:
+        type: string
+        default: .
+    steps:
+      - run: shellcheck << parameters.dir >>
+
+jobs:
+  check:
+    parameters:
+      dir:
+        type: string
+        default: .
+    docker:
+      - image: cimg/base:current
+    steps:
+      - check:
+          dir: << parameters.dir >>
+`, "")
+	return fake
+}
+
 func TestFindErrors(t *testing.T) {
-	c := cache.New()
+	c := testHelpers.DefaultCache()
+	api := noErrorsOrbs(t)
 
 	type args struct {
 		filePath string
@@ -65,7 +117,7 @@ func TestFindErrors(t *testing.T) {
 				Project:      circleci.Project{},
 				EnvVariables: make([]string, 0),
 			})
-			context := testHelpers.DefaultSettings()
+			context := testHelpers.SettingsForHost(api.URL())
 			context.Api.Token = ""
 			fileUri := uri.File(tt.args.filePath)
 			diagnostics, err := DiagnosticFile(fileUri, c, context, "")
@@ -82,7 +134,8 @@ func TestFindErrors(t *testing.T) {
 }
 
 func TestFindErrorsWithEmbeddedSchema(t *testing.T) {
-	c := cache.New()
+	c := testHelpers.DefaultCache()
+	api := noErrorsOrbs(t)
 
 	tests := []struct {
 		name     string
@@ -112,7 +165,7 @@ func TestFindErrorsWithEmbeddedSchema(t *testing.T) {
 				Project:      circleci.Project{},
 				EnvVariables: make([]string, 0),
 			})
-			context := testHelpers.DefaultSettings()
+			context := testHelpers.SettingsForHost(api.URL())
 			context.Api.Token = ""
 			fileUri := uri.File(tt.filePath)
 
@@ -151,9 +204,10 @@ func TestOverrideSchemaMatchesEmbeddedSchema(t *testing.T) {
 		},
 	}
 
+	api := noErrorsOrbs(t)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := cache.New()
+			c := testHelpers.DefaultCache()
 			content, err := os.ReadFile(tt.filePath)
 			if err != nil {
 				t.Fatalf("failed to read test file %s: %v", tt.filePath, err)
@@ -166,7 +220,7 @@ func TestOverrideSchemaMatchesEmbeddedSchema(t *testing.T) {
 				Project:      circleci.Project{},
 				EnvVariables: make([]string, 0),
 			})
-			context := testHelpers.DefaultSettings()
+			context := testHelpers.SettingsForHost(api.URL())
 			context.Api.Token = ""
 			fileUri := uri.File(tt.filePath)
 
@@ -422,7 +476,7 @@ func TestStepWhenRejectsInvalidValue(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	c := cache.New()
+	c := testHelpers.DefaultCache()
 	c.FileCache.SetFile(cache.File{
 		TextDocument: protocol.TextDocumentItem{
 			URI:  uri.File(filePath),

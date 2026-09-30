@@ -110,7 +110,7 @@ func TestDiagnosticsAskTheConfiguredDockerHub(t *testing.T) {
 		"    steps:\n" +
 		"      - checkout\n"
 
-	_, err := DiagnosticString(content, cache.New(), settings, "")
+	_, err := DiagnosticString(content, testHelpers.DefaultCache(), settings, "")
 	assert.NilError(t, err)
 
 	paths := make([]string, 0)

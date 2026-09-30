@@ -13,6 +13,7 @@ import (
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/fakes"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/testHelpers"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
@@ -259,7 +260,8 @@ func TestReferences(t *testing.T) {
 			},
 		},
 	}
-	context := testHelpers.DefaultSettings()
+	// superorb/superfunc doesn't exist, which is all the fake has to say.
+	context := testHelpers.SettingsForHost(fakes.NewCircleCI(t).URL())
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			content, _ := os.ReadFile(tt.args.filePath)

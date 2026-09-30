@@ -16,16 +16,12 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/parser"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/session"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/testHelpers"
 )
 
 func validateYAML(t *testing.T, yamlData string) *[]protocol.Diagnostic {
 	t.Helper()
-	ctx := &session.Settings{
-		Api: circleci.Config{
-			Token:   "XXXXXXXXXXXX",
-			HostUrl: "https://circleci.com",
-		},
-	}
+	ctx := testHelpers.DefaultSettings()
 	doc, err := parser.ParseFromContent(
 		[]byte(yamlData),
 		ctx,
@@ -39,7 +35,7 @@ func validateYAML(t *testing.T, yamlData string) *[]protocol.Diagnostic {
 		Context:     ctx,
 		Doc:         doc,
 		Diagnostics: &[]protocol.Diagnostic{},
-		Cache:       cache.New(),
+		Cache:       testHelpers.DefaultCache(),
 	}
 	val.Validate()
 	return val.Diagnostics
@@ -416,7 +412,7 @@ func TestResourceClass(t *testing.T) {
 				Diagnostics: &[]protocol.Diagnostic{},
 				Cache:       cache.New(),
 			}
-			val.Cache.MachineOfferingsCache.Set(testMachineOfferings())
+			val.Cache.MachineOfferingsCache.Set(testHelpers.MachineOfferings())
 			val.validateSingleJob(doc.Jobs["test"])
 
 			for _, diag := range *val.Diagnostics {
@@ -510,7 +506,7 @@ func TestRetention(t *testing.T) {
 				Diagnostics: &[]protocol.Diagnostic{},
 				Cache:       cache.New(),
 			}
-			val.Cache.MachineOfferingsCache.Set(testMachineOfferings())
+			val.Cache.MachineOfferingsCache.Set(testHelpers.MachineOfferings())
 			val.validateSingleJob(doc.Jobs["test"])
 
 			for _, diag := range *val.Diagnostics {

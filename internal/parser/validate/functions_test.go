@@ -52,7 +52,7 @@ func functionDiagnostics(t *testing.T, severity protocol.DiagnosticSeverity, yam
 	val := CreateValidateFromYAML(yamlContent)
 	val.Context = testHelpers.SettingsForHost(fake.URL())
 	val.Doc.Context = val.Context
-	val.Cache.MachineOfferingsCache.Set(testMachineOfferings())
+	val.Cache.MachineOfferingsCache.Set(testHelpers.MachineOfferings())
 	val.Validate()
 
 	messages := []string{}
