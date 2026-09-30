@@ -78,7 +78,7 @@ func singleJobSymbols(job ast2.Job) protocol.DocumentSymbol {
 			Range:          job.MachineRange,
 			SelectionRange: job.MachineRange,
 			Kind:           ExecutorSymbol,
-			Children:       []protocol.DocumentSymbol{machineExecutorSymbols(job.Machine)},
+			Children:       []protocol.DocumentSymbol{machineExecutorSymbols(job.Machine, job.MachineRange)},
 		})
 	}
 

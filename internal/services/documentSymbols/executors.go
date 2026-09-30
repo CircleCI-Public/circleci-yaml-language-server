@@ -46,7 +46,7 @@ func singleExecutorSymbols(executor ast2.Executor) protocol.DocumentSymbol {
 
 	case ast2.MachineExecutor:
 		execType = "Machine"
-		childrens = append(childrens, machineExecutorSymbols(executor))
+		childrens = append(childrens, machineExecutorSymbols(executor, executor.Range))
 
 	case ast2.MacOSExecutor:
 		execType = "Mac OS"
