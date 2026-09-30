@@ -75,6 +75,7 @@ var queries = map[string]bool{
 	protocol.MethodTextDocumentHover:              true,
 	protocol.MethodTextDocumentReferences:         true,
 	protocol.MethodTextDocumentSemanticTokensFull: true,
+	protocol.MethodWorkspaceSymbol:                true,
 }
 
 // releaseQueries lets a query run alongside the messages after it, so a slow

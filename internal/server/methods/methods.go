@@ -8,6 +8,7 @@ import (
 
 	"github.com/bep/debounce"
 	"go.lsp.dev/protocol"
+	"go.lsp.dev/uri"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/session"
@@ -39,6 +40,10 @@ type Methods struct {
 	editDebounce         time.Duration
 	debounceEdit         func(func())
 	debounceRevalidation func(func())
+
+	// workspaceFolders are the client's, as it gave them when initializing,
+	// which comes before any request that reads them.
+	workspaceFolders []uri.URI
 
 	exited   chan struct{}
 	exitOnce sync.Once
