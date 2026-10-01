@@ -417,6 +417,9 @@ func (doc *YamlDocument) parseArrayParameterValue(paramName string, arrayParamNo
 		if child.Kind() == "block_sequence_item" || child.Kind() == "flow_node" {
 			if isStep(doc, child) || forceSteps {
 				steps := doc.parseSingleStep(child)
+				if child.Kind() == "flow_node" {
+					steps = doc.parseFlowNodeStep(child)
+				}
 				values = append(values, ast2.ParameterValue{
 					Value:      steps,
 					ValueRange: doc.NodeToRange(child),

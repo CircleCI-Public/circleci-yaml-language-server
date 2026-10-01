@@ -66,7 +66,7 @@ func (methods *Methods) Initialize(_ context.Context, params *protocol.Initializ
 
 	v := &protocol.InitializeResult{
 		Capabilities: protocol.ServerCapabilities{
-			RenameProvider: protocol.Boolean(false),
+			RenameProvider: &protocol.RenameOptions{PrepareProvider: &yes},
 			TextDocumentSync: &protocol.TextDocumentSyncOptions{
 				OpenClose: &yes,
 				Change:    &incremental,

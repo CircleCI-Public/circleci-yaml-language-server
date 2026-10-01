@@ -73,7 +73,9 @@ var queries = map[string]bool{
 	protocol.MethodTextDocumentDefinition:         true,
 	protocol.MethodTextDocumentDocumentSymbol:     true,
 	protocol.MethodTextDocumentHover:              true,
+	protocol.MethodTextDocumentPrepareRename:      true,
 	protocol.MethodTextDocumentReferences:         true,
+	protocol.MethodTextDocumentRename:             true,
 	protocol.MethodTextDocumentSemanticTokensFull: true,
 	protocol.MethodWorkspaceSymbol:                true,
 }
