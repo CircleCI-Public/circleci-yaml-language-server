@@ -55,6 +55,8 @@ func (methods *Methods) Initialize(_ context.Context, params *protocol.Initializ
 		methods.debounceEdit = debounce.New(methods.editDebounce)
 	}
 
+	methods.inlayHintRefresh = inlayHintRefresh(params.Capabilities)
+
 	folders, _ := params.WorkspaceFolders.Get()
 	for _, folder := range folders {
 		methods.workspaceFolders = append(methods.workspaceFolders, folder.URI)
@@ -103,6 +105,7 @@ func (methods *Methods) Initialize(_ context.Context, params *protocol.Initializ
 			},
 			DocumentHighlightProvider: protocol.Boolean(true),
 			DocumentLinkProvider:      &protocol.DocumentLinkOptions{},
+			InlayHintProvider:         protocol.Boolean(true),
 			DocumentSymbolProvider:    protocol.Boolean(true),
 			WorkspaceSymbolProvider:   protocol.Boolean(true),
 		},

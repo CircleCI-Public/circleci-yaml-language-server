@@ -44,6 +44,9 @@ type Methods struct {
 	// workspaceFolders are the client's, as it gave them when initializing,
 	// which comes before any request that reads them.
 	workspaceFolders []uri.URI
+	// inlayHintRefresh is whether the client can be asked to ask for inlay
+	// hints again. It is set when initializing, like workspaceFolders.
+	inlayHintRefresh bool
 
 	exited   chan struct{}
 	exitOnce sync.Once

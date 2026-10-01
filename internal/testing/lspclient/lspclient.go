@@ -43,6 +43,9 @@ type Client struct {
 	consumed    map[uri.URI]int
 	telemetry   []map[string]any
 	logMessages []string
+	// inlayHintRefreshes counts the times the server has asked for inlay
+	// hints again.
+	inlayHintRefreshes int
 }
 
 // publication is the diagnostics last published for a document, and how many
@@ -91,8 +94,13 @@ func (c *Client) InitializeWithOptions(rootURI uri.URI, initializationOptions ma
 		return nil, err
 	}
 
+	refresh := true
 	params := protocol.InitializeParams{
-		Capabilities:          protocol.ClientCapabilities{},
+		Capabilities: protocol.ClientCapabilities{
+			Workspace: &protocol.WorkspaceClientCapabilities{
+				InlayHint: &protocol.InlayHintWorkspaceClientCapabilities{RefreshSupport: &refresh},
+			},
+		},
 		InitializationOptions: options,
 	}
 	params.WorkspaceFolders = protocol.NewNullable([]protocol.WorkspaceFolder{
@@ -324,9 +332,25 @@ func (c *Client) handle(ctx context.Context, req *jsonrpc2.Request) (any, error)
 
 		return nil, nil
 
+	case protocol.MethodWorkspaceInlayHintRefresh:
+		c.mu.Lock()
+		c.inlayHintRefreshes++
+		c.mu.Unlock()
+
+		return nil, nil
+
 	default:
 		return jsonrpc2.MethodNotFoundHandler(ctx, req)
 	}
+}
+
+// InlayHintRefreshes is how many times the server has asked for inlay hints
+// again.
+func (c *Client) InlayHintRefreshes() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	return c.inlayHintRefreshes
 }
 
 func (c *Client) recordDiagnostics(params protocol.PublishDiagnosticsParams) {

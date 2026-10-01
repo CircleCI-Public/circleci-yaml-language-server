@@ -63,6 +63,7 @@ func (methods *Methods) DidChange(_ context.Context, params *protocol.DidChangeT
 
 	methods.debounceEdit(func() {
 		methods.parsingMethods(textDocument)
+		go methods.refreshInlayHints()
 		go methods.notificationMethods(textDocument)
 	})
 	return nil
