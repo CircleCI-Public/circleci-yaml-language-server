@@ -1,5 +1,22 @@
 # CHANGELOG
 
+## 0.49.0 (2026-10-01)
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+* feat: answer go-to-definition with links for clients that read them by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/752
+* feat: go to a matrix parameter's declaration from the matrix by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/753
+* feat: go from an executor parameter's value to the executor by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/754
+* fix: cancel a query when the client sends $/cancelRequest by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/756
+* feat: rename a job, command or executor by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/757
+* feat: highlight every mention of what is under the cursor by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/758
+* feat: link orbs and Docker images to their pages by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/759
+* feat: show resolved orb versions and matrix jobs as inlay hints by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/760
+
+
+**Full Changelog**: https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.48.0...0.49.0
+
 ## 0.48.0 (2026-09-30)
 
 <!-- Release notes generated using configuration in .github/release.yml at main -->
