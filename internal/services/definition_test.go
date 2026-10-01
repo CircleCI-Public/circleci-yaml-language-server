@@ -909,3 +909,103 @@ workflows:
 		})
 	}
 }
+
+func TestDefinitionOfExecutorArguments(t *testing.T) {
+	const content = `version: 2.1
+
+executors:
+  linux:
+    docker:
+      - image: cimg/base:stable
+  macos:
+    macos:
+      xcode: 15.0.0
+
+jobs:
+  test:
+    parameters:
+      os:
+        type: executor
+    executor: << parameters.os >>
+    steps:
+      - run: echo test
+
+workflows:
+  main:
+    jobs:
+      - test:
+          os: linux
+      - test:
+          name: matrix
+          matrix:
+            parameters:
+              os: [linux, "macos"]
+      - test:
+          os: windows
+`
+	fileURI := uri.File("some-uri")
+	doc, err := parser.ParseFromContent([]byte(content), testHelpers.DefaultSettings(), fileURI, protocol.Position{})
+	assert.NilError(t, err)
+
+	rangeOn := func(line, start, end uint32) protocol.Range {
+		return protocol.Range{
+			Start: protocol.Position{Line: line, Character: start},
+			End:   protocol.Position{Line: line, Character: end},
+		}
+	}
+	linux, macos, osParam := rangeOn(3, 2, 7), rangeOn(6, 2, 7), rangeOn(13, 6, 8)
+
+	tests := []struct {
+		name     string
+		at       protocol.Position
+		origin   protocol.Range
+		wantName protocol.Range
+	}{
+		{
+			name:     "an argument goes to the executor it names",
+			at:       protocol.Position{Line: 23, Character: 16},
+			origin:   rangeOn(23, 14, 19),
+			wantName: linux,
+		},
+		{
+			name:     "a matrix's value goes to the executor it names",
+			at:       protocol.Position{Line: 28, Character: 21},
+			origin:   rangeOn(28, 19, 24),
+			wantName: linux,
+		},
+		{
+			name:     "a quoted matrix value goes to the executor it names",
+			at:       protocol.Position{Line: 28, Character: 29},
+			origin:   rangeOn(28, 26, 33),
+			wantName: macos,
+		},
+		{
+			name:     "the argument's name goes to the parameter",
+			at:       protocol.Position{Line: 23, Character: 11},
+			origin:   rangeOn(23, 10, 12),
+			wantName: osParam,
+		},
+		{
+			name:     "a value that names no executor goes to the parameter",
+			at:       protocol.Position{Line: 30, Character: 16},
+			origin:   rangeOn(30, 14, 21),
+			wantName: osParam,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			def := definition.DefinitionStruct{Cache: cache.New(), Params: protocol.DefinitionParams{
+				TextDocumentPositionParams: protocol.TextDocumentPositionParams{
+					TextDocument: protocol.TextDocumentIdentifier{URI: fileURI},
+					Position:     tc.at,
+				},
+			}, Doc: doc}
+			links, err := def.Definition()
+			assert.NilError(t, err)
+
+			assert.Assert(t, cmp.Len(links, 1))
+			assert.Check(t, cmp.DeepEqual(links[0].NameRange, tc.wantName))
+			assert.Check(t, cmp.DeepEqual(links[0].Origin, tc.origin))
+		})
+	}
+}

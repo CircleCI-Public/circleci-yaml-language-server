@@ -2,9 +2,11 @@ package definition
 
 import (
 	"fmt"
+	"strings"
 
 	sitter "github.com/tree-sitter/go-tree-sitter"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/parser"
 )
 
@@ -93,4 +95,32 @@ func GetPathFromVisitedNodes(visitedNodes []*sitter.Node, doc parser.YamlDocumen
 	}
 
 	return path
+}
+
+// declaredParam is the parameter paramName as the job or command name
+// declares it, in the config or in an orb.
+func (def DefinitionStruct) declaredParam(name string, paramName string) (ast.Parameter, bool) {
+	if alias, ok := def.Doc.CommandAlias(name); ok {
+		name = alias.Target
+	} else if alias, ok := def.Doc.JobAlias(name); ok {
+		name = alias.Target
+	}
+
+	parameters := map[string]ast.Parameter{}
+	if job, ok := def.Doc.Jobs[name]; ok {
+		parameters = job.Parameters
+	} else if command, ok := def.Doc.Commands[name]; ok {
+		parameters = command.Parameters
+	} else if orbName, element, ok := strings.Cut(name, "/"); ok {
+		if orbInfo, err := def.GetOrbInfo(orbName); err == nil && orbInfo != nil {
+			if job, ok := orbInfo.Jobs[element]; ok {
+				parameters = job.Parameters
+			} else if command, ok := orbInfo.Commands[element]; ok {
+				parameters = command.Parameters
+			}
+		}
+	}
+
+	param, ok := parameters[paramName]
+	return param, ok && param != nil
 }

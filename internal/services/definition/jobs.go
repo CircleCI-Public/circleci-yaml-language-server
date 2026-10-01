@@ -23,7 +23,8 @@ func (def DefinitionStruct) searchForJobs() []Link {
 		}
 
 		if position.InRange(job.ExecutorRange, def.Params.Position) {
-			return []Link{def.getExecutorLink(job.ExecutorRange, job.Executor)}
+			link, _ := def.getExecutorLink(job.ExecutorRange, job.Executor)
+			return []Link{link}
 		}
 
 		if paramDefinitions := def.searchForParamDefinition(job.Parameters); len(paramDefinitions) > 0 {
