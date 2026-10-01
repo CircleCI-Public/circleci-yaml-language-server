@@ -101,8 +101,9 @@ func (methods *Methods) Initialize(_ context.Context, params *protocol.Initializ
 				},
 				ResolveProvider: &yes,
 			},
-			DocumentSymbolProvider:  protocol.Boolean(true),
-			WorkspaceSymbolProvider: protocol.Boolean(true),
+			DocumentHighlightProvider: protocol.Boolean(true),
+			DocumentSymbolProvider:    protocol.Boolean(true),
+			WorkspaceSymbolProvider:   protocol.Boolean(true),
 		},
 		ServerInfo: protocol.ServerInfo{
 			Name:    "circleci-language-server",
