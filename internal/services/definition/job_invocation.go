@@ -24,3 +24,21 @@ func (def DefinitionStruct) searchForJobInvocationFromRequires(requires []ast.Re
 	}
 	return []Link{}
 }
+
+// searchForMatrixParamDefinition goes from a parameter of a matrix, its name
+// or any of its values, to the parameter's declaration in the job, as an
+// argument goes.
+func (def DefinitionStruct) searchForMatrixParamDefinition(jobName string, matrix map[string][]ast.ParameterValue) []Link {
+	for name, values := range matrix {
+		for _, param := range values {
+			if !position.InRange(param.Range, def.Params.Position) {
+				continue
+			}
+			if loc, err := def.getCommandOrJobParamLocation(jobName, name, true); err == nil {
+				return loc
+			}
+			return []Link{}
+		}
+	}
+	return []Link{}
+}

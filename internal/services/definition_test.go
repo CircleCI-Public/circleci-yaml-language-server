@@ -826,3 +826,86 @@ workflows:
 		assert.Check(t, cmp.DeepEqual(links[0].NameRange, greetingName))
 	})
 }
+
+func TestDefinitionOfMatrixParameters(t *testing.T) {
+	const content = `version: 2.1
+
+jobs:
+  test:
+    parameters:
+      os:
+        type: string
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo << parameters.os >>
+
+job-groups:
+  group:
+    jobs:
+      - test:
+          matrix:
+            parameters:
+              os: [linux, macos]
+
+workflows:
+  main:
+    jobs:
+      - test:
+          matrix:
+            parameters:
+              os:
+                - linux
+                - macos
+`
+	fileURI := uri.File("some-uri")
+	doc, err := parser.ParseFromContent([]byte(content), testHelpers.DefaultSettings(), fileURI, protocol.Position{})
+	assert.NilError(t, err)
+
+	osName := protocol.Range{
+		Start: protocol.Position{Line: 5, Character: 6},
+		End:   protocol.Position{Line: 5, Character: 8},
+	}
+	tests := []struct {
+		name   string
+		at     protocol.Position
+		origin protocol.Range
+	}{
+		{
+			name:   "the name in a workflow",
+			at:     protocol.Position{Line: 26, Character: 15},
+			origin: protocol.Range{Start: protocol.Position{Line: 26, Character: 14}, End: protocol.Position{Line: 26, Character: 16}},
+		},
+		{
+			name:   "a value in a workflow",
+			at:     protocol.Position{Line: 28, Character: 20},
+			origin: protocol.Range{Start: protocol.Position{Line: 28, Character: 18}, End: protocol.Position{Line: 28, Character: 23}},
+		},
+		{
+			name:   "the name in a job group",
+			at:     protocol.Position{Line: 18, Character: 15},
+			origin: protocol.Range{Start: protocol.Position{Line: 18, Character: 14}, End: protocol.Position{Line: 18, Character: 16}},
+		},
+		{
+			name:   "a value in a job group",
+			at:     protocol.Position{Line: 18, Character: 21},
+			origin: protocol.Range{Start: protocol.Position{Line: 18, Character: 19}, End: protocol.Position{Line: 18, Character: 24}},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name+" goes to the job's parameter", func(t *testing.T) {
+			def := definition.DefinitionStruct{Cache: cache.New(), Params: protocol.DefinitionParams{
+				TextDocumentPositionParams: protocol.TextDocumentPositionParams{
+					TextDocument: protocol.TextDocumentIdentifier{URI: fileURI},
+					Position:     tc.at,
+				},
+			}, Doc: doc}
+			links, err := def.Definition()
+			assert.NilError(t, err)
+
+			assert.Assert(t, cmp.Len(links, 1))
+			assert.Check(t, cmp.DeepEqual(links[0].NameRange, osName))
+			assert.Check(t, cmp.DeepEqual(links[0].Origin, tc.origin))
+		})
+	}
+}

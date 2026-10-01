@@ -22,6 +22,10 @@ func (def DefinitionStruct) searchForJobGroups() []Link {
 			if res := def.searchForParamValueDefinition(jobInvocation.JobName, jobInvocation.Parameters); len(res) > 0 {
 				return res
 			}
+
+			if res := def.searchForMatrixParamDefinition(jobInvocation.JobName, jobInvocation.MatrixParams); len(res) > 0 {
+				return res
+			}
 		}
 	}
 	return []Link{}
