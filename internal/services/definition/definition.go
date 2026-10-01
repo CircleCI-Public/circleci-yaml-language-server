@@ -17,7 +17,22 @@ type DefinitionStruct struct {
 	Doc    yamlparser.YamlDocument
 }
 
-func (def DefinitionStruct) Definition() ([]protocol.Location, error) {
+// Definition is where what is at the position is defined. A link whose
+// origin isn't known from what it was found by is given the node at the
+// position as its origin.
+func (def DefinitionStruct) Definition() ([]Link, error) {
+	links, err := def.search()
+	if node, _, nodeErr := position.NodeAt(def.Doc.RootNode, def.Params.Position); nodeErr == nil {
+		for i := range links {
+			if links[i].Origin == (protocol.Range{}) {
+				links[i].Origin = protocol.Range{Start: position.Start(node), End: position.End(node)}
+			}
+		}
+	}
+	return links, err
+}
+
+func (def DefinitionStruct) search() ([]Link, error) {
 	paramDefinition := def.searchParamDefinition()
 	if len(paramDefinition) > 0 {
 		return paramDefinition, nil
@@ -27,7 +42,7 @@ func (def DefinitionStruct) Definition() ([]protocol.Location, error) {
 		return definition, nil
 	}
 
-	var res []protocol.Location
+	var res []Link
 	var err error = nil
 
 	switch true {

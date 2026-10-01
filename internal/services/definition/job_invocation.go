@@ -1,26 +1,26 @@
 package definition
 
 import (
-	"go.lsp.dev/protocol"
-
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 )
 
-func (def DefinitionStruct) searchForJobInvocationFromRequires(requires []ast.Require, jobInvocations []ast.JobInvocation) []protocol.Location {
+func (def DefinitionStruct) searchForJobInvocationFromRequires(requires []ast.Require, jobInvocations []ast.JobInvocation) []Link {
 	for _, require := range requires {
 		if position.InRange(require.Range, def.Params.Position) {
 			for _, jobInvocation := range jobInvocations {
 				if jobInvocation.JobName == require.Name || jobInvocation.StepName == require.Name {
-					return []protocol.Location{
+					return []Link{
 						{
-							URI:   def.Params.TextDocument.URI,
-							Range: jobInvocation.JobInvocationRange,
+							Origin:    require.Range,
+							URI:       def.Params.TextDocument.URI,
+							Range:     jobInvocation.JobInvocationRange,
+							NameRange: jobInvocation.JobNameRange,
 						},
 					}
 				}
 			}
 		}
 	}
-	return []protocol.Location{}
+	return []Link{}
 }

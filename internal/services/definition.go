@@ -9,7 +9,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/session"
 )
 
-func Definition(params protocol.DefinitionParams, cache *cache.Cache, context *session.Settings) ([]protocol.Location, error) {
+func Definition(params protocol.DefinitionParams, cache *cache.Cache, context *session.Settings) ([]definition.Link, error) {
 	yamlDocument, err := yamlparser.ParseFromUriWithCache(params.TextDocument.URI, cache, context)
 	if err != nil {
 		return nil, err

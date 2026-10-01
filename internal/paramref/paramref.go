@@ -25,6 +25,13 @@ func Contains(content string) bool {
 
 // Return the name of the parameter used at the given position
 func NameUsedAtPos(content []byte, pos protocol.Position) (string, bool) {
+	name, isPipelineParam, _ := UsedAtPos(content, pos)
+	return name, isPipelineParam
+}
+
+// UsedAtPos is NameUsedAtPos, with the range of the whole reference, from
+// `<<` to `>>`.
+func UsedAtPos(content []byte, pos protocol.Position) (string, bool, protocol.Range) {
 	isPipelineParam := false
 
 	posIndex := position.ToIndex(pos, content)
@@ -48,17 +55,17 @@ func NameUsedAtPos(content []byte, pos protocol.Position) (string, bool) {
 	}
 
 	if !Pattern.Match(content[lineStart:lineEnd]) {
-		return "", isPipelineParam
+		return "", isPipelineParam, protocol.Range{}
 	}
 
 	startOfParam := bytes.LastIndex(content[:posIndex], []byte("<<"))
 	if startOfParam == -1 {
-		return "", isPipelineParam
+		return "", isPipelineParam, protocol.Range{}
 	}
 
 	endOfParamRel := bytes.Index(content[startOfParam:], []byte(">>"))
 	if endOfParamRel == -1 {
-		return "", isPipelineParam
+		return "", isPipelineParam, protocol.Range{}
 	}
 
 	endOfParam := startOfParam + endOfParamRel + 2
@@ -67,13 +74,17 @@ func NameUsedAtPos(content []byte, pos protocol.Position) (string, bool) {
 
 	// Not a parameter if the regex does not match
 	if param == nil {
-		return "", isPipelineParam
+		return "", isPipelineParam, protocol.Range{}
 	}
 
 	fullParamName, paramName := ExtractName(string(param))
 	isPipelineParam = strings.HasPrefix(fullParamName, "pipeline.")
 
-	return paramName, isPipelineParam
+	rng := protocol.Range{
+		Start: position.FromIndex(startOfParam, content),
+		End:   position.FromIndex(endOfParam, content),
+	}
+	return paramName, isPipelineParam, rng
 }
 
 // Search the right parameters that is defined in the given position and return its name

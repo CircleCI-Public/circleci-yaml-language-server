@@ -1,18 +1,17 @@
 package definition
 
 import (
-	"go.lsp.dev/protocol"
-
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 )
 
-func (def DefinitionStruct) searchAliasDefinition() []protocol.Location {
+func (def DefinitionStruct) searchAliasDefinition() []Link {
 	pos := def.Params.Position
 
 	if anchor, found := def.Doc.GetYamlAnchorAtPosition(pos); found {
-		return []protocol.Location{{
-			URI:   def.Params.TextDocument.URI,
-			Range: anchor.DefinitionRange,
+		return []Link{{
+			Origin: anchor.DefinitionRange,
+			URI:    def.Params.TextDocument.URI,
+			Range:  anchor.DefinitionRange,
 		}}
 	}
 
@@ -22,12 +21,11 @@ func (def DefinitionStruct) searchAliasDefinition() []protocol.Location {
 				continue
 			}
 
-			location := []protocol.Location{{
-				URI:   def.Params.TextDocument.URI,
-				Range: anchor.DefinitionRange,
+			return []Link{{
+				Origin: aliasRange,
+				URI:    def.Params.TextDocument.URI,
+				Range:  anchor.DefinitionRange,
 			}}
-
-			return location
 		}
 	}
 
