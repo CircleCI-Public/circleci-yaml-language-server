@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"go.lsp.dev/protocol"
+	"gotest.tools/v3/assert"
+	"gotest.tools/v3/assert/cmp"
 
 	ast2 "github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
 )
@@ -718,4 +720,44 @@ func TestYamlDocument_parseParameterValue(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestParseStepsParameterDefault(t *testing.T) {
+	stepNames := func(t *testing.T, paramString string) []string {
+		t.Helper()
+		doc := &YamlDocument{Content: []byte(paramString)}
+		params := doc.parseParameters(getNodeForString(paramString), "Job build")
+		steps, ok := params["setup"].(ast2.StepsParameter)
+		assert.Assert(t, ok, "setup is a %T", params["setup"])
+		items, ok := steps.Default.Value.([]ast2.ParameterValue)
+		assert.Assert(t, ok, "the default is a %T", steps.Default.Value)
+
+		var names []string
+		for _, item := range items {
+			list, ok := item.Value.([]ast2.Step)
+			assert.Assert(t, ok, "a step in the default is a %T", item.Value)
+			for _, step := range list {
+				names = append(names, step.GetName())
+			}
+		}
+		return names
+	}
+
+	t.Run("as a block", func(t *testing.T) {
+		got := stepNames(t, `parameters:
+    setup:
+        type: steps
+        default:
+            - checkout
+            - greet`)
+		assert.Check(t, cmp.DeepEqual(got, []string{"checkout", "greet"}))
+	})
+
+	t.Run("as a flow", func(t *testing.T) {
+		got := stepNames(t, `parameters:
+    setup:
+        type: steps
+        default: [checkout, greet]`)
+		assert.Check(t, cmp.DeepEqual(got, []string{"checkout", "greet"}))
+	})
 }
