@@ -161,4 +161,51 @@ func TestReleaseQueries(t *testing.T) {
 		assert.Check(t, err)
 		assert.Check(t, sawEdit, "a query sent after an edit started before the edit finished")
 	})
+	t.Run("cancels a query the client gives up on", func(t *testing.T) {
+		started := make(chan struct{})
+		cancelled := make(chan struct{})
+		ended := make(chan struct{})
+		client := serve(t, releaseQueries(func(ctx context.Context, req *jsonrpc2.Request) (any, error) {
+			close(started)
+			select {
+			case <-ctx.Done():
+				close(cancelled)
+			case <-ended:
+			}
+			return nil, protocol.ErrRequestCancelled
+		}))
+		// The connection waits for the query to finish before it closes.
+		t.Cleanup(func() { close(ended) })
+
+		hoverCtx, giveUp := context.WithCancel(ctx)
+		var hover errgroup.Group
+		hover.Go(func() error {
+			return protocol.Call(hoverCtx, client, protocol.MethodTextDocumentHover, nil, nil)
+		})
+
+		<-started
+		giveUp()
+
+		select {
+		case <-cancelled:
+		case <-time.After(5 * time.Second):
+			t.Error("the query was still running after the client cancelled it")
+		}
+		err := hover.Wait()
+		assert.Check(t, cmp.ErrorIs(err, context.Canceled))
+	})
+
+	t.Run("ignores a cancel for a request that is not running", func(t *testing.T) {
+		client := serve(t, releaseQueries(func(context.Context, *jsonrpc2.Request) (any, error) {
+			return "ok", nil
+		}))
+
+		err := client.Notify(ctx, protocol.MethodCancelRequest, protocol.CancelParams{ID: protocol.Integer(99)})
+		assert.Check(t, err)
+
+		var result string
+		_, err = client.Call(ctx, "fine", nil, &result)
+		assert.Check(t, err, "the connection closed after the cancel")
+		assert.Check(t, cmp.Equal(result, "ok"))
+	})
 }
