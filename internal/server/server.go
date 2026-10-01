@@ -83,11 +83,83 @@ var queries = map[string]bool{
 // Everything else is handled in the order it arrives, and before anything
 // after it starts: an edit has to apply on top of the one before, and a query
 // has to see every edit and setting sent before it.
+//
+// That makes a query the only request still running when a message after it
+// is read, so it is the only one $/cancelRequest can cancel. A query is
+// registered before it is released, so a cancel read after it always finds
+// it. Its context is only made cancellable once it is released, since the
+// connection reuses the context of a request handled in order as soon as the
+// handler returns, while a context derived from it may still be reading it.
 func releaseQueries(handler jsonrpc2.Handler) jsonrpc2.Handler {
+	type query struct {
+		cancel    context.CancelFunc
+		cancelled bool
+	}
+	var (
+		mu      sync.Mutex
+		running = map[jsonrpc2.ID]*query{}
+	)
+
 	return func(ctx context.Context, req *jsonrpc2.Request) (any, error) {
-		if queries[req.Method()] {
-			jsonrpc2.Async(ctx)
+		if req.Method() == protocol.MethodCancelRequest {
+			var params protocol.CancelParams
+			if err := protocol.Unmarshal(req.Params(), &params); err != nil {
+				return nil, err
+			}
+			var id jsonrpc2.ID
+			switch token := params.ID.(type) {
+			case protocol.Integer:
+				id = jsonrpc2.NewNumberID(int64(token))
+			case protocol.String:
+				id = jsonrpc2.NewStringID(string(token))
+			default:
+				return nil, fmt.Errorf("malformed request id %v", params.ID)
+			}
+
+			mu.Lock()
+			defer mu.Unlock()
+			// A query that has finished, or that was never a query, has nothing
+			// to cancel.
+			if q, ok := running[id]; ok {
+				q.cancelled = true
+				if q.cancel != nil {
+					q.cancel()
+				}
+			}
+			return nil, nil
 		}
+
+		if !queries[req.Method()] || !req.IsCall() {
+			return handler(ctx, req)
+		}
+
+		// The id is the request's own, which the connection reuses once the
+		// query has been released.
+		id := req.ID()
+		if str, ok := id.StringValue(); ok {
+			id = jsonrpc2.NewStringID(strings.Clone(str))
+		}
+		q := &query{}
+		mu.Lock()
+		running[id] = q
+		mu.Unlock()
+		defer func() {
+			mu.Lock()
+			delete(running, id)
+			mu.Unlock()
+		}()
+
+		jsonrpc2.Async(ctx)
+
+		ctx, cancel := context.WithCancel(ctx)
+		defer cancel()
+		mu.Lock()
+		q.cancel = cancel
+		if q.cancelled {
+			cancel()
+		}
+		mu.Unlock()
+
 		return handler(ctx, req)
 	}
 }
