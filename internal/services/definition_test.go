@@ -423,7 +423,8 @@ func TestDefinition(t *testing.T) {
 				},
 			}
 
-			got, err := Definition(params, c, context)
+			links, err := Definition(params, c, context)
+			got := locationsOf(links)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Definition(): %s error = %v, wantErr %v", tt.name, err, tt.wantErr)
 				return
@@ -468,8 +469,9 @@ orbs:
 			},
 		},
 	}, Doc: doc}
-	locations, err := def.Definition()
+	links, err := def.Definition()
 	assert.Check(t, err)
+	locations := locationsOf(links)
 	assert.Check(t, cmp.DeepEqual(locations, []protocol.Location{
 		{
 			URI: fileURI,
@@ -513,8 +515,9 @@ orbs:
 			},
 		},
 	}, Doc: doc}
-	locations, err := def.Definition()
+	links, err := def.Definition()
 	assert.Check(t, err)
+	locations := locationsOf(links)
 	assert.Check(t, cmp.DeepEqual(locations, []protocol.Location{
 		{
 			URI: fileURI,
@@ -610,8 +613,20 @@ func definitionAt(t *testing.T, doc parser.YamlDocument, fileURI uri.URI, line, 
 			Position:     protocol.Position{Line: line, Character: char},
 		},
 	}, Doc: doc}
-	locations, err := def.Definition()
+	links, err := def.Definition()
 	assert.Check(t, err)
+	return locationsOf(links)
+}
+
+// locationsOf is where links go, without what they were found from.
+func locationsOf(links []definition.Link) []protocol.Location {
+	if links == nil {
+		return nil
+	}
+	locations := make([]protocol.Location, 0, len(links))
+	for _, link := range links {
+		locations = append(locations, link.Location())
+	}
 	return locations
 }
 
@@ -748,4 +763,66 @@ func TestDefinitionOfAParameterUnderAKeylessPair(t *testing.T) {
 
 	assert.Check(t, err)
 	assert.Check(t, cmp.Len(locations, 0))
+}
+
+func TestDefinitionOrigin(t *testing.T) {
+	const content = `version: 2.1
+
+jobs:
+  build:
+    parameters:
+      greeting:
+        type: string
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: echo << parameters.greeting >>
+
+workflows:
+  main:
+    jobs:
+      - build:
+          greeting: hi
+`
+	fileURI := uri.File("some-uri")
+	doc, err := parser.ParseFromContent([]byte(content), testHelpers.DefaultSettings(), fileURI, protocol.Position{})
+	assert.NilError(t, err)
+
+	linksAt := func(line, char uint32) []definition.Link {
+		def := definition.DefinitionStruct{Cache: cache.New(), Params: protocol.DefinitionParams{
+			TextDocumentPositionParams: protocol.TextDocumentPositionParams{
+				TextDocument: protocol.TextDocumentIdentifier{URI: fileURI},
+				Position:     protocol.Position{Line: line, Character: char},
+			},
+		}, Doc: doc}
+		links, err := def.Definition()
+		assert.Check(t, err)
+		return links
+	}
+	greetingName := protocol.Range{
+		Start: protocol.Position{Line: 5, Character: 6},
+		End:   protocol.Position{Line: 5, Character: 14},
+	}
+
+	t.Run("is the whole reference to a parameter", func(t *testing.T) {
+		links := linksAt(10, 30)
+
+		assert.Assert(t, cmp.Len(links, 1))
+		assert.Check(t, cmp.DeepEqual(links[0].Origin, protocol.Range{
+			Start: protocol.Position{Line: 10, Character: 18},
+			End:   protocol.Position{Line: 10, Character: 43},
+		}))
+		assert.Check(t, cmp.DeepEqual(links[0].NameRange, greetingName))
+	})
+
+	t.Run("is the argument's name for an argument", func(t *testing.T) {
+		links := linksAt(16, 12)
+
+		assert.Assert(t, cmp.Len(links, 1))
+		assert.Check(t, cmp.DeepEqual(links[0].Origin, protocol.Range{
+			Start: protocol.Position{Line: 16, Character: 10},
+			End:   protocol.Position{Line: 16, Character: 18},
+		}))
+		assert.Check(t, cmp.DeepEqual(links[0].NameRange, greetingName))
+	})
 }

@@ -45,6 +45,7 @@ func (methods *Methods) Initialize(_ context.Context, params *protocol.Initializ
 		settings.IsCciExtension = settings.IsCciExtension || isCciExtension
 		settings.SchemaHovers = schemaHovers
 		settings.GitHubSignInCommand = gitHubSignInCommand
+		settings.DefinitionLinks = definitionLinks(params.Capabilities)
 	})
 	if userAgent, ok := options["userAgent"].(string); ok {
 		version.UserAgent += " " + userAgent
@@ -109,4 +110,14 @@ func (methods *Methods) Initialize(_ context.Context, params *protocol.Initializ
 		},
 	}
 	return v, nil
+}
+
+// definitionLinks is whether a client with capabilities reads a definition as
+// a link.
+func definitionLinks(capabilities protocol.ClientCapabilities) bool {
+	textDocument := capabilities.TextDocument
+	if textDocument == nil || textDocument.Definition == nil || textDocument.Definition.LinkSupport == nil {
+		return false
+	}
+	return *textDocument.Definition.LinkSupport
 }

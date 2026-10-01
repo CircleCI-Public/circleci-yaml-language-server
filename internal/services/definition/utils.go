@@ -4,58 +4,42 @@ import (
 	"fmt"
 
 	sitter "github.com/tree-sitter/go-tree-sitter"
-	"go.lsp.dev/protocol"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/parser"
 )
 
-func (def DefinitionStruct) getCommandOrJobLocation(name string, includeCommands bool) ([]protocol.Location, error) {
+func (def DefinitionStruct) getCommandOrJobLocation(name string, includeCommands bool) ([]Link, error) {
 	// The order of these checks is important. If a job, job-group,
 	// and command all have the same name, this function will return
 	// the job first (of course, there will also be a warning diagnostic
 	// about the ambiguous names).
 	if job, ok := def.Doc.Jobs[name]; ok {
-		return []protocol.Location{
-			{
-				Range: job.Range,
-				URI:   def.Doc.URI,
-			},
-		}, nil
+		return []Link{{URI: def.Doc.URI, Range: job.Range, NameRange: job.NameRange}}, nil
 	}
 
 	if jobGroup, ok := def.Doc.JobGroups[name]; ok {
-		return []protocol.Location{
-			{
-				Range: jobGroup.Range,
-				URI:   def.Doc.URI,
-			},
-		}, nil
+		return []Link{{URI: def.Doc.URI, Range: jobGroup.Range, NameRange: jobGroup.NameRange}}, nil
 	}
 
 	if command, ok := def.Doc.Commands[name]; ok && includeCommands {
-		return []protocol.Location{
-			{
-				Range: command.Range,
-				URI:   def.Doc.URI,
-			},
-		}, nil
+		return []Link{{URI: def.Doc.URI, Range: command.Range, NameRange: command.NameRange}}, nil
 	}
 
 	if alias, ok := def.Doc.JobAlias(name); ok {
-		return []protocol.Location{{Range: alias.Range, URI: def.Doc.URI}}, nil
+		return []Link{{URI: def.Doc.URI, Range: alias.Range, NameRange: alias.NameRange}}, nil
 	}
 	if alias, ok := def.Doc.CommandAlias(name); ok && includeCommands {
-		return []protocol.Location{{Range: alias.Range, URI: def.Doc.URI}}, nil
+		return []Link{{URI: def.Doc.URI, Range: alias.Range, NameRange: alias.NameRange}}, nil
 	}
 
 	if orb, err := def.getOrbLocation(name, true); err == nil {
 		return orb, nil
 	}
 
-	return []protocol.Location{}, fmt.Errorf("command or job not found")
+	return []Link{}, fmt.Errorf("command or job not found")
 }
 
-func (def DefinitionStruct) getCommandOrJobParamLocation(name string, paramName string, includeCommands bool) ([]protocol.Location, error) {
+func (def DefinitionStruct) getCommandOrJobParamLocation(name string, paramName string, includeCommands bool) ([]Link, error) {
 	// An alias's arguments are its target's parameters.
 	if alias, ok := def.Doc.CommandAlias(name); ok && includeCommands {
 		name = alias.Target
@@ -65,23 +49,13 @@ func (def DefinitionStruct) getCommandOrJobParamLocation(name string, paramName 
 
 	if job, ok := def.Doc.Jobs[name]; ok {
 		if param, ok := job.Parameters[paramName]; ok {
-			return []protocol.Location{
-				{
-					Range: param.GetRange(),
-					URI:   def.Doc.URI,
-				},
-			}, nil
+			return []Link{{URI: def.Doc.URI, Range: param.GetRange(), NameRange: param.GetNameRange()}}, nil
 		}
 	}
 
 	if command, ok := def.Doc.Commands[name]; ok && includeCommands {
 		if param, ok := command.Parameters[paramName]; ok {
-			return []protocol.Location{
-				{
-					Range: param.GetRange(),
-					URI:   def.Doc.URI,
-				},
-			}, nil
+			return []Link{{URI: def.Doc.URI, Range: param.GetRange(), NameRange: param.GetNameRange()}}, nil
 		}
 	}
 
@@ -89,7 +63,7 @@ func (def DefinitionStruct) getCommandOrJobParamLocation(name string, paramName 
 		return orb, nil
 	}
 
-	return []protocol.Location{}, fmt.Errorf("command or job not found")
+	return []Link{}, fmt.Errorf("command or job not found")
 }
 
 func GetPathFromVisitedNodes(visitedNodes []*sitter.Node, doc parser.YamlDocument) []string {

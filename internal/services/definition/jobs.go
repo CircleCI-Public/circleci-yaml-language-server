@@ -1,34 +1,29 @@
 package definition
 
 import (
-	"go.lsp.dev/protocol"
-
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 )
 
-func (def DefinitionStruct) searchForJobs() []protocol.Location {
+func (def DefinitionStruct) searchForJobs() []Link {
 	for _, job := range def.Doc.Jobs {
 		if res := def.getStepDefinition(job.Steps); len(res) > 0 {
 			return res
 		}
 
 		if position.InRange(job.NameRange, def.Params.Position) {
-			return []protocol.Location{
+			return []Link{
 				{
-					URI:   def.Params.TextDocument.URI,
-					Range: job.Range,
+					Origin:    job.NameRange,
+					URI:       def.Params.TextDocument.URI,
+					Range:     job.Range,
+					NameRange: job.NameRange,
 				},
 			}
 		}
 
 		if position.InRange(job.ExecutorRange, def.Params.Position) {
-			return []protocol.Location{
-				{
-					URI:   def.Params.TextDocument.URI,
-					Range: def.getExecutorRange(job.Executor),
-				},
-			}
+			return []Link{def.getExecutorLink(job.ExecutorRange, job.Executor)}
 		}
 
 		if paramDefinitions := def.searchForParamDefinition(job.Parameters); len(paramDefinitions) > 0 {
@@ -39,7 +34,7 @@ func (def DefinitionStruct) searchForJobs() []protocol.Location {
 	return def.searchForAliasTargets(def.Doc.Aliases.Jobs)
 }
 
-func (def DefinitionStruct) getStepDefinition(steps []ast.Step) []protocol.Location {
+func (def DefinitionStruct) getStepDefinition(steps []ast.Step) []Link {
 	for _, commandStep := range steps {
 		switch step := commandStep.(type) {
 		case ast.NamedStep:
@@ -47,7 +42,7 @@ func (def DefinitionStruct) getStepDefinition(steps []ast.Step) []protocol.Locat
 				if loc, err := def.getCommandOrJobLocation(step.Name, true); err == nil {
 					return loc
 				}
-				return []protocol.Location{}
+				return []Link{}
 			}
 
 			if res := def.searchForParamValueDefinition(step.Name, step.Parameters); len(res) > 0 {
@@ -56,5 +51,5 @@ func (def DefinitionStruct) getStepDefinition(steps []ast.Step) []protocol.Locat
 		}
 
 	}
-	return []protocol.Location{}
+	return []Link{}
 }

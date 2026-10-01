@@ -30,6 +30,10 @@ type Settings struct {
 	// to GitHub, and so gives the server a GitHub token. Empty when the
 	// client has none.
 	GitHubSignInCommand string
+
+	// DefinitionLinks is whether the client reads a definition as a link,
+	// which says what text it was found from as well as where it is.
+	DefinitionLinks bool
 }
 
 // OrbRegistry returns the orb registry for the configured host and token.

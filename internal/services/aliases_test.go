@@ -87,7 +87,7 @@ func TestAliasNavigation(t *testing.T) {
 			Position:     pos,
 		}}, c, settings)
 		assert.NilError(t, err)
-		return startLines(locations)
+		return startLines(locationsOf(locations))
 	}
 	references := func(t *testing.T, pos protocol.Position) []uint32 {
 		t.Helper()

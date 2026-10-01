@@ -1,33 +1,37 @@
 package definition
 
 import (
-	"go.lsp.dev/protocol"
-
 	ast2 "github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/paramref"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 )
 
-func (def DefinitionStruct) searchParamDefinition() []protocol.Location {
+func (def DefinitionStruct) searchParamDefinition() []Link {
 	content := def.Doc.Content
 
-	paramName, isPipelineParam := paramref.NameUsedAtPos(content, def.Params.Position)
+	paramName, isPipelineParam, reference := paramref.UsedAtPos(content, def.Params.Position)
 
 	if paramName == "" {
-		return []protocol.Location{}
+		return []Link{}
 	}
 
 	_, visitedNodes, _ := position.NodeAt(def.Doc.RootNode, def.Params.Position)
 	path := GetPathFromVisitedNodes(visitedNodes, def.Doc)
 
+	link := func(param ast2.Parameter) []Link {
+		return []Link{
+			{
+				Origin:    reference,
+				URI:       def.Params.TextDocument.URI,
+				Range:     param.GetRange(),
+				NameRange: param.GetNameRange(),
+			},
+		}
+	}
+
 	if isPipelineParam {
 		if param, ok := def.Doc.PipelineParameters[paramName]; ok {
-			return []protocol.Location{
-				{
-					URI:   def.Params.TextDocument.URI,
-					Range: param.GetRange(),
-				},
-			}
+			return link(param)
 		}
 	}
 
@@ -42,65 +46,51 @@ func (def DefinitionStruct) searchParamDefinition() []protocol.Location {
 			param := tmp.Parameters[paramName]
 
 			if param != nil {
-				return []protocol.Location{
-					{
-						URI:   def.Params.TextDocument.URI,
-						Range: param.GetRange(),
-					},
-				}
+				return link(param)
 			}
 		} else if tmp, ok := def.Doc.Jobs[name]; ok {
 			param := tmp.Parameters[paramName]
 
 			if param != nil {
-				return []protocol.Location{
-					{
-						URI:   def.Params.TextDocument.URI,
-						Range: param.GetRange(),
-					},
-				}
+				return link(param)
 			}
 		} else if tmp, ok := def.Doc.Executors[name]; ok {
 			param := tmp.GetParameters()[paramName]
 
 			if param != nil {
-				return []protocol.Location{
-					{
-						URI:   def.Params.TextDocument.URI,
-						Range: param.GetRange(),
-					},
-				}
+				return link(param)
 			}
 		}
 	}
 
-	return []protocol.Location{}
+	return []Link{}
 }
 
-func (def DefinitionStruct) searchForParamDefinition(definedParams map[string]ast2.Parameter) []protocol.Location {
+func (def DefinitionStruct) searchForParamDefinition(definedParams map[string]ast2.Parameter) []Link {
 	for _, param := range definedParams {
 		if position.InRange(param.GetRange(), def.Params.Position) {
-			return []protocol.Location{
+			return []Link{
 				{
-					URI:   def.Params.TextDocument.URI,
-					Range: param.GetNameRange(),
+					URI:       def.Params.TextDocument.URI,
+					Range:     param.GetNameRange(),
+					NameRange: param.GetNameRange(),
 				},
 			}
 		}
 	}
 
-	return []protocol.Location{}
+	return []Link{}
 }
 
-func (def DefinitionStruct) searchForParamValueDefinition(callName string, params map[string]ast2.ParameterValue) []protocol.Location {
+func (def DefinitionStruct) searchForParamValueDefinition(callName string, params map[string]ast2.ParameterValue) []Link {
 	for _, param := range params {
 		if position.InRange(param.Range, def.Params.Position) {
 			if loc, err := def.getCommandOrJobParamLocation(callName, param.Name, true); err == nil {
 				return loc
 			}
-			return []protocol.Location{}
+			return []Link{}
 		}
 	}
 
-	return []protocol.Location{}
+	return []Link{}
 }
