@@ -102,6 +102,7 @@ func (methods *Methods) Initialize(_ context.Context, params *protocol.Initializ
 				ResolveProvider: &yes,
 			},
 			DocumentHighlightProvider: protocol.Boolean(true),
+			DocumentLinkProvider:      &protocol.DocumentLinkOptions{},
 			DocumentSymbolProvider:    protocol.Boolean(true),
 			WorkspaceSymbolProvider:   protocol.Boolean(true),
 		},
