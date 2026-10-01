@@ -27,12 +27,16 @@ func (def DefinitionStruct) searchForJobInvocationFromRequires(requires []ast.Re
 
 // searchForMatrixParamDefinition goes from a parameter of a matrix, its name
 // or any of its values, to the parameter's declaration in the job, as an
-// argument goes.
+// argument goes. A value of a parameter of type executor goes to the
+// executor instead.
 func (def DefinitionStruct) searchForMatrixParamDefinition(jobName string, matrix map[string][]ast.ParameterValue) []Link {
 	for name, values := range matrix {
 		for _, param := range values {
 			if !position.InRange(param.Range, def.Params.Position) {
 				continue
+			}
+			if executor := def.searchForExecutorArgument(jobName, param); len(executor) > 0 {
+				return executor
 			}
 			if loc, err := def.getCommandOrJobParamLocation(jobName, name, true); err == nil {
 				return loc

@@ -85,6 +85,9 @@ func (def DefinitionStruct) searchForParamDefinition(definedParams map[string]as
 func (def DefinitionStruct) searchForParamValueDefinition(callName string, params map[string]ast2.ParameterValue) []Link {
 	for _, param := range params {
 		if position.InRange(param.Range, def.Params.Position) {
+			if executor := def.searchForExecutorArgument(callName, param); len(executor) > 0 {
+				return executor
+			}
 			if loc, err := def.getCommandOrJobParamLocation(callName, param.Name, true); err == nil {
 				return loc
 			}
