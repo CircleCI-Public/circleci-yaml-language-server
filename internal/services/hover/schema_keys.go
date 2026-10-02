@@ -1,6 +1,7 @@
 package hover
 
 import (
+	"context"
 	"strconv"
 	"strings"
 
@@ -14,7 +15,7 @@ import (
 
 // SchemaKey is the hover for a key: what the schema says of it, such as
 // resource_class's description. A value gets none.
-func SchemaKey(doc yamlparser.YamlDocument, _ *cache.Cache, pos protocol.Position) (string, bool) {
+func SchemaKey(_ context.Context, doc yamlparser.YamlDocument, _ *cache.Cache, pos protocol.Position) (string, bool) {
 	path, ok := keyPathAt(doc, pos)
 	if !ok {
 		return "", false

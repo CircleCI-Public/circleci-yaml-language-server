@@ -12,7 +12,7 @@ var functionVersionBeingWritten = regexp.MustCompile(`^\s*[\w-]+\s*:\s*([^\s@]+)
 
 // completeFunctionVersion offers the published versions of a declared
 // function, at its version.
-func (ch *CompletionHandler) completeFunctionVersion() {
+func (ch *CompletionHandler) completeFunctionVersion(ctx context.Context) {
 	pos := ch.Params.Position
 	lines := strings.Split(string(ch.Doc.Content), "\n")
 	if int(pos.Line) >= len(lines) {
@@ -25,7 +25,7 @@ func (ch *CompletionHandler) completeFunctionVersion() {
 		return
 	}
 
-	published, err := ch.Cache.Functions.Function(context.TODO(), ch.Context.V3Client(), match[1])
+	published, err := ch.Cache.Functions.Function(ctx, ch.Context.V3Client(), match[1])
 	if err != nil || published == nil {
 		return
 	}
@@ -37,7 +37,7 @@ func (ch *CompletionHandler) completeFunctionVersion() {
 // completeFunctionFlags offers the flags a function step doesn't pass yet,
 // at a key of its `with`, or a boolean flag's values, at its value. It says
 // whether the cursor is in a function step's `with`.
-func (ch *CompletionHandler) completeFunctionFlags() bool {
+func (ch *CompletionHandler) completeFunctionFlags(ctx context.Context) bool {
 	key, lines, withLine := ch.valueAt()
 	atValue := withLine != -1
 	if !atValue {
@@ -60,7 +60,7 @@ func (ch *CompletionHandler) completeFunctionFlags() bool {
 		return false
 	}
 
-	_, descriptor, err := ch.Doc.LookUpFunction(function, ch.Cache)
+	_, descriptor, err := ch.Doc.LookUpFunction(ctx, function, ch.Cache)
 	if err != nil || descriptor == nil {
 		return true
 	}

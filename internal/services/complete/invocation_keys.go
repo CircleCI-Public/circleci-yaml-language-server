@@ -1,6 +1,7 @@
 package complete
 
 import (
+	"context"
 	"regexp"
 	"strings"
 
@@ -23,7 +24,7 @@ var invocationMappingKeys = map[string][]string{
 // completeInvocationMapping offers the keys a mapping in a job invocation
 // doesn't have yet, such as its filters or its matrix, when the cursor is
 // at a key of one, and says whether it is.
-func (ch *CompletionHandler) completeInvocationMapping(invocations []ast.JobInvocation) bool {
+func (ch *CompletionHandler) completeInvocationMapping(ctx context.Context, invocations []ast.JobInvocation) bool {
 	lines, parent := ch.keyParent()
 	var path []string
 	for line := parent; line != -1; line = parentLine(lines, line) {
@@ -31,7 +32,7 @@ func (ch *CompletionHandler) completeInvocationMapping(invocations []ast.JobInvo
 			if len(path) == 0 {
 				return false
 			}
-			ch.offerInvocationMappingKeys(invocation, strings.Join(path, "."), parent)
+			ch.offerInvocationMappingKeys(ctx, invocation, strings.Join(path, "."), parent)
 			return true
 		}
 
@@ -44,10 +45,10 @@ func (ch *CompletionHandler) completeInvocationMapping(invocations []ast.JobInvo
 	return false
 }
 
-func (ch *CompletionHandler) offerInvocationMappingKeys(invocation *ast.JobInvocation, path string, mappingLine int) {
+func (ch *CompletionHandler) offerInvocationMappingKeys(ctx context.Context, invocation *ast.JobInvocation, path string, mappingLine int) {
 	keys := invocationMappingKeys[path]
 	if path == "matrix.parameters" {
-		keys = ch.jobParameterNames(invocation)
+		keys = ch.jobParameterNames(ctx, invocation)
 	}
 
 	present := ch.stepBodyKeys(mappingLine)

@@ -312,7 +312,7 @@ func everyRequest(t testing.TB, settings *session.Settings, content string, posi
 
 	var start protocol.Position
 	survives(t, "diagnostics", content, start, func() {
-		_, _ = DiagnosticFile(docURI, c, settings, "")
+		_, _ = DiagnosticFile(t.Context(), docURI, c, settings, "")
 	})
 	survives(t, "document symbols", content, start, func() {
 		_, _ = DocumentSymbols(protocol.DocumentSymbolParams{TextDocument: document}, c, settings)
@@ -328,13 +328,13 @@ func everyRequest(t testing.TB, settings *session.Settings, content string, posi
 			survives(t, string(request), content, pos, func() {
 				switch request {
 				case askCompletion:
-					_, _ = Complete(protocol.CompletionParams{TextDocumentPositionParams: at}, c, settings)
+					_, _ = Complete(t.Context(), protocol.CompletionParams{TextDocumentPositionParams: at}, c, settings)
 				case askHover:
-					_, _ = Hover(protocol.HoverParams{TextDocumentPositionParams: at}, c, settings)
+					_, _ = Hover(t.Context(), protocol.HoverParams{TextDocumentPositionParams: at}, c, settings)
 				case askDefinition:
-					_, _ = Definition(protocol.DefinitionParams{TextDocumentPositionParams: at}, c, settings)
+					_, _ = Definition(t.Context(), protocol.DefinitionParams{TextDocumentPositionParams: at}, c, settings)
 				case askReferences:
-					_, _ = References(protocol.ReferenceParams{TextDocumentPositionParams: at}, c, settings)
+					_, _ = References(t.Context(), protocol.ReferenceParams{TextDocumentPositionParams: at}, c, settings)
 				}
 			})
 		}

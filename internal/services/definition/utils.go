@@ -1,6 +1,7 @@
 package definition
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -10,7 +11,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/parser"
 )
 
-func (def DefinitionStruct) getCommandOrJobLocation(name string, includeCommands bool) ([]Link, error) {
+func (def DefinitionStruct) getCommandOrJobLocation(ctx context.Context, name string, includeCommands bool) ([]Link, error) {
 	// The order of these checks is important. If a job, job-group,
 	// and command all have the same name, this function will return
 	// the job first (of course, there will also be a warning diagnostic
@@ -34,14 +35,14 @@ func (def DefinitionStruct) getCommandOrJobLocation(name string, includeCommands
 		return []Link{{URI: def.Doc.URI, Range: alias.Range, NameRange: alias.NameRange}}, nil
 	}
 
-	if orb, err := def.getOrbLocation(name, true); err == nil {
+	if orb, err := def.getOrbLocation(ctx, name, true); err == nil {
 		return orb, nil
 	}
 
 	return []Link{}, fmt.Errorf("command or job not found")
 }
 
-func (def DefinitionStruct) getCommandOrJobParamLocation(name string, paramName string, includeCommands bool) ([]Link, error) {
+func (def DefinitionStruct) getCommandOrJobParamLocation(ctx context.Context, name string, paramName string, includeCommands bool) ([]Link, error) {
 	// An alias's arguments are its target's parameters.
 	if alias, ok := def.Doc.CommandAlias(name); ok && includeCommands {
 		name = alias.Target
@@ -61,7 +62,7 @@ func (def DefinitionStruct) getCommandOrJobParamLocation(name string, paramName 
 		}
 	}
 
-	if orb, err := def.getOrbParamLocation(name, paramName); err == nil {
+	if orb, err := def.getOrbParamLocation(ctx, name, paramName); err == nil {
 		return orb, nil
 	}
 
@@ -99,7 +100,7 @@ func GetPathFromVisitedNodes(visitedNodes []*sitter.Node, doc parser.YamlDocumen
 
 // declaredParam is the parameter paramName as the job or command name
 // declares it, in the config or in an orb.
-func (def DefinitionStruct) declaredParam(name string, paramName string) (ast.Parameter, bool) {
+func (def DefinitionStruct) declaredParam(ctx context.Context, name string, paramName string) (ast.Parameter, bool) {
 	if alias, ok := def.Doc.CommandAlias(name); ok {
 		name = alias.Target
 	} else if alias, ok := def.Doc.JobAlias(name); ok {
@@ -112,7 +113,7 @@ func (def DefinitionStruct) declaredParam(name string, paramName string) (ast.Pa
 	} else if command, ok := def.Doc.Commands[name]; ok {
 		parameters = command.Parameters
 	} else if orbName, element, ok := strings.Cut(name, "/"); ok {
-		if orbInfo, err := def.GetOrbInfo(orbName); err == nil && orbInfo != nil {
+		if orbInfo, err := def.GetOrbInfo(ctx, orbName); err == nil && orbInfo != nil {
 			if job, ok := orbInfo.Jobs[element]; ok {
 				parameters = job.Parameters
 			} else if command, ok := orbInfo.Commands[element]; ok {

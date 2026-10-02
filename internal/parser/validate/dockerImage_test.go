@@ -408,7 +408,7 @@ jobs:
 				DockerHub: tt.MockAPI,
 			}
 
-			val.Validate()
+			val.Validate(t.Context())
 
 			diags := *val.Diagnostics
 			compareDiagnostics(t, tt.Diagnostics, diags)
@@ -437,7 +437,7 @@ jobs:
 		val := CreateValidateFromYAML(config)
 		val.APIs = ValidateAPIs{DockerHub: DockerHubMock{Err: errRateLimited}}
 
-		val.Validate()
+		val.Validate(t.Context())
 
 		t.Run("is not a diagnostic", func(t *testing.T) {
 			compareDiagnostics(t, []ComparableDiagnostic{}, *val.Diagnostics)
@@ -455,7 +455,7 @@ jobs:
 		val.Cache.DockerCache.Add("namespace", "image", true)
 		val.APIs = ValidateAPIs{DockerHub: DockerHubMock{Err: errRateLimited}}
 
-		val.Validate()
+		val.Validate(t.Context())
 
 		t.Run("is not a diagnostic", func(t *testing.T) {
 			compareDiagnostics(t, []ComparableDiagnostic{}, *val.Diagnostics)

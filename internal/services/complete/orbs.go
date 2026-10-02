@@ -12,7 +12,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 )
 
-func (ch *CompletionHandler) completeOrbs() {
+func (ch *CompletionHandler) completeOrbs(ctx context.Context) {
 	if ch.DocTag != "original" {
 		return
 	}
@@ -28,17 +28,17 @@ func (ch *CompletionHandler) completeOrbs() {
 			continue
 		}
 
-		ch.completeOrb(child)
+		ch.completeOrb(ctx, child)
 
 		return
 	}
 }
 
-func (ch *CompletionHandler) completeOrb(node *sitter.Node) {
+func (ch *CompletionHandler) completeOrb(ctx context.Context, node *sitter.Node) {
 	if ch.wantOrbVersionCompletion(node) {
-		ch.completeOrbVersion(node)
+		ch.completeOrbVersion(ctx, node)
 	} else {
-		ch.completeOrbName(node)
+		ch.completeOrbName(ctx, node)
 	}
 }
 
@@ -56,10 +56,10 @@ func (ch *CompletionHandler) wantOrbVersionCompletion(node *sitter.Node) bool {
 	return cursorIsOnVersion
 }
 
-func (ch *CompletionHandler) completeOrbVersion(node *sitter.Node) {
+func (ch *CompletionHandler) completeOrbVersion(ctx context.Context, node *sitter.Node) {
 	def := ch.Doc.GetOrbURLDefinition(node)
 	orbName := fmt.Sprintf("%s/%s", def.Namespace.Text, def.Name.Text)
-	completions, err := ch.getOrbVersionCompletions(orbName)
+	completions, err := ch.getOrbVersionCompletions(ctx, orbName)
 	if err != nil {
 		return
 	}
@@ -78,10 +78,10 @@ func (ch *CompletionHandler) completeOrbVersion(node *sitter.Node) {
 	}
 }
 
-func (ch *CompletionHandler) getOrbVersionCompletions(name string) ([]string, error) {
+func (ch *CompletionHandler) getOrbVersionCompletions(ctx context.Context, name string) ([]string, error) {
 	orbName := strings.TrimSuffix(name, "@")
 
-	orb, err := ch.Cache.OrbPackages.Orb(context.TODO(), ch.Doc.Context.OrbRegistry(), orbName)
+	orb, err := ch.Cache.OrbPackages.Orb(ctx, ch.Doc.Context.OrbRegistry(), orbName)
 	if err != nil {
 		return nil, err
 	}
@@ -96,8 +96,8 @@ func (ch *CompletionHandler) getOrbVersionCompletions(name string) ([]string, er
 	return versions, nil
 }
 
-func (ch *CompletionHandler) completeOrbName(node *sitter.Node) {
-	completions, err := ch.getOrbNameCompletions(ch.Doc.GetNodeText(node))
+func (ch *CompletionHandler) completeOrbName(ctx context.Context, node *sitter.Node) {
+	completions, err := ch.getOrbNameCompletions(ctx, ch.Doc.GetNodeText(node))
 	if err != nil {
 		return
 	}
@@ -107,11 +107,11 @@ func (ch *CompletionHandler) completeOrbName(node *sitter.Node) {
 	}
 }
 
-func (ch *CompletionHandler) getOrbNameCompletions(name string) ([]string, error) {
+func (ch *CompletionHandler) getOrbNameCompletions(ctx context.Context, name string) ([]string, error) {
 	parts := strings.Split(name, "/")
 	namespace := parts[0]
 
-	orbs, err := ch.Cache.OrbPackages.InNamespace(context.TODO(), ch.Doc.Context.OrbRegistry(), namespace)
+	orbs, err := ch.Cache.OrbPackages.InNamespace(ctx, ch.Doc.Context.OrbRegistry(), namespace)
 	if err != nil {
 		return nil, err
 	}

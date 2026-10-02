@@ -116,7 +116,7 @@ func (methods *Methods) parsingMethods(textDocument protocol.TextDocumentItem) {
 	}
 	defer parsedFile.Close()
 
-	parser2.ParseRemoteOrbs(parsedFile.Orbs, methods.Cache, methods.Settings())
+	parser2.ParseRemoteOrbs(context.TODO(), parsedFile.Orbs, methods.Cache, methods.Settings())
 }
 
 func (methods *Methods) applyIncrementalChanges(uri uri.URI, changes []protocol.TextDocumentContentChangeEvent) string {

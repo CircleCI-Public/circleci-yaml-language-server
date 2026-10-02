@@ -45,24 +45,24 @@ workflows:
 	}
 
 	t.Run("a value shows its type and definition", func(t *testing.T) {
-		got, ok := PipelineValue(doc, cache.New(), at(12, "pipeline.git"))
+		got, ok := PipelineValue(t.Context(), doc, cache.New(), at(12, "pipeline.git"))
 		assert.Assert(t, ok)
 		assert.Check(t, cmp.Contains(got, "**pipeline.git.branch.is_default** `boolean`\n\n"))
 	})
 
 	t.Run("a replaced value says what replaces it", func(t *testing.T) {
-		got, ok := PipelineValue(doc, cache.New(), at(12, "pipeline.trigger_parameters"))
+		got, ok := PipelineValue(t.Context(), doc, cache.New(), at(12, "pipeline.trigger_parameters"))
 		assert.Assert(t, ok)
 		assert.Check(t, cmp.Contains(got, "Deprecated: use `pipeline.event.name` instead."))
 	})
 
 	t.Run("a pipeline parameter doesn't", func(t *testing.T) {
-		_, ok := PipelineValue(doc, cache.New(), at(16, "pipeline.parameters"))
+		_, ok := PipelineValue(t.Context(), doc, cache.New(), at(16, "pipeline.parameters"))
 		assert.Check(t, !ok)
 	})
 
 	t.Run("nor does the rest of the line", func(t *testing.T) {
-		_, ok := PipelineValue(doc, cache.New(), at(12, "run"))
+		_, ok := PipelineValue(t.Context(), doc, cache.New(), at(12, "run"))
 		assert.Check(t, !ok)
 	})
 }

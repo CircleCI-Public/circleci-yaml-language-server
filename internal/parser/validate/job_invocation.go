@@ -1,6 +1,7 @@
 package validate
 
 import (
+	"context"
 	"fmt"
 	"maps"
 	"regexp"
@@ -107,25 +108,25 @@ func invocationNameMatches(name, requireName string) bool {
 // validateMatrixRequireExists checks a require holding `<< matrix.x >>`
 // against the other invocations once for each job the matrix expands to, as
 // the compiler expands it. Outside a matrix, it can't be expanded.
-func (val Validate) validateMatrixRequireExists(jobInvocations []ast2.JobInvocation, jobInvocation ast2.JobInvocation, require ast2.Require, ctx InvocationContext) {
+func (val Validate) validateMatrixRequireExists(jobInvocations []ast2.JobInvocation, jobInvocation ast2.JobInvocation, require ast2.Require, invocation InvocationContext) {
 	for i, combination := range jobInvocation.MatrixCombinations {
 		expanded := parser.ExpandMatrixReferences(require.Name, combination)
 		if paramref.IsMatrixPartiallyReferenced(expanded) || val.doesJobInvocationExist(jobInvocations, expanded) {
 			continue
 		}
 		missing := "a job in this workflow"
-		if ctx.Kind == InJobGroup {
-			missing = fmt.Sprintf("a member of the job group '%s'", ctx.JobGroupName)
+		if invocation.Kind == InJobGroup {
+			missing = fmt.Sprintf("a member of the job group '%s'", invocation.JobGroupName)
 		}
 		val.addDiagnostic(diagnostic.Error(require.Range, fmt.Sprintf(
 			"Job '%s' requires '%s', which is not %s", jobInvocation.MatrixNames[i], expanded, missing)))
 	}
 }
 
-func (val Validate) validateJobInvocationParameters(jobInvocation ast2.JobInvocation) {
+func (val Validate) validateJobInvocationParameters(ctx context.Context, jobInvocation ast2.JobInvocation) {
 	jobName := jobInvocation.JobName
 	jobRange := jobInvocation.JobInvocationRange
-	definedParams := val.Doc.GetDefinedParams(jobName, parser.JobEntity, val.Cache)
+	definedParams := val.Doc.GetDefinedParams(ctx, jobName, parser.JobEntity, val.Cache)
 
 	for _, definedParam := range definedParams {
 		_, okMatrix := jobInvocation.MatrixParams[definedParam.GetName()]
@@ -145,7 +146,7 @@ func (val Validate) validateJobInvocationParameters(jobInvocation ast2.JobInvoca
 			for _, param := range jobInvocation.MatrixParams[definedParam.GetName()] {
 				if param.Type == "enum" {
 					for _, value := range param.Value.([]ast2.ParameterValue) {
-						val.checkParamSimpleType(value, jobName, definedParam)
+						val.checkParamSimpleType(ctx, value, jobName, definedParam)
 					}
 				} else if param.Type != "alias" && param.Type != "null" {
 					val.addDiagnostic(diagnostic.Error(
@@ -155,7 +156,7 @@ func (val Validate) validateJobInvocationParameters(jobInvocation ast2.JobInvoca
 				}
 			}
 		} else if okParams {
-			val.checkParamSimpleType(jobInvocation.Parameters[definedParam.GetName()], jobName, definedParam)
+			val.checkParamSimpleType(ctx, jobInvocation.Parameters[definedParam.GetName()], jobName, definedParam)
 			if definedParam.GetType() == "executor" {
 				val.validateExecutorArgumentReference(jobInvocation.Parameters[definedParam.GetName()], definedParams)
 			}
@@ -190,12 +191,12 @@ func hasBeenRenamed(inv ast2.JobInvocation) bool {
 // validateDuplicateNames reports invocations that share a name: job groups
 // in a workflow, or jobs in a job group. An invocation without a `name` is
 // named after what it invokes.
-func (val Validate) validateDuplicateNames(jobInvocations []ast2.JobInvocation, ctx InvocationContext) {
+func (val Validate) validateDuplicateNames(jobInvocations []ast2.JobInvocation, invocation InvocationContext) {
 	byName := map[string][]ast2.JobInvocation{}
 	var names []string
 	for _, inv := range jobInvocations {
 		isJobGroup := val.Doc.DoesJobGroupExist(inv.JobName)
-		if inv.HasMatrix || (ctx.Kind == InWorkflow) != isJobGroup {
+		if inv.HasMatrix || (invocation.Kind == InWorkflow) != isJobGroup {
 			continue
 		}
 		if _, ok := byName[inv.StepName]; !ok {
@@ -211,11 +212,11 @@ func (val Validate) validateDuplicateNames(jobInvocations []ast2.JobInvocation, 
 		}
 		message := fmt.Sprintf("Job-group '%s' occurs %d times in workflow '%s'. "+
 			"You can give a job-group an explicit name by adding a `name` key",
-			name, len(invocations), ctx.WorkflowName)
-		if ctx.Kind == InJobGroup {
+			name, len(invocations), invocation.WorkflowName)
+		if invocation.Kind == InJobGroup {
 			message = fmt.Sprintf("Job '%s' occurs %d times in job group '%s'. "+
 				"You can give a job within a job group an explicit name by adding a `name` key",
-				name, len(invocations), ctx.JobGroupName)
+				name, len(invocations), invocation.JobGroupName)
 		}
 		for _, inv := range invocations {
 			rng := inv.JobNameRange
@@ -228,22 +229,22 @@ func (val Validate) validateDuplicateNames(jobInvocations []ast2.JobInvocation, 
 }
 
 // Validates and adds diagnostics for workflow/job-group job invocations.
-func (val Validate) validateInvocations(jobInvocations []ast2.JobInvocation, ctx InvocationContext) {
-	val.validateDuplicateNames(jobInvocations, ctx)
+func (val Validate) validateInvocations(ctx context.Context, jobInvocations []ast2.JobInvocation, invocation InvocationContext) {
+	val.validateDuplicateNames(jobInvocations, invocation)
 	for i, jobInvocation := range jobInvocations {
 		// A job invocation can invoke either a job or job-group, each type requires different validation
 		isJobGroup := val.Doc.DoesJobGroupExist(jobInvocation.JobName)
 		if isJobGroup {
-			val.validateJobGroupInvocation(jobInvocation, ctx)
+			val.validateJobGroupInvocation(jobInvocation, invocation)
 		} else {
-			val.validateSingleJobInvocation(jobInvocation, ctx)
+			val.validateSingleJobInvocation(ctx, jobInvocation, invocation)
 		}
 
 		// Common features between invoking a job and a job-group
 
 		// Every job takes pre-steps and post-steps, as steps parameters.
-		val.validateSteps(jobInvocation.PreSteps, "", map[string]ast2.Parameter{})
-		val.validateSteps(jobInvocation.PostSteps, "", map[string]ast2.Parameter{})
+		val.validateSteps(ctx, jobInvocation.PreSteps, "", map[string]ast2.Parameter{})
+		val.validateSteps(ctx, jobInvocation.PostSteps, "", map[string]ast2.Parameter{})
 		val.warnNullBodySteps(jobInvocation.PreSteps)
 		val.warnNullBodySteps(jobInvocation.PostSteps)
 
@@ -251,16 +252,16 @@ func (val Validate) validateInvocations(jobInvocations []ast2.JobInvocation, ctx
 			val.validateRequireIsUnambiguous(jobInvocations, i, require)
 
 			if paramref.IsMatrixPartiallyReferenced(require.Name) {
-				val.validateMatrixRequireExists(jobInvocations, jobInvocation, require, ctx)
+				val.validateMatrixRequireExists(jobInvocations, jobInvocation, require, invocation)
 			} else if !val.doesJobInvocationExist(jobInvocations, require.Name) {
 				// Check if the require references a job inside a job-group
 				if ownerGroup, found := val.Doc.FindJobGroupContainingJob(require.Name); found {
-					if ctx.Kind == InWorkflow {
+					if invocation.Kind == InWorkflow {
 						val.addDiagnostic(diagnostic.Error(
 							require.Range,
 							fmt.Sprintf("\"%s\" is defined inside job group \"%s\", not directly in this workflow", require.Name, ownerGroup)))
 						continue
-					} else if ctx.Kind == InJobGroup && ownerGroup != ctx.JobGroupName {
+					} else if invocation.Kind == InJobGroup && ownerGroup != invocation.JobGroupName {
 						val.addDiagnostic(diagnostic.Error(
 							require.Range,
 							fmt.Sprintf("\"%s\" is not a member of this job group", require.Name)))
@@ -317,8 +318,8 @@ func (val Validate) validateInvocations(jobInvocations []ast2.JobInvocation, ctx
 	}
 }
 
-func (val Validate) validateSingleJobInvocation(jobInvocation ast2.JobInvocation, ctx InvocationContext) {
-	if ctx.Kind == InJobGroup && jobInvocation.SerialGroup != "" {
+func (val Validate) validateSingleJobInvocation(ctx context.Context, jobInvocation ast2.JobInvocation, invocation InvocationContext) {
+	if invocation.Kind == InJobGroup && jobInvocation.SerialGroup != "" {
 		val.addDiagnostic(diagnostic.Error(jobInvocation.SerialGroupRange, "Use of `serial-group` on job invocations inside a job-group is not supported. Please consider using `serial-group` on the job-group instead."))
 	}
 
@@ -352,28 +353,28 @@ func (val Validate) validateSingleJobInvocation(jobInvocation ast2.JobInvocation
 	}
 
 	if jobInvocation.Type == "approval" {
-		val.validateApprovalInvocation(jobInvocation, ctx)
+		val.validateApprovalInvocation(jobInvocation, invocation)
 		val.validateInvocationContexts(jobInvocation)
 		return
 	}
 
 	// This orb check is not needed for job-groups because we don't support job-groups in orbs.
-	if val.Doc.IsFromUnfetchableOrb(jobInvocation.JobName, val.Cache) {
+	if val.Doc.IsFromUnfetchableOrb(ctx, jobInvocation.JobName, val.Cache) {
 		return
 	}
 
-	if message := val.unknownJobMessage(jobInvocation.JobName); message != "" {
+	if message := val.unknownJobMessage(ctx, jobInvocation.JobName); message != "" {
 		val.addDiagnostic(diagnostic.Error(jobInvocation.JobInvocationRange, message))
 		return
 	}
 
 	// An alias that names nothing is reported where it is declared.
 	alias, isAlias := val.Doc.JobAlias(jobInvocation.JobName)
-	if !val.Doc.IsBuiltIn(jobInvocation.JobName) && (!isAlias || val.jobAliasProblem(alias) == "") {
-		if target, ok := val.overrideTarget(jobInvocation); ok {
+	if !val.Doc.IsBuiltIn(jobInvocation.JobName) && (!isAlias || val.jobAliasProblem(ctx, alias) == "") {
+		if target, ok := val.overrideTarget(ctx, jobInvocation); ok {
 			invoked := jobInvocation
 			invoked.JobName = target
-			val.validateJobInvocationParameters(invoked)
+			val.validateJobInvocationParameters(ctx, invoked)
 		}
 	}
 
@@ -383,7 +384,7 @@ func (val Validate) validateSingleJobInvocation(jobInvocation ast2.JobInvocation
 // overrideTarget returns the job an invocation runs, which is its
 // `override-with` job when the orb has it, and otherwise the job it names.
 // It is false when the job's parameters can't be known.
-func (val Validate) overrideTarget(jobInvocation ast2.JobInvocation) (string, bool) {
+func (val Validate) overrideTarget(ctx context.Context, jobInvocation ast2.JobInvocation) (string, bool) {
 	target := jobInvocation.OverrideWith
 	if target == "" || paramref.ContainsReference(target) {
 		return jobInvocation.JobName, true
@@ -402,11 +403,11 @@ func (val Validate) overrideTarget(jobInvocation ast2.JobInvocation) (string, bo
 		return jobInvocation.JobName, true
 	}
 
-	if val.Doc.IsFromUnfetchableOrb(target, val.Cache) {
+	if val.Doc.IsFromUnfetchableOrb(ctx, target, val.Cache) {
 		return "", false
 	}
 
-	orbInfo, err := val.Doc.GetOrbInfoFromName(orbName, val.Cache)
+	orbInfo, err := val.Doc.GetOrbInfoFromName(ctx, orbName, val.Cache)
 	if err != nil || orbInfo == nil {
 		return "", false
 	}
@@ -419,21 +420,21 @@ func (val Validate) overrideTarget(jobInvocation ast2.JobInvocation) (string, bo
 	return jobInvocation.JobName, true
 }
 
-func (val Validate) isKnownJob(name string) bool {
+func (val Validate) isKnownJob(ctx context.Context, name string) bool {
 	_, isJobAlias := val.Doc.JobAlias(name)
-	return val.Doc.DoesJobExist(name) || isJobAlias || val.Doc.IsOrbJob(name, val.Cache)
+	return val.Doc.DoesJobExist(name) || isJobAlias || val.Doc.IsOrbJob(ctx, name, val.Cache)
 }
 
-func (val Validate) isCommand(name string) bool {
+func (val Validate) isCommand(ctx context.Context, name string) bool {
 	_, isCommandAlias := val.Doc.CommandAlias(name)
-	return val.Doc.DoesCommandExist(name) || isCommandAlias || val.Doc.IsOrbCommand(name, val.Cache)
+	return val.Doc.DoesCommandExist(name) || isCommandAlias || val.Doc.IsOrbCommand(ctx, name, val.Cache)
 }
 
-func (val Validate) unknownJobMessage(name string) string {
+func (val Validate) unknownJobMessage(ctx context.Context, name string) string {
 	switch {
-	case val.isKnownJob(name):
+	case val.isKnownJob(ctx, name):
 		return ""
-	case val.isCommand(name):
+	case val.isCommand(ctx, name):
 		return fmt.Sprintf("%s is a command, not a job: a workflow runs jobs", name)
 	default:
 		return fmt.Sprintf("Cannot find declaration for job \"%s\"", name)
@@ -474,7 +475,7 @@ func (val Validate) validateInvocationContexts(jobInvocation ast2.JobInvocation)
 // is named in the workflow, where nothing checks that it has this shape.
 var jobNamePattern = regexp.MustCompile(`^[A-Za-z][A-Za-z\s\d_-]*$`)
 
-func (val Validate) validateApprovalInvocation(jobInvocation ast2.JobInvocation, ctx InvocationContext) {
+func (val Validate) validateApprovalInvocation(jobInvocation ast2.JobInvocation, invocation InvocationContext) {
 	if !jobNamePattern.MatchString(jobInvocation.JobName) && !paramref.ContainsReference(jobInvocation.JobName) {
 		val.addDiagnostic(diagnostic.Warning(jobInvocation.JobNameRange, fmt.Sprintf(
 			"Approval job '%s' is not a valid job name: it must start with a letter and contain only "+
@@ -483,7 +484,7 @@ func (val Validate) validateApprovalInvocation(jobInvocation ast2.JobInvocation,
 
 	switch {
 	case !val.Doc.DoesJobExist(jobInvocation.JobName):
-	case ctx.Kind == InJobGroup:
+	case invocation.Kind == InJobGroup:
 		val.addDiagnostic(diagnostic.Error(jobInvocation.JobNameRange, fmt.Sprintf(
 			"Duplicate job definition: '%s' is defined in `jobs:`, so a job group can't also define it "+
 				"with type: approval", jobInvocation.JobName)))
@@ -511,10 +512,10 @@ func (val Validate) validateApprovalInvocation(jobInvocation ast2.JobInvocation,
 
 // Validates the structure of an invocation of a job-group, which
 // does not have all of the same features as a single job invocation.
-func (val Validate) validateJobGroupInvocation(jobInvocation ast2.JobInvocation, ctx InvocationContext) {
-	if ctx.Kind == InJobGroup {
+func (val Validate) validateJobGroupInvocation(jobInvocation ast2.JobInvocation, invocation InvocationContext) {
+	if invocation.Kind == InJobGroup {
 		val.addDiagnostic(diagnostic.Error(jobInvocation.JobNameRange,
-			fmt.Sprintf("Job group \"%s\" cannot reference job group \"%s\" -- nesting is not supported", ctx.JobGroupName, jobInvocation.JobName)))
+			fmt.Sprintf("Job group \"%s\" cannot reference job group \"%s\" -- nesting is not supported", invocation.JobGroupName, jobInvocation.JobName)))
 		return // exit early
 	}
 

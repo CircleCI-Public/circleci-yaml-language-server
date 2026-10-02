@@ -1,6 +1,7 @@
 package hover
 
 import (
+	"context"
 	"fmt"
 	"slices"
 	"strings"
@@ -15,7 +16,7 @@ import (
 // OrbDeclaration is the hover for an orb's declaration under `orbs:`: the
 // orb's description, and the commands, jobs and executors it gives. For an
 // inline orb, only its name has one, rather than all of its body.
-func OrbDeclaration(doc yamlparser.YamlDocument, c *cache.Cache, pos protocol.Position) (string, bool) {
+func OrbDeclaration(ctx context.Context, doc yamlparser.YamlDocument, c *cache.Cache, pos protocol.Position) (string, bool) {
 	for _, declared := range doc.Orbs {
 		onName := position.InRange(declared.NameRange, pos)
 		onReference := !declared.Url.IsLocal && position.InRange(declared.ValueRange, pos)
@@ -23,7 +24,7 @@ func OrbDeclaration(doc yamlparser.YamlDocument, c *cache.Cache, pos protocol.Po
 			continue
 		}
 
-		orb, err := doc.GetOrFetchOrbInfo(declared, c)
+		orb, err := doc.GetOrFetchOrbInfo(ctx, declared, c)
 		if err != nil || orb == nil {
 			return "", false
 		}

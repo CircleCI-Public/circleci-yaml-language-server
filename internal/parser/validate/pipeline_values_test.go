@@ -31,7 +31,7 @@ workflows:
     jobs:
       - build
 `)
-	val.Validate()
+	val.Validate(t.Context())
 
 	type found struct {
 		Message    string

@@ -1,6 +1,8 @@
 package languageservice
 
 import (
+	"context"
+
 	"go.lsp.dev/protocol"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
@@ -9,7 +11,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/session"
 )
 
-func Definition(params protocol.DefinitionParams, cache *cache.Cache, context *session.Settings) ([]definition.Link, error) {
+func Definition(ctx context.Context, params protocol.DefinitionParams, cache *cache.Cache, context *session.Settings) ([]definition.Link, error) {
 	yamlDocument, err := yamlparser.ParseFromUriWithCache(params.TextDocument.URI, cache, context)
 	if err != nil {
 		return nil, err
@@ -18,5 +20,5 @@ func Definition(params protocol.DefinitionParams, cache *cache.Cache, context *s
 
 	def := definition.DefinitionStruct{Cache: cache, Params: params, Doc: yamlDocument}
 
-	return def.Definition()
+	return def.Definition(ctx)
 }

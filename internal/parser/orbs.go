@@ -12,7 +12,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
 )
 
-func (doc *YamlDocument) GetOrbInfoFromName(name string, cache *cache.Cache) (*ast.OrbInfo, error) {
+func (doc *YamlDocument) GetOrbInfoFromName(ctx context.Context, name string, cache *cache.Cache) (*ast.OrbInfo, error) {
 	// Searching within local orbs
 	orbInfo, ok := doc.LocalOrbInfo[name]
 	if ok {
@@ -25,10 +25,10 @@ func (doc *YamlDocument) GetOrbInfoFromName(name string, cache *cache.Cache) (*a
 		return nil, nil
 	}
 
-	return doc.GetOrFetchOrbInfo(orb, cache)
+	return doc.GetOrFetchOrbInfo(ctx, orb, cache)
 }
 
-func (doc *YamlDocument) GetOrFetchOrbInfo(orb ast.Orb, cache *cache.Cache) (*ast.OrbInfo, error) {
+func (doc *YamlDocument) GetOrFetchOrbInfo(ctx context.Context, orb ast.Orb, cache *cache.Cache) (*ast.OrbInfo, error) {
 	// Searching within local orbs
 	orbInfo, ok := doc.LocalOrbInfo[orb.Name]
 	if ok {
@@ -37,7 +37,7 @@ func (doc *YamlDocument) GetOrFetchOrbInfo(orb ast.Orb, cache *cache.Cache) (*as
 
 	// An orb at a URL that can't be fetched declares nothing that is known.
 	if orb.Url.IsURL {
-		orbInfo, err := GetURLOrbInfo(orb.Url.Name, cache, doc.Context)
+		orbInfo, err := GetURLOrbInfo(ctx, orb.Url.Name, cache, doc.Context)
 		if orbInfo == nil {
 			return &ast.OrbInfo{}, err
 		}
@@ -54,7 +54,7 @@ func (doc *YamlDocument) GetOrFetchOrbInfo(orb ast.Orb, cache *cache.Cache) (*as
 
 	// Trying to fetch if not found
 	var err error
-	orbInfo, err = GetOrbInfo(orbId, cache, doc.Context)
+	orbInfo, err = GetOrbInfo(ctx, orbId, cache, doc.Context)
 
 	if err != nil {
 		return &ast.OrbInfo{}, err
@@ -66,8 +66,8 @@ func (doc *YamlDocument) GetOrFetchOrbInfo(orb ast.Orb, cache *cache.Cache) (*as
 // DoesOrbExist reports whether a remote orb exists and the token can see it.
 // An orb that could not be looked up is reported as existing: that the lookup
 // failed says nothing about the orb.
-func (doc *YamlDocument) DoesOrbExist(orb ast.Orb, cache *cache.Cache) bool {
-	found, err := cache.OrbPackages.Orb(context.TODO(), doc.Context.OrbRegistry(), orb.Url.Name)
+func (doc *YamlDocument) DoesOrbExist(ctx context.Context, orb ast.Orb, cache *cache.Cache) bool {
+	found, err := cache.OrbPackages.Orb(ctx, doc.Context.OrbRegistry(), orb.Url.Name)
 	if err != nil {
 		slog.Warn("looking up orb", "orb", orb.Url.Name, "err", err)
 		return true

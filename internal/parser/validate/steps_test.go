@@ -726,7 +726,7 @@ workflows:
       - test
 `)
 	val.Cache.MachineOfferingsCache.Set(testHelpers.MachineOfferings())
-	val.Validate()
+	val.Validate(t.Context())
 
 	errors := []string{}
 	for _, d := range getErrorDiagnostic(val.Diagnostics) {
@@ -763,7 +763,7 @@ workflows:
       - build
 `)
 	val.Cache.MachineOfferingsCache.Set(testHelpers.MachineOfferings())
-	val.Validate()
+	val.Validate(t.Context())
 
 	assert.Check(t, cmp.Len(getErrorDiagnostic(val.Diagnostics), 0))
 }

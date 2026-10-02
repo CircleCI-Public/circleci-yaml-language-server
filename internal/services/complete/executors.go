@@ -14,7 +14,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 )
 
-func (ch *CompletionHandler) completeExecutors() {
+func (ch *CompletionHandler) completeExecutors(ctx context.Context) {
 	executor, err := findExecutor(ch.Params.Position, ch.Doc)
 	if err != nil {
 		return
@@ -43,11 +43,11 @@ func (ch *CompletionHandler) completeExecutors() {
 
 	switch executor := executor.(type) {
 	case ast2.DockerExecutor:
-		ch.completeDockerExecutor(executor)
+		ch.completeDockerExecutor(ctx, executor)
 	case ast2.MachineExecutor:
-		ch.completeMachineExecutor(executor)
+		ch.completeMachineExecutor(ctx, executor)
 	case ast2.MacOSExecutor:
-		ch.completeMacOSExecutor(executor)
+		ch.completeMacOSExecutor(ctx, executor)
 	}
 }
 
@@ -64,9 +64,9 @@ func findExecutor(pos protocol.Position, doc parser.YamlDocument) (ast2.Executor
 	return nil, fmt.Errorf("no executor found")
 }
 
-func (ch *CompletionHandler) completeDockerExecutor(executor ast2.DockerExecutor) {
+func (ch *CompletionHandler) completeDockerExecutor(ctx context.Context, executor ast2.DockerExecutor) {
 	if position.InRange(executor.ResourceClassRange, ch.Params.Position) {
-		ch.addResourceClassCompletion(ch.Cache.Offerings(context.TODO(), ch.Context.Api).DockerResourceClasses())
+		ch.addResourceClassCompletion(ch.Cache.Offerings(ctx, ch.Context.Api).DockerResourceClasses())
 		return
 	}
 
@@ -87,7 +87,7 @@ func (ch *CompletionHandler) completeDockerExecutor(executor ast2.DockerExecutor
 
 			if theImg.Tag == "" && !strings.HasSuffix(completionString, ":") {
 				// Search for repositories
-				results := dockerhub.Search(context.TODO(), ch.Context.DockerHub, completionString)
+				results := dockerhub.Search(ctx, ch.Context.DockerHub, completionString)
 				i := 0
 
 				for i < 5 && results.HasNext() {
@@ -104,7 +104,7 @@ func (ch *CompletionHandler) completeDockerExecutor(executor ast2.DockerExecutor
 				}
 			} else {
 				// Search for tags instead
-				results, err := dockerhub.SearchTags(context.TODO(), ch.Context.DockerHub, img.Image.Namespace, img.Image.Name, theImg.Tag)
+				results, err := dockerhub.SearchTags(ctx, ch.Context.DockerHub, img.Image.Namespace, img.Image.Name, theImg.Tag)
 				if err != nil {
 					return
 				}
@@ -157,13 +157,13 @@ func typedImage(img ast2.DockerImage, pos protocol.Position) (string, bool) {
 	return img.Image.FullPath[:typed], true
 }
 
-func (ch *CompletionHandler) completeMachineExecutor(executor ast2.MachineExecutor) {
+func (ch *CompletionHandler) completeMachineExecutor(ctx context.Context, executor ast2.MachineExecutor) {
 	if position.InRange(executor.ResourceClassRange, ch.Params.Position) {
-		for _, resourceClass := range ch.Cache.Offerings(context.TODO(), ch.Context.Api).MachineResourceClasses() {
+		for _, resourceClass := range ch.Cache.Offerings(ctx, ch.Context.Api).MachineResourceClasses() {
 			ch.addCompletionItem(resourceClass)
 		}
 		if ch.Context.Api.IsLoggedIn() {
-			customResourceClasses := ch.Cache.ResourceClassesOfFile(context.TODO(), ch.Context.V3Client(), ch.Doc.URI)
+			customResourceClasses := ch.Cache.ResourceClassesOfFile(ctx, ch.Context.V3Client(), ch.Doc.URI)
 			for _, resourceClass := range customResourceClasses {
 				ch.addCompletionItem(resourceClass)
 			}
@@ -171,7 +171,7 @@ func (ch *CompletionHandler) completeMachineExecutor(executor ast2.MachineExecut
 		return
 	}
 
-	images := ch.Cache.Offerings(context.TODO(), ch.Context.Api).MachineImages()
+	images := ch.Cache.Offerings(ctx, ch.Context.Api).MachineImages()
 
 	if position.InRange(executor.ImageRange, ch.Params.Position) {
 		for _, img := range images {
@@ -196,9 +196,9 @@ func (ch *CompletionHandler) completeMachineExecutor(executor ast2.MachineExecut
 	ch.checkAndAddResourceClassFieldCompletion(executor)
 }
 
-func (ch *CompletionHandler) completeMacOSExecutor(executor ast2.MacOSExecutor) {
+func (ch *CompletionHandler) completeMacOSExecutor(ctx context.Context, executor ast2.MacOSExecutor) {
 	if position.InRange(executor.ResourceClassRange, ch.Params.Position) {
-		ch.addResourceClassCompletion(ch.Cache.Offerings(context.TODO(), ch.Context.Api).MacOSResourceClasses())
+		ch.addResourceClassCompletion(ch.Cache.Offerings(ctx, ch.Context.Api).MacOSResourceClasses())
 		return
 	} else {
 		ch.checkAndAddResourceClassFieldCompletion(executor)
@@ -280,8 +280,8 @@ func (ch *CompletionHandler) addDockerImageCompletion(node *sitter.Node, namespa
 
 // Orb executor
 
-func (ch *CompletionHandler) getOrbExecutors(orb ast2.Orb) []ast2.Executor {
-	orbInfo := ch.GetOrbInfo(orb)
+func (ch *CompletionHandler) getOrbExecutors(ctx context.Context, orb ast2.Orb) []ast2.Executor {
+	orbInfo := ch.GetOrbInfo(ctx, orb)
 
 	res := []ast2.Executor{}
 	for _, executors := range orbInfo.Executors {

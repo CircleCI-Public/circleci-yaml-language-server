@@ -339,7 +339,7 @@ func TestOrbStepsUsedInParameters(t *testing.T) {
 	content, err := os.ReadFile("testdata/orb_steps_used_in_params.yml")
 	assert.Check(t, err)
 	val := createValidate(string(content), testHelpers.SettingsForHost(slackOrbFake(t).URL()))
-	val.Validate()
+	val.Validate(t.Context())
 	for _, diag := range *val.Diagnostics {
 		if diag.Message == protocol.String("Orb is unused") {
 			t.Errorf("Got orb is unused diagnostic")
@@ -365,7 +365,7 @@ func TestLocalOrbUsedPartsFalsePositive(t *testing.T) {
 		Doc:         doc,
 		Context:     context,
 	}
-	val.Validate()
+	val.Validate(t.Context())
 	assert.Check(t, cmp.Len(*val.Diagnostics, 0))
 }
 
@@ -387,7 +387,7 @@ func TestLocalOrbUnusedPartsFalseNegative(t *testing.T) {
 		Doc:         doc,
 		Context:     context,
 	}
-	val.Validate()
+	val.Validate(t.Context())
 	messages := getDiagnosticMessages(val.Diagnostics)
 	assert.Check(t, cmp.DeepEqual(
 		messages,
@@ -468,7 +468,7 @@ jobs:
 		t.Helper()
 
 		val := CreateValidateFromYAML(yamlContent)
-		val.Validate()
+		val.Validate(t.Context())
 
 		return slices.Contains(getDiagnosticMessages(val.Diagnostics), "Command is unused")
 	}
@@ -574,7 +574,7 @@ func TestLocalOrbCommandUsedWithinTheOrb(t *testing.T) {
 		t.Helper()
 
 		val := CreateValidateFromYAML(yamlContent)
-		val.Validate()
+		val.Validate(t.Context())
 
 		warnings := []string{}
 		for _, message := range getDiagnosticMessages(val.Diagnostics) {
@@ -753,7 +753,7 @@ workflows:
 		Doc:         doc,
 		Context:     settings,
 	}
-	val.Validate()
+	val.Validate(t.Context())
 
 	return *val.Diagnostics
 }
@@ -910,7 +910,7 @@ workflows:
       - param
 `)
 		val.Cache.MachineOfferingsCache.Set(testHelpers.MachineOfferings())
-		val.Validate()
+		val.Validate(t.Context())
 
 		said := []string{}
 		for _, d := range *val.Diagnostics {

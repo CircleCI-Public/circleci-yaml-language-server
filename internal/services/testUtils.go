@@ -1,6 +1,7 @@
 package languageservice
 
 import (
+	"context"
 	"testing"
 
 	"go.lsp.dev/protocol"
@@ -77,10 +78,11 @@ func (root ExpDiag) Yaml(yamlDocument parser.YamlDocument) ExpDiagStruct {
 }
 
 // ExpectDiagnostic.<type>.To.Include
-func (exp ExpDiagTo) Include(context *session.Settings, expected protocol.Diagnostic) {
+func (exp ExpDiagTo) Include(ctx context.Context, context *session.Settings, expected protocol.Diagnostic) {
 	exp.info.ensureNoError()
 
 	diagnostics, err := DiagnosticYAML(
+		ctx,
 		exp.info.content,
 		cache.New(),
 		context,
@@ -92,10 +94,11 @@ func (exp ExpDiagTo) Include(context *session.Settings, expected protocol.Diagno
 }
 
 // ExpectDiagnostic.<type>.To.Not.Include
-func (exp ExpDiagToNot) Include(context *session.Settings, expected protocol.Diagnostic) {
+func (exp ExpDiagToNot) Include(ctx context.Context, context *session.Settings, expected protocol.Diagnostic) {
 	exp.info.ensureNoError()
 
 	diagnostics, err := DiagnosticYAML(
+		ctx,
 		exp.info.content,
 		cache.New(),
 		context,
@@ -107,10 +110,10 @@ func (exp ExpDiagToNot) Include(context *session.Settings, expected protocol.Dia
 }
 
 // ExpectDiagnostic.<type>.To.IncludeAll
-func (exp ExpDiagTo) IncludeAll(context *session.Settings, expected []protocol.Diagnostic) {
+func (exp ExpDiagTo) IncludeAll(ctx context.Context, context *session.Settings, expected []protocol.Diagnostic) {
 	exp.info.ensureNoError()
 
-	diagnostics, err := DiagnosticYAML(exp.info.content, cache.New(), context)
+	diagnostics, err := DiagnosticYAML(ctx, exp.info.content, cache.New(), context)
 
 	assert.Check(exp.info.t, err)
 
@@ -118,10 +121,11 @@ func (exp ExpDiagTo) IncludeAll(context *session.Settings, expected []protocol.D
 }
 
 // ExpectDiagnostic.<type>.To.Not.IncludeAll
-func (exp ExpDiagToNot) IncludeAll(context *session.Settings, expected []protocol.Diagnostic) {
+func (exp ExpDiagToNot) IncludeAll(ctx context.Context, context *session.Settings, expected []protocol.Diagnostic) {
 	exp.info.ensureNoError()
 
 	diagnostics, err := DiagnosticYAML(
+		ctx,
 		exp.info.content,
 		cache.New(),
 		context,

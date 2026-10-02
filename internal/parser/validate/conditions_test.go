@@ -181,7 +181,7 @@ workflows:
     jobs:
       - build
 `)
-	val.Validate()
+	val.Validate(t.Context())
 
 	said := getDiagnosticMessages(val.Diagnostics)
 	assert.Check(t, cmp.Contains(said, "Condition `always and pipeline.git.tag` is treated as always true. "+

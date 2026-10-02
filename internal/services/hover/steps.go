@@ -1,6 +1,7 @@
 package hover
 
 import (
+	"context"
 	"fmt"
 	"slices"
 	"strings"
@@ -16,22 +17,22 @@ import (
 // Step is the hover for the name of a step that runs a command, whether the
 // config's own, an inline orb's or an orb's, directly or through an alias:
 // the command's description and parameters.
-func Step(doc yamlparser.YamlDocument, c *cache.Cache, pos protocol.Position) (string, bool) {
+func Step(ctx context.Context, doc yamlparser.YamlDocument, c *cache.Cache, pos protocol.Position) (string, bool) {
 	if step, ok := namedStepAt(pos, doc.Jobs, doc.Commands); ok {
-		return describeCommand(doc, c, step.Name)
+		return describeCommand(ctx, doc, c, step.Name)
 	}
 
 	// An inline orb's steps name its commands without the orb's prefix.
 	for _, orb := range doc.LocalOrbInfo {
 		if step, ok := namedStepAt(pos, orb.Jobs, orb.Commands); ok {
-			return describeCommand(doc.FromOrbParsedAttributesToYamlDocument(orb.OrbParsedAttributes), c, step.Name)
+			return describeCommand(ctx, doc.FromOrbParsedAttributesToYamlDocument(orb.OrbParsedAttributes), c, step.Name)
 		}
 	}
 	return "", false
 }
 
-func describeCommand(doc yamlparser.YamlDocument, c *cache.Cache, name string) (string, bool) {
-	command, ok := doc.ResolveCommand(name, c)
+func describeCommand(ctx context.Context, doc yamlparser.YamlDocument, c *cache.Cache, name string) (string, bool) {
+	command, ok := doc.ResolveCommand(ctx, name, c)
 	if !ok {
 		return "", false
 	}

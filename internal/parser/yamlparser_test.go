@@ -312,9 +312,9 @@ orbs:
 `), testHelpers.DefaultSettings(), uri.File(""), protocol.Position{})
 
 	assert.Check(t, err)
-	assert.Check(t, yamlDocument.IsFromUnfetchableOrb("ccc/entity", cache.New()))
-	assert.Check(t, yamlDocument.IsFromUnfetchableOrb("chosen/entity", cache.New()))
-	assert.Check(t, !yamlDocument.IsFromUnfetchableOrb("slack/entity", cache.New()))
+	assert.Check(t, yamlDocument.IsFromUnfetchableOrb(t.Context(), "ccc/entity", cache.New()))
+	assert.Check(t, yamlDocument.IsFromUnfetchableOrb(t.Context(), "chosen/entity", cache.New()))
+	assert.Check(t, !yamlDocument.IsFromUnfetchableOrb(t.Context(), "slack/entity", cache.New()))
 }
 
 func TestSetupKey(t *testing.T) {

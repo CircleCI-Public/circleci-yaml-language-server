@@ -1,6 +1,7 @@
 package validate
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -16,7 +17,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 )
 
-func (val Validate) ValidateOrbs() {
+func (val Validate) ValidateOrbs(ctx context.Context) {
 	if len(val.Doc.Orbs) == 0 && len(val.Doc.LocalOrbs) == 0 && !position.IsDefaultRange(val.Doc.OrbsRange) {
 		val.addDiagnostic(
 			diagnostic.EmptySectionWarning(val.Doc.OrbsRange, "orbs"),
@@ -26,11 +27,11 @@ func (val Validate) ValidateOrbs() {
 	}
 
 	for _, orb := range val.Doc.Orbs {
-		val.validateSingleOrb(orb)
+		val.validateSingleOrb(ctx, orb)
 	}
 }
 
-func (val Validate) validateSingleOrb(orb ast.Orb) {
+func (val Validate) validateSingleOrb(ctx context.Context, orb ast.Orb) {
 	if !val.checkIfOrbIsUsed(orb) {
 		val.orbIsUnused(orb)
 	}
@@ -40,11 +41,11 @@ func (val Validate) validateSingleOrb(orb ast.Orb) {
 	}
 
 	if orb.Url.IsURL {
-		val.validateURLOrb(orb)
+		val.validateURLOrb(ctx, orb)
 		return
 	}
 
-	if !orb.Url.IsLocal && !val.Doc.DoesOrbExist(orb, val.Cache) {
+	if !orb.Url.IsLocal && !val.Doc.DoesOrbExist(ctx, orb, val.Cache) {
 		message := fmt.Sprintf("Orb %s does not exist or is private.", orb.Url.Name)
 
 		if val.Context.IsCciExtension && val.Context.Api.Token == "" {
@@ -61,7 +62,7 @@ func (val Validate) validateSingleOrb(orb ast.Orb) {
 		return
 	}
 
-	orbVersion, err := val.Doc.GetOrFetchOrbInfo(orb, val.Cache)
+	orbVersion, err := val.Doc.GetOrFetchOrbInfo(ctx, orb, val.Cache)
 
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "could not find orb") {
@@ -120,8 +121,8 @@ func (val Validate) validateSingleOrb(orb ast.Orb) {
 // organization's URL orb allow-list gives the URL's prefix, which the server
 // has no way to read. Nothing used from the orb can be checked, so its
 // components are skipped (IsFromUnfetchableOrb).
-func (val Validate) validateURLOrb(orb ast.Orb) {
-	orbInfo, err := parser.GetURLOrbInfo(orb.Url.Name, val.Cache, val.Context)
+func (val Validate) validateURLOrb(ctx context.Context, orb ast.Orb) {
+	orbInfo, err := parser.GetURLOrbInfo(ctx, orb.Url.Name, val.Cache, val.Context)
 
 	var reason string
 	switch {
@@ -252,8 +253,8 @@ func (val Validate) orbIsUnused(orb ast.Orb) {
 	))
 }
 
-func (val Validate) validateOrbExecutor(executorName string, executorRange protocol.Range) {
-	orbExecutorExist, err := val.doesOrbExecutorExist(executorName, executorRange)
+func (val Validate) validateOrbExecutor(ctx context.Context, executorName string, executorRange protocol.Range) {
+	orbExecutorExist, err := val.doesOrbExecutorExist(ctx, executorName, executorRange)
 	if !orbExecutorExist && err == nil {
 		splittedName := strings.Split(executorName, "/")
 		val.addDiagnostic(diagnostic.Error(
@@ -266,7 +267,7 @@ func (val Validate) validateOrbExecutor(executorName string, executorRange proto
 // doesOrbExecutorExist reports whether an orb declares an executor, which
 // may be a local, inline or URL orb. An executor from an orb that can't be
 // fetched is taken to exist: what it declares isn't known.
-func (val Validate) doesOrbExecutorExist(executorName string, executorRange protocol.Range) (bool, error) {
+func (val Validate) doesOrbExecutorExist(ctx context.Context, executorName string, executorRange protocol.Range) (bool, error) {
 	splittedName := strings.Split(executorName, "/")
 
 	if len(splittedName) != 2 {
@@ -274,7 +275,7 @@ func (val Validate) doesOrbExecutorExist(executorName string, executorRange prot
 		return false, nil
 	}
 
-	if val.Doc.IsFromUnfetchableOrb(executorName, val.Cache) {
+	if val.Doc.IsFromUnfetchableOrb(ctx, executorName, val.Cache) {
 		return true, nil
 	}
 
@@ -288,7 +289,7 @@ func (val Validate) doesOrbExecutorExist(executorName string, executorRange prot
 		return false, err
 	}
 
-	remoteOrb, err := val.Doc.GetOrFetchOrbInfo(orb, val.Cache)
+	remoteOrb, err := val.Doc.GetOrFetchOrbInfo(ctx, orb, val.Cache)
 	if err != nil {
 		val.addDiagnostic(diagnostic.Warning(
 			executorRange,
@@ -301,10 +302,10 @@ func (val Validate) doesOrbExecutorExist(executorName string, executorRange prot
 	return ok, nil
 }
 
-func (val Validate) ValidateLocalOrbs() {
+func (val Validate) ValidateLocalOrbs(ctx context.Context) {
 	for _, orb := range val.Doc.Orbs {
 		if orb.Url.IsLocal && !orb.IsPlaceholder {
-			orbInfo, err := val.Doc.GetOrFetchOrbInfo(orb, val.Cache)
+			orbInfo, err := val.Doc.GetOrFetchOrbInfo(ctx, orb, val.Cache)
 
 			if err != nil {
 				continue
@@ -320,7 +321,7 @@ func (val Validate) ValidateLocalOrbs() {
 				Outer:       &val.Doc,
 				OrbName:     orb.Name,
 			}
-			validateStruct.Validate()
+			validateStruct.Validate(ctx)
 
 			for _, job := range orbInfo.Jobs {
 				job.Name = fmt.Sprintf("%s/%s", orb.Name, job.Name)

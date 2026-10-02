@@ -22,13 +22,13 @@ func isValidDockerDigest(digest string) bool {
 	return validDigestRegex.MatchString(digest)
 }
 
-func DoesDockerImageExists(img *ast.DockerImage, cache *cache.DockerImages, api dockerhub.API) bool {
+func DoesDockerImageExists(ctx context.Context, img *ast.DockerImage, cache *cache.DockerImages, api dockerhub.API) bool {
 	if !isDockerImageCheckable(img) {
 		// When a Docker image can't be checked, return true (consider it valid)
 		return true
 	}
 
-	exists, err := cache.Exists(context.TODO(), img.Image.Namespace, img.Image.Name, func(ctx context.Context) (bool, error) {
+	exists, err := cache.Exists(ctx, img.Image.Namespace, img.Image.Name, func(ctx context.Context) (bool, error) {
 		return api.DoesImageExist(ctx, img.Image.Namespace, img.Image.Name)
 	})
 	if err != nil {
@@ -54,8 +54,8 @@ func isDockerImageCheckable(img *ast.DockerImage) bool {
 	return img.Image.Name != "" && img.Auth == ast.DockerImageAuth{} && img.AwsAuth == ast.DockerImageAWSAuth{} && !hasParamInTag
 }
 
-func DoesTagExist(img *ast.DockerImage, searchedTag string, cache *cache.DockerTags, api dockerhub.API) bool {
-	tagInfo := GetImageTagInfo(img, cache, api)
+func DoesTagExist(ctx context.Context, img *ast.DockerImage, searchedTag string, cache *cache.DockerTags, api dockerhub.API) bool {
+	tagInfo := GetImageTagInfo(ctx, img, cache, api)
 
 	if tagInfo == nil {
 		return true
@@ -65,7 +65,7 @@ func DoesTagExist(img *ast.DockerImage, searchedTag string, cache *cache.DockerT
 		return true
 	}
 
-	tagExists, err := cache.HasTag(context.TODO(), img.Image.Namespace, img.Image.Name, searchedTag, func(ctx context.Context) (bool, error) {
+	tagExists, err := cache.HasTag(ctx, img.Image.Namespace, img.Image.Name, searchedTag, func(ctx context.Context) (bool, error) {
 		return api.ImageHasTag(ctx, img.Image.Namespace, img.Image.Name, searchedTag)
 	})
 	if err != nil {
@@ -76,8 +76,8 @@ func DoesTagExist(img *ast.DockerImage, searchedTag string, cache *cache.DockerT
 	return tagExists
 }
 
-func GetImageTagActions(doc *parser.YamlDocument, img *ast.DockerImage, cache *cache.DockerTags, api dockerhub.API) []protocol.CodeAction {
-	tagInfo := GetImageTagInfo(img, cache, api)
+func GetImageTagActions(ctx context.Context, doc *parser.YamlDocument, img *ast.DockerImage, cache *cache.DockerTags, api dockerhub.API) []protocol.CodeAction {
+	tagInfo := GetImageTagInfo(ctx, img, cache, api)
 	actions := []protocol.CodeAction{}
 
 	if tagInfo == nil {
@@ -95,7 +95,7 @@ func GetImageTagActions(doc *parser.YamlDocument, img *ast.DockerImage, cache *c
 		))
 	}
 
-	if DoesTagExist(img, "latest", cache, api) {
+	if DoesTagExist(ctx, img, "latest", cache, api) {
 		actions = append(actions, codeaction.TextEdit(
 			"Use 'latest'",
 			doc.URI,
@@ -110,8 +110,8 @@ func GetImageTagActions(doc *parser.YamlDocument, img *ast.DockerImage, cache *c
 }
 
 // Get the image tag info and fill the image info if it is not present in the cache
-func GetImageTagInfo(img *ast.DockerImage, c *cache.DockerTags, api dockerhub.API) *cache.ImageTags {
-	tagInfo, err := c.Load(context.TODO(), img.Image.Namespace, img.Image.Name, func(ctx context.Context) (cache.ImageTags, error) {
+func GetImageTagInfo(ctx context.Context, img *ast.DockerImage, c *cache.DockerTags, api dockerhub.API) *cache.ImageTags {
+	tagInfo, err := c.Load(ctx, img.Image.Namespace, img.Image.Name, func(ctx context.Context) (cache.ImageTags, error) {
 		tags, err := api.GetImageTags(ctx, img.Image.Namespace, img.Image.Name)
 		if err != nil {
 			return cache.ImageTags{}, err

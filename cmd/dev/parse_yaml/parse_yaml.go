@@ -2,6 +2,7 @@ package main
 
 import (
 	// "fmt"
+	"context"
 	"flag"
 	"fmt"
 	"os"
@@ -18,6 +19,7 @@ import (
 )
 
 func main() {
+	ctx := context.Background()
 	filepath := ".circleci/config.yml"
 	// filepath := "examples/config1.yml"
 	// filepath := "/home/adib/circleci/circle/.circleci/config.yml"
@@ -37,14 +39,14 @@ func main() {
 		fmt.Printf("Unable to read file \"%s\"", filepath)
 		panic(err)
 	}
-	context := &session.Settings{
+	settings := &session.Settings{
 		Api: circleci.Config{
 			Token:   "XXXXXXXXXXXX",
 			HostUrl: "https://circleci.com",
 		},
 	}
 
-	doc := yamlparser.ParseFile(content, context)
+	doc := yamlparser.ParseFile(content, settings)
 	doc.Close()
 
 	c := cache.New()
@@ -57,7 +59,7 @@ func main() {
 		EnvVariables: make([]string, 0),
 	})
 
-	if _, err := languageservice.DiagnosticFile(fileURI(filepath), c, context, schema); err != nil {
+	if _, err := languageservice.DiagnosticFile(ctx, fileURI(filepath), c, settings, schema); err != nil {
 		panic(err)
 	}
 

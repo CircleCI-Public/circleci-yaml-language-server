@@ -1,6 +1,7 @@
 package definition
 
 import (
+	"context"
 	"log/slog"
 
 	"go.lsp.dev/protocol"
@@ -20,8 +21,8 @@ type DefinitionStruct struct {
 // Definition is where what is at the position is defined. A link whose
 // origin isn't known from what it was found by is given the node at the
 // position as its origin.
-func (def DefinitionStruct) Definition() ([]Link, error) {
-	links, err := def.search()
+func (def DefinitionStruct) Definition(ctx context.Context) ([]Link, error) {
+	links, err := def.search(ctx)
 	if node, _, nodeErr := position.NodeAt(def.Doc.RootNode, def.Params.Position); nodeErr == nil {
 		for i := range links {
 			if links[i].Origin == (protocol.Range{}) {
@@ -32,7 +33,7 @@ func (def DefinitionStruct) Definition() ([]Link, error) {
 	return links, err
 }
 
-func (def DefinitionStruct) search() ([]Link, error) {
+func (def DefinitionStruct) search(ctx context.Context) ([]Link, error) {
 	paramDefinition := def.searchParamDefinition()
 	if len(paramDefinition) > 0 {
 		return paramDefinition, nil
@@ -48,30 +49,30 @@ func (def DefinitionStruct) search() ([]Link, error) {
 	switch true {
 	// Job Groups
 	case position.InRange(def.Doc.JobGroupsRange, def.Params.Position):
-		res = def.searchForJobGroups()
+		res = def.searchForJobGroups(ctx)
 
 	// Workflows
 	case position.InRange(def.Doc.WorkflowRange, def.Params.Position):
-		res = def.searchForWorkflows()
+		res = def.searchForWorkflows(ctx)
 
 	// Jobs
 	case position.InRange(def.Doc.JobsRange, def.Params.Position):
-		res = def.searchForJobs()
+		res = def.searchForJobs(ctx)
 
 	// Commands
 	case position.InRange(def.Doc.CommandsRange, def.Params.Position):
-		res = def.searchForCommands()
+		res = def.searchForCommands(ctx)
 
 	// Orbs
 	case position.InRange(def.Doc.OrbsRange, def.Params.Position):
-		res, err = def.getOrbDefinition()
+		res, err = def.getOrbDefinition(ctx)
 
 	// Pipeline's parameters
 	case position.InRange(def.Doc.PipelineParametersRange, def.Params.Position):
 		res, err = def.searchForParamDefinition(def.Doc.PipelineParameters), nil
 
 	case position.InRange(def.Doc.ExecutorsRange, def.Params.Position):
-		res, err = def.getExecutorDefinition()
+		res, err = def.getExecutorDefinition(ctx)
 	}
 
 	if err != nil {
@@ -80,6 +81,6 @@ func (def DefinitionStruct) search() ([]Link, error) {
 	return res, nil
 }
 
-func (def DefinitionStruct) GetOrbInfo(name string) (*ast.OrbInfo, error) {
-	return def.Doc.GetOrbInfoFromName(name, def.Cache)
+func (def DefinitionStruct) GetOrbInfo(ctx context.Context, name string) (*ast.OrbInfo, error) {
+	return def.Doc.GetOrbInfoFromName(ctx, name, def.Cache)
 }

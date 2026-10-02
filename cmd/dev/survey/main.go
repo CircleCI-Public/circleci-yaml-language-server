@@ -28,8 +28,10 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"os/signal"
 	"strings"
 )
 
@@ -41,17 +43,20 @@ func main() {
 		usage()
 	}
 
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	var err error
 	switch os.Args[1] {
 	case "fetch":
-		err = fetch(os.Args[2:])
+		err = fetch(ctx, os.Args[2:])
 	case "diagnose":
-		err = diagnose(os.Args[2:])
+		err = diagnose(ctx, os.Args[2:])
 	case "compare":
 		err = compare(os.Args[2:])
 	default:
 		usage()
 	}
+
+	stop()
 
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "survey:", err)

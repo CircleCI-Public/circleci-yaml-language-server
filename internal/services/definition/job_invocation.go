@@ -1,6 +1,8 @@
 package definition
 
 import (
+	"context"
+
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 )
@@ -29,16 +31,16 @@ func (def DefinitionStruct) searchForJobInvocationFromRequires(requires []ast.Re
 // or any of its values, to the parameter's declaration in the job, as an
 // argument goes. A value of a parameter of type executor goes to the
 // executor instead.
-func (def DefinitionStruct) searchForMatrixParamDefinition(jobName string, matrix map[string][]ast.ParameterValue) []Link {
+func (def DefinitionStruct) searchForMatrixParamDefinition(ctx context.Context, jobName string, matrix map[string][]ast.ParameterValue) []Link {
 	for name, values := range matrix {
 		for _, param := range values {
 			if !position.InRange(param.Range, def.Params.Position) {
 				continue
 			}
-			if executor := def.searchForExecutorArgument(jobName, param); len(executor) > 0 {
+			if executor := def.searchForExecutorArgument(ctx, jobName, param); len(executor) > 0 {
 				return executor
 			}
-			if loc, err := def.getCommandOrJobParamLocation(jobName, name, true); err == nil {
+			if loc, err := def.getCommandOrJobParamLocation(ctx, jobName, name, true); err == nil {
 				return loc
 			}
 			return []Link{}

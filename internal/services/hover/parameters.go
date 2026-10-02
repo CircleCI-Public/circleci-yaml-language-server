@@ -2,6 +2,7 @@ package hover
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"strings"
 
@@ -18,7 +19,7 @@ import (
 // `<< parameters.os >>`, `<<# parameters.verbose >>` or
 // `<< pipeline.parameters.setup_go >>`: the type, default and description of
 // the parameter it names.
-func ParameterReference(doc yamlparser.YamlDocument, _ *cache.Cache, pos protocol.Position) (string, bool) {
+func ParameterReference(_ context.Context, doc yamlparser.YamlDocument, _ *cache.Cache, pos protocol.Position) (string, bool) {
 	lineStart := position.ToIndex(protocol.Position{Line: pos.Line}, doc.Content)
 	lineEnd := bytes.IndexByte(doc.Content[lineStart:], '\n')
 	if lineEnd == -1 {

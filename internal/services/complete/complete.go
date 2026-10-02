@@ -1,6 +1,7 @@
 package complete
 
 import (
+	"context"
 	"fmt"
 
 	sitter "github.com/tree-sitter/go-tree-sitter"
@@ -25,7 +26,7 @@ type CompletionHandler struct {
 	Context *session.Settings
 }
 
-func (ch *CompletionHandler) GetCompletionItems() {
+func (ch *CompletionHandler) GetCompletionItems(ctx context.Context) {
 	ch.completePipelineValues()
 	if len(ch.Items) > 0 {
 		return
@@ -55,7 +56,7 @@ func (ch *CompletionHandler) GetCompletionItems() {
 		if ch.Doc.IsYamlAliasPosition(ch.Params.Position) {
 			ch.completeAnchors()
 		} else if !ch.completeTopLevel() {
-			ch.completeSection()
+			ch.completeSection(ctx)
 		}
 
 		if len(ch.Items) > 0 {
@@ -65,26 +66,26 @@ func (ch *CompletionHandler) GetCompletionItems() {
 }
 
 // completeSection completes in the top-level section the cursor is in.
-func (ch *CompletionHandler) completeSection() {
+func (ch *CompletionHandler) completeSection(ctx context.Context) {
 	switch pos := ch.Params.Position; {
 	case position.InRange(ch.Doc.WorkflowRange, pos):
-		ch.completeWorkflows()
+		ch.completeWorkflows(ctx)
 	case position.InRange(ch.Doc.JobsRange, pos):
-		ch.completeJobs()
+		ch.completeJobs(ctx)
 	case position.InRange(ch.Doc.JobGroupsRange, pos):
-		ch.completeJobGroups()
+		ch.completeJobGroups(ctx)
 	case position.InRange(ch.Doc.CommandsRange, pos):
-		ch.completeCommands()
+		ch.completeCommands(ctx)
 	case position.InRange(ch.Doc.ExecutorsRange, pos):
-		ch.completeExecutors()
+		ch.completeExecutors(ctx)
 	case position.InRange(ch.Doc.OrbsRange, pos):
-		if !ch.completeInInlineOrb() {
-			ch.completeOrbs()
+		if !ch.completeInInlineOrb(ctx) {
+			ch.completeOrbs(ctx)
 		}
 	case position.InRange(ch.Doc.FunctionsRange, pos):
-		ch.completeFunctionVersion()
+		ch.completeFunctionVersion(ctx)
 	case position.InRange(ch.Doc.PipelineParametersRange, pos):
-		ch.completeParameterDefinitions(ch.Doc.PipelineParameters, pipelineParameterTypes)
+		ch.completeParameterDefinitions(ctx, ch.Doc.PipelineParameters, pipelineParameterTypes)
 	}
 }
 
@@ -147,7 +148,7 @@ func unlessEmpty(s string) protocol.Optional[string] {
 	return protocol.NewOptional(s)
 }
 
-func (ch *CompletionHandler) GetOrbInfo(orb ast.Orb) *ast.OrbInfo {
-	orbInfo, _ := ch.Doc.GetOrFetchOrbInfo(orb, ch.Cache)
+func (ch *CompletionHandler) GetOrbInfo(ctx context.Context, orb ast.Orb) *ast.OrbInfo {
+	orbInfo, _ := ch.Doc.GetOrFetchOrbInfo(ctx, orb, ch.Cache)
 	return orbInfo
 }

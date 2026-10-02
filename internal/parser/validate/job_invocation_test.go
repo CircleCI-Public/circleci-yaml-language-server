@@ -311,7 +311,7 @@ workflows:
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			val := CreateValidateFromYAML(tt.yamlContent)
-			val.Validate()
+			val.Validate(t.Context())
 
 			diags := *val.Diagnostics
 
@@ -2037,7 +2037,7 @@ workflows:
       - hello
       - my-orb/greet
 `)
-	val.Validate()
+	val.Validate(t.Context())
 
 	errors := []string{}
 	for _, d := range getErrorDiagnostic(val.Diagnostics) {
@@ -2078,7 +2078,7 @@ workflows:
           env: prod
           nosuch: 1
 `)
-	val.Validate()
+	val.Validate(t.Context())
 
 	errors := []string{}
 	for _, d := range getErrorDiagnostic(val.Diagnostics) {

@@ -1,6 +1,7 @@
 package complete
 
 import (
+	"context"
 	"slices"
 
 	"go.lsp.dev/protocol"
@@ -57,9 +58,9 @@ func (ch *CompletionHandler) addExistingJobInvocations(jobInvocations []ast.JobI
 	}
 }
 
-func (ch *CompletionHandler) addJobsAndOrbsCompletion() {
+func (ch *CompletionHandler) addJobsAndOrbsCompletion(ctx context.Context) {
 	ch.addJobsCompletion()
-	ch.orbsJobs()
+	ch.orbsJobs(ctx)
 }
 
 func (ch *CompletionHandler) addJobsCompletion() {
@@ -102,8 +103,8 @@ func invocationNamedOn(line int, invocations []ast.JobInvocation) *ast.JobInvoca
 
 // completeJobInvocationBody offers the keys an invocation doesn't have yet:
 // an invocation's own keys, and the parameters of the job it runs.
-func (ch *CompletionHandler) completeJobInvocationBody(invocation *ast.JobInvocation, nameLine int) {
-	keys := append(slices.Clone(jobInvocationKeys), ch.jobParameterNames(invocation)...)
+func (ch *CompletionHandler) completeJobInvocationBody(ctx context.Context, invocation *ast.JobInvocation, nameLine int) {
+	keys := append(slices.Clone(jobInvocationKeys), ch.jobParameterNames(ctx, invocation)...)
 
 	present := ch.stepBodyKeys(nameLine)
 	for _, key := range keys {
@@ -115,13 +116,13 @@ func (ch *CompletionHandler) completeJobInvocationBody(invocation *ast.JobInvoca
 
 // jobParameterNames are the sorted names of the parameters of the job an
 // invocation runs, of which an approval job has none.
-func (ch *CompletionHandler) jobParameterNames(invocation *ast.JobInvocation) []string {
+func (ch *CompletionHandler) jobParameterNames(ctx context.Context, invocation *ast.JobInvocation) []string {
 	if invocation.Type == "approval" {
 		return nil
 	}
 
 	var params []string
-	for param := range ch.Doc.GetDefinedParams(invocation.JobName, yamlparser.JobEntity, ch.Cache) {
+	for param := range ch.Doc.GetDefinedParams(ctx, invocation.JobName, yamlparser.JobEntity, ch.Cache) {
 		params = append(params, param)
 	}
 	slices.Sort(params)

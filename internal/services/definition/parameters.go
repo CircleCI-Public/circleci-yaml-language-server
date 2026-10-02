@@ -1,6 +1,8 @@
 package definition
 
 import (
+	"context"
+
 	ast2 "github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/paramref"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
@@ -82,13 +84,13 @@ func (def DefinitionStruct) searchForParamDefinition(definedParams map[string]as
 	return []Link{}
 }
 
-func (def DefinitionStruct) searchForParamValueDefinition(callName string, params map[string]ast2.ParameterValue) []Link {
+func (def DefinitionStruct) searchForParamValueDefinition(ctx context.Context, callName string, params map[string]ast2.ParameterValue) []Link {
 	for _, param := range params {
 		if position.InRange(param.Range, def.Params.Position) {
-			if executor := def.searchForExecutorArgument(callName, param); len(executor) > 0 {
+			if executor := def.searchForExecutorArgument(ctx, callName, param); len(executor) > 0 {
 				return executor
 			}
-			if loc, err := def.getCommandOrJobParamLocation(callName, param.Name, true); err == nil {
+			if loc, err := def.getCommandOrJobParamLocation(ctx, callName, param.Name, true); err == nil {
 				return loc
 			}
 			return []Link{}

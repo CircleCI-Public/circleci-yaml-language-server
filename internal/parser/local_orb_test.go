@@ -212,7 +212,7 @@ func GetDocForTests(t *testing.T, content string, orbKey string) parser.YamlDocu
 	context := testHelpers.DefaultSettings()
 	doc, err := parser.ParseFromContent([]byte(content), context, uri.File(""), protocol.Position{})
 	assert.Check(t, err)
-	orbInfo, err := doc.GetOrbInfoFromName(orbKey, cache.New())
+	orbInfo, err := doc.GetOrbInfoFromName(t.Context(), orbKey, cache.New())
 	assert.Check(t, err)
 	return doc.FromOrbParsedAttributesToYamlDocument(orbInfo.OrbParsedAttributes)
 }
@@ -264,7 +264,7 @@ workflows:
 		Doc:         doc,
 		Context:     context,
 	}
-	val.Validate()
+	val.Validate(t.Context())
 	errorDiagnostics := []protocol.Diagnostic{}
 	for _, d := range *val.Diagnostics {
 		if d.Severity == protocol.DiagnosticSeverityError {

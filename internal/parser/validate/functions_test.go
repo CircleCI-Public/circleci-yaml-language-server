@@ -53,7 +53,7 @@ func functionDiagnostics(t *testing.T, severity protocol.DiagnosticSeverity, yam
 	val.Context = testHelpers.SettingsForHost(fake.URL())
 	val.Doc.Context = val.Context
 	val.Cache.MachineOfferingsCache.Set(testHelpers.MachineOfferings())
-	val.Validate()
+	val.Validate(t.Context())
 
 	messages := []string{}
 	for _, d := range *val.Diagnostics {
@@ -386,7 +386,7 @@ workflows:
 		val := CreateValidateFromYAML(config("github.com/circleci-functions/setup-go@v0.5.1-684fd5b", "      - setup-go\n"))
 		val.Context = testHelpers.SettingsForHost(fake.URL())
 		val.Doc.Context = val.Context
-		val.ValidateFunctions()
+		val.ValidateFunctions(t.Context())
 
 		assert.Check(t, cmp.Len(*val.Diagnostics, 0))
 	})
@@ -403,7 +403,7 @@ func validateWithSetupGo(t *testing.T, config string, versions ...fakes.Function
 	val := CreateValidateFromYAML(config)
 	val.Context = testHelpers.SettingsForHost(fake.URL())
 	val.Doc.Context = val.Context
-	val.ValidateFunctions()
+	val.ValidateFunctions(t.Context())
 	return val
 }
 

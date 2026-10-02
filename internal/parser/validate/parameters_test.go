@@ -427,7 +427,7 @@ workflows:
 	t.Run("A pipeline value of the wrong type is still an error", func(t *testing.T) {
 		val := CreateValidateFromYAML(config(`
           count: << pipeline.id >>`))
-		val.Validate()
+		val.Validate(t.Context())
 
 		said := getDiagnosticMessages(val.Diagnostics)
 		assert.Check(t, cmp.Contains(said, "Parameter count for cmd must be a integer"))

@@ -45,13 +45,13 @@ var builtInStepKeyValues = map[string]map[string][]string{
 // builtInStepValues is empty for a key whose values can't be listed, such
 // as run's command. setup_remote_docker's versions are the catalog's for the
 // resource class of the job it is in, when that can be told.
-func (ch *CompletionHandler) builtInStepValues(step, key, job string) []string {
+func (ch *CompletionHandler) builtInStepValues(ctx context.Context, step, key, job string) []string {
 	if key == "when" && slices.Contains(builtInStepKeys[step], "when") {
 		return []string{"always", "on_success", "on_fail"}
 	}
 	if step == "setup_remote_docker" && key == "version" {
-		if class, ok := ch.Doc.DockerResourceClass(ch.Doc.Jobs[job], ch.Cache); ok {
-			if versions := ch.Cache.Offerings(context.TODO(), ch.Context.Api).RemoteDockerVersions(class); len(versions) > 0 {
+		if class, ok := ch.Doc.DockerResourceClass(ctx, ch.Doc.Jobs[job], ch.Cache); ok {
+			if versions := ch.Cache.Offerings(ctx, ch.Context.Api).RemoteDockerVersions(class); len(versions) > 0 {
 				return versions
 			}
 		}
@@ -141,7 +141,7 @@ func (ch *CompletionHandler) stepAt() (stepPosition, string, int) {
 // completeStepBody offers the keys a step doesn't have yet: a built-in
 // step's own keys, a function step's, or the parameters of the command it
 // runs.
-func (ch *CompletionHandler) completeStepBody(name string, nameLine int) {
+func (ch *CompletionHandler) completeStepBody(ctx context.Context, name string, nameLine int) {
 	var keys []string
 
 	if builtIn, ok := builtInStepKeys[name]; ok {
@@ -154,7 +154,7 @@ func (ch *CompletionHandler) completeStepBody(name string, nameLine int) {
 	} else if _, _, isFunction := ch.Doc.FunctionForStep(name); isFunction {
 		keys = functionStepKeys
 	} else {
-		for param := range ch.Doc.GetDefinedParams(name, yamlparser.CommandEntity, ch.Cache) {
+		for param := range ch.Doc.GetDefinedParams(ctx, name, yamlparser.CommandEntity, ch.Cache) {
 			keys = append(keys, param)
 		}
 		slices.Sort(keys)

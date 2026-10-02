@@ -11,18 +11,18 @@ import (
 
 // completeJobExecutor completes a job's resource_class, and the body of its
 // machine or macos, and says whether the cursor was at one of them.
-func (ch *CompletionHandler) completeJobExecutor(job ast2.Job) bool {
+func (ch *CompletionHandler) completeJobExecutor(ctx context.Context, job ast2.Job) bool {
 	key, _, parent := ch.valueAt()
 	if parent != -1 {
 		switch {
 		case parent == startLine(job.NameRange) && key == "resource_class":
-			ch.addJobResourceClasses(job)
+			ch.addJobResourceClasses(ctx, job)
 			return true
 		case parent == startLine(job.MachineRange) && key == "image":
-			ch.addCompletionItems(ch.Cache.Offerings(context.TODO(), ch.Context.Api).MachineImages())
+			ch.addCompletionItems(ch.Cache.Offerings(ctx, ch.Context.Api).MachineImages())
 			return true
 		case parent == startLine(job.MacOSRange) && key == "xcode":
-			ch.addCompletionItems(ch.Cache.Offerings(context.TODO(), ch.Context.Api).XcodeVersions())
+			ch.addCompletionItems(ch.Cache.Offerings(ctx, ch.Context.Api).XcodeVersions())
 			return true
 		}
 		return false
@@ -67,7 +67,7 @@ func startLine(rng protocol.Range) int {
 
 // addJobResourceClasses offers the resource classes of the job's executor:
 // the one it gives in place, or the executor it names.
-func (ch *CompletionHandler) addJobResourceClasses(job ast2.Job) {
+func (ch *CompletionHandler) addJobResourceClasses(ctx context.Context, job ast2.Job) {
 	var executor ast2.Executor
 	switch {
 	case !position.IsDefaultRange(job.DockerRange):
@@ -77,17 +77,17 @@ func (ch *CompletionHandler) addJobResourceClasses(job ast2.Job) {
 	case !position.IsDefaultRange(job.MacOSRange):
 		executor = job.MacOS
 	default:
-		executor, _ = ch.Doc.ResolveExecutor(job.Executor, ch.Cache)
+		executor, _ = ch.Doc.ResolveExecutor(ctx, job.Executor, ch.Cache)
 	}
 
-	offerings := ch.Cache.Offerings(context.TODO(), ch.Context.Api)
+	offerings := ch.Cache.Offerings(ctx, ch.Context.Api)
 	switch executor.(type) {
 	case ast2.DockerExecutor:
 		ch.addResourceClassCompletion(offerings.DockerResourceClasses())
 	case ast2.MachineExecutor:
 		ch.addResourceClassCompletion(offerings.MachineResourceClasses())
 		if ch.Context.Api.IsLoggedIn() {
-			ch.addResourceClassCompletion(ch.Cache.ResourceClassesOfFile(context.TODO(), ch.Context.V3Client(), ch.Doc.URI))
+			ch.addResourceClassCompletion(ch.Cache.ResourceClassesOfFile(ctx, ch.Context.V3Client(), ch.Doc.URI))
 		}
 	case ast2.MacOSExecutor:
 		ch.addResourceClassCompletion(offerings.MacOSResourceClasses())

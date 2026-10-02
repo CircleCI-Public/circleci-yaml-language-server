@@ -40,13 +40,13 @@ jobs:
 	t.Cleanup(doc.Close)
 
 	t.Run("an inline orb's name shows the orb", func(t *testing.T) {
-		got, ok := OrbDeclaration(doc, cache.New(), protocol.Position{Line: 3, Character: 4})
+		got, ok := OrbDeclaration(t.Context(), doc, cache.New(), protocol.Position{Line: 3, Character: 4})
 		assert.Assert(t, ok)
 		assert.Check(t, cmp.Equal(got, "**tools** orb\n\nOur own tools.\n\nCommands: `lint`\n\nExecutors: `tiny`"))
 	})
 
 	t.Run("its body doesn't", func(t *testing.T) {
-		_, ok := OrbDeclaration(doc, cache.New(), protocol.Position{Line: 6, Character: 8})
+		_, ok := OrbDeclaration(t.Context(), doc, cache.New(), protocol.Position{Line: 6, Character: 8})
 		assert.Check(t, !ok)
 	})
 }

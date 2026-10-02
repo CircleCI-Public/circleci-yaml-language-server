@@ -1,6 +1,7 @@
 package languageservice
 
 import (
+	"context"
 	"fmt"
 	"slices"
 
@@ -15,7 +16,7 @@ import (
 )
 
 // referenceHovers describe what the name under the cursor refers to.
-var referenceHovers = []func(parser.YamlDocument, *cache.Cache, protocol.Position) (string, bool){
+var referenceHovers = []func(context.Context, parser.YamlDocument, *cache.Cache, protocol.Position) (string, bool){
 	hover.Step,
 	hover.JobInvocation,
 	hover.Executor,
@@ -26,7 +27,7 @@ var referenceHovers = []func(parser.YamlDocument, *cache.Cache, protocol.Positio
 	hover.PipelineValue,
 }
 
-func Hover(params protocol.HoverParams, cache *cache.Cache, context *session.Settings) (protocol.Hover, error) {
+func Hover(ctx context.Context, params protocol.HoverParams, cache *cache.Cache, context *session.Settings) (protocol.Hover, error) {
 	doc, err := parser.ParseFromUriWithCache(params.TextDocument.URI, cache, context)
 	if err != nil {
 		return protocol.Hover{}, nil
@@ -47,7 +48,7 @@ func Hover(params protocol.HoverParams, cache *cache.Cache, context *session.Set
 		hovers = append(slices.Clip(hovers), hover.SchemaKey)
 	}
 	for _, reference := range hovers {
-		if text, ok := reference(doc, cache, params.Position); ok {
+		if text, ok := reference(ctx, doc, cache, params.Position); ok {
 			return protocol.Hover{
 				Contents: &protocol.MarkupContent{Kind: protocol.MarkupKindMarkdown, Value: text},
 			}, nil

@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -331,7 +332,7 @@ func (doc *YamlDocument) CouldBeOrbReference(orbReference string) (string, bool)
 
 // Takes the name of anything that may be in an orb and returns if it is inside an orb that we can not use.
 // An orb referenced by URL is fetched to find out.
-func (doc *YamlDocument) IsFromUnfetchableOrb(name string, cache *cache.Cache) bool {
+func (doc *YamlDocument) IsFromUnfetchableOrb(ctx context.Context, name string, cache *cache.Cache) bool {
 	components := strings.Split(name, "/")
 	if len(components) != 2 {
 		return false
@@ -347,14 +348,14 @@ func (doc *YamlDocument) IsFromUnfetchableOrb(name string, cache *cache.Cache) b
 	}
 
 	if orb.Url.IsURL {
-		orbInfo, err := GetURLOrbInfo(orb.Url.Name, cache, doc.Context)
+		orbInfo, err := GetURLOrbInfo(ctx, orb.Url.Name, cache, doc.Context)
 		return orbInfo == nil || err != nil
 	}
 
 	return orb.Url.HasReference()
 }
 
-func (doc *YamlDocument) IsOrbCommand(orbCommand string, cache *cache.Cache) bool {
+func (doc *YamlDocument) IsOrbCommand(ctx context.Context, orbCommand string, cache *cache.Cache) bool {
 	splittedCommand := strings.Split(orbCommand, "/")
 
 	if len(splittedCommand) != 2 {
@@ -364,7 +365,7 @@ func (doc *YamlDocument) IsOrbCommand(orbCommand string, cache *cache.Cache) boo
 	orbName := splittedCommand[0]
 	commandName := splittedCommand[1]
 
-	orbInfo, err := doc.GetOrbInfoFromName(orbName, cache)
+	orbInfo, err := doc.GetOrbInfoFromName(ctx, orbName, cache)
 
 	if err != nil || orbInfo == nil {
 		return false
@@ -375,7 +376,7 @@ func (doc *YamlDocument) IsOrbCommand(orbCommand string, cache *cache.Cache) boo
 	return ok
 }
 
-func (doc *YamlDocument) IsOrbJob(orbCommand string, cache *cache.Cache) bool {
+func (doc *YamlDocument) IsOrbJob(ctx context.Context, orbCommand string, cache *cache.Cache) bool {
 	splittedCommand := strings.Split(orbCommand, "/")
 
 	if len(splittedCommand) != 2 {
@@ -385,7 +386,7 @@ func (doc *YamlDocument) IsOrbJob(orbCommand string, cache *cache.Cache) bool {
 	orbName := splittedCommand[0]
 	commandName := splittedCommand[1]
 
-	orbInfo, err := doc.GetOrbInfoFromName(orbName, cache)
+	orbInfo, err := doc.GetOrbInfoFromName(ctx, orbName, cache)
 
 	if err != nil || orbInfo == nil {
 		return false
@@ -732,7 +733,7 @@ const (
 // entityName refers to, local or from an orb, preferring the kind it is used
 // as. The other kind is only a fallback: a name used as the wrong kind is
 // reported where its existence is checked. An alias refers to its target.
-func (doc *YamlDocument) GetDefinedParams(entityName string, kind EntityKind, cache *cache.Cache) map[string]ast2.Parameter {
+func (doc *YamlDocument) GetDefinedParams(ctx context.Context, entityName string, kind EntityKind, cache *cache.Cache) map[string]ast2.Parameter {
 	if alias, ok := doc.CommandAlias(entityName); ok && kind == CommandEntity {
 		entityName = alias.Target
 	} else if alias, ok := doc.JobAlias(entityName); ok && kind == JobEntity {
@@ -742,7 +743,7 @@ func (doc *YamlDocument) GetDefinedParams(entityName string, kind EntityKind, ca
 	name := entityName
 
 	if orbName, orbEntity, ok := strings.Cut(entityName, "/"); ok && !strings.Contains(orbEntity, "/") {
-		orbInfo, err := doc.GetOrbInfoFromName(orbName, cache)
+		orbInfo, err := doc.GetOrbInfoFromName(ctx, orbName, cache)
 		if err == nil && orbInfo != nil {
 			attributes = orbInfo.OrbParsedAttributes
 			name = orbEntity

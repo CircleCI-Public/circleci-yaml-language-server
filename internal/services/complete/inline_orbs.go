@@ -1,6 +1,8 @@
 package complete
 
 import (
+	"context"
+
 	"go.lsp.dev/protocol"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
@@ -11,7 +13,7 @@ import (
 // completeInInlineOrb completes in the body of an inline orb with the same
 // completers as the config's own sections, and reports whether the cursor is
 // in one.
-func (ch *CompletionHandler) completeInInlineOrb() bool {
+func (ch *CompletionHandler) completeInInlineOrb(ctx context.Context) bool {
 	for _, orb := range ch.Doc.Orbs {
 		if !orb.Url.IsLocal || !position.InRange(orb.ValueRange, ch.Params.Position) {
 			continue
@@ -20,7 +22,7 @@ func (ch *CompletionHandler) completeInInlineOrb() bool {
 		if info, ok := ch.Doc.LocalOrbInfo[orb.Name]; ok {
 			config := ch.Doc
 			ch.Doc = orbScope(config, info)
-			ch.completeSection()
+			ch.completeSection(ctx)
 			ch.Doc = config
 		}
 		return true

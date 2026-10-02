@@ -1,13 +1,15 @@
 package definition
 
 import (
+	"context"
+
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 )
 
-func (def DefinitionStruct) searchForCommands() []Link {
+func (def DefinitionStruct) searchForCommands(ctx context.Context) []Link {
 	for _, command := range def.Doc.Commands {
-		if res := def.getStepDefinition(command.Steps); len(res) > 0 {
+		if res := def.getStepDefinition(ctx, command.Steps); len(res) > 0 {
 			return res
 		}
 
@@ -27,17 +29,17 @@ func (def DefinitionStruct) searchForCommands() []Link {
 		}
 	}
 
-	return def.searchForAliasTargets(def.Doc.Aliases.Commands)
+	return def.searchForAliasTargets(ctx, def.Doc.Aliases.Commands)
 }
 
 // searchForAliasTargets goes from the target of an alias, such as `orb/c`,
 // to the orb's element it names.
-func (def DefinitionStruct) searchForAliasTargets(aliases map[string]ast.Alias) []Link {
+func (def DefinitionStruct) searchForAliasTargets(ctx context.Context, aliases map[string]ast.Alias) []Link {
 	for _, alias := range aliases {
 		if !position.InRange(alias.TargetRange, def.Params.Position) {
 			continue
 		}
-		if loc, err := def.getOrbLocation(alias.Target, true); err == nil {
+		if loc, err := def.getOrbLocation(ctx, alias.Target, true); err == nil {
 			return from(alias.TargetRange, loc)
 		}
 	}

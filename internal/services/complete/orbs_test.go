@@ -32,7 +32,7 @@ func TestGetOrbNameCompletions(t *testing.T) {
 		fake.AddOrbVersion("ver-node-1", "orb-node", "circleci/node", "1.0.0", "", "")
 		fake.AddOrbVersion("ver-node-2", "orb-node", "circleci/node", "7.2.1", "", "")
 
-		completions, err := orbCompletionHandler(fake).getOrbNameCompletions("circleci/")
+		completions, err := orbCompletionHandler(fake).getOrbNameCompletions(t.Context(), "circleci/")
 		assert.NilError(t, err)
 
 		assert.Check(t, cmp.DeepEqual(completions, []string{
@@ -50,7 +50,7 @@ func TestGetOrbNameCompletions(t *testing.T) {
 		fake.AddOrbPackage("orb-go", "ns-circleci", "circleci", "go", false, true)
 		fake.AddOrbVersion("ver-go", "orb-go", "circleci/go", "1.0.0", "", "")
 
-		completions, err := orbCompletionHandler(fake).getOrbNameCompletions("circleci/")
+		completions, err := orbCompletionHandler(fake).getOrbNameCompletions(t.Context(), "circleci/")
 		assert.NilError(t, err)
 
 		assert.Check(t, cmp.DeepEqual(completions, []string{"circleci/go@1.0.0"}))
@@ -59,7 +59,7 @@ func TestGetOrbNameCompletions(t *testing.T) {
 	t.Run("suggests nothing for an unknown namespace", func(t *testing.T) {
 		fake := fakes.NewCircleCI(t)
 
-		completions, err := orbCompletionHandler(fake).getOrbNameCompletions("nope/")
+		completions, err := orbCompletionHandler(fake).getOrbNameCompletions(t.Context(), "nope/")
 		assert.NilError(t, err)
 		assert.Check(t, cmp.Len(completions, 0))
 	})
@@ -70,7 +70,7 @@ func TestGetOrbVersionCompletions(t *testing.T) {
 		fake := fakes.NewCircleCI(t)
 		fake.SeedGoOrb()
 
-		completions, err := orbCompletionHandler(fake).getOrbVersionCompletions("circleci/go@")
+		completions, err := orbCompletionHandler(fake).getOrbVersionCompletions(t.Context(), "circleci/go@")
 		assert.NilError(t, err)
 
 		assert.Check(t, cmp.DeepEqual(completions, []string{
@@ -82,7 +82,7 @@ func TestGetOrbVersionCompletions(t *testing.T) {
 		fake := fakes.NewCircleCI(t)
 		fake.SeedGoOrb()
 
-		_, err := orbCompletionHandler(fake).getOrbVersionCompletions("circleci/nope")
+		_, err := orbCompletionHandler(fake).getOrbVersionCompletions(t.Context(), "circleci/nope")
 		assert.Check(t, cmp.ErrorContains(err, "no orb named circleci/nope"))
 	})
 }

@@ -69,37 +69,37 @@ workflows:
 	}
 
 	t.Run("a job's parameter, which is required", func(t *testing.T) {
-		got, ok := ParameterReference(doc, cache.New(), at(32, "parameters.os"))
+		got, ok := ParameterReference(t.Context(), doc, cache.New(), at(32, "parameters.os"))
 		assert.Assert(t, ok)
 		assert.Check(t, cmp.Equal(got, "**os** `executor`\n\nA parameter of the job `test`. Required."))
 	})
 
 	t.Run("a pipeline parameter, with its default and description", func(t *testing.T) {
-		got, ok := ParameterReference(doc, cache.New(), at(34, "pipeline.parameters"))
+		got, ok := ParameterReference(t.Context(), doc, cache.New(), at(34, "pipeline.parameters"))
 		assert.Assert(t, ok)
 		assert.Check(t, cmp.Equal(got,
 			"**setup_go** `string`\n\nA pipeline parameter. Default: `setup-go@v1`.\n\nThe function that installs Go."))
 	})
 
 	t.Run("an executor's parameter", func(t *testing.T) {
-		got, ok := ParameterReference(doc, cache.New(), at(17, "parameters.size"))
+		got, ok := ParameterReference(t.Context(), doc, cache.New(), at(17, "parameters.size"))
 		assert.Assert(t, ok)
 		assert.Check(t, cmp.Equal(got, "**size** `enum`\n\nA parameter of the executor `vm`. One of `medium`, `large`. Default: `medium`."))
 	})
 
 	t.Run("a command's parameter", func(t *testing.T) {
-		got, ok := ParameterReference(doc, cache.New(), at(25, "parameters.who"))
+		got, ok := ParameterReference(t.Context(), doc, cache.New(), at(25, "parameters.who"))
 		assert.Assert(t, ok)
 		assert.Check(t, cmp.Contains(got, "A parameter of the command `greet`."))
 	})
 
 	t.Run("nothing for a parameter that isn't defined", func(t *testing.T) {
-		_, ok := ParameterReference(doc, cache.New(), at(25, "parameters.missing"))
+		_, ok := ParameterReference(t.Context(), doc, cache.New(), at(25, "parameters.missing"))
 		assert.Check(t, !ok)
 	})
 
 	t.Run("nothing beside a reference on the same line", func(t *testing.T) {
-		_, ok := ParameterReference(doc, cache.New(), at(25, "echo"))
+		_, ok := ParameterReference(t.Context(), doc, cache.New(), at(25, "echo"))
 		assert.Check(t, !ok)
 	})
 }
@@ -132,14 +132,14 @@ commands:
 
 	for _, tag := range []string{"<<# parameters.loud", "<</ parameters.loud"} {
 		t.Run(tag, func(t *testing.T) {
-			got, ok := ParameterReference(doc, cache.New(), at(tag))
+			got, ok := ParameterReference(t.Context(), doc, cache.New(), at(tag))
 			assert.Assert(t, ok)
 			assert.Check(t, cmp.Contains(got, "A parameter of the command `greet`."))
 		})
 	}
 
 	t.Run("an inverted section of a pipeline parameter", func(t *testing.T) {
-		got, ok := ParameterReference(doc, cache.New(), at("<<^ pipeline.parameters.quiet"))
+		got, ok := ParameterReference(t.Context(), doc, cache.New(), at("<<^ pipeline.parameters.quiet"))
 		assert.Assert(t, ok)
 		assert.Check(t, cmp.Contains(got, "A pipeline parameter."))
 	})

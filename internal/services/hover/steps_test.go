@@ -66,7 +66,7 @@ jobs:
 	}
 
 	t.Run("a command's step shows its description and parameters", func(t *testing.T) {
-		got, ok := Step(doc, cache.New(), at("- greet:"))
+		got, ok := Step(t.Context(), doc, cache.New(), at("- greet:"))
 		assert.Assert(t, ok)
 		assert.Check(t, cmp.Equal(got, "**greet** command\n\nSay hello.\n\nParameters:\n"+
 			"\n- `loud` (boolean, default `false`)"+
@@ -74,13 +74,13 @@ jobs:
 	})
 
 	t.Run("an inline orb's step shows the orb's command", func(t *testing.T) {
-		got, ok := Step(doc, cache.New(), at("- lint"))
+		got, ok := Step(t.Context(), doc, cache.New(), at("- lint"))
 		assert.Assert(t, ok)
 		assert.Check(t, cmp.Equal(got, "**lint** command\n\nLint the code."))
 	})
 
 	t.Run("a built-in step has none", func(t *testing.T) {
-		_, ok := Step(doc, cache.New(), at("- run: echo done"))
+		_, ok := Step(t.Context(), doc, cache.New(), at("- run: echo done"))
 		assert.Check(t, !ok)
 	})
 }

@@ -1,6 +1,7 @@
 package complete
 
 import (
+	"context"
 	"strings"
 
 	sitter "github.com/tree-sitter/go-tree-sitter"
@@ -12,7 +13,7 @@ import (
 
 // completeSteps offers what a step can run: commands, built-in steps, orb
 // commands and declared functions. A job is not a step, so none is offered.
-func (ch *CompletionHandler) completeSteps(entityName string, inJob bool, completionNode *sitter.Node) {
+func (ch *CompletionHandler) completeSteps(ctx context.Context, entityName string, inJob bool, completionNode *sitter.Node) {
 	if ch.isWritingAnEnvVariableInRunStep(entityName, inJob) {
 		return
 	}
@@ -24,22 +25,22 @@ func (ch *CompletionHandler) completeSteps(entityName string, inJob bool, comple
 	if inJob {
 		job = entityName
 	}
-	ch.completeStepList(completionNode, job)
+	ch.completeStepList(ctx, completionNode, job)
 }
 
 // completeStepList offers the steps of a list of steps, or the keys of the
 // step whose body the cursor is in. job is the job the steps are in, if any.
-func (ch *CompletionHandler) completeStepList(completionNode *sitter.Node, job string) {
-	if ch.completeFunctionFlags() {
+func (ch *CompletionHandler) completeStepList(ctx context.Context, completionNode *sitter.Node, job string) {
+	if ch.completeFunctionFlags(ctx) {
 		return
 	}
 
 	if key, lines, parent := ch.valueAt(); parent != -1 {
 		if match := stepWithBody.FindStringSubmatch(lines[parent]); match != nil {
-			for _, value := range ch.builtInStepValues(match[2], key, job) {
+			for _, value := range ch.builtInStepValues(ctx, match[2], key, job) {
 				ch.addCompletionItem(value)
 			}
-			params := ch.Doc.GetDefinedParams(match[2], yamlparser.CommandEntity, ch.Cache)
+			params := ch.Doc.GetDefinedParams(ctx, match[2], yamlparser.CommandEntity, ch.Cache)
 			if param, ok := params[key]; ok {
 				ch.addParameterValues(param)
 			}
@@ -49,7 +50,7 @@ func (ch *CompletionHandler) completeStepList(completionNode *sitter.Node, job s
 
 	switch where, name, nameLine := ch.stepAt(); where {
 	case inStepBody:
-		ch.completeStepBody(name, nameLine)
+		ch.completeStepBody(ctx, name, nameLine)
 		return
 	case elsewhere:
 		return
@@ -64,8 +65,8 @@ func (ch *CompletionHandler) completeStepList(completionNode *sitter.Node, job s
 
 	ch.userDefinedCommands()
 	ch.builtInSteps()
-	ch.orbCommands(completionNode)
-	ch.functionSteps()
+	ch.orbCommands(ctx, completionNode)
+	ch.functionSteps(ctx)
 }
 
 // nodeToComplete is the node at the cursor, or the key before it when the
@@ -81,11 +82,11 @@ func (ch *CompletionHandler) nodeToComplete() *sitter.Node {
 // functionSteps offers each declared function as a step, and each of its
 // commands as `alias/command` when its descriptor can be read from the
 // functions catalog.
-func (ch *CompletionHandler) functionSteps() {
+func (ch *CompletionHandler) functionSteps(ctx context.Context) {
 	for _, function := range ch.Doc.Functions {
 		ch.addCompletionItem(function.Alias)
 
-		_, descriptor, err := ch.Doc.LookUpFunction(function, ch.Cache)
+		_, descriptor, err := ch.Doc.LookUpFunction(ctx, function, ch.Cache)
 		if err != nil || descriptor == nil {
 			continue
 		}

@@ -2,6 +2,7 @@ package parser
 
 import (
 	"cmp"
+	"context"
 	"strings"
 
 	sitter "github.com/tree-sitter/go-tree-sitter"
@@ -43,40 +44,40 @@ func (doc *YamlDocument) parseAlias(entryNode *sitter.Node) (ast2.Alias, bool) {
 
 // ResolveCommand returns the command a step names: the config's own, an
 // orb's as `orb-alias/command-name`, or either through an alias.
-func (doc *YamlDocument) ResolveCommand(name string, cache *cache.Cache) (ast2.Command, bool) {
+func (doc *YamlDocument) ResolveCommand(ctx context.Context, name string, cache *cache.Cache) (ast2.Command, bool) {
 	if alias, ok := doc.CommandAlias(name); ok {
 		name = alias.Target
 	}
-	return resolveElement(doc, name, cache, func(attributes ast2.OrbParsedAttributes) map[string]ast2.Command {
+	return resolveElement(ctx, doc, name, cache, func(attributes ast2.OrbParsedAttributes) map[string]ast2.Command {
 		return attributes.Commands
 	})
 }
 
 // ResolveJob returns the job a workflow names: the config's own, an orb's as
 // `orb-alias/job-name`, or either through an alias.
-func (doc *YamlDocument) ResolveJob(name string, cache *cache.Cache) (ast2.Job, bool) {
+func (doc *YamlDocument) ResolveJob(ctx context.Context, name string, cache *cache.Cache) (ast2.Job, bool) {
 	if alias, ok := doc.JobAlias(name); ok {
 		name = alias.Target
 	}
-	return resolveElement(doc, name, cache, func(attributes ast2.OrbParsedAttributes) map[string]ast2.Job {
+	return resolveElement(ctx, doc, name, cache, func(attributes ast2.OrbParsedAttributes) map[string]ast2.Job {
 		return attributes.Jobs
 	})
 }
 
 // ResolveExecutor returns the executor a job names: the config's own, an
 // orb's as `orb-alias/executor-name`, or either through an alias.
-func (doc *YamlDocument) ResolveExecutor(name string, cache *cache.Cache) (ast2.Executor, bool) {
+func (doc *YamlDocument) ResolveExecutor(ctx context.Context, name string, cache *cache.Cache) (ast2.Executor, bool) {
 	if alias, ok := doc.ExecutorAlias(name); ok {
 		name = alias.Target
 	}
-	return resolveElement(doc, name, cache, func(attributes ast2.OrbParsedAttributes) map[string]ast2.Executor {
+	return resolveElement(ctx, doc, name, cache, func(attributes ast2.OrbParsedAttributes) map[string]ast2.Executor {
 		return attributes.Executors
 	})
 }
 
 // resolveElement looks a name up among the config's elements of one kind,
 // or, for `orb-alias/element-name`, among the orb's.
-func resolveElement[T any](doc *YamlDocument, name string, cache *cache.Cache, elements func(ast2.OrbParsedAttributes) map[string]T) (T, bool) {
+func resolveElement[T any](ctx context.Context, doc *YamlDocument, name string, cache *cache.Cache, elements func(ast2.OrbParsedAttributes) map[string]T) (T, bool) {
 	if element, ok := elements(doc.ToOrbParsedAttributes())[name]; ok {
 		return element, true
 	}
@@ -86,7 +87,7 @@ func resolveElement[T any](doc *YamlDocument, name string, cache *cache.Cache, e
 	if !ok {
 		return none, false
 	}
-	orbInfo, err := doc.GetOrbInfoFromName(orbName, cache)
+	orbInfo, err := doc.GetOrbInfoFromName(ctx, orbName, cache)
 	if err != nil || orbInfo == nil {
 		return none, false
 	}
@@ -98,7 +99,7 @@ func resolveElement[T any](doc *YamlDocument, name string, cache *cache.Cache, e
 // given in place or through the executor it names. It is false for a job on
 // another executor, and for a class that can't be read: a parameter, or a
 // self-hosted runner's.
-func (doc *YamlDocument) DockerResourceClass(job ast2.Job, cache *cache.Cache) (string, bool) {
+func (doc *YamlDocument) DockerResourceClass(ctx context.Context, job ast2.Job, cache *cache.Cache) (string, bool) {
 	class := ""
 	if !position.IsDefaultRange(job.DockerRange) {
 		class = job.Docker.ResourceClass
@@ -106,7 +107,7 @@ func (doc *YamlDocument) DockerResourceClass(job ast2.Job, cache *cache.Cache) (
 		if job.Executor == "" || paramref.ContainsReference(job.Executor) {
 			return "", false
 		}
-		executor, ok := doc.ResolveExecutor(job.Executor, cache)
+		executor, ok := doc.ResolveExecutor(ctx, job.Executor, cache)
 		docker, isDocker := executor.(ast2.DockerExecutor)
 		if !ok || !isDocker {
 			return "", false

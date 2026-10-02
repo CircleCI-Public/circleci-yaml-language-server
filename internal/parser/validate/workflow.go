@@ -1,6 +1,8 @@
 package validate
 
 import (
+	"context"
+
 	"go.lsp.dev/protocol"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
@@ -9,9 +11,9 @@ import (
 
 var TerminalJobStatuses = []string{"success", "failed", "canceled", "not_run", "unauthorized"}
 
-func (val Validate) ValidateWorkflows() {
+func (val Validate) ValidateWorkflows(ctx context.Context) {
 	for _, workflow := range val.Doc.Workflows {
-		val.validateSingleWorkflow(workflow)
+		val.validateSingleWorkflow(ctx, workflow)
 	}
 	val.validateImplicitWorkflow()
 }
@@ -59,7 +61,7 @@ func (val Validate) isOrb() bool {
 	return ok
 }
 
-func (val Validate) validateSingleWorkflow(workflow ast.Workflow) {
+func (val Validate) validateSingleWorkflow(ctx context.Context, workflow ast.Workflow) {
 	if workflow.HasMaxAutoReruns {
 		if workflow.MaxAutoReruns < 1 {
 			val.addDiagnostic(diagnostic.Error(workflow.MaxAutoRerunsRange, "Must be greater than or equal to 1"))
@@ -68,6 +70,6 @@ func (val Validate) validateSingleWorkflow(workflow ast.Workflow) {
 		}
 	}
 
-	val.validateInvocations(workflow.JobInvocations, InvocationContext{Kind: InWorkflow, WorkflowName: workflow.Name})
+	val.validateInvocations(ctx, workflow.JobInvocations, InvocationContext{Kind: InWorkflow, WorkflowName: workflow.Name})
 	val.validateDAG(workflow.JobInvocations, workflow.JobsDAG)
 }

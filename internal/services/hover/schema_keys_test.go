@@ -61,7 +61,7 @@ workflows:
 	}
 	for _, tc := range described {
 		t.Run(tc.name+" is described", func(t *testing.T) {
-			got, ok := SchemaKey(doc, cache.New(), tc.at)
+			got, ok := SchemaKey(t.Context(), doc, cache.New(), tc.at)
 			assert.Assert(t, ok)
 			assert.Check(t, cmp.Contains(got, tc.want))
 		})
@@ -79,7 +79,7 @@ workflows:
 	}
 	for _, tc := range undescribed {
 		t.Run(tc.name+" is not", func(t *testing.T) {
-			_, ok := SchemaKey(doc, cache.New(), tc.at)
+			_, ok := SchemaKey(t.Context(), doc, cache.New(), tc.at)
 			assert.Check(t, !ok)
 		})
 	}

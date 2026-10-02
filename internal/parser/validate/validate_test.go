@@ -70,7 +70,7 @@ func checkYamlErrors(t *testing.T, settings func() *session.Settings, testCases 
 				t.Fatal("Test YAML content contains tab characters -- YAML does not allow tabs for indentation. Use spaces instead.")
 			}
 			val := createValidate(tt.YamlContent, settings())
-			val.Validate()
+			val.Validate(t.Context())
 
 			diags := *val.Diagnostics
 			if tt.OnlyErrors == true {

@@ -11,5 +11,5 @@ import (
 func (methods *Methods) DocumentHighlight(
 	_ context.Context, params *protocol.DocumentHighlightParams,
 ) ([]protocol.DocumentHighlight, error) {
-	return languageservice.DocumentHighlight(*params, methods.Cache, methods.Settings())
+	return languageservice.DocumentHighlight(context.TODO(), *params, methods.Cache, methods.Settings())
 }

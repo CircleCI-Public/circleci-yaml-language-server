@@ -1,6 +1,8 @@
 package languageservice
 
 import (
+	"context"
+
 	"go.lsp.dev/protocol"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
@@ -10,7 +12,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/session"
 )
 
-func Complete(params protocol.CompletionParams, cache *cache.Cache, context *session.Settings) (protocol.CompletionList, error) {
+func Complete(ctx context.Context, params protocol.CompletionParams, cache *cache.Cache, context *session.Settings) (protocol.CompletionList, error) {
 	yamlDocument, err := yamlparser.ParseFromUriWithCache(params.TextDocument.URI, cache, context)
 
 	if err != nil {
@@ -35,7 +37,7 @@ func Complete(params protocol.CompletionParams, cache *cache.Cache, context *ses
 		Items:   []protocol.CompletionItem{},
 		Context: context,
 	}
-	completionHandler.GetCompletionItems()
+	completionHandler.GetCompletionItems(ctx)
 
 	return protocol.CompletionList{
 		IsIncomplete: true,

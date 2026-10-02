@@ -1,6 +1,7 @@
 package hover
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -8,7 +9,7 @@ import (
 	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/internal/parser"
 )
 
-func HoverInJobs(doc yamlparser.YamlDocument, path []string, cache *cache.Cache) string {
+func HoverInJobs(ctx context.Context, doc yamlparser.YamlDocument, path []string, cache *cache.Cache) string {
 	if len(path) == 0 {
 		return "Jobs are collections of steps. All of the steps in the job are executed in a single unit, either within a fresh container or VM."
 	}
@@ -18,10 +19,10 @@ func HoverInJobs(doc yamlparser.YamlDocument, path []string, cache *cache.Cache)
 		return fmt.Sprintf("%s - User defined job", jobName)
 	}
 
-	return hoverSingleJob(doc, path[1:], cache)
+	return hoverSingleJob(ctx, doc, path[1:], cache)
 }
 
-func hoverSingleJob(doc yamlparser.YamlDocument, path []string, cache *cache.Cache) string {
+func hoverSingleJob(ctx context.Context, doc yamlparser.YamlDocument, path []string, cache *cache.Cache) string {
 	if len(path) == 0 {
 		return ""
 	}
@@ -30,14 +31,14 @@ func hoverSingleJob(doc yamlparser.YamlDocument, path []string, cache *cache.Cac
 
 	switch fieldName {
 	case "steps":
-		return hoverSteps(doc, path[1:], cache)
+		return hoverSteps(ctx, doc, path[1:], cache)
 	default:
 		return ""
 	}
 
 }
 
-func hoverSteps(doc yamlparser.YamlDocument, path []string, cache *cache.Cache) string {
+func hoverSteps(ctx context.Context, doc yamlparser.YamlDocument, path []string, cache *cache.Cache) string {
 	if len(path) == 0 {
 		return "Steps are the individual units of work in a job. Each step is a command, or a job."
 	}
@@ -51,13 +52,13 @@ func hoverSteps(doc yamlparser.YamlDocument, path []string, cache *cache.Cache) 
 		return cmd.Description
 	}
 
-	return hoverOrb(doc, stepName, cache)
+	return hoverOrb(ctx, doc, stepName, cache)
 }
 
-func hoverOrb(doc yamlparser.YamlDocument, stepName string, cache *cache.Cache) string {
+func hoverOrb(ctx context.Context, doc yamlparser.YamlDocument, stepName string, cache *cache.Cache) string {
 	splittedStep := strings.Split(stepName, "/")
 	orbInDoc := doc.Orbs[splittedStep[0]]
-	orb, _ := doc.GetOrFetchOrbInfo(orbInDoc, cache)
+	orb, _ := doc.GetOrFetchOrbInfo(ctx, orbInDoc, cache)
 	if orb == nil {
 		return ""
 	}

@@ -111,7 +111,7 @@ func completionItemsWith(t *testing.T, settings *session.Settings, c *cache.Cach
 		Cache:   c,
 		Context: settings,
 	}
-	ch.GetCompletionItems()
+	ch.GetCompletionItems(t.Context())
 	return ch.Items
 }
 

@@ -21,10 +21,10 @@ import (
 
 func validateYAML(t *testing.T, yamlData string) *[]protocol.Diagnostic {
 	t.Helper()
-	ctx := testHelpers.DefaultSettings()
+	settings := testHelpers.DefaultSettings()
 	doc, err := parser.ParseFromContent(
 		[]byte(yamlData),
-		ctx,
+		settings,
 		uri.URI(""),
 		protocol.Position{},
 	)
@@ -32,12 +32,12 @@ func validateYAML(t *testing.T, yamlData string) *[]protocol.Diagnostic {
 
 	val := Validate{
 		APIs:        ValidateAPIs{DockerHubMock{}},
-		Context:     ctx,
+		Context:     settings,
 		Doc:         doc,
 		Diagnostics: &[]protocol.Diagnostic{},
 		Cache:       testHelpers.DefaultCache(),
 	}
-	val.Validate()
+	val.Validate(t.Context())
 	return val.Diagnostics
 }
 
@@ -257,7 +257,7 @@ func TestExecutorParam(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run("executor parameter: "+testCase.label, func(t *testing.T) {
-			ctx := &session.Settings{
+			settings := &session.Settings{
 				Api: circleci.Config{
 					Token:   "XXXXXXXXXXXX",
 					HostUrl: "https://circleci.com",
@@ -265,7 +265,7 @@ func TestExecutorParam(t *testing.T) {
 			}
 			doc, err := parser.ParseFromContent(
 				[]byte(testCase.yamlData),
-				ctx,
+				settings,
 				uri.URI(""),
 				protocol.Position{},
 			)
@@ -273,11 +273,11 @@ func TestExecutorParam(t *testing.T) {
 			assert.Check(t, cmp.Contains(doc.Jobs, "test"))
 
 			val := Validate{
-				Context:     ctx,
+				Context:     settings,
 				Doc:         doc,
 				Diagnostics: &[]protocol.Diagnostic{},
 			}
-			val.validateSingleJob(doc.Jobs["test"])
+			val.validateSingleJob(t.Context(), doc.Jobs["test"])
 
 			for _, diag := range *val.Diagnostics {
 				if diag.Range == testCase.expectedDiag.Range &&
@@ -390,7 +390,7 @@ func TestResourceClass(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run("validate job resource_class: "+testCase.label, func(t *testing.T) {
-			ctx := &session.Settings{
+			settings := &session.Settings{
 				Api: circleci.Config{
 					Token:   "XXXXXXXXXXXX",
 					HostUrl: "https://circleci.com",
@@ -398,7 +398,7 @@ func TestResourceClass(t *testing.T) {
 			}
 			doc, err := parser.ParseFromContent(
 				[]byte(testCase.yamlData),
-				ctx,
+				settings,
 				uri.URI(""),
 				protocol.Position{},
 			)
@@ -407,13 +407,13 @@ func TestResourceClass(t *testing.T) {
 
 			val := Validate{
 				APIs:        ValidateAPIs{DockerHubMock{}},
-				Context:     ctx,
+				Context:     settings,
 				Doc:         doc,
 				Diagnostics: &[]protocol.Diagnostic{},
 				Cache:       cache.New(),
 			}
 			val.Cache.MachineOfferingsCache.Set(testHelpers.MachineOfferings())
-			val.validateSingleJob(doc.Jobs["test"])
+			val.validateSingleJob(t.Context(), doc.Jobs["test"])
 
 			for _, diag := range *val.Diagnostics {
 				if diag.Range == testCase.expectedDiag.Range &&
@@ -484,7 +484,7 @@ func TestRetention(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run("validate job retention: "+testCase.label, func(t *testing.T) {
-			ctx := &session.Settings{
+			settings := &session.Settings{
 				Api: circleci.Config{
 					Token:   "XXXXXXXXXXXX",
 					HostUrl: "https://circleci.com",
@@ -492,7 +492,7 @@ func TestRetention(t *testing.T) {
 			}
 			doc, err := parser.ParseFromContent(
 				[]byte(testCase.yamlData),
-				ctx,
+				settings,
 				uri.URI(""),
 				protocol.Position{},
 			)
@@ -501,13 +501,13 @@ func TestRetention(t *testing.T) {
 
 			val := Validate{
 				APIs:        ValidateAPIs{DockerHubMock{}},
-				Context:     ctx,
+				Context:     settings,
 				Doc:         doc,
 				Diagnostics: &[]protocol.Diagnostic{},
 				Cache:       cache.New(),
 			}
 			val.Cache.MachineOfferingsCache.Set(testHelpers.MachineOfferings())
-			val.validateSingleJob(doc.Jobs["test"])
+			val.validateSingleJob(t.Context(), doc.Jobs["test"])
 
 			for _, diag := range *val.Diagnostics {
 				if diag.Range == testCase.expectedDiag.Range &&
@@ -578,7 +578,7 @@ func TestJobTypeValidation(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run("validate job type: "+testCase.label, func(t *testing.T) {
-			ctx := &session.Settings{
+			settings := &session.Settings{
 				Api: circleci.Config{
 					Token:   "XXXXXXXXXXXX",
 					HostUrl: "https://circleci.com",
@@ -586,7 +586,7 @@ func TestJobTypeValidation(t *testing.T) {
 			}
 			doc, err := parser.ParseFromContent(
 				[]byte(testCase.yamlData),
-				ctx,
+				settings,
 				uri.URI(""),
 				protocol.Position{},
 			)
@@ -594,13 +594,13 @@ func TestJobTypeValidation(t *testing.T) {
 
 			val := Validate{
 				APIs:        ValidateAPIs{DockerHubMock{}},
-				Context:     ctx,
+				Context:     settings,
 				Doc:         doc,
 				Diagnostics: &[]protocol.Diagnostic{},
 				Cache:       cache.New(),
 			}
 
-			val.Validate()
+			val.Validate(t.Context())
 
 			diagnostics := ""
 			for _, diag := range *val.Diagnostics {
@@ -938,7 +938,7 @@ workflows:
     jobs:
       - build
 `)
-		val.Validate()
+		val.Validate(t.Context())
 		return slices.DeleteFunc(getDiagnosticMessages(val.Diagnostics), func(message string) bool {
 			return message == "Executor is unused"
 		})

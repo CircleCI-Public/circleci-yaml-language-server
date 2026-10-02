@@ -25,7 +25,7 @@ func TestDoesOrbExist(t *testing.T) {
 		fake.SeedGoOrb()
 		doc := YamlDocument{Context: testHelpers.SettingsForHost(fake.URL())}
 
-		assert.Check(t, doc.DoesOrbExist(remoteOrb("circleci/go"), cache.New()))
+		assert.Check(t, doc.DoesOrbExist(t.Context(), remoteOrb("circleci/go"), cache.New()))
 	})
 
 	t.Run("resolves public orbs without a token", func(t *testing.T) {
@@ -35,7 +35,7 @@ func TestDoesOrbExist(t *testing.T) {
 		settings.Api.Token = ""
 		doc := YamlDocument{Context: settings}
 
-		assert.Check(t, doc.DoesOrbExist(remoteOrb("circleci/go"), cache.New()))
+		assert.Check(t, doc.DoesOrbExist(t.Context(), remoteOrb("circleci/go"), cache.New()))
 	})
 
 	t.Run("reports an unknown orb", func(t *testing.T) {
@@ -43,7 +43,7 @@ func TestDoesOrbExist(t *testing.T) {
 		fake.SeedGoOrb()
 		doc := YamlDocument{Context: testHelpers.SettingsForHost(fake.URL())}
 
-		assert.Check(t, !doc.DoesOrbExist(remoteOrb("circleci/nope"), cache.New()))
+		assert.Check(t, !doc.DoesOrbExist(t.Context(), remoteOrb("circleci/nope"), cache.New()))
 	})
 
 	// A lookup that fails says nothing about the orb. It used to be
@@ -57,12 +57,12 @@ func TestDoesOrbExist(t *testing.T) {
 
 		t.Run("fail the lookup", func(t *testing.T) {
 			fake.SetStatus("GET /api/v3/orb/packages", http.StatusInternalServerError)
-			assert.Check(t, doc.DoesOrbExist(remoteOrb("circleci/nope"), c))
+			assert.Check(t, doc.DoesOrbExist(t.Context(), remoteOrb("circleci/nope"), c))
 		})
 
 		t.Run("check the failure was not remembered", func(t *testing.T) {
 			fake.SetStatus("GET /api/v3/orb/packages", 0)
-			assert.Check(t, !doc.DoesOrbExist(remoteOrb("circleci/nope"), c))
+			assert.Check(t, !doc.DoesOrbExist(t.Context(), remoteOrb("circleci/nope"), c))
 		})
 	})
 
@@ -72,7 +72,7 @@ func TestDoesOrbExist(t *testing.T) {
 		doc := YamlDocument{Context: testHelpers.SettingsForHost(fake.URL())}
 		c := cache.New()
 
-		assert.Check(t, doc.DoesOrbExist(remoteOrb("circleci/go"), c))
+		assert.Check(t, doc.DoesOrbExist(t.Context(), remoteOrb("circleci/go"), c))
 		// Counted as a delta because the registry probes the host once, on
 		// first use, to decide between V3 and GraphQL.
 		before := len(fake.Requests())
@@ -80,7 +80,7 @@ func TestDoesOrbExist(t *testing.T) {
 		var wg sync.WaitGroup
 		for range 10 {
 			wg.Go(func() {
-				assert.Check(t, doc.DoesOrbExist(remoteOrb("circleci/go"), c))
+				assert.Check(t, doc.DoesOrbExist(t.Context(), remoteOrb("circleci/go"), c))
 			})
 		}
 		wg.Wait()
@@ -102,7 +102,7 @@ func TestGetOrbInfo(t *testing.T) {
 		var wg sync.WaitGroup
 		for range 10 {
 			wg.Go(func() {
-				orb, err := GetOrbInfo("circleci/go@1.7.1", c, settings)
+				orb, err := GetOrbInfo(t.Context(), "circleci/go@1.7.1", c, settings)
 				assert.Check(t, err)
 				assert.Check(t, cmp.Equal(orb.Source, "# source of 1.7.1\n"))
 			})
@@ -121,13 +121,13 @@ func TestGetOrbInfo(t *testing.T) {
 
 		t.Run("fail the resolution", func(t *testing.T) {
 			fake.SetSourceStatus("ver-1-7-1", http.StatusInternalServerError)
-			_, err := GetOrbInfo("circleci/go@1.7.1", c, settings)
+			_, err := GetOrbInfo(t.Context(), "circleci/go@1.7.1", c, settings)
 			assert.Check(t, cmp.ErrorContains(err, "500"))
 		})
 
 		t.Run("check the next call resolves it", func(t *testing.T) {
 			fake.SetSourceStatus("ver-1-7-1", 0)
-			orb, err := GetOrbInfo("circleci/go@1.7.1", c, settings)
+			orb, err := GetOrbInfo(t.Context(), "circleci/go@1.7.1", c, settings)
 			assert.NilError(t, err)
 			assert.Check(t, cmp.Equal(orb.Source, "# source of 1.7.1\n"))
 		})
@@ -142,7 +142,7 @@ func TestGetOrbInfo(t *testing.T) {
 		c := cache.New()
 		t.Cleanup(c.Close)
 
-		orb, err := GetOrbInfo("circleci/go@1.7.1", c, settings)
+		orb, err := GetOrbInfo(t.Context(), "circleci/go@1.7.1", c, settings)
 		assert.NilError(t, err)
 		path := orb.RemoteInfo.FilePath
 
