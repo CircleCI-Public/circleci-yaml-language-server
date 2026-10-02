@@ -8,9 +8,9 @@ import (
 	languageservice "github.com/CircleCI-Public/circleci-yaml-language-server/internal/services"
 )
 
-func (methods *Methods) Diagnostics(textDocument protocol.TextDocumentItem) protocol.PublishDiagnosticsParams {
+func (methods *Methods) Diagnostics(ctx context.Context, textDocument protocol.TextDocumentItem) protocol.PublishDiagnosticsParams {
 	diagnostic, _ := languageservice.DiagnosticFile(
-		context.TODO(),
+		ctx,
 		textDocument.URI,
 		methods.Cache,
 		methods.Settings(),

@@ -53,7 +53,7 @@ func TestMethodsCloseTheTreesTheyParse(t *testing.T) {
 	t.Run("parsing the open document", func(t *testing.T) {
 		leaked := tsalloc.Track(t)
 
-		methods.parsingMethods(config)
+		methods.parsingMethods(t.Context(), config)
 
 		assert.Check(t, cmp.Equal(leaked(), int64(0)), "tree-sitter allocations left open")
 	})

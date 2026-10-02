@@ -8,8 +8,8 @@ import (
 	languageservice "github.com/CircleCI-Public/circleci-yaml-language-server/internal/services"
 )
 
-func (methods *Methods) Hover(_ context.Context, params *protocol.HoverParams) (*protocol.Hover, error) {
-	res, err := languageservice.Hover(context.TODO(), *params, methods.Cache, methods.Settings())
+func (methods *Methods) Hover(ctx context.Context, params *protocol.HoverParams) (*protocol.Hover, error) {
+	res, err := languageservice.Hover(ctx, *params, methods.Cache, methods.Settings())
 	if err != nil {
 		return nil, nil
 	}

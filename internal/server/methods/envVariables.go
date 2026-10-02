@@ -9,38 +9,38 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
 )
 
-func (methods *Methods) getAllEnvVariables(textDocument protocol.TextDocumentItem) {
+func (methods *Methods) getAllEnvVariables(ctx context.Context, textDocument protocol.TextDocumentItem) {
 	api := methods.Settings().Api
 	cachedFile := methods.Cache.FileCache.GetFile(textDocument.URI)
 	if cachedFile == nil {
 		return
 	}
 	if cachedFile.Project.Slug == "" {
-		projectSlug := methods.Cache.ProjectSlugOfFile(context.TODO(), textDocument.URI.FsPath())
+		projectSlug := methods.Cache.ProjectSlugOfFile(ctx, textDocument.URI.FsPath())
 		if projectSlug == "" {
 			return
 		}
-		project, err := methods.Cache.Project(context.TODO(), api, projectSlug)
+		project, err := methods.Cache.Project(ctx, api, projectSlug)
 		if err != nil || project.Slug == "" {
 			return
 		}
 		methods.Cache.FileCache.AddProjectSlugToFile(textDocument.URI, project)
 		cachedFile.Project = project
-		methods.updateProjectEnvVariables(cachedFile)
+		methods.updateProjectEnvVariables(ctx, cachedFile)
 	}
 
-	if err := methods.Cache.LoadContexts(context.TODO(), api, cachedFile.Project.OrganizationId); err != nil {
+	if err := methods.Cache.LoadContexts(ctx, api, cachedFile.Project.OrganizationId); err != nil {
 		slog.Warn("error getting contexts", "err", err)
 	}
 }
 
-func (methods *Methods) updateProjectsEnvVariables() {
+func (methods *Methods) updateProjectsEnvVariables(ctx context.Context) {
 	for _, file := range methods.Cache.FileCache.GetFiles() {
-		methods.updateProjectEnvVariables(file)
+		methods.updateProjectEnvVariables(ctx, file)
 	}
 }
 
-func (methods *Methods) updateProjectEnvVariables(file *cache.File) {
+func (methods *Methods) updateProjectEnvVariables(ctx context.Context, file *cache.File) {
 	methods.Cache.FileCache.ClearEnvVariables(file.TextDocument.URI)
 	cachedFile := methods.Cache.FileCache.GetFile(file.TextDocument.URI)
 	if cachedFile == nil {
@@ -52,7 +52,7 @@ func (methods *Methods) updateProjectEnvVariables(file *cache.File) {
 		return
 	}
 	if api := methods.Settings().Api; api.Token != "" {
-		if err := methods.Cache.LoadProjectEnvVariables(context.TODO(), api, cachedFile); err != nil {
+		if err := methods.Cache.LoadProjectEnvVariables(ctx, api, cachedFile); err != nil {
 			slog.Warn("error getting project environment variables", "err", err)
 		}
 	}
