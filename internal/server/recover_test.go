@@ -21,9 +21,9 @@ func serve(t *testing.T, handler jsonrpc2.Handler) jsonrpc2.Conn {
 
 	serverStream, clientStream := jsonrpc2.NewChannelStreamPair(0)
 	server := jsonrpc2.NewConn(serverStream)
-	server.Go(context.Background(), handler)
+	server.Go(t.Context(), handler)
 	client := jsonrpc2.NewConn(clientStream)
-	client.Go(context.Background(), jsonrpc2.MethodNotFoundHandler)
+	client.Go(t.Context(), jsonrpc2.MethodNotFoundHandler)
 	t.Cleanup(func() {
 		_ = client.Close()
 		_ = server.Close()
@@ -33,7 +33,7 @@ func serve(t *testing.T, handler jsonrpc2.Handler) jsonrpc2.Conn {
 }
 
 func TestRecoverPanics(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	handler := func(_ context.Context, req *jsonrpc2.Request) (any, error) {
 		switch req.Method() {
@@ -84,7 +84,7 @@ func TestRecoverPanics(t *testing.T) {
 }
 
 func TestDropFailedNotifications(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	handler := dropFailedNotifications(func(_ context.Context, req *jsonrpc2.Request) (any, error) {
 		switch req.Method() {
@@ -115,7 +115,7 @@ func TestDropFailedNotifications(t *testing.T) {
 }
 
 func TestReleaseQueries(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	t.Run("a query does not hold up the requests after it", func(t *testing.T) {
 		unblock := make(chan struct{})

@@ -1,7 +1,6 @@
 package methods
 
 import (
-	"context"
 	"testing"
 
 	"go.lsp.dev/protocol"
@@ -37,7 +36,7 @@ workflows:
 // each one, since the tree-sitter bindings free a tree only when it is closed.
 func TestMethodsCloseTheTreesTheyParse(t *testing.T) {
 	fake := fakes.NewCircleCI(t)
-	methods := New(context.Background(), nil, cache.New(), session.Settings{
+	methods := New(t.Context(), nil, cache.New(), session.Settings{
 		Api: circleci.Config{HostUrl: fake.URL()},
 	}, "")
 
@@ -74,7 +73,7 @@ func TestMethodsCloseTheTreesTheyParse(t *testing.T) {
 		path, err := protocol.Marshal(configURI.FsPath())
 		assert.NilError(t, err)
 
-		_, err = methods.ExecuteCommand(context.Background(), &protocol.ExecuteCommandParams{
+		_, err = methods.ExecuteCommand(t.Context(), &protocol.ExecuteCommandParams{
 			Command:   "getWorkflows",
 			Arguments: []protocol.LSPAny{content, path},
 		})

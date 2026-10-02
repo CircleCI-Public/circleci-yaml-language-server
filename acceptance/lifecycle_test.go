@@ -1,7 +1,6 @@
 package acceptance
 
 import (
-	"context"
 	"path/filepath"
 	"runtime"
 	"syscall"
@@ -86,7 +85,7 @@ func TestSocketServerStopsOnSignal(t *testing.T) {
 	fake := linkedProjectFake(t)
 	project := workspace.New(t, orbConfig)
 	server := runner.StartSocket(t, serverBinary)
-	client := lspclient.New(t, context.Background(), server.Stream())
+	client := lspclient.New(t, t.Context(), server.Stream())
 
 	_, err := client.Initialize(project.RootURI())
 	assert.NilError(t, err)

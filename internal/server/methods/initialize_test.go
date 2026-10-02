@@ -1,7 +1,6 @@
 package methods
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -28,7 +27,7 @@ func TestInitializeSchemaHovers(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			methods := New(context.Background(), nil, cache.New(), session.Settings{}, "")
+			methods := New(t.Context(), nil, cache.New(), session.Settings{}, "")
 			params := &protocol.InitializeParams{}
 			if tc.options != nil {
 				options, err := protocol.Marshal(tc.options)
@@ -36,7 +35,7 @@ func TestInitializeSchemaHovers(t *testing.T) {
 				params.InitializationOptions = options
 			}
 
-			_, err := methods.Initialize(context.Background(), params)
+			_, err := methods.Initialize(t.Context(), params)
 			assert.NilError(t, err)
 
 			got := methods.Settings().SchemaHovers
@@ -61,7 +60,7 @@ func TestInitializeEditDebounce(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			methods := New(context.Background(), nil, cache.New(), session.Settings{}, "")
+			methods := New(t.Context(), nil, cache.New(), session.Settings{}, "")
 			params := &protocol.InitializeParams{}
 			if tc.options != nil {
 				options, err := protocol.Marshal(tc.options)
@@ -69,7 +68,7 @@ func TestInitializeEditDebounce(t *testing.T) {
 				params.InitializationOptions = options
 			}
 
-			_, err := methods.Initialize(context.Background(), params)
+			_, err := methods.Initialize(t.Context(), params)
 			assert.NilError(t, err)
 
 			assert.Check(t, cmp.Equal(methods.editDebounce, tc.want))
@@ -90,7 +89,7 @@ func TestInitializeGitHubSignInCommand(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			methods := New(context.Background(), nil, cache.New(), session.Settings{}, "")
+			methods := New(t.Context(), nil, cache.New(), session.Settings{}, "")
 			params := &protocol.InitializeParams{}
 			if tc.options != nil {
 				options, err := protocol.Marshal(tc.options)
@@ -98,7 +97,7 @@ func TestInitializeGitHubSignInCommand(t *testing.T) {
 				params.InitializationOptions = options
 			}
 
-			_, err := methods.Initialize(context.Background(), params)
+			_, err := methods.Initialize(t.Context(), params)
 			assert.NilError(t, err)
 
 			got := methods.Settings().GitHubSignInCommand

@@ -1,7 +1,6 @@
 package methods
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
@@ -14,7 +13,7 @@ import (
 )
 
 func TestServes(t *testing.T) {
-	methods := New(context.Background(), nil, cache.New(), session.Settings{}, "")
+	methods := New(t.Context(), nil, cache.New(), session.Settings{}, "")
 
 	t.Run("documents in a .circleci directory", func(t *testing.T) {
 		tests := map[string]uri.URI{
