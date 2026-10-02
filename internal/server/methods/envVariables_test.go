@@ -6,7 +6,6 @@ package methods
 
 import (
 	"bytes"
-	"context"
 	"log/slog"
 	"net/http"
 	"testing"
@@ -43,7 +42,7 @@ func rocketMethods(t *testing.T, token string, envVarNames ...string) (*Methods,
 		fake.AddProjectEnvVar(rocketSlug, name, "")
 	}
 
-	methods := New(context.Background(), nil, cache.New(), session.Settings{
+	methods := New(t.Context(), nil, cache.New(), session.Settings{
 		Api: circleci.Config{Token: token, HostUrl: fake.URL()},
 	}, "")
 

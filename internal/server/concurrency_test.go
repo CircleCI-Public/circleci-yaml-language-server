@@ -1,7 +1,6 @@
 package languageserver
 
 import (
-	"context"
 	"fmt"
 	"net"
 	"testing"
@@ -52,7 +51,7 @@ func serveInProcess(t *testing.T, hostURL string) *lspclient.Client {
 
 	serverEnd, clientEnd := net.Pipe()
 	server := JSONRPCServer{
-		ctx:       context.Background(),
+		ctx:       t.Context(),
 		lsContext: &session.Settings{Api: circleci.Config{HostUrl: hostURL}},
 	}
 
@@ -67,7 +66,7 @@ func serveInProcess(t *testing.T, hostURL string) *lspclient.Client {
 		_ = serving.Wait()
 	})
 
-	return lspclient.New(t, context.Background(), clientEnd)
+	return lspclient.New(t, t.Context(), clientEnd)
 }
 
 // Queries run alongside the messages after them, so edits, settings changes

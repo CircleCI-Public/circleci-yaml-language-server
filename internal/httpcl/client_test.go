@@ -23,7 +23,6 @@
 package httpcl_test
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -86,7 +85,7 @@ func TestClient_Call(t *testing.T) {
 		BaseURL: srv.URL,
 	})
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	t.Run("parameters", func(t *testing.T) {
 		var body map[string]any
@@ -216,7 +215,7 @@ func TestDeprecationWarning_SunsetHeader(t *testing.T) {
 	var msgs []string
 	c := httpcl.New(httpcl.Config{BaseURL: srv.URL, OnWarn: func(msg string) { msgs = append(msgs, msg) }})
 
-	ctx := context.Background()
+	ctx := t.Context()
 	_, err := c.Call(ctx, httpcl.NewRequest(http.MethodGet, "/"))
 	assert.NilError(t, err)
 	assert.Check(t, cmp.Equal(len(msgs), 1), "expected one warning, got %v", msgs)
@@ -234,7 +233,7 @@ func TestDeprecationWarning_DeprecationOnly(t *testing.T) {
 	var msgs []string
 	c := httpcl.New(httpcl.Config{BaseURL: srv.URL, OnWarn: func(msg string) { msgs = append(msgs, msg) }})
 
-	ctx := context.Background()
+	ctx := t.Context()
 	_, err := c.Call(ctx, httpcl.NewRequest(http.MethodGet, "/"))
 	assert.NilError(t, err)
 	assert.Check(t, cmp.Equal(len(msgs), 1), "expected one warning, got %v", msgs)
@@ -251,7 +250,7 @@ func TestDeprecationWarning_NoCallback(t *testing.T) {
 
 	// no OnWarn — must not panic
 	c := httpcl.New(httpcl.Config{BaseURL: srv.URL})
-	ctx := context.Background()
+	ctx := t.Context()
 	_, err := c.Call(ctx, httpcl.NewRequest(http.MethodGet, "/"))
 	assert.NilError(t, err)
 }
@@ -264,7 +263,7 @@ func TestDeprecationWarning_NoHeadersNoCallback(t *testing.T) {
 
 	called := false
 	c := httpcl.New(httpcl.Config{BaseURL: srv.URL, OnWarn: func(string) { called = true }})
-	ctx := context.Background()
+	ctx := t.Context()
 	_, err := c.Call(ctx, httpcl.NewRequest(http.MethodGet, "/"))
 	assert.NilError(t, err)
 	assert.Check(t, cmp.Equal(called, false), "OnWarn should not fire without deprecation headers")

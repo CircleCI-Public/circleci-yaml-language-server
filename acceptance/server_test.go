@@ -1,7 +1,6 @@
 package acceptance
 
 import (
-	"context"
 	"net/http"
 	"slices"
 	"strings"
@@ -167,7 +166,7 @@ func startWithOptions(t *testing.T, fake *fakes.CircleCI, project *workspace.Wor
 
 	dockerHub := fakes.NewDockerHub(t)
 	server := runner.StartStdio(t, serverBinary, dockerHubEnv(dockerHub))
-	client := lspclient.New(t, context.Background(), server.Stream())
+	client := lspclient.New(t, t.Context(), server.Stream())
 
 	_, err := client.InitializeWithOptions(project.RootURI(), options)
 	assert.NilError(t, err)
@@ -206,7 +205,7 @@ func TestInitialize(t *testing.T) {
 	fake := linkedProjectFake(t)
 	project := workspace.New(t, validConfig)
 	server := runner.StartStdio(t, serverBinary, dockerHubEnv(fakes.NewDockerHub(t)))
-	client := lspclient.New(t, context.Background(), server.Stream())
+	client := lspclient.New(t, t.Context(), server.Stream())
 
 	result, err := client.Initialize(project.RootURI())
 	assert.NilError(t, err)
@@ -541,7 +540,7 @@ func TestSocketTransport(t *testing.T) {
 	server := runner.StartSocket(t, serverBinary, dockerHubEnv(fakes.NewDockerHub(t)))
 	assert.Check(t, server.Port() != 0, "the server must report the port it bound")
 
-	client := lspclient.New(t, context.Background(), server.Stream())
+	client := lspclient.New(t, t.Context(), server.Stream())
 
 	result, err := client.Initialize(project.RootURI())
 	assert.NilError(t, err)

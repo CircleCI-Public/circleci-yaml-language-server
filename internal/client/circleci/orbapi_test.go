@@ -1,7 +1,6 @@
 package circleci_test
 
 import (
-	"context"
 	"net/http"
 	"testing"
 
@@ -76,7 +75,7 @@ func TestFetchOrbPackage(t *testing.T) {
 		fake := goOrbFake(t)
 		client := circleci.NewV3Client(fake.URL(), "", "", false)
 
-		orb, err := circleci.FetchOrbPackage(context.Background(), client, "circleci/go")
+		orb, err := circleci.FetchOrbPackage(t.Context(), client, "circleci/go")
 		assert.NilError(t, err)
 		assert.Assert(t, orb != nil)
 
@@ -114,7 +113,7 @@ func TestFetchOrbPackage(t *testing.T) {
 		fake := goOrbFake(t)
 		client := circleci.NewV3Client(fake.URL(), "", "", false)
 
-		orb, err := circleci.FetchOrbPackage(context.Background(), client, "circleci/nope")
+		orb, err := circleci.FetchOrbPackage(t.Context(), client, "circleci/nope")
 		assert.Check(t, cmp.ErrorIs(err, circleci.ErrNotFound))
 		assert.Check(t, cmp.Nil(orb))
 	})
@@ -125,7 +124,7 @@ func TestFetchOrbPackage(t *testing.T) {
 
 		client := circleci.NewV3Client(fake.URL(), "", "", false)
 
-		_, err := circleci.FetchOrbPackage(context.Background(), client, "circleci/go")
+		_, err := circleci.FetchOrbPackage(t.Context(), client, "circleci/go")
 		assert.Assert(t, err != nil)
 
 		isNotFound := circleci.IsNotFound(err)
@@ -139,7 +138,7 @@ func TestFetchOrbPackage(t *testing.T) {
 
 		client := circleci.NewV3Client(fake.URL(), "", "", false)
 
-		orb, err := circleci.FetchOrbPackage(context.Background(), client, "acme/secret")
+		orb, err := circleci.FetchOrbPackage(t.Context(), client, "acme/secret")
 		assert.NilError(t, err)
 		assert.Assert(t, orb != nil)
 
@@ -154,7 +153,7 @@ func TestFetchOrbPackage(t *testing.T) {
 
 		client := circleci.NewV3Client(fake.URL(), "", "", false)
 
-		orb, err := circleci.FetchOrbPackage(context.Background(), client, "acme/empty")
+		orb, err := circleci.FetchOrbPackage(t.Context(), client, "acme/empty")
 		assert.NilError(t, err)
 		assert.Assert(t, orb != nil)
 		assert.Check(t, cmp.Len(orb.Versions, 0))
@@ -180,7 +179,7 @@ func TestResolveOrbRef(t *testing.T) {
 			{"a development tag", "circleci/go@dev:alpha", "dev:alpha"},
 		} {
 			t.Run(testCase.name, func(t *testing.T) {
-				resolved, err := circleci.ResolveOrbRef(context.Background(), client, testCase.ref, "")
+				resolved, err := circleci.ResolveOrbRef(t.Context(), client, testCase.ref, "")
 				assert.NilError(t, err)
 				assert.Assert(t, resolved != nil)
 
@@ -194,7 +193,7 @@ func TestResolveOrbRef(t *testing.T) {
 		fake := goOrbFake(t)
 		client := circleci.NewV3Client(fake.URL(), "", "", false)
 
-		resolved, err := circleci.ResolveOrbRef(context.Background(), client, "circleci/go@9.9.9", "")
+		resolved, err := circleci.ResolveOrbRef(t.Context(), client, "circleci/go@9.9.9", "")
 		assert.Check(t, cmp.ErrorIs(err, circleci.ErrNotFound))
 		assert.Check(t, cmp.Nil(resolved))
 	})
@@ -203,7 +202,7 @@ func TestResolveOrbRef(t *testing.T) {
 		fake := goOrbFake(t)
 		client := circleci.NewV3Client(fake.URL(), "", "", false)
 
-		_, err := circleci.ResolveOrbRef(context.Background(), client, "circleci/nope@1.0.0", "")
+		_, err := circleci.ResolveOrbRef(t.Context(), client, "circleci/nope@1.0.0", "")
 		assert.Check(t, cmp.ErrorIs(err, circleci.ErrNotFound))
 	})
 
@@ -213,7 +212,7 @@ func TestResolveOrbRef(t *testing.T) {
 		fake := goOrbFake(t)
 		client := circleci.NewV3Client(fake.URL(), "", "", false)
 
-		resolved, err := circleci.ResolveOrbRef(context.Background(), client, "circleci/go@1.7.1", "orb-go")
+		resolved, err := circleci.ResolveOrbRef(t.Context(), client, "circleci/go@1.7.1", "orb-go")
 		assert.NilError(t, err)
 		assert.Assert(t, resolved != nil)
 		assert.Check(t, cmp.Equal(resolved.Version, "1.7.1"))
@@ -230,7 +229,7 @@ func TestResolveOrbRef(t *testing.T) {
 		fake := goOrbFake(t)
 		client := circleci.NewV3Client(fake.URL(), "", "", false)
 
-		_, err := circleci.ResolveOrbRef(context.Background(), client, "circleci/go@1.7.1", "")
+		_, err := circleci.ResolveOrbRef(t.Context(), client, "circleci/go@1.7.1", "")
 		assert.NilError(t, err)
 
 		requests := fake.Requests()
@@ -246,7 +245,7 @@ func TestFetchOrbSource(t *testing.T) {
 		fake := goOrbFake(t)
 		client := circleci.NewV3Client(fake.URL(), "", "", false)
 
-		source, err := circleci.FetchOrbSource(context.Background(), client, "ver-1-7-1")
+		source, err := circleci.FetchOrbSource(t.Context(), client, "ver-1-7-1")
 		assert.NilError(t, err)
 		assert.Check(t, cmp.Equal(source, "# source of 1.7.1\n"))
 	})
@@ -255,7 +254,7 @@ func TestFetchOrbSource(t *testing.T) {
 		fake := goOrbFake(t)
 		client := circleci.NewV3Client(fake.URL(), "", "", false)
 
-		_, err := circleci.FetchOrbSource(context.Background(), client, "ver-nope")
+		_, err := circleci.FetchOrbSource(t.Context(), client, "ver-nope")
 		assert.Check(t, cmp.ErrorIs(err, circleci.ErrNotFound))
 	})
 
@@ -265,7 +264,7 @@ func TestFetchOrbSource(t *testing.T) {
 
 		client := circleci.NewV3Client(fake.URL(), "", "", false)
 
-		_, err := circleci.FetchOrbSource(context.Background(), client, "ver-1-7-1")
+		_, err := circleci.FetchOrbSource(t.Context(), client, "ver-1-7-1")
 		assert.Assert(t, err != nil)
 
 		isNotFound := circleci.IsNotFound(err)
@@ -278,7 +277,7 @@ func TestFetchNamespace(t *testing.T) {
 		fake := goOrbFake(t)
 		client := circleci.NewV3Client(fake.URL(), "", "", false)
 
-		namespace, err := circleci.FetchNamespace(context.Background(), client, "circleci")
+		namespace, err := circleci.FetchNamespace(t.Context(), client, "circleci")
 		assert.NilError(t, err)
 		assert.Assert(t, namespace != nil)
 
@@ -290,7 +289,7 @@ func TestFetchNamespace(t *testing.T) {
 		fake := goOrbFake(t)
 		client := circleci.NewV3Client(fake.URL(), "", "", false)
 
-		namespace, err := circleci.FetchNamespace(context.Background(), client, "nope")
+		namespace, err := circleci.FetchNamespace(t.Context(), client, "nope")
 		assert.Check(t, cmp.ErrorIs(err, circleci.ErrNotFound))
 		assert.Check(t, cmp.Nil(namespace))
 	})
@@ -303,7 +302,7 @@ func TestFetchNamespace(t *testing.T) {
 
 		client := circleci.NewV3Client(fake.URL(), "", "", false)
 
-		_, err := circleci.FetchNamespace(context.Background(), client, "circleci")
+		_, err := circleci.FetchNamespace(t.Context(), client, "circleci")
 		assert.Assert(t, err != nil)
 
 		isNotFound := circleci.IsNotFound(err)
@@ -325,7 +324,7 @@ func TestListNamespaceOrbs(t *testing.T) {
 
 		client := circleci.NewV3Client(fake.URL(), "", "", false)
 
-		orbs, err := circleci.ListNamespaceOrbs(context.Background(), client, "ns-circleci")
+		orbs, err := circleci.ListNamespaceOrbs(t.Context(), client, "ns-circleci")
 		assert.NilError(t, err)
 
 		names := make([]string, 0, len(orbs))
@@ -345,7 +344,7 @@ func TestListNamespaceOrbs(t *testing.T) {
 
 		client := circleci.NewV3Client(fake.URL(), "", "", false)
 
-		orbs, err := circleci.ListNamespaceOrbs(context.Background(), client, "ns-circleci")
+		orbs, err := circleci.ListNamespaceOrbs(t.Context(), client, "ns-circleci")
 		assert.NilError(t, err)
 
 		assert.Check(t, cmp.Len(orbs, 5))
@@ -360,7 +359,7 @@ func TestListNamespaceOrbs(t *testing.T) {
 
 		client := circleci.NewV3Client(fake.URL(), "", "", false)
 
-		_, err := circleci.ListNamespaceOrbs(context.Background(), client, "ns-circleci")
+		_, err := circleci.ListNamespaceOrbs(t.Context(), client, "ns-circleci")
 		assert.NilError(t, err)
 
 		requests := fake.Requests()
@@ -375,7 +374,7 @@ func TestListNamespaceOrbs(t *testing.T) {
 		fake := fakes.NewCircleCI(t)
 		client := circleci.NewV3Client(fake.URL(), "", "", false)
 
-		orbs, err := circleci.ListNamespaceOrbs(context.Background(), client, "ns-nope")
+		orbs, err := circleci.ListNamespaceOrbs(t.Context(), client, "ns-nope")
 		assert.NilError(t, err)
 		assert.Check(t, cmp.Len(orbs, 0))
 	})

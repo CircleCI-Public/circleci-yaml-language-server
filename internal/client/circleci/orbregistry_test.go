@@ -1,7 +1,6 @@
 package circleci_test
 
 import (
-	"context"
 	"net/http"
 	"testing"
 
@@ -59,7 +58,7 @@ func TestOrbRegistryAcrossBackends(t *testing.T) {
 			t.Run("fetches an orb and its versions", func(t *testing.T) {
 				registry, _ := registryFor(t, backend.configure)
 
-				orb, err := registry.FetchOrb(context.Background(), "circleci/go")
+				orb, err := registry.FetchOrb(t.Context(), "circleci/go")
 				assert.NilError(t, err)
 				assert.Assert(t, orb != nil)
 
@@ -77,7 +76,7 @@ func TestOrbRegistryAcrossBackends(t *testing.T) {
 			t.Run("reports an unknown orb as not found", func(t *testing.T) {
 				registry, _ := registryFor(t, backend.configure)
 
-				orb, err := registry.FetchOrb(context.Background(), "circleci/nope")
+				orb, err := registry.FetchOrb(t.Context(), "circleci/nope")
 				assert.Check(t, cmp.ErrorIs(err, circleci.ErrNotFound))
 				assert.Check(t, cmp.Nil(orb))
 			})
@@ -97,7 +96,7 @@ func TestOrbRegistryAcrossBackends(t *testing.T) {
 					{"a development tag", "circleci/go@dev:alpha", "dev:alpha"},
 				} {
 					t.Run(testCase.name, func(t *testing.T) {
-						resolved, err := registry.ResolveVersion(context.Background(), testCase.ref)
+						resolved, err := registry.ResolveVersion(t.Context(), testCase.ref)
 						assert.NilError(t, err)
 						assert.Assert(t, resolved != nil)
 
@@ -111,7 +110,7 @@ func TestOrbRegistryAcrossBackends(t *testing.T) {
 			t.Run("carries sibling versions alongside a resolved version", func(t *testing.T) {
 				registry, _ := registryFor(t, backend.configure)
 
-				resolved, err := registry.ResolveVersion(context.Background(), "circleci/go@1.7.1")
+				resolved, err := registry.ResolveVersion(t.Context(), "circleci/go@1.7.1")
 				assert.NilError(t, err)
 				assert.Assert(t, resolved != nil)
 
@@ -124,7 +123,7 @@ func TestOrbRegistryAcrossBackends(t *testing.T) {
 			t.Run("reports an unresolvable reference as not found", func(t *testing.T) {
 				registry, _ := registryFor(t, backend.configure)
 
-				resolved, err := registry.ResolveVersion(context.Background(), "circleci/go@9.9.9")
+				resolved, err := registry.ResolveVersion(t.Context(), "circleci/go@9.9.9")
 				assert.Check(t, cmp.ErrorIs(err, circleci.ErrNotFound))
 				assert.Check(t, cmp.Nil(resolved))
 			})
@@ -132,7 +131,7 @@ func TestOrbRegistryAcrossBackends(t *testing.T) {
 			t.Run("finds a namespace", func(t *testing.T) {
 				registry, _ := registryFor(t, backend.configure)
 
-				namespace, err := registry.FetchNamespace(context.Background(), "circleci")
+				namespace, err := registry.FetchNamespace(t.Context(), "circleci")
 				assert.NilError(t, err)
 				assert.Assert(t, namespace != nil)
 
@@ -143,7 +142,7 @@ func TestOrbRegistryAcrossBackends(t *testing.T) {
 			t.Run("reports an unknown namespace as not found", func(t *testing.T) {
 				registry, _ := registryFor(t, backend.configure)
 
-				namespace, err := registry.FetchNamespace(context.Background(), "nope")
+				namespace, err := registry.FetchNamespace(t.Context(), "nope")
 				assert.Check(t, cmp.ErrorIs(err, circleci.ErrNotFound))
 				assert.Check(t, cmp.Nil(namespace))
 			})
@@ -160,7 +159,7 @@ func TestOrbRegistryAcrossBackends(t *testing.T) {
 					fake.AddOrbPackage("orb-other", "ns-other", "other", "thing", false, true)
 				})
 
-				orbs, err := registry.ListNamespaceOrbs(context.Background(), "circleci")
+				orbs, err := registry.ListNamespaceOrbs(t.Context(), "circleci")
 				assert.NilError(t, err)
 
 				names := make([]string, 0, len(orbs))
@@ -173,7 +172,7 @@ func TestOrbRegistryAcrossBackends(t *testing.T) {
 			t.Run("reports an unknown namespace when listing orbs", func(t *testing.T) {
 				registry, _ := registryFor(t, backend.configure)
 
-				_, err := registry.ListNamespaceOrbs(context.Background(), "nope")
+				_, err := registry.ListNamespaceOrbs(t.Context(), "nope")
 				assert.Check(t, cmp.ErrorIs(err, circleci.ErrNotFound))
 			})
 		})
@@ -184,7 +183,7 @@ func TestOrbRegistryBackendSelection(t *testing.T) {
 	t.Run("uses V3 when the orb routes answer", func(t *testing.T) {
 		registry, fake := registryFor(t, nil)
 
-		_, err := registry.FetchOrb(context.Background(), "circleci/go")
+		_, err := registry.FetchOrb(t.Context(), "circleci/go")
 		assert.NilError(t, err)
 
 		graphQLRequests := fake.RequestCount(http.MethodPost, "/graphql-unstable")
@@ -194,7 +193,7 @@ func TestOrbRegistryBackendSelection(t *testing.T) {
 	t.Run("falls back to GraphQL when the orb routes are absent", func(t *testing.T) {
 		registry, fake := registryFor(t, serverBackend)
 
-		orb, err := registry.FetchOrb(context.Background(), "circleci/go")
+		orb, err := registry.FetchOrb(t.Context(), "circleci/go")
 		assert.NilError(t, err)
 		assert.Assert(t, orb != nil)
 		assert.Check(t, cmp.Equal(orb.Name, "circleci/go"))
@@ -210,7 +209,7 @@ func TestOrbRegistryBackendSelection(t *testing.T) {
 	t.Run("does not fall back merely because an orb is missing", func(t *testing.T) {
 		registry, fake := registryFor(t, nil)
 
-		_, err := registry.FetchOrb(context.Background(), "circleci/nope")
+		_, err := registry.FetchOrb(t.Context(), "circleci/nope")
 		assert.Check(t, cmp.ErrorIs(err, circleci.ErrNotFound))
 
 		graphQLRequests := fake.RequestCount(http.MethodPost, "/graphql-unstable")
@@ -221,7 +220,7 @@ func TestOrbRegistryBackendSelection(t *testing.T) {
 	t.Run("does not fall back merely because a namespace is missing", func(t *testing.T) {
 		registry, fake := registryFor(t, nil)
 
-		_, err := registry.FetchNamespace(context.Background(), "nope")
+		_, err := registry.FetchNamespace(t.Context(), "nope")
 		assert.Check(t, cmp.ErrorIs(err, circleci.ErrNotFound))
 
 		graphQLRequests := fake.RequestCount(http.MethodPost, "/graphql-unstable")
@@ -232,7 +231,7 @@ func TestOrbRegistryBackendSelection(t *testing.T) {
 		registry, fake := registryFor(t, serverBackend)
 
 		for range 3 {
-			_, err := registry.FetchOrb(context.Background(), "circleci/go")
+			_, err := registry.FetchOrb(t.Context(), "circleci/go")
 			assert.NilError(t, err)
 		}
 
@@ -253,7 +252,7 @@ func TestOrbRegistryBackendSelection(t *testing.T) {
 
 		for range 3 {
 			registry := circleci.NewOrbRegistry(fake.URL(), "token", "", false)
-			_, err := registry.FetchOrb(context.Background(), "circleci/go")
+			_, err := registry.FetchOrb(t.Context(), "circleci/go")
 			assert.NilError(t, err)
 		}
 
@@ -269,7 +268,7 @@ func TestOrbRegistryBackendSelection(t *testing.T) {
 		})
 
 		for range 2 {
-			_, err := registry.FetchOrb(context.Background(), "circleci/go")
+			_, err := registry.FetchOrb(t.Context(), "circleci/go")
 			assert.Assert(t, err != nil)
 		}
 
@@ -282,7 +281,7 @@ func TestOrbRegistryGraphQLDetails(t *testing.T) {
 	t.Run("sends the token unprefixed", func(t *testing.T) {
 		registry, fake := registryFor(t, serverBackend)
 
-		_, err := registry.FetchOrb(context.Background(), "circleci/go")
+		_, err := registry.FetchOrb(t.Context(), "circleci/go")
 		assert.NilError(t, err)
 
 		var graphQL *fakes.Request
@@ -310,7 +309,7 @@ func TestOrbRegistryGraphQLDetails(t *testing.T) {
 
 		registry := circleci.NewOrbRegistry(fake.URL(), "", "", false)
 
-		orb, err := registry.FetchOrb(context.Background(), "circleci/go")
+		orb, err := registry.FetchOrb(t.Context(), "circleci/go")
 		assert.NilError(t, err)
 		assert.Assert(t, orb != nil)
 
@@ -330,7 +329,7 @@ func TestOrbRegistryGraphQLDetails(t *testing.T) {
 
 		registry := circleci.NewOrbRegistry(fake.URL(), "the-real-token", "", false)
 
-		orb, err := registry.FetchOrb(context.Background(), "circleci/go")
+		orb, err := registry.FetchOrb(t.Context(), "circleci/go")
 		assert.NilError(t, err)
 		assert.Assert(t, orb != nil)
 	})
@@ -346,7 +345,7 @@ func TestOrbRegistryGraphQLDetails(t *testing.T) {
 
 		registry := circleci.NewOrbRegistry(fake.URL(), "wrong-token", "", false)
 
-		_, err := registry.FetchOrb(context.Background(), "circleci/go")
+		_, err := registry.FetchOrb(t.Context(), "circleci/go")
 		assert.Assert(t, err != nil)
 
 		isNotFound := circleci.IsNotFound(err)
@@ -361,7 +360,7 @@ func TestOrbRegistryGraphQLDetails(t *testing.T) {
 			fake.SetNamespaceHasMoreOrbs()
 		})
 
-		orbs, err := registry.ListNamespaceOrbs(context.Background(), "circleci")
+		orbs, err := registry.ListNamespaceOrbs(t.Context(), "circleci")
 		assert.NilError(t, err)
 
 		names := make([]string, 0, len(orbs))
@@ -377,7 +376,7 @@ func TestOrbRegistryGraphQLDetails(t *testing.T) {
 			fake.SetStatus("POST /graphql-unstable", http.StatusInternalServerError)
 		})
 
-		_, err := registry.FetchOrb(context.Background(), "circleci/go")
+		_, err := registry.FetchOrb(t.Context(), "circleci/go")
 		assert.Assert(t, err != nil)
 
 		isNotFound := circleci.IsNotFound(err)

@@ -1,7 +1,6 @@
 package methods
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
@@ -46,8 +45,8 @@ func TestDefinition(t *testing.T) {
 
 	definitionWith := func(t *testing.T, capabilities protocol.ClientCapabilities, pos protocol.Position) (protocol.DefinitionResult, uri.URI) {
 		t.Helper()
-		methods := New(context.Background(), nil, cache.New(), session.Settings{}, "")
-		_, err := methods.Initialize(context.Background(), &protocol.InitializeParams{Capabilities: capabilities})
+		methods := New(t.Context(), nil, cache.New(), session.Settings{}, "")
+		_, err := methods.Initialize(t.Context(), &protocol.InitializeParams{Capabilities: capabilities})
 		assert.NilError(t, err)
 
 		docURI := uri.File(filepath.Join(t.TempDir(), ".circleci", "config.yml"))
@@ -55,7 +54,7 @@ func TestDefinition(t *testing.T) {
 			TextDocument: protocol.TextDocumentItem{URI: docURI, Text: definitionConfig},
 		})
 
-		result, err := methods.Definition(context.Background(), &protocol.DefinitionParams{
+		result, err := methods.Definition(t.Context(), &protocol.DefinitionParams{
 			TextDocumentPositionParams: protocol.TextDocumentPositionParams{
 				TextDocument: protocol.TextDocumentIdentifier{URI: docURI},
 				Position:     pos,
