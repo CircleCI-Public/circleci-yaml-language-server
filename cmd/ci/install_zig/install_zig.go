@@ -20,9 +20,11 @@ import (
 	"math/rand/v2"
 	"net/http"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/ulikunitz/xz"
@@ -56,7 +58,12 @@ func main() {
 	dir := flag.String("dir", filepath.Join("bin", "zig"), "directory to cache Zig in")
 	flag.Parse()
 
-	zig, err := install(*dir, runtime.GOOS, runtime.GOARCH)
+	// An interrupt ends the download and lets install return, so that the
+	// partial download it was writing into dir is removed rather than left
+	// behind in the cache.
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	zig, err := install(ctx, *dir, runtime.GOOS, runtime.GOARCH)
+	stop()
 	if err != nil {
 		_, _ = fmt.Fprintln(os.Stderr, "install_zig:", err)
 		os.Exit(1)
@@ -66,7 +73,7 @@ func main() {
 	fmt.Println(filepath.ToSlash(zig))
 }
 
-func install(dir, goos, goarch string) (string, error) {
+func install(ctx context.Context, dir, goos, goarch string) (string, error) {
 	host, err := zigHost(goos, goarch)
 	if err != nil {
 		return "", err
@@ -92,7 +99,6 @@ func install(dir, goos, goarch string) (string, error) {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return "", err
 	}
-	ctx := context.Background()
 	archive, err := fetch(ctx, dir, name+ext, checksums[host], sources(ctx, mirrorsURL))
 	if err != nil {
 		return "", err

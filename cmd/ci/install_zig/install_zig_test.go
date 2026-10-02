@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"net/http"
@@ -76,7 +75,7 @@ func TestFetch(t *testing.T) {
 		wrong := serving(t, []byte("something else"))
 		right := serving(t, archive)
 
-		path, err := fetch(context.Background(), dir, file, want, []string{wrong, right})
+		path, err := fetch(t.Context(), dir, file, want, []string{wrong, right})
 		assert.NilError(t, err)
 
 		got, err := os.ReadFile(path)
@@ -88,7 +87,7 @@ func TestFetch(t *testing.T) {
 		dir := t.TempDir()
 		wrong := serving(t, []byte("something else"))
 
-		_, err := fetch(context.Background(), dir, file, want, []string{wrong})
+		_, err := fetch(t.Context(), dir, file, want, []string{wrong})
 		assert.Check(t, cmp.ErrorContains(err, "no source served "+file))
 
 		leftover, err := os.ReadDir(dir)

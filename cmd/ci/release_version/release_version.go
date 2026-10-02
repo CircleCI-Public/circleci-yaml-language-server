@@ -14,8 +14,10 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/signal"
 	"regexp"
 	"strconv"
+	"syscall"
 
 	"github.com/Masterminds/semver/v3"
 
@@ -35,13 +37,16 @@ func main() {
 	manifest := flag.String("manifest", ".circleci/release/release-please-manifest.json", "release-please manifest")
 	flag.Parse()
 
-	if err := run(*api, *repo, *manifest); err != nil {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	err := run(ctx, *api, *repo, *manifest)
+	stop()
+	if err != nil {
 		_, _ = fmt.Fprintln(os.Stderr, "release_version:", err)
 		os.Exit(1)
 	}
 }
 
-func run(api, repo, manifest string) error {
+func run(ctx context.Context, api, repo, manifest string) error {
 	token := os.Getenv("GITHUB_TOKEN")
 	if token == "" {
 		return fmt.Errorf("GITHUB_TOKEN is not set, and without it drafts aren't listed")
@@ -51,7 +56,7 @@ func run(api, repo, manifest string) error {
 		return err
 	}
 	cl := httpcl.New(httpcl.Config{BaseURL: api, AuthToken: token})
-	releases, err := listReleases(context.Background(), cl, repo)
+	releases, err := listReleases(ctx, cl, repo)
 	if err != nil {
 		return err
 	}

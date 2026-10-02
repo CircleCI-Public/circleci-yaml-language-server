@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -101,14 +100,14 @@ func TestListReleases(t *testing.T) {
 
 	t.Run("Every page", func(t *testing.T) {
 		cl := httpcl.New(httpcl.Config{BaseURL: server.URL, AuthToken: "token"})
-		got, err := listReleases(context.Background(), cl, "owner/repo")
+		got, err := listReleases(t.Context(), cl, "owner/repo")
 		assert.NilError(t, err)
 		assert.Check(t, cmp.DeepEqual(got, append(pages[0], pages[1]...)))
 	})
 
 	t.Run("An error response", func(t *testing.T) {
 		cl := httpcl.New(httpcl.Config{BaseURL: server.URL, AuthToken: "token"})
-		_, err := listReleases(context.Background(), cl, "owner/other")
+		_, err := listReleases(t.Context(), cl, "owner/other")
 		assert.Check(t, cmp.ErrorContains(err, "404"))
 	})
 }
