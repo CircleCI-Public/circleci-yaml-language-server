@@ -119,7 +119,7 @@ func TestReleaseQueries(t *testing.T) {
 
 	t.Run("a query does not hold up the requests after it", func(t *testing.T) {
 		unblock := make(chan struct{})
-		client := serve(t, releaseQueries(func(_ context.Context, req *jsonrpc2.Request) (any, error) {
+		client := serve(t, releaseQueries(t.Context(), func(_ context.Context, req *jsonrpc2.Request) (any, error) {
 			if req.Method() == protocol.MethodTextDocumentHover {
 				<-unblock
 			}
@@ -143,7 +143,7 @@ func TestReleaseQueries(t *testing.T) {
 
 	t.Run("anything else finishes before the next message starts", func(t *testing.T) {
 		var edited atomic.Bool
-		client := serve(t, releaseQueries(func(_ context.Context, req *jsonrpc2.Request) (any, error) {
+		client := serve(t, releaseQueries(t.Context(), func(_ context.Context, req *jsonrpc2.Request) (any, error) {
 			switch req.Method() {
 			case protocol.MethodTextDocumentDidChange:
 				time.Sleep(50 * time.Millisecond)
@@ -165,7 +165,7 @@ func TestReleaseQueries(t *testing.T) {
 		started := make(chan struct{})
 		cancelled := make(chan struct{})
 		ended := make(chan struct{})
-		client := serve(t, releaseQueries(func(ctx context.Context, req *jsonrpc2.Request) (any, error) {
+		client := serve(t, releaseQueries(t.Context(), func(ctx context.Context, req *jsonrpc2.Request) (any, error) {
 			close(started)
 			select {
 			case <-ctx.Done():
@@ -196,7 +196,7 @@ func TestReleaseQueries(t *testing.T) {
 	})
 
 	t.Run("ignores a cancel for a request that is not running", func(t *testing.T) {
-		client := serve(t, releaseQueries(func(context.Context, *jsonrpc2.Request) (any, error) {
+		client := serve(t, releaseQueries(t.Context(), func(context.Context, *jsonrpc2.Request) (any, error) {
 			return "ok", nil
 		}))
 
