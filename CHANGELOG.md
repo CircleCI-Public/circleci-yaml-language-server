@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## 0.49.1 (2026-10-02)
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+* refactor: take a context in the cache, its fetches, and the API clients by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/762
+* refactor: pass a context through the parser, validation and services by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/764
+* refactor: hand each LSP request's context to the services it calls by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/765
+* fix: run requests handled in order under the session's context by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/767
+* test: run tests under t.Context() rather than context.Background() by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/766
+* fix: stop the CI tools' requests when they are interrupted by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/768
+
+
+**Full Changelog**: https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.49.0...0.49.1
+
 ## 0.49.0 (2026-10-01)
 
 <!-- Release notes generated using configuration in .github/release.yml at main -->
