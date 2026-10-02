@@ -1,6 +1,7 @@
 package languageservice
 
 import (
+	"context"
 	"net/url"
 	"regexp"
 	"slices"
@@ -20,9 +21,9 @@ import (
 // registry, or to its source when it is declared by URL, and each Docker Hub
 // image to its page there.
 func DocumentLinks(
-	params protocol.DocumentLinkParams, cache *cache.Cache, context *session.Settings,
+	ctx context.Context, params protocol.DocumentLinkParams, cache *cache.Cache, context *session.Settings,
 ) ([]protocol.DocumentLink, error) {
-	doc, err := yamlparser.ParseFromUriWithCache(params.TextDocument.URI, cache, context)
+	doc, err := yamlparser.ParseFromUriWithCache(ctx, params.TextDocument.URI, cache, context)
 	if err != nil {
 		return nil, err
 	}

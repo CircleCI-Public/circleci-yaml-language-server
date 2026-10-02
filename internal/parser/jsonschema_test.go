@@ -39,7 +39,7 @@ testFinal:
 	err := yaml.Unmarshal(content, m)
 
 	context := testHelpers.DefaultSettings()
-	yamlDocument, _ := ParseFromContent(content, context, uri.File(""), protocol.Position{})
+	yamlDocument, _ := ParseFromContent(t.Context(), content, context, uri.File(""), protocol.Position{})
 
 	actualDiagnostics, err := handleYAMLErrors(err.Error(), content, yamlDocument.RootNode)
 
@@ -61,7 +61,7 @@ test:
 	err := yaml.Unmarshal(content, m)
 
 	context := testHelpers.DefaultSettings()
-	yamlDocument, _ := ParseFromContent(content, context, uri.File(""), protocol.Position{})
+	yamlDocument, _ := ParseFromContent(t.Context(), content, context, uri.File(""), protocol.Position{})
 
 	diagnostics, err := handleYAMLErrors(err.Error(), content, yamlDocument.RootNode)
 
@@ -290,7 +290,7 @@ jobs:
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			context := testHelpers.DefaultSettings()
-			yamlDocument, _ := ParseFromContent([]byte(tc.yaml), context, uri.File(""), protocol.Position{})
+			yamlDocument, _ := ParseFromContent(t.Context(), []byte(tc.yaml), context, uri.File(""), protocol.Position{})
 
 			if tc.expectError {
 				// For error cases, also run JSON schema validation
@@ -347,7 +347,7 @@ func yamlErrorDiagnostics(t *testing.T, content string) []protocol.Diagnostic {
 	yamlErr := yaml.Unmarshal([]byte(content), &m)
 	assert.Assert(t, yamlErr != nil, "content must not be valid YAML")
 
-	yamlDocument, err := ParseFromContent([]byte(content), testHelpers.DefaultSettings(), uri.File(""), protocol.Position{})
+	yamlDocument, err := ParseFromContent(t.Context(), []byte(content), testHelpers.DefaultSettings(), uri.File(""), protocol.Position{})
 	assert.NilError(t, err)
 	t.Cleanup(yamlDocument.Close)
 
@@ -391,7 +391,7 @@ func Test_HandleYamlError_UnknownAnchorWhereTheTreeHasNoNode(t *testing.T) {
 func schemaDiagnostics(t *testing.T, content string) []protocol.Diagnostic {
 	t.Helper()
 
-	yamlDocument, err := ParseFromContent([]byte(content), testHelpers.DefaultSettings(), uri.File(""), protocol.Position{})
+	yamlDocument, err := ParseFromContent(t.Context(), []byte(content), testHelpers.DefaultSettings(), uri.File(""), protocol.Position{})
 	assert.NilError(t, err)
 	t.Cleanup(yamlDocument.Close)
 
@@ -797,7 +797,7 @@ func Test_HandleYAMLErrors_CollectionKey(t *testing.T) {
 	assert.Assert(t, yamlErr != nil)
 
 	context := testHelpers.DefaultSettings()
-	yamlDocument, _ := ParseFromContent(content, context, uri.File(""), protocol.Position{})
+	yamlDocument, _ := ParseFromContent(t.Context(), content, context, uri.File(""), protocol.Position{})
 
 	diagnostics, err := handleYAMLErrors(yamlErr.Error(), content, yamlDocument.RootNode)
 	assert.NilError(t, err)

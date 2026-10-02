@@ -25,15 +25,15 @@ type ValidateTestCase struct {
 	Diagnostics []protocol.Diagnostic
 }
 
-func CreateValidateFromYAML(yaml string) Validate {
-	return createValidate(yaml, testHelpers.DefaultSettings())
+func CreateValidateFromYAML(t *testing.T, yaml string) Validate {
+	return createValidate(t, yaml, testHelpers.DefaultSettings())
 }
 
 // createValidate validates yaml against the API that context names, signed
 // out.
-func createValidate(yaml string, context *session.Settings) Validate {
+func createValidate(t *testing.T, yaml string, context *session.Settings) Validate {
 	context.Api.Token = ""
-	doc, _ := parser.ParseFromContent([]byte(yaml), context, uri.File(""), protocol.Position{})
+	doc, _ := parser.ParseFromContent(t.Context(), []byte(yaml), context, uri.File(""), protocol.Position{})
 	val := Validate{
 		APIs: ValidateAPIs{
 			DockerHub: DockerHubMock{},
@@ -69,7 +69,7 @@ func checkYamlErrors(t *testing.T, settings func() *session.Settings, testCases 
 			if strings.Contains(tt.YamlContent, "\t") {
 				t.Fatal("Test YAML content contains tab characters -- YAML does not allow tabs for indentation. Use spaces instead.")
 			}
-			val := createValidate(tt.YamlContent, settings())
+			val := createValidate(t, tt.YamlContent, settings())
 			val.Validate()
 
 			diags := *val.Diagnostics

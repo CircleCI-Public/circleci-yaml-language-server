@@ -1,6 +1,7 @@
 package languageservice
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -14,8 +15,8 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/session"
 )
 
-func References(params protocol.ReferenceParams, cache *cache.Cache, context *session.Settings) ([]protocol.Location, error) {
-	yamlDocument, err := yamlparser.ParseFromUriWithCache(params.TextDocument.URI, cache, context)
+func References(ctx context.Context, params protocol.ReferenceParams, cache *cache.Cache, context *session.Settings) ([]protocol.Location, error) {
+	yamlDocument, err := yamlparser.ParseFromUriWithCache(ctx, params.TextDocument.URI, cache, context)
 
 	if err != nil {
 		return nil, err

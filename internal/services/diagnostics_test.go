@@ -120,7 +120,7 @@ func TestFindErrors(t *testing.T) {
 			context := testHelpers.SettingsForHost(api.URL())
 			context.Api.Token = ""
 			fileUri := uri.File(tt.args.filePath)
-			diagnostics, err := DiagnosticFile(fileUri, c, context, "")
+			diagnostics, err := DiagnosticFile(t.Context(), fileUri, c, context, "")
 
 			if err != nil {
 				t.Error("findErrors()", err)
@@ -170,7 +170,7 @@ func TestFindErrorsWithEmbeddedSchema(t *testing.T) {
 			fileUri := uri.File(tt.filePath)
 
 			// Pass empty schemaLocation to exercise the embedded schema fallback
-			diagnostics, err := DiagnosticFile(fileUri, c, context, "")
+			diagnostics, err := DiagnosticFile(t.Context(), fileUri, c, context, "")
 
 			if err != nil {
 				t.Fatalf("DiagnosticFile() with embedded schema returned error: %v", err)
@@ -224,12 +224,12 @@ func TestOverrideSchemaMatchesEmbeddedSchema(t *testing.T) {
 			context.Api.Token = ""
 			fileUri := uri.File(tt.filePath)
 
-			fileDiags, err := DiagnosticFile(fileUri, c, context, schemaPath)
+			fileDiags, err := DiagnosticFile(t.Context(), fileUri, c, context, schemaPath)
 			if err != nil {
 				t.Fatalf("DiagnosticFile() with file schema returned error: %v", err)
 			}
 
-			embeddedDiags, err := DiagnosticFile(fileUri, c, context, "")
+			embeddedDiags, err := DiagnosticFile(t.Context(), fileUri, c, context, "")
 			if err != nil {
 				t.Fatalf("DiagnosticFile() with embedded schema returned error: %v", err)
 			}
@@ -488,7 +488,7 @@ func TestStepWhenRejectsInvalidValue(t *testing.T) {
 	context := testHelpers.DefaultSettings()
 	context.Api.Token = ""
 
-	diagnostics, err := DiagnosticFile(uri.File(filePath), c, context, "")
+	diagnostics, err := DiagnosticFile(t.Context(), uri.File(filePath), c, context, "")
 	if err != nil {
 		t.Fatalf("DiagnosticFile() returned error: %v", err)
 	}
@@ -518,7 +518,7 @@ func TestFilesThatAreNotPipelineConfig(t *testing.T) {
 		settings := testHelpers.DefaultSettings()
 		settings.Api.Token = ""
 
-		diagnostics, err := DiagnosticFile(fileURI, c, settings, "")
+		diagnostics, err := DiagnosticFile(t.Context(), fileURI, c, settings, "")
 		assert.NilError(t, err)
 		return diagnostics
 	}
@@ -593,7 +593,7 @@ func configMessages(t *testing.T, fake *fakes.CircleCI, content string, severity
 		TextDocument: protocol.TextDocumentItem{URI: fileURI, Text: content},
 	})
 
-	diagnostics, err := DiagnosticFile(fileURI, c, testHelpers.SettingsForHost(fake.URL()), "")
+	diagnostics, err := DiagnosticFile(t.Context(), fileURI, c, testHelpers.SettingsForHost(fake.URL()), "")
 	assert.NilError(t, err)
 
 	messages := []string{}
@@ -1627,7 +1627,7 @@ func TestNoWorkflowsAndNoBuildJob(t *testing.T) {
 			TextDocument: protocol.TextDocumentItem{URI: sourceURI, Text: source},
 		})
 
-		diagnostics, err := DiagnosticFile(sourceURI, c, testHelpers.SettingsForHost(fake.URL()), "")
+		diagnostics, err := DiagnosticFile(t.Context(), sourceURI, c, testHelpers.SettingsForHost(fake.URL()), "")
 		assert.NilError(t, err)
 		messages := []string{}
 		for _, d := range diagnostics {

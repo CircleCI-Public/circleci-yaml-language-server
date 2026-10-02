@@ -210,7 +210,7 @@ orbs:
 
 func GetDocForTests(t *testing.T, content string, orbKey string) parser.YamlDocument {
 	context := testHelpers.DefaultSettings()
-	doc, err := parser.ParseFromContent([]byte(content), context, uri.File(""), protocol.Position{})
+	doc, err := parser.ParseFromContent(t.Context(), []byte(content), context, uri.File(""), protocol.Position{})
 	assert.Check(t, err)
 	orbInfo, err := doc.GetOrbInfoFromName(orbKey, cache.New())
 	assert.Check(t, err)
@@ -252,7 +252,7 @@ workflows:
       - do
       - local/job`
 	context := testHelpers.DefaultSettings()
-	doc, err := parser.ParseFromContent([]byte(content), context, uri.File(""), protocol.Position{})
+	doc, err := parser.ParseFromContent(t.Context(), []byte(content), context, uri.File(""), protocol.Position{})
 	assert.Check(t, err)
 	assert.Check(t, cmp.Len(*doc.Diagnostics, 0))
 	val := validate.Validate{

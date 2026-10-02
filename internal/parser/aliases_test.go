@@ -31,7 +31,7 @@ executors:
     machine:
       image: ubuntu-2404:current
 `
-	doc, err := ParseFromContent([]byte(config), testHelpers.DefaultSettings(), uri.File(""), protocol.Position{})
+	doc, err := ParseFromContent(t.Context(), []byte(config), testHelpers.DefaultSettings(), uri.File(""), protocol.Position{})
 	assert.NilError(t, err)
 	t.Cleanup(doc.Close)
 
@@ -67,7 +67,7 @@ commands:
     steps:
       - checkout
 `
-	doc, err := ParseFromContent([]byte(config), testHelpers.DefaultSettings(), uri.File(""), protocol.Position{})
+	doc, err := ParseFromContent(t.Context(), []byte(config), testHelpers.DefaultSettings(), uri.File(""), protocol.Position{})
 	assert.NilError(t, err)
 	t.Cleanup(doc.Close)
 
@@ -88,7 +88,7 @@ jobs:
     steps:
       - checkout
 `
-	doc, err := ParseFromContent([]byte(config), testHelpers.DefaultSettings(), uri.File(""), protocol.Position{})
+	doc, err := ParseFromContent(t.Context(), []byte(config), testHelpers.DefaultSettings(), uri.File(""), protocol.Position{})
 	assert.NilError(t, err)
 	t.Cleanup(doc.Close)
 

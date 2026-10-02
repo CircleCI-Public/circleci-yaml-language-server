@@ -1,6 +1,7 @@
 package languageservice
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/dockerhub"
@@ -21,8 +22,8 @@ type DiagnosticType struct {
 	yamlDocument parser.YamlDocument
 }
 
-func Diagnostic(params protocol.PublishDiagnosticsParams, cache *cache.Cache, context *session.Settings, schemaLocation string) protocol.PublishDiagnosticsParams {
-	diagnostics, _ := DiagnosticFile(params.URI, cache, context, schemaLocation)
+func Diagnostic(ctx context.Context, params protocol.PublishDiagnosticsParams, cache *cache.Cache, context *session.Settings, schemaLocation string) protocol.PublishDiagnosticsParams {
+	diagnostics, _ := DiagnosticFile(ctx, params.URI, cache, context, schemaLocation)
 
 	diagnosticParams := protocol.PublishDiagnosticsParams{
 		URI:         params.URI,
@@ -32,8 +33,8 @@ func Diagnostic(params protocol.PublishDiagnosticsParams, cache *cache.Cache, co
 	return diagnosticParams
 }
 
-func DiagnosticFile(uri uri.URI, cache *cache.Cache, context *session.Settings, schemaLocation string) ([]protocol.Diagnostic, error) {
-	yamlDocument, err := parser.ParseFromUriWithCache(uri, cache, context)
+func DiagnosticFile(ctx context.Context, uri uri.URI, cache *cache.Cache, context *session.Settings, schemaLocation string) ([]protocol.Diagnostic, error) {
+	yamlDocument, err := parser.ParseFromUriWithCache(ctx, uri, cache, context)
 	yamlDocument.SchemaLocation = schemaLocation
 
 	if err != nil {
@@ -44,8 +45,8 @@ func DiagnosticFile(uri uri.URI, cache *cache.Cache, context *session.Settings, 
 	return DiagnosticYAML(yamlDocument, cache, context)
 }
 
-func DiagnosticString(content string, cache *cache.Cache, context *session.Settings, schemaLocation string) ([]protocol.Diagnostic, error) {
-	yamlDocument, err := parser.ParseFromContent([]byte(content), context, uri.File(""), protocol.Position{})
+func DiagnosticString(ctx context.Context, content string, cache *cache.Cache, context *session.Settings, schemaLocation string) ([]protocol.Diagnostic, error) {
+	yamlDocument, err := parser.ParseFromContent(ctx, []byte(content), context, uri.File(""), protocol.Position{})
 	yamlDocument.SchemaLocation = schemaLocation
 
 	if err != nil {

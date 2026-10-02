@@ -310,7 +310,7 @@ workflows:
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			val := CreateValidateFromYAML(tt.yamlContent)
+			val := CreateValidateFromYAML(t, tt.yamlContent)
 			val.Validate()
 
 			diags := *val.Diagnostics
@@ -2017,7 +2017,7 @@ workflows:
 }
 
 func TestCommandAsWorkflowJob(t *testing.T) {
-	val := CreateValidateFromYAML(`version: 2.1
+	val := CreateValidateFromYAML(t, `version: 2.1
 
 orbs:
   my-orb:
@@ -2050,7 +2050,7 @@ workflows:
 }
 
 func TestOrbJobInvocationParameters(t *testing.T) {
-	val := CreateValidateFromYAML(`version: 2.1
+	val := CreateValidateFromYAML(t, `version: 2.1
 
 orbs:
   my-orb:

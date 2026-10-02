@@ -121,7 +121,7 @@ func (val Validate) validateSingleOrb(orb ast.Orb) {
 // has no way to read. Nothing used from the orb can be checked, so its
 // components are skipped (IsFromUnfetchableOrb).
 func (val Validate) validateURLOrb(orb ast.Orb) {
-	orbInfo, err := parser.GetURLOrbInfo(orb.Url.Name, val.Cache, val.Context)
+	orbInfo, err := parser.GetURLOrbInfo(val.Doc.Ctx, orb.Url.Name, val.Cache, val.Context)
 
 	var reason string
 	switch {

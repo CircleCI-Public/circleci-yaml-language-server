@@ -28,7 +28,7 @@ func TestRename(t *testing.T) {
 		index := strings.Index(config, marker)
 		assert.Assert(t, index >= 0, "no %q in the config", marker)
 
-		edit, err := Rename(protocol.RenameParams{
+		edit, err := Rename(t.Context(), protocol.RenameParams{
 			TextDocumentPositionParams: protocol.TextDocumentPositionParams{
 				TextDocument: protocol.TextDocumentIdentifier{URI: docURI},
 				Position:     position.FromIndex(index, []byte(config)),
@@ -120,7 +120,7 @@ workflows:
 		c := cache.New()
 		c.FileCache.SetFile(cache.File{TextDocument: protocol.TextDocumentItem{URI: docURI, Text: config}})
 
-		placeholder, err := PrepareRename(protocol.PrepareRenameParams{
+		placeholder, err := PrepareRename(t.Context(), protocol.PrepareRenameParams{
 			TextDocumentPositionParams: protocol.TextDocumentPositionParams{
 				TextDocument: protocol.TextDocumentIdentifier{URI: docURI},
 				Position:     protocol.Position{Line: 0, Character: 2},

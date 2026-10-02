@@ -10,7 +10,7 @@ import (
 )
 
 func TestPipelineValueWarnings(t *testing.T) {
-	val := CreateValidateFromYAML(`version: 2.1
+	val := CreateValidateFromYAML(t, `version: 2.1
 
 parameters:
   deploy:

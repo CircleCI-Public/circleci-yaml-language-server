@@ -1,6 +1,7 @@
 package languageservice
 
 import (
+	"context"
 	"fmt"
 	"slices"
 
@@ -26,8 +27,8 @@ var referenceHovers = []func(parser.YamlDocument, *cache.Cache, protocol.Positio
 	hover.PipelineValue,
 }
 
-func Hover(params protocol.HoverParams, cache *cache.Cache, context *session.Settings) (protocol.Hover, error) {
-	doc, err := parser.ParseFromUriWithCache(params.TextDocument.URI, cache, context)
+func Hover(ctx context.Context, params protocol.HoverParams, cache *cache.Cache, context *session.Settings) (protocol.Hover, error) {
+	doc, err := parser.ParseFromUriWithCache(ctx, params.TextDocument.URI, cache, context)
 	if err != nil {
 		return protocol.Hover{}, nil
 	}

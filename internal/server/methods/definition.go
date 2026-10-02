@@ -8,9 +8,9 @@ import (
 	languageservice "github.com/CircleCI-Public/circleci-yaml-language-server/internal/services"
 )
 
-func (methods *Methods) Definition(_ context.Context, params *protocol.DefinitionParams) (protocol.DefinitionResult, error) {
+func (methods *Methods) Definition(ctx context.Context, params *protocol.DefinitionParams) (protocol.DefinitionResult, error) {
 	settings := methods.Settings()
-	res, err := languageservice.Definition(*params, methods.Cache, settings)
+	res, err := languageservice.Definition(ctx, *params, methods.Cache, settings)
 	if err != nil {
 		return nil, err
 	}

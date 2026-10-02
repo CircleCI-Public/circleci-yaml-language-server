@@ -13,7 +13,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/session"
 )
 
-func (methods *Methods) ExecuteCommand(_ context.Context, params *protocol.ExecuteCommandParams) (protocol.LSPAny, error) {
+func (methods *Methods) ExecuteCommand(ctx context.Context, params *protocol.ExecuteCommandParams) (protocol.LSPAny, error) {
 	arguments := params.Arguments
 
 	switch params.Command {
@@ -57,7 +57,7 @@ func (methods *Methods) ExecuteCommand(_ context.Context, params *protocol.Execu
 			return nil, jsonrpc2.NewError(jsonrpc2.InvalidParams, "invalid method parameter: fileURI")
 		}
 
-		parsedFile, err := parser.ParseFromContent([]byte(content), methods.Settings(), uri.File(fileUri), protocol.Position{})
+		parsedFile, err := parser.ParseFromContent(ctx, []byte(content), methods.Settings(), uri.File(fileUri), protocol.Position{})
 		if err != nil {
 			return nil, jsonrpc2.NewError(jsonrpc2.InternalError, "unable to parse file")
 		}
@@ -123,7 +123,7 @@ func (methods *Methods) setToken(token string) {
 	})
 	filesCache := methods.Cache.FileCache.GetFiles()
 	for _, file := range filesCache {
-		go methods.notificationMethods(file.TextDocument)
+		go methods.notificationMethods(methods.Ctx, file.TextDocument)
 	}
 
 	methods.updateProjectsEnvVariables()
@@ -143,7 +143,7 @@ func (methods *Methods) setGitHubToken(token string) {
 	})
 
 	for _, file := range methods.Cache.FileCache.GetFiles() {
-		go methods.notificationMethods(file.TextDocument)
+		go methods.notificationMethods(methods.Ctx, file.TextDocument)
 	}
 }
 
@@ -161,7 +161,7 @@ func (methods *Methods) setHostUrl(hostUrl string) {
 
 	filesCache := methods.Cache.FileCache.GetFiles()
 	for _, file := range filesCache {
-		go methods.notificationMethods(file.TextDocument)
+		go methods.notificationMethods(methods.Ctx, file.TextDocument)
 	}
 
 	methods.updateProjectsEnvVariables()

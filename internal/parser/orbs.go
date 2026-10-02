@@ -36,7 +36,7 @@ func (doc *YamlDocument) GetOrFetchOrbInfo(orb ast.Orb, cache *cache.Cache) (*as
 
 	// An orb at a URL that can't be fetched declares nothing that is known.
 	if orb.Url.IsURL {
-		orbInfo, err := GetURLOrbInfo(orb.Url.Name, cache, doc.Context)
+		orbInfo, err := GetURLOrbInfo(doc.Ctx, orb.Url.Name, cache, doc.Context)
 		if orbInfo == nil {
 			return &ast.OrbInfo{}, err
 		}
@@ -53,7 +53,7 @@ func (doc *YamlDocument) GetOrFetchOrbInfo(orb ast.Orb, cache *cache.Cache) (*as
 
 	// Trying to fetch if not found
 	var err error
-	orbInfo, err = GetOrbInfo(orbId, cache, doc.Context)
+	orbInfo, err = GetOrbInfo(doc.Ctx, orbId, cache, doc.Context)
 
 	if err != nil {
 		return &ast.OrbInfo{}, err

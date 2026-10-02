@@ -14,6 +14,6 @@ import (
 func TestWorkspaceSymbolsLeavesOutAnUnreadableDocument(t *testing.T) {
 	missing := uri.File(filepath.Join(t.TempDir(), ".circleci", "config.yml"))
 
-	symbols := WorkspaceSymbols("", []uri.URI{missing}, testHelpers.DefaultCache(), testHelpers.DefaultSettings())
+	symbols := WorkspaceSymbols(t.Context(), "", []uri.URI{missing}, testHelpers.DefaultCache(), testHelpers.DefaultSettings())
 	assert.Check(t, cmp.Len(symbols, 0))
 }

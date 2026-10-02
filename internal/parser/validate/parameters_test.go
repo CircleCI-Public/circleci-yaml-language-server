@@ -425,7 +425,7 @@ workflows:
 	CheckYamlErrors(t, testCases)
 
 	t.Run("A pipeline value of the wrong type is still an error", func(t *testing.T) {
-		val := CreateValidateFromYAML(config(`
+		val := CreateValidateFromYAML(t, config(`
           count: << pipeline.id >>`))
 		val.Validate()
 

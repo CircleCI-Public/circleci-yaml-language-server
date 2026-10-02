@@ -59,7 +59,7 @@ workflows:
       - test:
           os: vm
 `
-	doc, err := yamlparser.ParseFromContent([]byte(config), testHelpers.DefaultSettings(), uri.File("/config.yml"), protocol.Position{})
+	doc, err := yamlparser.ParseFromContent(t.Context(), []byte(config), testHelpers.DefaultSettings(), uri.File("/config.yml"), protocol.Position{})
 	assert.NilError(t, err)
 	t.Cleanup(doc.Close)
 
@@ -121,7 +121,7 @@ commands:
     steps:
       - run: echo <<# parameters.loud >>-v<</ parameters.loud >> <<^ pipeline.parameters.quiet >>-n<</ pipeline.parameters.quiet >>
 `
-	doc, err := yamlparser.ParseFromContent([]byte(config), testHelpers.DefaultSettings(), uri.File("/config.yml"), protocol.Position{})
+	doc, err := yamlparser.ParseFromContent(t.Context(), []byte(config), testHelpers.DefaultSettings(), uri.File("/config.yml"), protocol.Position{})
 	assert.NilError(t, err)
 	t.Cleanup(doc.Close)
 

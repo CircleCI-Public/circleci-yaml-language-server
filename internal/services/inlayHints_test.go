@@ -31,7 +31,7 @@ orbs:
 
 	labels := func(t *testing.T) []string {
 		t.Helper()
-		hints, err := InlayHints(protocol.InlayHintParams{
+		hints, err := InlayHints(t.Context(), protocol.InlayHintParams{
 			TextDocument: protocol.TextDocumentIdentifier{URI: docURI},
 			Range:        protocol.Range{End: protocol.Position{Line: 99}},
 		}, c, testHelpers.DefaultSettings())

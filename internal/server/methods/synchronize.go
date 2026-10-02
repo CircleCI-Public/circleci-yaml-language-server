@@ -22,12 +22,14 @@ func (methods *Methods) setChangeInFileCache(textDocument protocol.TextDocumentI
 	}
 }
 
-func (methods *Methods) DidOpen(_ context.Context, params *protocol.DidOpenTextDocumentParams) error {
+func (methods *Methods) DidOpen(ctx context.Context, params *protocol.DidOpenTextDocumentParams) error {
 	methods.setChangeInFileCache(params.TextDocument)
-	methods.parsingMethods(params.TextDocument)
-	methods.updateOrbFile([]byte(params.TextDocument.Text), params.TextDocument.URI)
+	methods.parsingMethods(ctx, params.TextDocument)
+	methods.updateOrbFile(ctx, []byte(params.TextDocument.Text), params.TextDocument.URI)
+	// What runs on after the notification is handled is the session's, not
+	// the notification's.
 	go (func() {
-		methods.notificationMethods(params.TextDocument)
+		methods.notificationMethods(methods.Ctx, params.TextDocument)
 		methods.SetResourceClassOfFile(*params)
 		methods.SendTelemetryEvent(TelemetryEvent{
 			Action: "opened_file",
@@ -46,12 +48,12 @@ func (methods *Methods) updateAllCachedFiles() {
 		files := methods.Cache.FileCache.GetFiles()
 
 		for _, file := range files {
-			go methods.notificationMethods(file.TextDocument)
+			go methods.notificationMethods(methods.Ctx, file.TextDocument)
 		}
 	})
 }
 
-func (methods *Methods) DidChange(_ context.Context, params *protocol.DidChangeTextDocumentParams) error {
+func (methods *Methods) DidChange(ctx context.Context, params *protocol.DidChangeTextDocumentParams) error {
 	newText := methods.applyIncrementalChanges(params.TextDocument.URI, params.ContentChanges)
 	textDocument := protocol.TextDocumentItem{
 		URI:     params.TextDocument.URI,
@@ -59,12 +61,12 @@ func (methods *Methods) DidChange(_ context.Context, params *protocol.DidChangeT
 		Version: params.TextDocument.Version,
 	}
 	methods.setChangeInFileCache(textDocument)
-	methods.updateOrbFile([]byte(newText), params.TextDocument.URI)
+	methods.updateOrbFile(ctx, []byte(newText), params.TextDocument.URI)
 
 	methods.debounceEdit(func() {
-		methods.parsingMethods(textDocument)
+		methods.parsingMethods(methods.Ctx, textDocument)
 		go methods.refreshInlayHints()
-		go methods.notificationMethods(textDocument)
+		go methods.notificationMethods(methods.Ctx, textDocument)
 	})
 	return nil
 }
@@ -81,13 +83,13 @@ func (methods *Methods) DidClose(_ context.Context, params *protocol.DidCloseTex
 	return nil
 }
 
-func (methods *Methods) notificationMethods(textDocument protocol.TextDocumentItem) {
+func (methods *Methods) notificationMethods(ctx context.Context, textDocument protocol.TextDocumentItem) {
 	isOrb, _ := methods.isOrb(textDocument.URI)
 	if methods.Settings().Api.Token != "" && !isOrb {
 		methods.getAllEnvVariables(textDocument)
 	}
 
-	diagnostics := methods.Diagnostics(textDocument)
+	diagnostics := methods.Diagnostics(ctx, textDocument)
 
 	original := methods.Cache.FileCache.GetFile(textDocument.URI)
 
@@ -108,15 +110,15 @@ func (methods *Methods) notificationMethods(textDocument protocol.TextDocumentIt
 
 }
 
-func (methods *Methods) parsingMethods(textDocument protocol.TextDocumentItem) {
-	parsedFile, err := parser2.ParseFromUriWithCache(textDocument.URI, methods.Cache, methods.Settings())
+func (methods *Methods) parsingMethods(ctx context.Context, textDocument protocol.TextDocumentItem) {
+	parsedFile, err := parser2.ParseFromUriWithCache(ctx, textDocument.URI, methods.Cache, methods.Settings())
 
 	if err != nil {
 		return
 	}
 	defer parsedFile.Close()
 
-	parser2.ParseRemoteOrbs(parsedFile.Orbs, methods.Cache, methods.Settings())
+	parser2.ParseRemoteOrbs(ctx, parsedFile.Orbs, methods.Cache, methods.Settings())
 }
 
 func (methods *Methods) applyIncrementalChanges(uri uri.URI, changes []protocol.TextDocumentContentChangeEvent) string {
@@ -141,10 +143,10 @@ func (methods *Methods) applyIncrementalChanges(uri uri.URI, changes []protocol.
 	return string(content)
 }
 
-func (methods *Methods) updateOrbFile(content []byte, uri uri.URI) {
+func (methods *Methods) updateOrbFile(ctx context.Context, content []byte, uri uri.URI) {
 	isOrb, orbId := methods.isOrb(uri)
 	if isOrb {
-		parsedOrbSource, err := parser2.ParseFromContent([]byte(content), methods.Settings(), uri, protocol.Position{})
+		parsedOrbSource, err := parser2.ParseFromContent(ctx, []byte(content), methods.Settings(), uri, protocol.Position{})
 		if err == nil {
 			methods.Cache.OrbCache.UpdateOrbParsedAttributes(orbId, parsedOrbSource.ToOrbParsedAttributes())
 			parsedOrbSource.Close()

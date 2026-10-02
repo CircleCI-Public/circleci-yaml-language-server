@@ -20,7 +20,7 @@ func dockerImage(t *testing.T, imageLine string) ast.DockerImage {
 	t.Helper()
 
 	content := "version: 2.1\nexecutors:\n  e:\n    docker:\n" + imageLine + "\n"
-	doc, err := yamlparser.ParseFromContent([]byte(content), testHelpers.DefaultSettings(), uri.File("/config.yml"), protocol.Position{})
+	doc, err := yamlparser.ParseFromContent(t.Context(), []byte(content), testHelpers.DefaultSettings(), uri.File("/config.yml"), protocol.Position{})
 	assert.NilError(t, err)
 	t.Cleanup(doc.Close)
 

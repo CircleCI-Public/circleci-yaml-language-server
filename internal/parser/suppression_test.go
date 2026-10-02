@@ -172,7 +172,7 @@ jobs:
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			doc := ParseFile([]byte(tt.yaml), &session.Settings{})
+			doc := ParseFile(t.Context(), []byte(tt.yaml), &session.Settings{})
 			suppressionInfo := ParseSuppressionComments(&doc)
 
 			if suppressionInfo.FileWideSuppression != tt.wantFileWideSuppression {

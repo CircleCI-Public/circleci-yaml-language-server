@@ -49,7 +49,7 @@ func functionDiagnostics(t *testing.T, severity protocol.DiagnosticSeverity, yam
 		fakes.FunctionVersion{ID: "ver-setup-go-0-5-1", Version: "v0.5.1-684fd5b", Descriptor: setupGoDescriptor},
 	)
 
-	val := CreateValidateFromYAML(yamlContent)
+	val := CreateValidateFromYAML(t, yamlContent)
 	val.Context = testHelpers.SettingsForHost(fake.URL())
 	val.Doc.Context = val.Context
 	val.Cache.MachineOfferingsCache.Set(testHelpers.MachineOfferings())
@@ -383,7 +383,7 @@ workflows:
 		fake := fakes.NewCircleCI(t)
 		fake.SetStatus("GET /api/v3/function/packages", 404)
 
-		val := CreateValidateFromYAML(config("github.com/circleci-functions/setup-go@v0.5.1-684fd5b", "      - setup-go\n"))
+		val := CreateValidateFromYAML(t, config("github.com/circleci-functions/setup-go@v0.5.1-684fd5b", "      - setup-go\n"))
 		val.Context = testHelpers.SettingsForHost(fake.URL())
 		val.Doc.Context = val.Context
 		val.ValidateFunctions()
@@ -400,7 +400,7 @@ func validateWithSetupGo(t *testing.T, config string, versions ...fakes.Function
 	fake := fakes.NewCircleCI(t)
 	fake.AddFunction("fn-setup-go", "github.com/circleci-functions/setup-go", "Install a Go toolchain.", versions...)
 
-	val := CreateValidateFromYAML(config)
+	val := CreateValidateFromYAML(t, config)
 	val.Context = testHelpers.SettingsForHost(fake.URL())
 	val.Doc.Context = val.Context
 	val.ValidateFunctions()

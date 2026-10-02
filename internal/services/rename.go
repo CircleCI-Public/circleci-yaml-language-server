@@ -1,6 +1,7 @@
 package languageservice
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"slices"
@@ -20,9 +21,9 @@ import (
 // PrepareRename is the name at a position that Rename can rename, or nil when
 // there is none there.
 func PrepareRename(
-	params protocol.PrepareRenameParams, cache *cache.Cache, context *session.Settings,
+	ctx context.Context, params protocol.PrepareRenameParams, cache *cache.Cache, context *session.Settings,
 ) (*protocol.PrepareRenamePlaceholder, error) {
-	doc, err := yamlparser.ParseFromUriWithCache(params.TextDocument.URI, cache, context)
+	doc, err := yamlparser.ParseFromUriWithCache(ctx, params.TextDocument.URI, cache, context)
 	if err != nil {
 		return nil, err
 	}
@@ -41,9 +42,9 @@ func PrepareRename(
 // Rename renames the job, command or executor named at a position, where it
 // is defined and everywhere it is used.
 func Rename(
-	params protocol.RenameParams, cache *cache.Cache, context *session.Settings,
+	ctx context.Context, params protocol.RenameParams, cache *cache.Cache, context *session.Settings,
 ) (*protocol.WorkspaceEdit, error) {
-	doc, err := yamlparser.ParseFromUriWithCache(params.TextDocument.URI, cache, context)
+	doc, err := yamlparser.ParseFromUriWithCache(ctx, params.TextDocument.URI, cache, context)
 	if err != nil {
 		return nil, err
 	}

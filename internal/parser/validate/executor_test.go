@@ -197,7 +197,7 @@ func TestUnknownMachineImageSeverity(t *testing.T) {
 	}
 	for image, want := range severities {
 		t.Run(image, func(t *testing.T) {
-			val := CreateValidateFromYAML(yamlForMachine("", image))
+			val := CreateValidateFromYAML(t, yamlForMachine("", image))
 			val.Validate()
 
 			assert.Assert(t, cmp.Len(*val.Diagnostics, 1))
@@ -216,7 +216,7 @@ func TestMachineExecutorSkipsWhenOfferingsUnavailable(t *testing.T) {
 	}))
 	defer server.Close()
 
-	val := CreateValidateFromYAML(yamlForMachine("toto", "bogus:image"))
+	val := CreateValidateFromYAML(t, yamlForMachine("toto", "bogus:image"))
 	val.Context.Api.HostUrl = server.URL
 	val.Cache = cache.New() // no catalog, so it is fetched from the failing server
 	val.Validate()
@@ -248,7 +248,7 @@ executors:
 
 	for _, c := range testCases {
 		t.Run(c.name, func(t *testing.T) {
-			val := CreateValidateFromYAML(c.yamlContent)
+			val := CreateValidateFromYAML(t, c.yamlContent)
 			val.Validate()
 
 			var found *protocol.Diagnostic
@@ -320,11 +320,11 @@ func TestLegacyCircleciImages(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			// With auth, the Docker Hub lookups skip the image, which leaves
 			// the legacy image check's diagnostics alone.
-			val := CreateValidateFromYAML(`version: 2.1
+			val := CreateValidateFromYAML(t, `version: 2.1
 jobs:
   build:
     docker:
-      - image: ` + c.image + `
+      - image: `+c.image+`
         auth:
           username: $USER
           password: $PASSWORD
@@ -376,11 +376,11 @@ func TestCircleciNamespaceImages(t *testing.T) {
 
 	for _, c := range testCases {
 		t.Run(c.name, func(t *testing.T) {
-			val := CreateValidateFromYAML(`version: 2.1
+			val := CreateValidateFromYAML(t, `version: 2.1
 jobs:
   build:
     docker:
-      ` + c.image + `
+      `+c.image+`
     steps:
       - checkout
 workflows:
@@ -494,7 +494,7 @@ jobs:
 
 	for _, c := range testCases {
 		t.Run(c.name, func(t *testing.T) {
-			val := CreateValidateFromYAML(c.yamlContent)
+			val := CreateValidateFromYAML(t, c.yamlContent)
 			val.Validate()
 
 			if c.errRegex == "" {

@@ -26,7 +26,7 @@ func TestDefinition(t *testing.T) {
 	assert.NilError(t, err)
 
 	context := testHelpers.DefaultSettings()
-	parsedOrb, err := parser.ParseFromURI(uri.File(orbPath), context)
+	parsedOrb, err := parser.ParseFromURI(t.Context(), uri.File(orbPath), context)
 
 	if err != nil {
 		panic(err)
@@ -423,7 +423,7 @@ func TestDefinition(t *testing.T) {
 				},
 			}
 
-			links, err := Definition(params, c, context)
+			links, err := Definition(t.Context(), params, c, context)
 			got := locationsOf(links)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Definition(): %s error = %v, wantErr %v", tt.name, err, tt.wantErr)
@@ -454,7 +454,7 @@ orbs:
           - cmd`
 	context := testHelpers.DefaultSettings()
 
-	doc, err := parser.ParseFromContent([]byte(yaml), context, fileURI, protocol.Position{})
+	doc, err := parser.ParseFromContent(t.Context(), []byte(yaml), context, fileURI, protocol.Position{})
 	assert.Check(t, err)
 
 	def := definition.DefinitionStruct{Cache: cache.New(), Params: protocol.DefinitionParams{
@@ -500,7 +500,7 @@ orbs:
           - run: echo "Hello World"`
 	context := testHelpers.DefaultSettings()
 
-	doc, err := parser.ParseFromContent([]byte(yaml), context, fileURI, protocol.Position{})
+	doc, err := parser.ParseFromContent(t.Context(), []byte(yaml), context, fileURI, protocol.Position{})
 	assert.Check(t, err)
 
 	def := definition.DefinitionStruct{Cache: cache.New(), Params: protocol.DefinitionParams{
@@ -600,7 +600,7 @@ func parseJobGroupDefinitionFixture(t *testing.T) (parser.YamlDocument, uri.URI)
 	t.Helper()
 	fileURI := uri.File("some-uri")
 	context := testHelpers.DefaultSettings()
-	doc, err := parser.ParseFromContent([]byte(jobGroupDefinitionFixture), context, fileURI, protocol.Position{})
+	doc, err := parser.ParseFromContent(t.Context(), []byte(jobGroupDefinitionFixture), context, fileURI, protocol.Position{})
 	assert.Check(t, err)
 	return doc, fileURI
 }
@@ -730,7 +730,7 @@ workflows:
 func TestDefinition_WorkflowRequiresRenamedJob_GoesToJobInvocation(t *testing.T) {
 	fileURI := uri.File("some-uri")
 	context := testHelpers.DefaultSettings()
-	doc, err := parser.ParseFromContent([]byte(renamedJobDefinitionFixture), context, fileURI, protocol.Position{})
+	doc, err := parser.ParseFromContent(t.Context(), []byte(renamedJobDefinitionFixture), context, fileURI, protocol.Position{})
 	assert.Check(t, err)
 
 	// Goto def on "build-renamed" in requires on line 21
@@ -754,7 +754,7 @@ func TestDefinitionOfAParameterUnderAKeylessPair(t *testing.T) {
 		TextDocument: protocol.TextDocumentItem{URI: docURI, Text: content},
 	})
 
-	locations, err := Definition(protocol.DefinitionParams{
+	locations, err := Definition(t.Context(), protocol.DefinitionParams{
 		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
 			TextDocument: protocol.TextDocumentIdentifier{URI: docURI},
 			Position:     protocol.Position{Line: 4, Character: 32},
@@ -785,7 +785,7 @@ workflows:
           greeting: hi
 `
 	fileURI := uri.File("some-uri")
-	doc, err := parser.ParseFromContent([]byte(content), testHelpers.DefaultSettings(), fileURI, protocol.Position{})
+	doc, err := parser.ParseFromContent(t.Context(), []byte(content), testHelpers.DefaultSettings(), fileURI, protocol.Position{})
 	assert.NilError(t, err)
 
 	linksAt := func(line, char uint32) []definition.Link {
@@ -859,7 +859,7 @@ workflows:
                 - macos
 `
 	fileURI := uri.File("some-uri")
-	doc, err := parser.ParseFromContent([]byte(content), testHelpers.DefaultSettings(), fileURI, protocol.Position{})
+	doc, err := parser.ParseFromContent(t.Context(), []byte(content), testHelpers.DefaultSettings(), fileURI, protocol.Position{})
 	assert.NilError(t, err)
 
 	osName := protocol.Range{
@@ -944,7 +944,7 @@ workflows:
           os: windows
 `
 	fileURI := uri.File("some-uri")
-	doc, err := parser.ParseFromContent([]byte(content), testHelpers.DefaultSettings(), fileURI, protocol.Position{})
+	doc, err := parser.ParseFromContent(t.Context(), []byte(content), testHelpers.DefaultSettings(), fileURI, protocol.Position{})
 	assert.NilError(t, err)
 
 	rangeOn := func(line, start, end uint32) protocol.Range {

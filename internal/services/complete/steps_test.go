@@ -48,7 +48,7 @@ func TestCompleteSteps(t *testing.T) {
 	settings := testHelpers.SettingsForHost(fake.URL())
 	emptyStep := uint32(slices.Index(strings.Split(stepsConfig, "\n"), "      - "))
 
-	doc, err := yamlparser.ParseFromContent([]byte(stepsConfig), settings, uri.File("/config.yml"), protocol.Position{})
+	doc, err := yamlparser.ParseFromContent(t.Context(), []byte(stepsConfig), settings, uri.File("/config.yml"), protocol.Position{})
 	assert.NilError(t, err)
 	t.Cleanup(doc.Close)
 

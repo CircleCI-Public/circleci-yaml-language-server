@@ -204,7 +204,7 @@ jobs:
       - &s
       - checkout
 `
-	doc, err := ParseFromContent([]byte(content), testHelpers.DefaultSettings(), uri.File(""), protocol.Position{})
+	doc, err := ParseFromContent(t.Context(), []byte(content), testHelpers.DefaultSettings(), uri.File(""), protocol.Position{})
 	assert.NilError(t, err)
 	t.Cleanup(doc.Close)
 

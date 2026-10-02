@@ -695,7 +695,7 @@ workflows:
 // A job can't be run as a step: a step names a command. A local job and an
 // orb job are both reported as a job.
 func TestJobAsStep(t *testing.T) {
-	val := CreateValidateFromYAML(`version: 2.1
+	val := CreateValidateFromYAML(t, `version: 2.1
 
 orbs:
   my-orb:
@@ -739,7 +739,7 @@ workflows:
 }
 
 func TestStepNamedByParameter(t *testing.T) {
-	val := CreateValidateFromYAML(`version: 2.1
+	val := CreateValidateFromYAML(t, `version: 2.1
 
 commands:
   run-step:

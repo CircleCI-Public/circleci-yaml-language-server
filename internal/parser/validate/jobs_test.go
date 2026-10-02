@@ -21,10 +21,11 @@ import (
 
 func validateYAML(t *testing.T, yamlData string) *[]protocol.Diagnostic {
 	t.Helper()
-	ctx := testHelpers.DefaultSettings()
+	settings := testHelpers.DefaultSettings()
 	doc, err := parser.ParseFromContent(
+		t.Context(),
 		[]byte(yamlData),
-		ctx,
+		settings,
 		uri.URI(""),
 		protocol.Position{},
 	)
@@ -32,7 +33,7 @@ func validateYAML(t *testing.T, yamlData string) *[]protocol.Diagnostic {
 
 	val := Validate{
 		APIs:        ValidateAPIs{DockerHubMock{}},
-		Context:     ctx,
+		Context:     settings,
 		Doc:         doc,
 		Diagnostics: &[]protocol.Diagnostic{},
 		Cache:       testHelpers.DefaultCache(),
@@ -264,6 +265,7 @@ func TestExecutorParam(t *testing.T) {
 				},
 			}
 			doc, err := parser.ParseFromContent(
+				t.Context(),
 				[]byte(testCase.yamlData),
 				ctx,
 				uri.URI(""),
@@ -397,6 +399,7 @@ func TestResourceClass(t *testing.T) {
 				},
 			}
 			doc, err := parser.ParseFromContent(
+				t.Context(),
 				[]byte(testCase.yamlData),
 				ctx,
 				uri.URI(""),
@@ -491,6 +494,7 @@ func TestRetention(t *testing.T) {
 				},
 			}
 			doc, err := parser.ParseFromContent(
+				t.Context(),
 				[]byte(testCase.yamlData),
 				ctx,
 				uri.URI(""),
@@ -585,6 +589,7 @@ func TestJobTypeValidation(t *testing.T) {
 				},
 			}
 			doc, err := parser.ParseFromContent(
+				t.Context(),
 				[]byte(testCase.yamlData),
 				ctx,
 				uri.URI(""),
@@ -918,7 +923,7 @@ func TestValidateRemoteDockerVersion(t *testing.T) {
 	// by all but one, which isn't what's being checked.
 	messages := func(t *testing.T, executor, step string) []string {
 		t.Helper()
-		val := CreateValidateFromYAML(`version: 2.1
+		val := CreateValidateFromYAML(t, `version: 2.1
 
 executors:
   gen2:
@@ -928,10 +933,10 @@ executors:
 
 jobs:
   build:
-` + executor + `
+`+executor+`
     steps:
       - setup_remote_docker:
-` + step + `
+`+step+`
 
 workflows:
   main:

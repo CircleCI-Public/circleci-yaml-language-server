@@ -402,7 +402,7 @@ jobs:
 
 	for _, tt := range testCases {
 		t.Run(tt.Name, func(t *testing.T) {
-			val := CreateValidateFromYAML(tt.YamlContent)
+			val := CreateValidateFromYAML(t, tt.YamlContent)
 			val.APIs = ValidateAPIs{
 				DockerHub: tt.MockAPI,
 			}
@@ -433,7 +433,7 @@ jobs:
 `
 
 	t.Run("an image it cannot confirm", func(t *testing.T) {
-		val := CreateValidateFromYAML(config)
+		val := CreateValidateFromYAML(t, config)
 		val.APIs = ValidateAPIs{DockerHub: DockerHubMock{Err: errRateLimited}}
 
 		val.Validate()
@@ -449,7 +449,7 @@ jobs:
 	})
 
 	t.Run("a tag it cannot confirm", func(t *testing.T) {
-		val := CreateValidateFromYAML(config)
+		val := CreateValidateFromYAML(t, config)
 		// The image is known to exist, so validation goes on to the tag.
 		val.Cache.DockerCache.Add("namespace", "image", true)
 		val.APIs = ValidateAPIs{DockerHub: DockerHubMock{Err: errRateLimited}}

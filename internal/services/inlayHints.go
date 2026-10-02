@@ -1,6 +1,7 @@
 package languageservice
 
 import (
+	"context"
 	"fmt"
 	"slices"
 	"strings"
@@ -20,9 +21,9 @@ import (
 // An orb's version is shown only once the orb has been fetched, so that
 // asking for hints never waits on the network.
 func InlayHints(
-	params protocol.InlayHintParams, cache *cache.Cache, context *session.Settings,
+	ctx context.Context, params protocol.InlayHintParams, cache *cache.Cache, context *session.Settings,
 ) ([]protocol.InlayHint, error) {
-	doc, err := yamlparser.ParseFromUriWithCache(params.TextDocument.URI, cache, context)
+	doc, err := yamlparser.ParseFromUriWithCache(ctx, params.TextDocument.URI, cache, context)
 	if err != nil {
 		return nil, err
 	}

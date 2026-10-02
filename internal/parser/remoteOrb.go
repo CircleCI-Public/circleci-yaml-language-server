@@ -36,9 +36,11 @@ type OrbQuery struct {
 // GetOrbInfo returns the remote orb a reference such as "circleci/go@1.7.1"
 // names, resolving it only when the cache has no answer for it. Concurrent
 // callers for the same reference share one resolution.
-func GetOrbInfo(orbVersionCode string, cache *cache.Cache, context *session.Settings) (*ast.OrbInfo, error) {
+func GetOrbInfo(ctx context.Context, orbVersionCode string, cache *cache.Cache, settings *session.Settings) (*ast.OrbInfo, error) {
 	orb, err := cache.OrbCache.Load(orbVersionCode, func() (*ast.OrbInfo, error) {
-		return fetchOrbInfo(orbVersionCode, cache, context)
+		// The callers sharing the resolution wait on it, so the one that
+		// started it giving up must not end it for the rest.
+		return fetchOrbInfo(context.WithoutCancel(ctx), orbVersionCode, cache, settings)
 	})
 	if err != nil {
 		return &ast.OrbInfo{}, err
@@ -49,7 +51,7 @@ func GetOrbInfo(orbVersionCode string, cache *cache.Cache, context *session.Sett
 
 // ParseRemoteOrbs resolves the remote orbs a config names, so that they are in
 // hand by the time the config is validated.
-func ParseRemoteOrbs(orbs map[string]ast.Orb, cache *cache.Cache, context *session.Settings) {
+func ParseRemoteOrbs(ctx context.Context, orbs map[string]ast.Orb, cache *cache.Cache, settings *session.Settings) {
 	for _, orb := range orbs {
 		if orb.Url.IsLocal {
 			continue
@@ -57,9 +59,9 @@ func ParseRemoteOrbs(orbs map[string]ast.Orb, cache *cache.Cache, context *sessi
 
 		var err error
 		if orb.Url.IsURL {
-			_, err = GetURLOrbInfo(orb.Url.Name, cache, context)
+			_, err = GetURLOrbInfo(ctx, orb.Url.Name, cache, settings)
 		} else {
-			_, err = GetOrbInfo(orb.Url.GetOrbID(), cache, context)
+			_, err = GetOrbInfo(ctx, orb.Url.GetOrbID(), cache, settings)
 		}
 		if err != nil {
 			slog.Warn("fetching remote orb", "orb", orb.Url.GetOrbID(), "err", err)
@@ -71,19 +73,20 @@ func ParseRemoteOrbs(orbs map[string]ast.Orb, cache *cache.Cache, context *sessi
 // no answer for it, or nil when the host says there is nothing there it will
 // serve, which is what a private orb gets too. Concurrent callers for the same
 // URL share one fetch.
-func GetURLOrbInfo(address string, cache *cache.Cache, settings *session.Settings) (*ast.OrbInfo, error) {
+func GetURLOrbInfo(ctx context.Context, address string, cache *cache.Cache, settings *session.Settings) (*ast.OrbInfo, error) {
 	return cache.OrbCache.Load(address, func() (*ast.OrbInfo, error) {
-		return fetchURLOrbInfo(address, cache, settings)
+		// As in GetOrbInfo, the fetch is shared.
+		return fetchURLOrbInfo(context.WithoutCancel(ctx), address, cache, settings)
 	})
 }
 
-func fetchURLOrbInfo(address string, cache *cache.Cache, settings *session.Settings) (*ast.OrbInfo, error) {
-	source, found, err := orburl.Fetch(context.Background(), settings.OrbURLs, address)
+func fetchURLOrbInfo(ctx context.Context, address string, cache *cache.Cache, settings *session.Settings) (*ast.OrbInfo, error) {
+	source, found, err := orburl.Fetch(ctx, settings.OrbURLs, address)
 	if err != nil || !found {
 		return nil, err
 	}
 
-	parsedOrbSource, err := ParseFromContent([]byte(source), settings, uri.File(""), protocol.Position{})
+	parsedOrbSource, err := ParseFromContent(ctx, []byte(source), settings, uri.File(""), protocol.Position{})
 	if err != nil {
 		return nil, err
 	}
@@ -119,13 +122,13 @@ func urlOrbSourceID(address string) string {
 	return "url/" + strings.ReplaceAll(parsed.Host, ":", "_") + path.Clean("/"+parsed.Path)
 }
 
-func fetchOrbInfo(orbVersionCode string, cache *cache.Cache, context *session.Settings) (*ast.OrbInfo, error) {
-	orbQuery, err := GetRemoteOrb(orbVersionCode, context.Api.Token, context.Api.HostUrl, context.UserIdForTelemetry)
+func fetchOrbInfo(ctx context.Context, orbVersionCode string, cache *cache.Cache, settings *session.Settings) (*ast.OrbInfo, error) {
+	orbQuery, err := GetRemoteOrb(ctx, orbVersionCode, settings.Api.Token, settings.Api.HostUrl, settings.UserIdForTelemetry)
 	if err != nil {
 		return nil, err
 	}
 
-	parsedOrbSource, err := ParseFromContent([]byte(orbQuery.Source), context, uri.File(""), protocol.Position{})
+	parsedOrbSource, err := ParseFromContent(ctx, []byte(orbQuery.Source), settings, uri.File(""), protocol.Position{})
 	if err != nil {
 		return nil, err
 	}
@@ -216,10 +219,10 @@ func GetVersionInfo(
 //
 // Exact versions, partial versions ("circleci/go@1.7"), "volatile" and
 // development tags all resolve.
-func GetRemoteOrb(orbId string, token string, hostUrl, userId string) (OrbQuery, error) {
+func GetRemoteOrb(ctx context.Context, orbId string, token string, hostUrl, userId string) (OrbQuery, error) {
 	registry := circleci.NewOrbRegistry(hostUrl, token, userId, false)
 
-	resolved, err := registry.ResolveVersion(context.Background(), orbId)
+	resolved, err := registry.ResolveVersion(ctx, orbId)
 	if err != nil {
 		if circleci.IsNotFound(err) {
 			// validateSingleOrb keys off this prefix to report an unknown

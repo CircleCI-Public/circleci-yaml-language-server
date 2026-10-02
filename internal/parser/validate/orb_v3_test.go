@@ -29,7 +29,7 @@ func orbDiagnostics(t *testing.T, fake *fakes.CircleCI, yamlContent string) []pr
 	t.Helper()
 
 	lsContext := testHelpers.SettingsForHost(fake.URL())
-	doc, err := parser.ParseFromContent([]byte(yamlContent), lsContext, uri.File("config.yml"), protocol.Position{})
+	doc, err := parser.ParseFromContent(t.Context(), []byte(yamlContent), lsContext, uri.File("config.yml"), protocol.Position{})
 	assert.NilError(t, err)
 
 	diagnostics := []protocol.Diagnostic{}
@@ -322,7 +322,7 @@ workflows:
       - build
 `
 
-		doc, err := parser.ParseFromContent([]byte(yamlContent), lsContext, uri.File("config.yml"), protocol.Position{})
+		doc, err := parser.ParseFromContent(t.Context(), []byte(yamlContent), lsContext, uri.File("config.yml"), protocol.Position{})
 		assert.NilError(t, err)
 
 		diagnostics := []protocol.Diagnostic{}
@@ -377,7 +377,7 @@ commands:
 `, "")
 
 	lsContext := testHelpers.SettingsForHost(fake.URL())
-	doc, err := parser.ParseFromContent([]byte(`version: 2.1
+	doc, err := parser.ParseFromContent(t.Context(), []byte(`version: 2.1
 orbs:
   outer:
     orbs:

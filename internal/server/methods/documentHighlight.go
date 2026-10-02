@@ -9,7 +9,7 @@ import (
 )
 
 func (methods *Methods) DocumentHighlight(
-	_ context.Context, params *protocol.DocumentHighlightParams,
+	ctx context.Context, params *protocol.DocumentHighlightParams,
 ) ([]protocol.DocumentHighlight, error) {
-	return languageservice.DocumentHighlight(*params, methods.Cache, methods.Settings())
+	return languageservice.DocumentHighlight(ctx, *params, methods.Cache, methods.Settings())
 }

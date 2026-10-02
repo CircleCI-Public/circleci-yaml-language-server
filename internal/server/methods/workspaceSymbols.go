@@ -12,8 +12,8 @@ import (
 	languageservice "github.com/CircleCI-Public/circleci-yaml-language-server/internal/services"
 )
 
-func (methods *Methods) Symbols(_ context.Context, params *protocol.WorkspaceSymbolParams) (protocol.WorkspaceSymbolResult, error) {
-	symbols := languageservice.WorkspaceSymbols(params.Query, methods.workspaceConfigs(), methods.Cache, methods.Settings())
+func (methods *Methods) Symbols(ctx context.Context, params *protocol.WorkspaceSymbolParams) (protocol.WorkspaceSymbolResult, error) {
+	symbols := languageservice.WorkspaceSymbols(ctx, params.Query, methods.workspaceConfigs(), methods.Cache, methods.Settings())
 	return protocol.SymbolInformationSlice(symbols), nil
 }
 

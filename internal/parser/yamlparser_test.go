@@ -19,7 +19,7 @@ import (
 
 func TestErrCacheMissing(t *testing.T) {
 	c := cache.New()
-	_, err := parser2.ParseFromUriWithCache(uri.MustParse("file:///toto.yaml"), c, nil)
+	_, err := parser2.ParseFromUriWithCache(t.Context(), uri.MustParse("file:///toto.yaml"), c, nil)
 
 	assert.Check(t, cmp.ErrorIs(err, parser2.ErrCacheMissing))
 }
@@ -34,6 +34,7 @@ jobs:
 `
 
 	yamlDocument, err := parser2.ParseFromContent(
+		t.Context(),
 		[]byte(yaml),
 		testHelpers.DefaultSettings(),
 		uri.File(""),
@@ -73,6 +74,7 @@ jobs:
 `
 
 	yamlDocument, err := parser2.ParseFromContent(
+		t.Context(),
 		[]byte(yaml),
 		testHelpers.DefaultSettings(),
 		uri.File(""),
@@ -94,6 +96,7 @@ jobs:
 `
 
 	yamlDocument, err := parser2.ParseFromContent(
+		t.Context(),
 		[]byte(yaml),
 		testHelpers.SettingsForHost("https://mycircleci.example.com"),
 		uri.File(""),
@@ -120,6 +123,7 @@ jobs:
 `
 
 	yamlDocument, err := parser2.ParseFromContent(
+		t.Context(),
 		[]byte(yaml),
 		testHelpers.DefaultSettings(),
 		uri.File(""),
@@ -162,6 +166,7 @@ jobs:
 `
 
 	yamlDocument, err := parser2.ParseFromContent(
+		t.Context(),
 		[]byte(yaml),
 		testHelpers.DefaultSettings(),
 		uri.File(""),
@@ -204,6 +209,7 @@ jobs:
 	for name, yaml := range configs {
 		t.Run(name, func(t *testing.T) {
 			yamlDocument, err := parser2.ParseFromContent(
+				t.Context(),
 				[]byte(yaml),
 				testHelpers.DefaultSettings(),
 				uri.File(""),
@@ -243,6 +249,7 @@ jobs:
 `
 
 	yamlDocument, err := parser2.ParseFromContent(
+		t.Context(),
 		[]byte(yaml),
 		testHelpers.DefaultSettings(),
 		uri.File(""),
@@ -268,6 +275,7 @@ jobs:
 `
 
 	yamlDocument, err := parser2.ParseFromContent(
+		t.Context(),
 		[]byte(yaml),
 		testHelpers.DefaultSettings(),
 		uri.File(""),
@@ -303,7 +311,7 @@ jobs:
 }
 
 func TestIsFromUnfetchableOrb(t *testing.T) {
-	yamlDocument, err := parser2.ParseFromContent([]byte(`version: 2.1
+	yamlDocument, err := parser2.ParseFromContent(t.Context(), []byte(`version: 2.1
 
 orbs:
   slack: circleci/slack@4.12.5
@@ -412,7 +420,7 @@ jobs:
 
 	for _, tt := range testCases {
 		t.Run(tt.Name, func(t *testing.T) {
-			yamlDocument, err := parser2.ParseFromContent([]byte(tt.Content), testHelpers.DefaultSettings(), uri.File(""), protocol.Position{})
+			yamlDocument, err := parser2.ParseFromContent(t.Context(), []byte(tt.Content), testHelpers.DefaultSettings(), uri.File(""), protocol.Position{})
 			assert.Check(t, err)
 			assert.Check(t, cmp.Equal(tt.ExpectValue, yamlDocument.Setup))
 			assert.Check(t, cmp.DeepEqual(tt.ExpectRange, yamlDocument.SetupRange))
@@ -437,7 +445,7 @@ func TestModifyTextForAutocomplete(t *testing.T) {
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
-			doc, err := parser2.ParseFromContent([]byte(tc.content), testHelpers.DefaultSettings(), uri.File(""), protocol.Position{})
+			doc, err := parser2.ParseFromContent(t.Context(), []byte(tc.content), testHelpers.DefaultSettings(), uri.File(""), protocol.Position{})
 			assert.NilError(t, err)
 			t.Cleanup(doc.Close)
 
@@ -474,7 +482,7 @@ func TestInsertText(t *testing.T) {
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
-			doc, err := parser2.ParseFromContent([]byte(content), testHelpers.DefaultSettings(), uri.File(""), protocol.Position{})
+			doc, err := parser2.ParseFromContent(t.Context(), []byte(content), testHelpers.DefaultSettings(), uri.File(""), protocol.Position{})
 			assert.NilError(t, err)
 			t.Cleanup(doc.Close)
 

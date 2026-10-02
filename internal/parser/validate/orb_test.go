@@ -338,7 +338,7 @@ func TestOrbStepsUsedInParameters(t *testing.T) {
 
 	content, err := os.ReadFile("testdata/orb_steps_used_in_params.yml")
 	assert.Check(t, err)
-	val := createValidate(string(content), testHelpers.SettingsForHost(slackOrbFake(t).URL()))
+	val := createValidate(t, string(content), testHelpers.SettingsForHost(slackOrbFake(t).URL()))
 	val.Validate()
 	for _, diag := range *val.Diagnostics {
 		if diag.Message == protocol.String("Orb is unused") {
@@ -353,7 +353,7 @@ func TestLocalOrbUsedPartsFalsePositive(t *testing.T) {
 	content, err := os.ReadFile("./testdata/orbs/local-orb-used-parts.yml")
 	assert.Check(t, err)
 
-	doc, err := parser.ParseFromContent(content, context, fileURI, protocol.Position{})
+	doc, err := parser.ParseFromContent(t.Context(), content, context, fileURI, protocol.Position{})
 	assert.Check(t, err)
 
 	val := Validate{
@@ -375,7 +375,7 @@ func TestLocalOrbUnusedPartsFalseNegative(t *testing.T) {
 	content, err := os.ReadFile("./testdata/orbs/local-orb-unused-parts.yml")
 	assert.Check(t, err)
 
-	doc, err := parser.ParseFromContent(content, context, fileURI, protocol.Position{})
+	doc, err := parser.ParseFromContent(t.Context(), content, context, fileURI, protocol.Position{})
 	assert.Check(t, err)
 
 	val := Validate{
@@ -467,7 +467,7 @@ jobs:
 	commandUnused := func(t *testing.T, yamlContent string) bool {
 		t.Helper()
 
-		val := CreateValidateFromYAML(yamlContent)
+		val := CreateValidateFromYAML(t, yamlContent)
 		val.Validate()
 
 		return slices.Contains(getDiagnosticMessages(val.Diagnostics), "Command is unused")
@@ -573,7 +573,7 @@ func TestLocalOrbCommandUsedWithinTheOrb(t *testing.T) {
 	unusedWarnings := func(t *testing.T, yamlContent string) []string {
 		t.Helper()
 
-		val := CreateValidateFromYAML(yamlContent)
+		val := CreateValidateFromYAML(t, yamlContent)
 		val.Validate()
 
 		warnings := []string{}
@@ -743,7 +743,7 @@ workflows:
           name: lint
 `
 
-	doc, err := parser.ParseFromContent([]byte(yamlContent), settings, uri.File(""), protocol.Position{})
+	doc, err := parser.ParseFromContent(t.Context(), []byte(yamlContent), settings, uri.File(""), protocol.Position{})
 	assert.NilError(t, err)
 
 	val := Validate{
@@ -879,7 +879,7 @@ func TestOrbExecutorLookUp(t *testing.T) {
 	diagnosticsFor := func(t *testing.T, executor string) []string {
 		t.Helper()
 
-		val := CreateValidateFromYAML(`version: 2.1
+		val := CreateValidateFromYAML(t, `version: 2.1
 
 orbs:
   local:
@@ -891,14 +891,14 @@ orbs:
 
 jobs:
   build:
-    executor: ` + executor + `
+    executor: `+executor+`
     steps:
       - checkout
   param:
     parameters:
       exec:
         type: executor
-        default: ` + executor + `
+        default: `+executor+`
     executor: << parameters.exec >>
     steps:
       - checkout

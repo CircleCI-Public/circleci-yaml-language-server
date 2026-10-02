@@ -9,8 +9,8 @@ import (
 	languageservice "github.com/CircleCI-Public/circleci-yaml-language-server/internal/services"
 )
 
-func (methods *Methods) InlayHint(_ context.Context, params *protocol.InlayHintParams) ([]protocol.InlayHint, error) {
-	return languageservice.InlayHints(*params, methods.Cache, methods.Settings())
+func (methods *Methods) InlayHint(ctx context.Context, params *protocol.InlayHintParams) ([]protocol.InlayHint, error) {
+	return languageservice.InlayHints(ctx, *params, methods.Cache, methods.Settings())
 }
 
 // refreshInlayHints asks the client to ask for inlay hints again, for a client

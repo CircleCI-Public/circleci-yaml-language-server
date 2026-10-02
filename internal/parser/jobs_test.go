@@ -257,7 +257,7 @@ jobs:
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
-			doc, err := ParseFromContent([]byte(tc.content), testHelpers.DefaultSettings(), uri.File(""), protocol.Position{})
+			doc, err := ParseFromContent(t.Context(), []byte(tc.content), testHelpers.DefaultSettings(), uri.File(""), protocol.Position{})
 			assert.NilError(t, err)
 			t.Cleanup(doc.Close)
 

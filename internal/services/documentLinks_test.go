@@ -28,7 +28,7 @@ orbs:
 		t.Helper()
 		settings := testHelpers.DefaultSettings()
 		settings.Api.HostUrl = hostURL
-		links, err := DocumentLinks(protocol.DocumentLinkParams{
+		links, err := DocumentLinks(t.Context(), protocol.DocumentLinkParams{
 			TextDocument: protocol.TextDocumentIdentifier{URI: docURI},
 		}, c, settings)
 		assert.NilError(t, err)

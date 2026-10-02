@@ -8,8 +8,8 @@ import (
 	languageservice "github.com/CircleCI-Public/circleci-yaml-language-server/internal/services"
 )
 
-func (methods *Methods) Completion(_ context.Context, params *protocol.CompletionParams) (protocol.CompletionResult, error) {
-	res, err := languageservice.Complete(*params, methods.Cache, methods.Settings())
+func (methods *Methods) Completion(ctx context.Context, params *protocol.CompletionParams) (protocol.CompletionResult, error) {
+	res, err := languageservice.Complete(ctx, *params, methods.Cache, methods.Settings())
 	go (func() {
 		methods.SendTelemetryEvent(TelemetryEvent{
 			Action: "autocompleted",

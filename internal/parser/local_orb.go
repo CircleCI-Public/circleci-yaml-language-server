@@ -55,7 +55,7 @@ func (doc *YamlDocument) parseLocalOrb(name string, orbNode *sitter.Node) (*Loca
 	}
 
 	orbContent := strings.Repeat(" ", int(orbRange.Start.Character)) + doc.GetNodeText(orbNode)
-	orbDoc, err := ParseFromContent([]byte(orbContent), doc.Context, doc.URI, protocol.Position{
+	orbDoc, err := ParseFromContent(doc.Ctx, []byte(orbContent), doc.Context, doc.URI, protocol.Position{
 		Line:      orbRange.Start.Line,
 		Character: 0,
 	})

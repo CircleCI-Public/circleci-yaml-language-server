@@ -53,7 +53,7 @@ func TestMethodsCloseTheTreesTheyParse(t *testing.T) {
 	t.Run("parsing the open document", func(t *testing.T) {
 		leaked := tsalloc.Track(t)
 
-		methods.parsingMethods(config)
+		methods.parsingMethods(t.Context(), config)
 
 		assert.Check(t, cmp.Equal(leaked(), int64(0)), "tree-sitter allocations left open")
 	})
@@ -61,7 +61,7 @@ func TestMethodsCloseTheTreesTheyParse(t *testing.T) {
 	t.Run("updating an orb file", func(t *testing.T) {
 		leaked := tsalloc.Track(t)
 
-		methods.updateOrbFile([]byte("version: 2.1\ncommands:\n  greet:\n    steps:\n      - run: echo hello\n"), orbURI)
+		methods.updateOrbFile(t.Context(), []byte("version: 2.1\ncommands:\n  greet:\n    steps:\n      - run: echo hello\n"), orbURI)
 
 		assert.Check(t, cmp.Equal(leaked(), int64(0)), "tree-sitter allocations left open")
 	})

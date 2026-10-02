@@ -40,17 +40,23 @@ type JSONRPCServer struct {
 func (server JSONRPCServer) serve(stream jsonrpc2.Stream) error {
 	slog.Info("new client connection")
 
+	// The session's context ends with it, so that what the session still has
+	// running in the background, such as validation, stops when the client
+	// goes.
+	ctx, cancel := context.WithCancel(server.ctx)
+	defer cancel()
+
 	conn := jsonrpc2.NewConn(stream, jsonrpc2.WithCodec(lspcodec.Codec{}))
 	// Each client gets settings of its own: one setting a token should not
 	// sign every other client in with it.
-	lsp := methods.New(server.ctx, protocol.ClientDispatcher(conn), cache.New(), *server.lsContext, server.SchemaLocation)
+	lsp := methods.New(ctx, protocol.ClientDispatcher(conn), cache.New(), *server.lsContext, server.SchemaLocation)
 	handler := protocol.ServerHandler(lsp, jsonrpc2.MethodNotFoundHandler)
-	conn.Go(server.ctx, recoverPanics(dropFailedNotifications(logMethods(servedDocuments(lsp, releaseQueries(handler))))))
+	conn.Go(ctx, recoverPanics(dropFailedNotifications(logMethods(servedDocuments(lsp, releaseQueries(handler))))))
 
 	select {
 	case <-lsp.Exited():
 	case <-conn.Done():
-	case <-server.ctx.Done():
+	case <-ctx.Done():
 	}
 
 	lsp.Cache.Close()

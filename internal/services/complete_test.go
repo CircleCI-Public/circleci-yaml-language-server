@@ -41,6 +41,7 @@ func TestComplete(t *testing.T) {
 	assert.NilError(t, err)
 
 	parsedOrb, err := parser.ParseFromURI(
+		t.Context(),
 		uri.File(orbPath),
 		context,
 	)
@@ -345,7 +346,7 @@ func TestComplete(t *testing.T) {
 				},
 			}
 
-			got, err := Complete(param, c, context)
+			got, err := Complete(t.Context(), param, c, context)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Complete() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -387,7 +388,7 @@ func TestCompleteTheVersion(t *testing.T) {
 		c.FileCache.SetFile(cache.File{
 			TextDocument: protocol.TextDocumentItem{URI: fileURI, Text: content},
 		})
-		list, err := Complete(protocol.CompletionParams{
+		list, err := Complete(t.Context(), protocol.CompletionParams{
 			TextDocumentPositionParams: protocol.TextDocumentPositionParams{
 				TextDocument: protocol.TextDocumentIdentifier{URI: fileURI},
 				Position:     pos,

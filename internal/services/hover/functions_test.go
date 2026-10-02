@@ -43,7 +43,7 @@ jobs:
 	)
 	settings := testHelpers.SettingsForHost(fake.URL())
 
-	doc, err := yamlparser.ParseFromContent([]byte(config), settings, uri.File("/config.yml"), protocol.Position{})
+	doc, err := yamlparser.ParseFromContent(t.Context(), []byte(config), settings, uri.File("/config.yml"), protocol.Position{})
 	assert.NilError(t, err)
 	t.Cleanup(doc.Close)
 	c := cache.New()

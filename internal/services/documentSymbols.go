@@ -1,6 +1,7 @@
 package languageservice
 
 import (
+	"context"
 	"errors"
 
 	"go.lsp.dev/protocol"
@@ -11,11 +12,11 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/session"
 )
 
-func DocumentSymbols(params protocol.DocumentSymbolParams, cache *cache.Cache, context *session.Settings) ([]protocol.DocumentSymbol, error) {
-	yamlDocument, err := yamlparser.ParseFromUriWithCache(params.TextDocument.URI, cache, context)
+func DocumentSymbols(ctx context.Context, params protocol.DocumentSymbolParams, cache *cache.Cache, context *session.Settings) ([]protocol.DocumentSymbol, error) {
+	yamlDocument, err := yamlparser.ParseFromUriWithCache(ctx, params.TextDocument.URI, cache, context)
 
 	if errors.Is(err, yamlparser.ErrCacheMissing) {
-		yamlDocument, err = yamlparser.ParseFromURI(params.TextDocument.URI, context)
+		yamlDocument, err = yamlparser.ParseFromURI(ctx, params.TextDocument.URI, context)
 	}
 
 	if err != nil {

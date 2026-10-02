@@ -1,6 +1,7 @@
 package languageservice
 
 import (
+	"context"
 	"regexp"
 	"slices"
 	"sort"
@@ -33,8 +34,8 @@ type SemanticTokenStruct struct {
 	tokens          *[]Tokens
 }
 
-func SemanticTokens(params protocol.SemanticTokensParams, cache *cache.Cache, context *session.Settings) protocol.SemanticTokens {
-	doc, err := parser2.ParseFromUriWithCache(params.TextDocument.URI, cache, context)
+func SemanticTokens(ctx context.Context, params protocol.SemanticTokensParams, cache *cache.Cache, context *session.Settings) protocol.SemanticTokens {
+	doc, err := parser2.ParseFromUriWithCache(ctx, params.TextDocument.URI, cache, context)
 	if err != nil {
 		return protocol.SemanticTokens{}
 	}

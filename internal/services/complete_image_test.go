@@ -41,7 +41,7 @@ func TestCompleteOutsideADockerImageValue(t *testing.T) {
 			},
 		}
 
-		list, err := Complete(params, c, testHelpers.DefaultSettings())
+		list, err := Complete(t.Context(), params, c, testHelpers.DefaultSettings())
 		assert.Check(t, err, "character %d", character)
 		assert.Check(t, cmp.Len(list.Items, 0), "character %d", character)
 	}
@@ -72,7 +72,7 @@ func TestCompleteADockerImageFromTheConfiguredDockerHub(t *testing.T) {
 			TextDocument: protocol.TextDocumentItem{URI: docURI, Text: content},
 		})
 
-		list, err := Complete(protocol.CompletionParams{
+		list, err := Complete(t.Context(), protocol.CompletionParams{
 			TextDocumentPositionParams: protocol.TextDocumentPositionParams{
 				TextDocument: protocol.TextDocumentIdentifier{URI: docURI},
 				Position:     protocol.Position{Line: 4, Character: uint32(len("      - image: " + image))},
@@ -110,7 +110,7 @@ func TestDiagnosticsAskTheConfiguredDockerHub(t *testing.T) {
 		"    steps:\n" +
 		"      - checkout\n"
 
-	_, err := DiagnosticString(content, testHelpers.DefaultCache(), settings, "")
+	_, err := DiagnosticString(t.Context(), content, testHelpers.DefaultCache(), settings, "")
 	assert.NilError(t, err)
 
 	paths := make([]string, 0)

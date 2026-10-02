@@ -9,7 +9,7 @@ import (
 )
 
 func (methods *Methods) DocumentLink(
-	_ context.Context, params *protocol.DocumentLinkParams,
+	ctx context.Context, params *protocol.DocumentLinkParams,
 ) ([]protocol.DocumentLink, error) {
-	return languageservice.DocumentLinks(*params, methods.Cache, methods.Settings())
+	return languageservice.DocumentLinks(ctx, *params, methods.Cache, methods.Settings())
 }

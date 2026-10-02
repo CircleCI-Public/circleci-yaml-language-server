@@ -99,7 +99,7 @@ func completionLabelsWith(t *testing.T, settings *session.Settings, c *cache.Cac
 func completionItemsWith(t *testing.T, settings *session.Settings, c *cache.Cache, config string, pos protocol.Position) []protocol.CompletionItem {
 	t.Helper()
 
-	doc, err := yamlparser.ParseFromContent([]byte(config), settings, uri.File("/config.yml"), protocol.Position{})
+	doc, err := yamlparser.ParseFromContent(t.Context(), []byte(config), settings, uri.File("/config.yml"), protocol.Position{})
 	assert.NilError(t, err)
 	t.Cleanup(doc.Close)
 

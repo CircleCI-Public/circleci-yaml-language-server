@@ -2,6 +2,7 @@ package languageservice
 
 import (
 	"cmp"
+	"context"
 	"errors"
 	"slices"
 	"strings"
@@ -20,14 +21,14 @@ import (
 // Each is in the section that declares it, such as Jobs. An open document is
 // read as it is in the editor, and any other from disk; one that can't be
 // read is left out.
-func WorkspaceSymbols(query string, documents []uri.URI, cache *cache.Cache, context *session.Settings) []protocol.SymbolInformation {
+func WorkspaceSymbols(ctx context.Context, query string, documents []uri.URI, cache *cache.Cache, context *session.Settings) []protocol.SymbolInformation {
 	query = strings.ToLower(query)
 	symbols := []protocol.SymbolInformation{}
 
 	for _, document := range documents {
-		yamlDocument, err := yamlparser.ParseFromUriWithCache(document, cache, context)
+		yamlDocument, err := yamlparser.ParseFromUriWithCache(ctx, document, cache, context)
 		if errors.Is(err, yamlparser.ErrCacheMissing) {
-			yamlDocument, err = yamlparser.ParseFromURI(document, context)
+			yamlDocument, err = yamlparser.ParseFromURI(ctx, document, context)
 		}
 		if err != nil {
 			continue

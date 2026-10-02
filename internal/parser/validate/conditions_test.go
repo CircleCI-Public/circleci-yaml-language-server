@@ -151,7 +151,7 @@ workflows:
 }
 
 func TestStepConditionsUsingABareWord(t *testing.T) {
-	val := CreateValidateFromYAML(`version: 2.1
+	val := CreateValidateFromYAML(t, `version: 2.1
 
 commands:
   maybe:

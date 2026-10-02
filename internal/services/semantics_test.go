@@ -71,7 +71,7 @@ func semanticTokens(t *testing.T, content string) []string {
 	file := uri.File("/workspace/.circleci/config.yml")
 	c.FileCache.SetFile(cache.File{TextDocument: protocol.TextDocumentItem{URI: file, Text: content}})
 	params := protocol.SemanticTokensParams{TextDocument: protocol.TextDocumentIdentifier{URI: file}}
-	data := SemanticTokens(params, c, testHelpers.DefaultSettings()).Data
+	data := SemanticTokens(t.Context(), params, c, testHelpers.DefaultSettings()).Data
 	assert.Assert(t, cmp.Equal(len(data)%5, 0), "tokens come in fives")
 
 	lines := strings.Split(content, "\n")

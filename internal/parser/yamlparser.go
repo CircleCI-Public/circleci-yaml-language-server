@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -23,12 +24,16 @@ import (
 
 // ParseFile parses a config. The document owns the tree its nodes belong to:
 // close it once nothing reads RootNode, or anything found under it, any more.
-func ParseFile(content []byte, context *session.Settings) YamlDocument {
+//
+// ctx is what the document's lookups, such as of the orbs it names, are made
+// under, so a document belongs to the request it was parsed for.
+func ParseFile(ctx context.Context, content []byte, settings *session.Settings) YamlDocument {
 	tree := yamltree.Parse(content)
 
 	doc := YamlDocument{
+		Ctx:                ctx,
 		Content:            content,
-		Context:            context,
+		Context:            settings,
 		tree:               tree,
 		RootNode:           tree.Root(),
 		Commands:           make(map[string]ast2.Command),
@@ -177,19 +182,19 @@ func (doc *YamlDocument) SyntaxErrors() []protocol.Diagnostic {
 	return diagnostics
 }
 
-func ParseFromURI(URI uri.URI, context *session.Settings) (YamlDocument, error) {
+func ParseFromURI(ctx context.Context, URI uri.URI, settings *session.Settings) (YamlDocument, error) {
 	content, err := os.ReadFile(URI.FsPath())
 	if err != nil {
 		return YamlDocument{}, err
 	}
-	doc, err := ParseFromContent([]byte(content), context, URI, protocol.Position{})
+	doc, err := ParseFromContent(ctx, []byte(content), settings, URI, protocol.Position{})
 
 	return doc, err
 }
 
 var ErrCacheMissing = errors.New("file not found in cache")
 
-func ParseFromUriWithCache(URI uri.URI, cache *cache.Cache, context *session.Settings) (YamlDocument, error) {
+func ParseFromUriWithCache(ctx context.Context, URI uri.URI, cache *cache.Cache, settings *session.Settings) (YamlDocument, error) {
 	cachedFile := cache.FileCache.GetFile(URI)
 
 	if cachedFile == nil {
@@ -198,16 +203,16 @@ func ParseFromUriWithCache(URI uri.URI, cache *cache.Cache, context *session.Set
 
 	content := []byte(cachedFile.TextDocument.Text)
 
-	doc, err := ParseFromContent(content, context, URI, protocol.Position{})
+	doc, err := ParseFromContent(ctx, content, settings, URI, protocol.Position{})
 
 	return doc, err
 }
 
-func ParseFromContent(content []byte, context *session.Settings, URI uri.URI, offset protocol.Position) (YamlDocument, error) {
-	doc := ParseFile([]byte(content), context)
+func ParseFromContent(ctx context.Context, content []byte, settings *session.Settings, URI uri.URI, offset protocol.Position) (YamlDocument, error) {
+	doc := ParseFile(ctx, []byte(content), settings)
 	doc.URI = URI
 
-	doc.ParseYAML(context, offset)
+	doc.ParseYAML(settings, offset)
 
 	return doc, nil
 }
@@ -220,6 +225,8 @@ type YamlAnchor struct {
 }
 
 type YamlDocument struct {
+	// Ctx is the context of the request the document was parsed for.
+	Ctx     context.Context
 	Content []byte
 	// tree owns RootNode and every node under it. Copies of a document share
 	// it, and it is freed by Close.
@@ -347,7 +354,7 @@ func (doc *YamlDocument) IsFromUnfetchableOrb(name string, cache *cache.Cache) b
 	}
 
 	if orb.Url.IsURL {
-		orbInfo, err := GetURLOrbInfo(orb.Url.Name, cache, doc.Context)
+		orbInfo, err := GetURLOrbInfo(doc.Ctx, orb.Url.Name, cache, doc.Context)
 		return orbInfo == nil || err != nil
 	}
 
@@ -525,7 +532,7 @@ func (doc *YamlDocument) InsertText(pos protocol.Position, text string) (YamlDoc
 		newContent = slices.Concat(content[:posIdx], []byte(text), content[posIdx:])
 	}
 
-	return ParseFromContent(newContent, doc.Context, doc.URI, doc.Offset)
+	return ParseFromContent(doc.Ctx, newContent, doc.Context, doc.URI, doc.Offset)
 }
 
 type ModifiedYamlDocument struct {
@@ -786,6 +793,7 @@ func (doc *YamlDocument) FromOrbParsedAttributesToYamlDocument(orb ast2.OrbParse
 
 		RootNode:     doc.RootNode,
 		unreadRanges: doc.unreadRanges,
+		Ctx:          doc.Ctx,
 		Context:      doc.Context,
 
 		Commands:           orb.Commands,

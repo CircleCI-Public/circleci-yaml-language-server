@@ -8,8 +8,8 @@ import (
 	languageservice "github.com/CircleCI-Public/circleci-yaml-language-server/internal/services"
 )
 
-func (methods *Methods) DocumentSymbol(_ context.Context, params *protocol.DocumentSymbolParams) (protocol.DocumentSymbolResult, error) {
-	res, err := languageservice.DocumentSymbols(*params, methods.Cache, methods.Settings())
+func (methods *Methods) DocumentSymbol(ctx context.Context, params *protocol.DocumentSymbolParams) (protocol.DocumentSymbolResult, error) {
+	res, err := languageservice.DocumentSymbols(ctx, *params, methods.Cache, methods.Settings())
 	if err != nil {
 		return nil, err
 	}
