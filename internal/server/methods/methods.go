@@ -25,6 +25,8 @@ import (
 type Methods struct {
 	protocol.UnimplementedServer
 
+	// Ctx is the session's. A request's context ends once it is answered, so
+	// what runs on after that, such as validation, runs under this one.
 	Ctx            context.Context
 	Client         protocol.Client
 	Cache          *cache.Cache

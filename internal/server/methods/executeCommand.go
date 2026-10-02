@@ -13,7 +13,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/session"
 )
 
-func (methods *Methods) ExecuteCommand(_ context.Context, params *protocol.ExecuteCommandParams) (protocol.LSPAny, error) {
+func (methods *Methods) ExecuteCommand(ctx context.Context, params *protocol.ExecuteCommandParams) (protocol.LSPAny, error) {
 	arguments := params.Arguments
 
 	switch params.Command {
@@ -22,7 +22,7 @@ func (methods *Methods) ExecuteCommand(_ context.Context, params *protocol.Execu
 		if !ok {
 			return nil, jsonrpc2.NewError(jsonrpc2.InvalidParams, "invalid method parameter: token")
 		}
-		methods.setToken(param)
+		methods.setToken(ctx, param)
 		methods.updateAllCachedFiles()
 
 	case "setGitHubToken":
@@ -37,7 +37,7 @@ func (methods *Methods) ExecuteCommand(_ context.Context, params *protocol.Execu
 		if !ok {
 			return nil, jsonrpc2.NewError(jsonrpc2.InvalidParams, "invalid method parameter: selfHostedURL")
 		}
-		methods.setHostUrl(param)
+		methods.setHostUrl(ctx, param)
 		methods.updateAllCachedFiles()
 
 	case "setUserId":
@@ -113,7 +113,7 @@ func argument[T any](arguments []protocol.LSPAny, i int) (T, bool) {
 	return value, true
 }
 
-func (methods *Methods) setToken(token string) {
+func (methods *Methods) setToken(ctx context.Context, token string) {
 	if methods.Settings().Api.Token != token {
 		methods.Cache.ClearHostData()
 	}
@@ -123,10 +123,10 @@ func (methods *Methods) setToken(token string) {
 	})
 	filesCache := methods.Cache.FileCache.GetFiles()
 	for _, file := range filesCache {
-		go methods.notificationMethods(file.TextDocument)
+		go methods.notificationMethods(methods.Ctx, file.TextDocument)
 	}
 
-	methods.updateProjectsEnvVariables()
+	methods.updateProjectsEnvVariables(ctx)
 }
 
 // setGitHubToken sets the token orbs referenced by a GitHub URL are fetched
@@ -143,11 +143,11 @@ func (methods *Methods) setGitHubToken(token string) {
 	})
 
 	for _, file := range methods.Cache.FileCache.GetFiles() {
-		go methods.notificationMethods(file.TextDocument)
+		go methods.notificationMethods(methods.Ctx, file.TextDocument)
 	}
 }
 
-func (methods *Methods) setHostUrl(hostUrl string) {
+func (methods *Methods) setHostUrl(ctx context.Context, hostUrl string) {
 	if methods.Settings().Api.HostUrl != hostUrl {
 		methods.Cache.ClearHostData()
 	}
@@ -161,10 +161,10 @@ func (methods *Methods) setHostUrl(hostUrl string) {
 
 	filesCache := methods.Cache.FileCache.GetFiles()
 	for _, file := range filesCache {
-		go methods.notificationMethods(file.TextDocument)
+		go methods.notificationMethods(methods.Ctx, file.TextDocument)
 	}
 
-	methods.updateProjectsEnvVariables()
+	methods.updateProjectsEnvVariables(ctx)
 }
 
 func (methods *Methods) setUserId(userId string) {

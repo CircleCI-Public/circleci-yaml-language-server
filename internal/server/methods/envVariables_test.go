@@ -81,7 +81,7 @@ func Test_updateProjectEnvVariables(t *testing.T) {
 		methods, _ := rocketMethods(t, "a-token", "AWS_REGION", "DEPLOY_KEY")
 		cachedFile := openRocketConfig(t, methods)
 
-		methods.updateProjectEnvVariables(cachedFile)
+		methods.updateProjectEnvVariables(t.Context(), cachedFile)
 
 		file := methods.Cache.FileCache.GetFile(rocketURI)
 		assert.Assert(t, file != nil)
@@ -94,7 +94,7 @@ func Test_updateProjectEnvVariables(t *testing.T) {
 		methods, _ := rocketMethods(t, "a-token", "AWS_REGION")
 		cachedFile := openRocketConfig(t, methods, "AWS_REGION", "RETIRED_KEY")
 
-		methods.updateProjectEnvVariables(cachedFile)
+		methods.updateProjectEnvVariables(t.Context(), cachedFile)
 
 		file := methods.Cache.FileCache.GetFile(rocketURI)
 		assert.Assert(t, file != nil)
@@ -107,7 +107,7 @@ func Test_updateProjectEnvVariables(t *testing.T) {
 		methods, fake := rocketMethods(t, "", "AWS_REGION")
 		cachedFile := openRocketConfig(t, methods, "STALE_KEY")
 
-		methods.updateProjectEnvVariables(cachedFile)
+		methods.updateProjectEnvVariables(t.Context(), cachedFile)
 
 		file := methods.Cache.FileCache.GetFile(rocketURI)
 		assert.Assert(t, file != nil)
@@ -126,7 +126,7 @@ func Test_updateProjectEnvVariables(t *testing.T) {
 		cachedFile := openRocketConfig(t, methods, "STALE_KEY")
 		logged := captureLog(t)
 
-		methods.updateProjectEnvVariables(cachedFile)
+		methods.updateProjectEnvVariables(t.Context(), cachedFile)
 
 		file := methods.Cache.FileCache.GetFile(rocketURI)
 		assert.Assert(t, file != nil, "the file must stay cached when its env vars cannot be read")
@@ -144,7 +144,7 @@ func Test_updateProjectEnvVariables(t *testing.T) {
 		cachedFile := openRocketConfig(t, methods)
 		logged := captureLog(t)
 
-		methods.updateProjectEnvVariables(cachedFile)
+		methods.updateProjectEnvVariables(t.Context(), cachedFile)
 
 		file := methods.Cache.FileCache.GetFile(rocketURI)
 		assert.Assert(t, file != nil)
