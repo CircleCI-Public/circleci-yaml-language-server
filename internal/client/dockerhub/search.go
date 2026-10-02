@@ -1,6 +1,11 @@
 package dockerhub
 
+import "context"
+
+// SearchCursor reads the pages of a namespace as it is walked, under the
+// context of the search it was made for.
 type SearchCursor struct {
+	ctx   context.Context
 	hub   *HubNamespace
 	index int
 	query string
@@ -13,15 +18,15 @@ type ResultsCursor interface {
 }
 
 // Search searches the Docker Hub cfg configures; see searchAPI.
-func Search(cfg Config, query string) ResultsCursor {
-	return searchAPI(cfg).Search(query)
+func Search(ctx context.Context, cfg Config, query string) ResultsCursor {
+	return searchAPI(cfg).Search(ctx, query)
 }
 
-func (me *dockerHubAPI) Search(query string) ResultsCursor {
+func (me *dockerHubAPI) Search(ctx context.Context, query string) ResultsCursor {
 	namespace := getQueryNamespace(query)
 	imageName := getQueryImageName(query)
 
-	return me.namespace(namespace).createSearchCursor(imageName)
+	return me.namespace(namespace).createSearchCursor(ctx, imageName)
 }
 
 // --
@@ -46,7 +51,7 @@ func (s *SearchCursor) HasNext() bool {
 
 		// A failed load sets neither nextURL nor hasLoaded, so going round
 		// again would ask for the same page for ever.
-		if _, err := s.hub.loadNext(); err != nil {
+		if _, err := s.hub.loadNext(s.ctx); err != nil {
 			return false
 		}
 	}

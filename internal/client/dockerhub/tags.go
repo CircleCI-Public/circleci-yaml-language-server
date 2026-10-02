@@ -1,6 +1,7 @@
 package dockerhub
 
 import (
+	"context"
 	"fmt"
 )
 
@@ -14,15 +15,15 @@ type RepoTag struct {
 	Name      string `json:"name"`
 }
 
-func (t *TagResponse) loadNext(api *dockerHubAPI) (TagResponse, error) {
+func (t *TagResponse) loadNext(ctx context.Context, api *dockerHubAPI) (TagResponse, error) {
 	if t.Next == "" {
 		return TagResponse{}, fmt.Errorf("failed to fetch more tags: nothing to fetch")
 	}
 
-	return api.fetchTagsByURL(t.Next)
+	return api.fetchTagsByURL(ctx, t.Next)
 }
 
-func (me *dockerHubAPI) fetchTags(namespace, repo, name string) (TagResponse, error) {
+func (me *dockerHubAPI) fetchTags(ctx context.Context, namespace, repo, name string) (TagResponse, error) {
 	url := me.baseURL.JoinPath(
 		fmt.Sprintf("/namespaces/%s/repositories/%s/tags", namespace, repo),
 	)
@@ -38,19 +39,19 @@ func (me *dockerHubAPI) fetchTags(namespace, repo, name string) (TagResponse, er
 
 	queryURL := url.String()
 
-	return me.fetchTagsByURL(queryURL)
+	return me.fetchTagsByURL(ctx, queryURL)
 }
 
-func (me *dockerHubAPI) fetchTagsByURL(queryURL string) (TagResponse, error) {
+func (me *dockerHubAPI) fetchTagsByURL(ctx context.Context, queryURL string) (TagResponse, error) {
 	tagResponse := TagResponse{}
-	if _, err := me.get(queryURL, &tagResponse); err != nil {
+	if _, err := me.get(ctx, queryURL, &tagResponse); err != nil {
 		return TagResponse{}, fmt.Errorf("fetching tags: %w", err)
 	}
 
 	return tagResponse, nil
 }
 
-func (me *dockerHubAPI) GetImageTags(namespace, image string) ([]string, error) {
+func (me *dockerHubAPI) GetImageTags(ctx context.Context, namespace, image string) ([]string, error) {
 	url := me.baseURL.JoinPath(
 		fmt.Sprintf("namespaces/%s/repositories/%s/tags", namespace, image),
 	)
@@ -63,7 +64,7 @@ func (me *dockerHubAPI) GetImageTags(namespace, image string) ([]string, error) 
 	url.RawQuery = q.Encode()
 
 	body := TagResponse{}
-	if _, err := me.get(url.String(), &body); err != nil {
+	if _, err := me.get(ctx, url.String(), &body); err != nil {
 		return nil, err
 	}
 
@@ -80,10 +81,10 @@ func (me *dockerHubAPI) GetImageTags(namespace, image string) ([]string, error) 
 	return tags, nil
 }
 
-func (me *dockerHubAPI) ImageHasTag(namespace, image, tag string) (bool, error) {
+func (me *dockerHubAPI) ImageHasTag(ctx context.Context, namespace, image, tag string) (bool, error) {
 	url := me.baseURL.JoinPath(
 		fmt.Sprintf("namespaces/%s/repositories/%s/tags/%s", namespace, image, tag),
 	)
 
-	return me.exists(url.String())
+	return me.exists(ctx, url.String())
 }

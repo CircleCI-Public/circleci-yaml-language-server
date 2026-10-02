@@ -40,8 +40,8 @@ func TestResourceClassesOfFile(t *testing.T) {
 		fake, client := runnerFake(t)
 		c := New()
 
-		c.SetOrgOfFile(client, rocketConfig, "gh/acme")
-		classes := c.ResourceClassesOfFile(client, rocketConfig)
+		c.SetOrgOfFile(t.Context(), client, rocketConfig, "gh/acme")
+		classes := c.ResourceClassesOfFile(t.Context(), client, rocketConfig)
 
 		assert.Check(t, cmp.DeepEqual(classes, acmeClasses))
 
@@ -59,10 +59,10 @@ func TestResourceClassesOfFile(t *testing.T) {
 		fake, client := runnerFake(t)
 		c := New()
 
-		c.SetOrgOfFile(client, rocketConfig, "gh/acme")
-		c.SetOrgOfFile(client, gadgetConfig, "gh/acme")
-		rocketClasses := c.ResourceClassesOfFile(client, rocketConfig)
-		gadgetClasses := c.ResourceClassesOfFile(client, gadgetConfig)
+		c.SetOrgOfFile(t.Context(), client, rocketConfig, "gh/acme")
+		c.SetOrgOfFile(t.Context(), client, gadgetConfig, "gh/acme")
+		rocketClasses := c.ResourceClassesOfFile(t.Context(), client, rocketConfig)
+		gadgetClasses := c.ResourceClassesOfFile(t.Context(), client, gadgetConfig)
 
 		assert.Check(t, cmp.DeepEqual(rocketClasses, acmeClasses))
 		assert.Check(t, cmp.DeepEqual(gadgetClasses, acmeClasses))
@@ -74,12 +74,12 @@ func TestResourceClassesOfFile(t *testing.T) {
 		_, client := runnerFake(t)
 		c := New()
 
-		c.SetOrgOfFile(client, rocketConfig, "gh/acme")
-		c.SetOrgOfFile(client, gadgetConfig, "gh/acme")
+		c.SetOrgOfFile(t.Context(), client, rocketConfig, "gh/acme")
+		c.SetOrgOfFile(t.Context(), client, gadgetConfig, "gh/acme")
 		c.ForgetFile(rocketConfig)
 
-		assert.Check(t, cmp.Len(c.ResourceClassesOfFile(client, rocketConfig), 0))
-		assert.Check(t, cmp.DeepEqual(c.ResourceClassesOfFile(client, gadgetConfig), acmeClasses),
+		assert.Check(t, cmp.Len(c.ResourceClassesOfFile(t.Context(), client, rocketConfig), 0))
+		assert.Check(t, cmp.DeepEqual(c.ResourceClassesOfFile(t.Context(), client, gadgetConfig), acmeClasses),
 			"another file of the organization keeps its classes")
 	})
 
@@ -87,9 +87,9 @@ func TestResourceClassesOfFile(t *testing.T) {
 		_, client := runnerFake(t)
 		c := New()
 
-		c.SetOrgOfFile(client, rocketConfig, "")
-		rocketClasses := c.ResourceClassesOfFile(client, rocketConfig)
-		unknownClasses := c.ResourceClassesOfFile(client, unknownConfig)
+		c.SetOrgOfFile(t.Context(), client, rocketConfig, "")
+		rocketClasses := c.ResourceClassesOfFile(t.Context(), client, rocketConfig)
+		unknownClasses := c.ResourceClassesOfFile(t.Context(), client, unknownConfig)
 
 		assert.Check(t, cmp.Len(rocketClasses, 0))
 		assert.Check(t, cmp.Len(unknownClasses, 0))
@@ -101,8 +101,8 @@ func TestResourceClassesOfFile(t *testing.T) {
 		c := New()
 
 		t.Run("open a file anonymously", func(t *testing.T) {
-			c.SetOrgOfFile(anonymous, rocketConfig, "gh/acme")
-			classes := c.ResourceClassesOfFile(anonymous, rocketConfig)
+			c.SetOrgOfFile(t.Context(), anonymous, rocketConfig, "gh/acme")
+			classes := c.ResourceClassesOfFile(t.Context(), anonymous, rocketConfig)
 			requests := fake.Requests()
 
 			assert.Check(t, cmp.Len(classes, 0))
@@ -110,7 +110,7 @@ func TestResourceClassesOfFile(t *testing.T) {
 		})
 
 		t.Run("check the classes are listed once a token is set", func(t *testing.T) {
-			classes := c.ResourceClassesOfFile(client, rocketConfig)
+			classes := c.ResourceClassesOfFile(t.Context(), client, rocketConfig)
 			assert.Check(t, cmp.DeepEqual(classes, acmeClasses))
 		})
 	})
@@ -121,8 +121,8 @@ func TestResourceClassesOfFile(t *testing.T) {
 		fake, client := runnerFake(t)
 		c := New()
 
-		c.SetOrgOfFile(client, rocketConfig, "gh/nobody")
-		classes := c.ResourceClassesOfFile(client, rocketConfig)
+		c.SetOrgOfFile(t.Context(), client, rocketConfig, "gh/nobody")
+		classes := c.ResourceClassesOfFile(t.Context(), client, rocketConfig)
 
 		assert.Check(t, cmp.Len(classes, 0))
 		assert.Check(t, cmp.Equal(fake.RequestCount(http.MethodGet, orgsRoute), 1))
@@ -135,14 +135,14 @@ func TestResourceClassesOfFile(t *testing.T) {
 
 		t.Run("fail the listing", func(t *testing.T) {
 			fake.SetStatus("GET "+runnerRoute, http.StatusInternalServerError)
-			c.SetOrgOfFile(client, rocketConfig, "gh/acme")
-			classes := c.ResourceClassesOfFile(client, rocketConfig)
+			c.SetOrgOfFile(t.Context(), client, rocketConfig, "gh/acme")
+			classes := c.ResourceClassesOfFile(t.Context(), client, rocketConfig)
 			assert.Check(t, cmp.Len(classes, 0))
 		})
 
 		t.Run("check the next call lists them", func(t *testing.T) {
 			fake.SetStatus("GET "+runnerRoute, 0)
-			classes := c.ResourceClassesOfFile(client, rocketConfig)
+			classes := c.ResourceClassesOfFile(t.Context(), client, rocketConfig)
 			assert.Check(t, cmp.DeepEqual(classes, acmeClasses))
 		})
 	})

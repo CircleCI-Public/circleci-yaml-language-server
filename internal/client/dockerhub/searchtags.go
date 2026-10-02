@@ -1,6 +1,11 @@
 package dockerhub
 
+import "context"
+
+// TagsSearchCursor reads the pages of tags as it is walked, under the context
+// of the search it was made for.
 type TagsSearchCursor struct {
+	ctx          context.Context
 	api          *dockerHubAPI
 	query        string
 	index        int
@@ -16,18 +21,19 @@ type TagsResultsCursor interface {
 
 // SearchTags searches the tags of a repository on the Docker Hub cfg
 // configures; see searchAPI.
-func SearchTags(cfg Config, namespace, repo string, query string) (TagsResultsCursor, error) {
-	return searchAPI(cfg).SearchTags(namespace, repo, query)
+func SearchTags(ctx context.Context, cfg Config, namespace, repo string, query string) (TagsResultsCursor, error) {
+	return searchAPI(cfg).SearchTags(ctx, namespace, repo, query)
 }
 
-func (me *dockerHubAPI) SearchTags(namespace, repo string, query string) (TagsResultsCursor, error) {
-	results, err := me.fetchTags(namespace, repo, query)
+func (me *dockerHubAPI) SearchTags(ctx context.Context, namespace, repo string, query string) (TagsResultsCursor, error) {
+	results, err := me.fetchTags(ctx, namespace, repo, query)
 
 	if err != nil {
 		return nil, err
 	}
 
 	return &TagsSearchCursor{
+		ctx:          ctx,
 		api:          me,
 		query:        query,
 		index:        0,
@@ -42,7 +48,7 @@ func (me *dockerHubAPI) SearchTags(namespace, repo string, query string) (TagsRe
 
 func (t *TagsSearchCursor) HasNext() bool {
 	if t.index >= len(t.results)-1 && t.lastResponse.Next != "" {
-		nextPage, err := t.lastResponse.loadNext(t.api)
+		nextPage, err := t.lastResponse.loadNext(t.ctx, t.api)
 
 		if err != nil {
 			// The walk ends at the page that failed, rather than the cursor

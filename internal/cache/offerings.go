@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"context"
 	"time"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
@@ -34,9 +35,9 @@ func (c *MachineOfferings) Set(offerings *circleci.Offerings) {
 // remembered; concurrent callers share one fetch. Returns nil on failure, so
 // callers skip validation rather than flag valid config; every view of
 // *Offerings answers nil for a nil catalog.
-func (cache *Cache) Offerings(api circleci.Config) *circleci.Offerings {
-	offerings, _ := cache.MachineOfferingsCache.catalog.Get(catalogKey, func() (*circleci.Offerings, error) {
-		return circleci.FetchOfferings(api), nil
+func (cache *Cache) Offerings(ctx context.Context, api circleci.Config) *circleci.Offerings {
+	offerings, _ := cache.MachineOfferingsCache.catalog.Get(ctx, catalogKey, func(ctx context.Context) (*circleci.Offerings, error) {
+		return circleci.FetchOfferings(ctx, api), nil
 	})
 	return offerings
 }

@@ -16,7 +16,7 @@ func TestSearch(t *testing.T) {
 		fake := cimgFake(t)
 		api := apiFor(fake)
 
-		cursor := api.Search("cimg/base")
+		cursor := api.Search(t.Context(), "cimg/base")
 		assert.Assert(t, cursor.HasNext())
 
 		repository := cursor.Next()
@@ -32,7 +32,7 @@ func TestSearch(t *testing.T) {
 		fake.SetPageLimit(1)
 		api := apiFor(fake)
 
-		cursor := api.Search("cimg/python")
+		cursor := api.Search(t.Context(), "cimg/python")
 		assert.Assert(t, cursor.HasNext())
 
 		repository := cursor.Next()
@@ -47,7 +47,7 @@ func TestSearch(t *testing.T) {
 		fake.SetPageLimit(1)
 		api := apiFor(fake)
 
-		assert.Assert(t, api.Search("cimg/base").HasNext())
+		assert.Assert(t, api.Search(t.Context(), "cimg/base").HasNext())
 
 		requestCount := fake.RequestCount(http.MethodGet, cimgReposPath)
 		assert.Check(t, cmp.Equal(requestCount, 1))
@@ -58,10 +58,10 @@ func TestSearch(t *testing.T) {
 		fake := cimgFake(t)
 		api := apiFor(fake)
 
-		assert.Assert(t, api.Search("cimg/python").HasNext())
+		assert.Assert(t, api.Search(t.Context(), "cimg/python").HasNext())
 		before := fake.RequestCount(http.MethodGet, cimgReposPath)
 
-		assert.Check(t, api.Search("cimg/go").HasNext())
+		assert.Check(t, api.Search(t.Context(), "cimg/go").HasNext())
 
 		after := fake.RequestCount(http.MethodGet, cimgReposPath)
 		assert.Check(t, cmp.Equal(after, before))
@@ -75,16 +75,16 @@ func TestSearch(t *testing.T) {
 		now := time.Now()
 		api.now = func() time.Time { return now }
 
-		assert.Assert(t, api.Search("cimg/python").HasNext())
+		assert.Assert(t, api.Search(t.Context(), "cimg/python").HasNext())
 		before := fake.RequestCount(http.MethodGet, cimgReposPath)
 
 		now = now.Add(59 * time.Minute)
-		assert.Check(t, api.Search("cimg/go").HasNext())
+		assert.Check(t, api.Search(t.Context(), "cimg/go").HasNext())
 		assert.Check(t, cmp.Equal(fake.RequestCount(http.MethodGet, cimgReposPath), before), "an hour has not passed")
 
 		fake.AddRepository("cimg", "rust")
 		now = now.Add(time.Minute)
-		assert.Check(t, api.Search("cimg/rust").HasNext(), "a repository added since must be found")
+		assert.Check(t, api.Search(t.Context(), "cimg/rust").HasNext(), "a repository added since must be found")
 		assert.Check(t, fake.RequestCount(http.MethodGet, cimgReposPath) > before)
 	})
 
@@ -93,7 +93,7 @@ func TestSearch(t *testing.T) {
 		fake.SetPageLimit(2)
 		api := apiFor(fake)
 
-		cursor := api.Search("cimg/")
+		cursor := api.Search(t.Context(), "cimg/")
 
 		names := []string{}
 		for cursor.HasNext() {
@@ -109,7 +109,7 @@ func TestSearch(t *testing.T) {
 		fake := cimgFake(t)
 		api := apiFor(fake)
 
-		cursor := api.Search("cimg/nope")
+		cursor := api.Search(t.Context(), "cimg/nope")
 		assert.Check(t, !cursor.HasNext())
 	})
 
@@ -117,7 +117,7 @@ func TestSearch(t *testing.T) {
 		fake := cimgFake(t)
 		api := apiFor(fake)
 
-		cursor := api.Search("nobody/anything")
+		cursor := api.Search(t.Context(), "nobody/anything")
 		assert.Check(t, !cursor.HasNext())
 	})
 
@@ -147,7 +147,7 @@ func TestSearch(t *testing.T) {
 				failure.fail(fake)
 
 				hasNext := make(chan bool, 1)
-				go func() { hasNext <- api.Search("cimg/node").HasNext() }()
+				go func() { hasNext <- api.Search(t.Context(), "cimg/node").HasNext() }()
 
 				select {
 				case got := <-hasNext:
@@ -166,7 +166,7 @@ func TestSearch(t *testing.T) {
 		fake.AddRepository("library", "node")
 		api := apiFor(fake)
 
-		cursor := api.Search("node")
+		cursor := api.Search(t.Context(), "node")
 		assert.Assert(t, cursor.HasNext())
 
 		repository := cursor.Next()
@@ -182,13 +182,13 @@ func TestSearchCursorPrev(t *testing.T) {
 	fake := cimgFake(t)
 	api := apiFor(fake)
 
-	cursor := api.Search("cimg/")
+	cursor := api.Search(t.Context(), "cimg/")
 	assert.Assert(t, cursor.HasNext())
 	assert.Assert(t, cursor.Next() != nil) // base
 	assert.Assert(t, cursor.Next() != nil) // go
 
 	t.Run("reports nothing before the first match", func(t *testing.T) {
-		fresh := api.Search("cimg/")
+		fresh := api.Search(t.Context(), "cimg/")
 		assert.Check(t, cmp.Nil(fresh.Prev()))
 	})
 

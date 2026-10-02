@@ -17,6 +17,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -54,8 +55,7 @@ const defaultPageSize = 10
 // more than this many proves the same thing for tags.
 const tagPageSize = 100
 
-// probeTimeout bounds the whole probe. The repository cursor loops until it is
-// satisfied and cannot be given a deadline, so this is the only bound there is.
+// probeTimeout bounds the whole probe, and so every request it makes.
 const probeTimeout = 3 * time.Minute
 
 func main() {
@@ -63,6 +63,9 @@ func main() {
 }
 
 func run() int {
+	ctx, cancel := context.WithTimeout(context.Background(), probeTimeout)
+	defer cancel()
+
 	namespace, repository := defaultNamespace, defaultRepository
 	if len(os.Args) > 1 {
 		parts := strings.SplitN(os.Args[1], "/", 2)
@@ -85,7 +88,7 @@ func run() int {
 	api := dockerhub.NewAPI()
 
 	hubProbe.Check("a namespace lists its repositories, paging past the first", func() error {
-		cursor := dockerhub.Search(dockerhub.Config{}, namespace+"/")
+		cursor := dockerhub.Search(ctx, dockerhub.Config{}, namespace+"/")
 
 		found := 0
 		for cursor.HasNext() {
@@ -110,7 +113,7 @@ func run() int {
 	})
 
 	hubProbe.Check("a repository that exists is confirmed", func() error {
-		exists, err := api.DoesImageExist(namespace, repository)
+		exists, err := api.DoesImageExist(ctx, namespace, repository)
 		if err != nil {
 			return probe.Unavailable(err)
 		}
@@ -122,7 +125,7 @@ func run() int {
 	})
 
 	hubProbe.Check("a repository that does not exist is denied", func() error {
-		exists, err := api.DoesImageExist(namespace, absentRepository)
+		exists, err := api.DoesImageExist(ctx, namespace, absentRepository)
 		if err != nil {
 			return probe.Unavailable(err)
 		}
@@ -134,7 +137,7 @@ func run() int {
 	})
 
 	hubProbe.Check("a repository reports its active tags", func() error {
-		tags, err := api.GetImageTags(namespace, repository)
+		tags, err := api.GetImageTags(ctx, namespace, repository)
 		if err != nil {
 			return probe.Unavailable(err)
 		}
@@ -155,7 +158,7 @@ func run() int {
 	})
 
 	hubProbe.Check("a tag that exists is confirmed", func() error {
-		hasTag, err := api.ImageHasTag(namespace, repository, knownTag)
+		hasTag, err := api.ImageHasTag(ctx, namespace, repository, knownTag)
 		if err != nil {
 			return probe.Unavailable(err)
 		}
@@ -167,7 +170,7 @@ func run() int {
 	})
 
 	hubProbe.Check("a tag that does not exist is denied", func() error {
-		hasTag, err := api.ImageHasTag(namespace, repository, absentTag)
+		hasTag, err := api.ImageHasTag(ctx, namespace, repository, absentTag)
 		if err != nil {
 			return probe.Unavailable(err)
 		}
@@ -182,7 +185,7 @@ func run() int {
 	// cursor to put in a query, which is the other claim the fake makes about
 	// this API.
 	hubProbe.Check("tags page past the first, on an absolute next url", func() error {
-		cursor, err := dockerhub.SearchTags(dockerhub.Config{}, namespace, repository, "")
+		cursor, err := dockerhub.SearchTags(ctx, dockerhub.Config{}, namespace, repository, "")
 		if err != nil {
 			return probe.Unavailable(err)
 		}

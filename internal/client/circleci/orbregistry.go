@@ -127,7 +127,7 @@ func (registry *fallbackOrbRegistry) useV3(ctx context.Context) bool {
 		return true
 	}
 
-	available, err := v3OrbRoutes.Get(registry.host, func() (bool, error) {
+	available, err := v3OrbRoutes.Get(ctx, registry.host, func(ctx context.Context) (bool, error) {
 		return v3OrbRoutesRespond(ctx, registry.v3.client)
 	})
 	if err != nil {

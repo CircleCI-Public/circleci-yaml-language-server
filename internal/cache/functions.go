@@ -29,9 +29,9 @@ func functionPackageLifetime(function *circleci.FunctionPackage) time.Duration {
 // "github.com/circleci-functions/setup-go" names, or nil when none is
 // published. An error, such as from a host that doesn't serve the catalog, is
 // returned but not remembered.
-func (c *Functions) Function(client *circleci.V3Client, name string) (*circleci.FunctionPackage, error) {
-	return c.packages.Get(name, func() (*circleci.FunctionPackage, error) {
-		function, err := circleci.FetchFunction(context.Background(), client, name)
+func (c *Functions) Function(ctx context.Context, client *circleci.V3Client, name string) (*circleci.FunctionPackage, error) {
+	return c.packages.Get(ctx, name, func(ctx context.Context) (*circleci.FunctionPackage, error) {
+		function, err := circleci.FetchFunction(ctx, client, name)
 		if errors.Is(err, circleci.ErrFunctionNotPublished) {
 			return nil, nil
 		}
@@ -41,8 +41,8 @@ func (c *Functions) Function(client *circleci.V3Client, name string) (*circleci.
 
 // Descriptor returns the descriptor of a version of a function. The version
 // must be one Function listed.
-func (c *Functions) Descriptor(client *circleci.V3Client, version circleci.FunctionVersion) (*circleci.FunctionDescriptor, error) {
-	return c.descriptors.Get(version.ID, func() (*circleci.FunctionDescriptor, error) {
-		return circleci.FetchFunctionDescriptor(context.Background(), client, version.ID)
+func (c *Functions) Descriptor(ctx context.Context, client *circleci.V3Client, version circleci.FunctionVersion) (*circleci.FunctionDescriptor, error) {
+	return c.descriptors.Get(ctx, version.ID, func(ctx context.Context) (*circleci.FunctionDescriptor, error) {
+		return circleci.FetchFunctionDescriptor(ctx, client, version.ID)
 	})
 }

@@ -1,6 +1,7 @@
 package methods
 
 import (
+	"context"
 	"log/slog"
 
 	"go.lsp.dev/protocol"
@@ -15,11 +16,11 @@ func (methods *Methods) getAllEnvVariables(textDocument protocol.TextDocumentIte
 		return
 	}
 	if cachedFile.Project.Slug == "" {
-		projectSlug := methods.Cache.ProjectSlugOfFile(textDocument.URI.FsPath())
+		projectSlug := methods.Cache.ProjectSlugOfFile(context.TODO(), textDocument.URI.FsPath())
 		if projectSlug == "" {
 			return
 		}
-		project, err := methods.Cache.Project(api, projectSlug)
+		project, err := methods.Cache.Project(context.TODO(), api, projectSlug)
 		if err != nil || project.Slug == "" {
 			return
 		}
@@ -28,7 +29,7 @@ func (methods *Methods) getAllEnvVariables(textDocument protocol.TextDocumentIte
 		methods.updateProjectEnvVariables(cachedFile)
 	}
 
-	if err := methods.Cache.LoadContexts(api, cachedFile.Project.OrganizationId); err != nil {
+	if err := methods.Cache.LoadContexts(context.TODO(), api, cachedFile.Project.OrganizationId); err != nil {
 		slog.Warn("error getting contexts", "err", err)
 	}
 }
@@ -51,7 +52,7 @@ func (methods *Methods) updateProjectEnvVariables(file *cache.File) {
 		return
 	}
 	if api := methods.Settings().Api; api.Token != "" {
-		if err := methods.Cache.LoadProjectEnvVariables(api, cachedFile); err != nil {
+		if err := methods.Cache.LoadProjectEnvVariables(context.TODO(), api, cachedFile); err != nil {
 			slog.Warn("error getting project environment variables", "err", err)
 		}
 	}

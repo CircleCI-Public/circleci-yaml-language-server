@@ -19,9 +19,9 @@ import (
 // host that is not answering — they return an error instead, which a caller
 // must not turn into "absent".
 type API interface {
-	DoesImageExist(namespace, image string) (bool, error)
-	GetImageTags(namespace, image string) ([]string, error)
-	ImageHasTag(namespace, image, tag string) (bool, error)
+	DoesImageExist(ctx context.Context, namespace, image string) (bool, error)
+	GetImageTags(ctx context.Context, namespace, image string) ([]string, error)
+	ImageHasTag(ctx context.Context, namespace, image, tag string) (bool, error)
 }
 
 // Config configures an API. It exists so that a test can point this package at
@@ -146,8 +146,8 @@ func (me *dockerHubAPI) expired(ns *HubNamespace) bool {
 // exists asks whether an absolute URL names something Docker Hub has: a 2xx
 // is yes, a 404 is no, and anything else is an error, because Docker Hub did
 // not say.
-func (me *dockerHubAPI) exists(address string) (bool, error) {
-	_, err := me.get(address, nil)
+func (me *dockerHubAPI) exists(ctx context.Context, address string) (bool, error) {
+	_, err := me.get(ctx, address, nil)
 	switch {
 	case err == nil:
 		return true, nil
@@ -160,11 +160,11 @@ func (me *dockerHubAPI) exists(address string) (bool, error) {
 
 // get requests an absolute URL, decoding a 2xx body into out when out is not
 // nil. Any other status is an *httpcl.HTTPError.
-func (me *dockerHubAPI) get(address string, out any) (int, error) {
+func (me *dockerHubAPI) get(ctx context.Context, address string, out any) (int, error) {
 	opts := []func(*httpcl.Request){}
 	if out != nil {
 		opts = append(opts, httpcl.JSONDecoder(out))
 	}
 
-	return me.client.Call(context.Background(), httpcl.NewRequest(http.MethodGet, address, opts...))
+	return me.client.Call(ctx, httpcl.NewRequest(http.MethodGet, address, opts...))
 }

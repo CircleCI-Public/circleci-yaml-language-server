@@ -1,6 +1,7 @@
 package dockerhub
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"regexp"
@@ -64,8 +65,9 @@ var baseURL = url.URL{
 var namespaceRegex = regexp.MustCompile(`^([a-z0-9\-_]+)\/`)
 var imageNameRegex = regexp.MustCompile(`^([a-z0-9\-_]+\/([a-z0-9\-_]+)|[a-z0-9\-_]+).*$`)
 
-func (h *HubNamespace) createSearchCursor(search string) ResultsCursor {
+func (h *HubNamespace) createSearchCursor(ctx context.Context, search string) ResultsCursor {
 	return &SearchCursor{
+		ctx:   ctx,
 		hub:   h,
 		index: -1,
 		query: search,
@@ -88,7 +90,7 @@ func (h *HubNamespace) hasRepository(name string) bool {
 }
 
 // loadNext reads the next page of the namespace. The caller holds h.mutex.
-func (h *HubNamespace) loadNext() ([]Repository, error) {
+func (h *HubNamespace) loadNext(ctx context.Context) ([]Repository, error) {
 	hubResponse := HubResponse{}
 	queryURL := h.nextURL
 
@@ -100,7 +102,7 @@ func (h *HubNamespace) loadNext() ([]Repository, error) {
 		return nil, fmt.Errorf("no more to load")
 	}
 
-	if _, err := h.api.get(queryURL, &hubResponse); err != nil {
+	if _, err := h.api.get(ctx, queryURL, &hubResponse); err != nil {
 		return nil, fmt.Errorf("loading repositories of %s: %w", h.namespace, err)
 	}
 

@@ -19,13 +19,13 @@ type ProjectEnvVariableRes struct {
 // ListProjectEnvVarNames reads the name of every environment variable of a
 // project, following the page tokens. It reports the names it read before any
 // failure, so a caller can use a partial answer.
-func ListProjectEnvVarNames(api Config, projectSlug string) ([]string, error) {
+func ListProjectEnvVarNames(ctx context.Context, api Config, projectSlug string) ([]string, error) {
 	var names []string
 
 	pageToken := ""
 
 	for {
-		res, err := getProjectEnvVariables(api, projectSlug, pageToken)
+		res, err := getProjectEnvVariables(ctx, api, projectSlug, pageToken)
 		if err != nil {
 			return names, err
 		}
@@ -42,12 +42,12 @@ func ListProjectEnvVarNames(api Config, projectSlug string) ([]string, error) {
 	}
 }
 
-func getProjectEnvVariables(api Config, projectSlug string, nextPageToken string) (*ProjectEnvVariableRes, error) {
+func getProjectEnvVariables(ctx context.Context, api Config, projectSlug string, nextPageToken string) (*ProjectEnvVariableRes, error) {
 	var projectRes ProjectEnvVariableRes
 
 	// The slug is joined onto the route as it is: its slashes are path
 	// separators, which httpcl.RouteParams would escape.
-	_, err := newV2Client(api).Call(context.Background(), httpcl.NewRequest(
+	_, err := newV2Client(api).Call(ctx, httpcl.NewRequest(
 		http.MethodGet, "/project/"+projectSlug+"/envvar",
 		// The first page is asked for without a page-token at all.
 		httpcl.OptionalQueryParam("page-token", nextPageToken),
@@ -76,12 +76,12 @@ type Project struct {
 
 // GetProject reads the project a slug names, which is how its organization id
 // is found.
-func GetProject(api Config, projectSlug string) (Project, error) {
+func GetProject(ctx context.Context, api Config, projectSlug string) (Project, error) {
 	var projectIdRes Project
 
 	// The slug is joined onto the route as it is: its slashes are path
 	// separators, which httpcl.RouteParams would escape.
-	_, err := newV2Client(api).Call(context.Background(), httpcl.NewRequest(
+	_, err := newV2Client(api).Call(ctx, httpcl.NewRequest(
 		http.MethodGet, "/project/"+projectSlug,
 		httpcl.JSONDecoder(&projectIdRes),
 	))

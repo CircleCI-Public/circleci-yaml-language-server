@@ -74,20 +74,47 @@ func New[V any](lifetime func(V) time.Duration, clock otter.Clock) *Memo[V] {
 
 // Get returns the value remembered for key, calling fetch for it when there
 // is none.
-func (m *Memo[V]) Get(key string, fetch func() (V, error)) (V, error) {
+//
+// The callers sharing a fetch each wait on it, so it must not end because the
+// one that happened to start it has given up: fetch is handed ctx without its
+// cancellation, and is bounded by its own deadlines. A caller whose ctx is
+// done stops waiting and returns ctx's error, and the fetch carries on for
+// the rest, and to remember what it finds.
+func (m *Memo[V]) Get(ctx context.Context, key string, fetch func(context.Context) (V, error)) (V, error) {
 	entries := m.entries.Load()
-	return entries.Get(context.Background(), key, otter.LoaderFunc[string, V](
-		func(context.Context, string) (V, error) {
-			// otter shares a load only between callers that find it in
-			// flight. One that missed the value just before another's load
-			// stored it can start a load of its own once that one has
-			// finished, and by then the value is there.
-			if value, ok := entries.GetIfPresent(key); ok {
-				return value, nil
-			}
-			return fetch()
-		},
-	))
+	if value, ok := entries.GetIfPresent(key); ok {
+		return value, nil
+	}
+
+	type result struct {
+		value V
+		err   error
+	}
+	// Buffered, so that the fetch can finish once every caller has gone.
+	fetched := make(chan result, 1)
+	go func() {
+		value, err := entries.Get(context.WithoutCancel(ctx), key, otter.LoaderFunc[string, V](
+			func(ctx context.Context, _ string) (V, error) {
+				// otter shares a load only between callers that find it in
+				// flight. One that missed the value just before another's
+				// load stored it can start a load of its own once that one
+				// has finished, and by then the value is there.
+				if value, ok := entries.GetIfPresent(key); ok {
+					return value, nil
+				}
+				return fetch(ctx)
+			},
+		))
+		fetched <- result{value, err}
+	}()
+
+	select {
+	case r := <-fetched:
+		return r.value, r.err
+	case <-ctx.Done():
+		var zero V
+		return zero, ctx.Err()
+	}
 }
 
 // Peek returns the value remembered for key without fetching it.

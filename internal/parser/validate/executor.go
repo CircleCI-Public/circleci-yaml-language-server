@@ -162,7 +162,7 @@ func (val Validate) validateMacOSExecutor(executor ast.MacOSExecutor) {
 		return
 	}
 
-	xcodeVersions := val.Cache.Offerings(val.Context.Api).XcodeVersions()
+	xcodeVersions := val.Cache.Offerings(context.TODO(), val.Context.Api).XcodeVersions()
 	if xcodeVersions == nil {
 		return
 	}
@@ -170,11 +170,11 @@ func (val Validate) validateMacOSExecutor(executor ast.MacOSExecutor) {
 	if slices.Contains(xcodeVersions, executor.Xcode) {
 		val.checkIfValidResourceClass(
 			executor.ResourceClass,
-			val.Cache.Offerings(val.Context.Api).MacOSResourceClasses(),
+			val.Cache.Offerings(context.TODO(), val.Context.Api).MacOSResourceClasses(),
 			executor.ResourceClassRange,
 			fmt.Sprintf("Xcode version \"%s\"", executor.Xcode),
 		)
-	} else if slices.Contains(val.Cache.Offerings(val.Context.Api).DeprecatedXcodeVersions(), executor.Xcode) {
+	} else if slices.Contains(val.Cache.Offerings(context.TODO(), val.Context.Api).DeprecatedXcodeVersions(), executor.Xcode) {
 		val.addDiagnostic(diagnostic.Deprecated(
 			executor.XcodeRange,
 			fmt.Sprintf("Xcode version \"%s\" is deprecated", executor.Xcode),
@@ -211,7 +211,7 @@ func (val Validate) validateMachineExecutor(executor ast.MachineExecutor) {
 		return
 	}
 
-	pairs := val.Cache.Offerings(val.Context.Api).MachinePairs()
+	pairs := val.Cache.Offerings(context.TODO(), val.Context.Api).MachinePairs()
 	if pairs == nil {
 		return
 	}
@@ -223,7 +223,7 @@ func (val Validate) validateMachineExecutor(executor ast.MachineExecutor) {
 		if executor.ResourceClass != "" &&
 			!circleci.IsSelfHostedRunner(executor.ResourceClass) &&
 			!rcParam &&
-			!slices.Contains(val.Cache.Offerings(val.Context.Api).MachineResourceClasses(), executor.ResourceClass) {
+			!slices.Contains(val.Cache.Offerings(context.TODO(), val.Context.Api).MachineResourceClasses(), executor.ResourceClass) {
 
 			val.addDiagnostic(diagnostic.Warning(
 				executor.ResourceClassRange,
@@ -280,7 +280,7 @@ func (val Validate) validateMachineExecutor(executor ast.MachineExecutor) {
 	}
 
 	if !validImage {
-		if slices.Contains(val.Cache.Offerings(val.Context.Api).DeprecatedMachineImages(), executor.Image) {
+		if slices.Contains(val.Cache.Offerings(context.TODO(), val.Context.Api).DeprecatedMachineImages(), executor.Image) {
 			val.addDiagnostic(diagnostic.Deprecated(
 				executor.ImageRange,
 				fmt.Sprintf(
@@ -290,7 +290,7 @@ func (val Validate) validateMachineExecutor(executor ast.MachineExecutor) {
 			))
 		} else {
 			message := fmt.Sprintf("Unknown machine image \"%s\"", executor.Image)
-			if isMistakenImage(executor.Image, val.Cache.Offerings(val.Context.Api)) {
+			if isMistakenImage(executor.Image, val.Cache.Offerings(context.TODO(), val.Context.Api)) {
 				val.addDiagnostic(diagnostic.Error(executor.ImageRange, message))
 			} else {
 				val.addDiagnostic(diagnostic.Warning(executor.ImageRange, message))
@@ -322,7 +322,7 @@ func isMistakenImage(image string, offerings *circleci.Offerings) bool {
 // DockerExecutor
 
 func (val Validate) validateDockerExecutor(executor ast.DockerExecutor) {
-	if dockerResourceClasses := val.Cache.Offerings(val.Context.Api).DockerResourceClasses(); dockerResourceClasses != nil {
+	if dockerResourceClasses := val.Cache.Offerings(context.TODO(), val.Context.Api).DockerResourceClasses(); dockerResourceClasses != nil {
 		val.checkIfValidResourceClass(
 			executor.ResourceClass,
 			dockerResourceClasses,
@@ -519,8 +519,8 @@ func (val Validate) validateRunnerResourceClass(resourceClass string, resourceCl
 var runnerResourceClassRegex = regexp.MustCompile(`^[a-z0-9_\-]+/[a-zA-Z0-9:_\-+]+$`)
 
 func (val Validate) validateExecutorNamespace(resourceClass string, resourceClassRange protocol.Range) {
-	exists, err := val.Cache.NamespaceCache.Exists(resourceClass, func() (bool, error) {
-		_, err := val.Context.OrbRegistry().FetchNamespace(context.Background(), resourceClass)
+	exists, err := val.Cache.NamespaceCache.Exists(context.TODO(), resourceClass, func(ctx context.Context) (bool, error) {
+		_, err := val.Context.OrbRegistry().FetchNamespace(ctx, resourceClass)
 		switch {
 		case err == nil:
 			return true, nil

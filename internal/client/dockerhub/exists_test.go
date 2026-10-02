@@ -15,7 +15,7 @@ func TestDoesImageExist(t *testing.T) {
 		fake := cimgFake(t)
 		api := apiFor(fake)
 
-		exists, err := api.DoesImageExist("cimg", "node")
+		exists, err := api.DoesImageExist(t.Context(), "cimg", "node")
 		assert.NilError(t, err)
 		assert.Check(t, exists)
 
@@ -27,7 +27,7 @@ func TestDoesImageExist(t *testing.T) {
 		fake := cimgFake(t)
 		api := apiFor(fake)
 
-		exists, err := api.DoesImageExist("cimg", "nope")
+		exists, err := api.DoesImageExist(t.Context(), "cimg", "nope")
 		assert.NilError(t, err)
 		assert.Check(t, !exists)
 	})
@@ -38,10 +38,10 @@ func TestDoesImageExist(t *testing.T) {
 		fake := cimgFake(t)
 		api := apiFor(fake)
 
-		cursor := api.Search("cimg/node")
+		cursor := api.Search(t.Context(), "cimg/node")
 		assert.Assert(t, cursor.HasNext(), "the fixture has a cimg/node repository")
 
-		exists, err := api.DoesImageExist("cimg", "node")
+		exists, err := api.DoesImageExist(t.Context(), "cimg", "node")
 		assert.NilError(t, err)
 		assert.Check(t, exists)
 
@@ -56,9 +56,9 @@ func TestDoesImageExist(t *testing.T) {
 		fake.AddRepository("circleci", "node")
 		api := apiFor(fake)
 
-		assert.Assert(t, api.Search("cimg/node").HasNext())
+		assert.Assert(t, api.Search(t.Context(), "cimg/node").HasNext())
 
-		exists, err := api.DoesImageExist("circleci", "node")
+		exists, err := api.DoesImageExist(t.Context(), "circleci", "node")
 		assert.NilError(t, err)
 		assert.Check(t, exists)
 
@@ -73,7 +73,7 @@ func TestDoesImageExist(t *testing.T) {
 		api := apiFor(fake)
 		fake.Close()
 
-		exists, err := api.DoesImageExist("cimg", "node")
+		exists, err := api.DoesImageExist(t.Context(), "cimg", "node")
 		assert.Check(t, !exists)
 		assert.Check(t, err != nil, "a host that is not answering must be reported")
 	})
@@ -83,7 +83,7 @@ func TestDoesImageExist(t *testing.T) {
 		fake.SetStatus(cimgNodeRoute, http.StatusInternalServerError)
 		api := apiFor(fake)
 
-		exists, err := api.DoesImageExist("cimg", "node")
+		exists, err := api.DoesImageExist(t.Context(), "cimg", "node")
 		assert.Check(t, !exists)
 		assert.Check(t, httpcl.HasStatusCode(err, http.StatusInternalServerError), "got %v", err)
 	})
@@ -93,7 +93,7 @@ func TestDoesImageExist(t *testing.T) {
 		fake.SetStatus(cimgNodeRoute, http.StatusTooManyRequests)
 		api := apiFor(fake)
 
-		exists, err := api.DoesImageExist("cimg", "node")
+		exists, err := api.DoesImageExist(t.Context(), "cimg", "node")
 		assert.Check(t, !exists)
 		assert.Check(t, httpcl.HasStatusCode(err, http.StatusTooManyRequests), "got %v", err)
 	})

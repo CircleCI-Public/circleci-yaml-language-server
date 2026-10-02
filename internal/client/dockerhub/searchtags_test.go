@@ -15,7 +15,7 @@ func TestSearchTags(t *testing.T) {
 		fake := cimgFake(t)
 		api := apiFor(fake)
 
-		cursor, err := api.SearchTags("cimg", "node", "22")
+		cursor, err := api.SearchTags(t.Context(), "cimg", "node", "22")
 		assert.NilError(t, err)
 
 		tag := cursor.Next()
@@ -36,7 +36,7 @@ func TestSearchTags(t *testing.T) {
 		fake := cimgFake(t)
 		api := apiFor(fake)
 
-		cursor, err := api.SearchTags("cimg", "node", "")
+		cursor, err := api.SearchTags(t.Context(), "cimg", "node", "")
 		assert.NilError(t, err)
 
 		names := []string{}
@@ -56,7 +56,7 @@ func TestSearchTags(t *testing.T) {
 		fake.SetPageLimit(1)
 		api := apiFor(fake)
 
-		cursor, err := api.SearchTags("cimg", "node", "")
+		cursor, err := api.SearchTags(t.Context(), "cimg", "node", "")
 		assert.NilError(t, err)
 
 		count := 0
@@ -76,7 +76,7 @@ func TestSearchTags(t *testing.T) {
 		fake.SetStatus(cimgNodeTagsRoute, http.StatusTooManyRequests)
 		api := apiFor(fake)
 
-		cursor, err := api.SearchTags("cimg", "node", "")
+		cursor, err := api.SearchTags(t.Context(), "cimg", "node", "")
 		assert.Check(t, cmp.Nil(cursor))
 		assert.Check(t, httpcl.HasStatusCode(err, http.StatusTooManyRequests), "got %v", err)
 	})
@@ -89,7 +89,7 @@ func TestSearchTags(t *testing.T) {
 		fake.FailAfter(cimgNodeTagsRoute, 1, http.StatusInternalServerError)
 		api := apiFor(fake)
 
-		cursor, err := api.SearchTags("cimg", "node", "")
+		cursor, err := api.SearchTags(t.Context(), "cimg", "node", "")
 		assert.NilError(t, err)
 
 		count := 0
@@ -108,7 +108,7 @@ func TestSearchTags(t *testing.T) {
 		fake.SetPageLimit(1)
 		api := apiFor(fake)
 
-		cursor, err := api.SearchTags("cimg", "node", "")
+		cursor, err := api.SearchTags(t.Context(), "cimg", "node", "")
 		assert.NilError(t, err)
 
 		fake.Close()
@@ -127,7 +127,7 @@ func TestSearchTags(t *testing.T) {
 		api := apiFor(fake)
 		fake.Close()
 
-		cursor, err := api.SearchTags("cimg", "node", "")
+		cursor, err := api.SearchTags(t.Context(), "cimg", "node", "")
 		assert.Check(t, cmp.Nil(cursor))
 		assert.Check(t, err != nil, "a host that is not answering must be reported")
 	})
@@ -137,7 +137,7 @@ func TestTagsSearchCursorPrev(t *testing.T) {
 	fake := cimgFake(t)
 	api := apiFor(fake)
 
-	cursor, err := api.SearchTags("cimg", "node", "")
+	cursor, err := api.SearchTags(t.Context(), "cimg", "node", "")
 	assert.NilError(t, err)
 
 	t.Run("reports nothing before the first tag", func(t *testing.T) {

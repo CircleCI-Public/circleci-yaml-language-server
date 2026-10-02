@@ -1,6 +1,7 @@
 package complete
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -80,7 +81,7 @@ func (ch *CompletionHandler) completeOrbVersion(node *sitter.Node) {
 func (ch *CompletionHandler) getOrbVersionCompletions(name string) ([]string, error) {
 	orbName := strings.TrimSuffix(name, "@")
 
-	orb, err := ch.Cache.OrbPackages.Orb(ch.Doc.Context.OrbRegistry(), orbName)
+	orb, err := ch.Cache.OrbPackages.Orb(context.TODO(), ch.Doc.Context.OrbRegistry(), orbName)
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +111,7 @@ func (ch *CompletionHandler) getOrbNameCompletions(name string) ([]string, error
 	parts := strings.Split(name, "/")
 	namespace := parts[0]
 
-	orbs, err := ch.Cache.OrbPackages.InNamespace(ch.Doc.Context.OrbRegistry(), namespace)
+	orbs, err := ch.Cache.OrbPackages.InNamespace(context.TODO(), ch.Doc.Context.OrbRegistry(), namespace)
 	if err != nil {
 		return nil, err
 	}

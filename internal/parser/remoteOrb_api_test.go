@@ -171,7 +171,7 @@ func TestGetRemoteOrb(t *testing.T) {
 		fake := fakes.NewCircleCI(t)
 		fake.SeedGoOrb()
 
-		orb, err := GetRemoteOrb("circleci/go@1.7.1", "token", fake.URL(), "user-1")
+		orb, err := GetRemoteOrb(t.Context(), "circleci/go@1.7.1", "token", fake.URL(), "user-1")
 		assert.NilError(t, err)
 
 		t.Run("names the resolved version", func(t *testing.T) {
@@ -211,7 +211,7 @@ func TestGetRemoteOrb(t *testing.T) {
 			{"a development tag", "circleci/go@dev:alpha", "dev:alpha"},
 		} {
 			t.Run(testCase.name, func(t *testing.T) {
-				orb, err := GetRemoteOrb(testCase.ref, "token", fake.URL(), "")
+				orb, err := GetRemoteOrb(t.Context(), testCase.ref, "token", fake.URL(), "")
 				assert.NilError(t, err)
 
 				assert.Check(t, cmp.Equal(orb.Version, testCase.want))
@@ -226,7 +226,7 @@ func TestGetRemoteOrb(t *testing.T) {
 		fake := fakes.NewCircleCI(t)
 		fake.SeedGoOrb()
 
-		_, err := GetRemoteOrb("circleci/go@9.9.9", "token", fake.URL(), "")
+		_, err := GetRemoteOrb(t.Context(), "circleci/go@9.9.9", "token", fake.URL(), "")
 		assert.Assert(t, err != nil)
 
 		errMessage := err.Error()
@@ -240,7 +240,7 @@ func TestGetRemoteOrb(t *testing.T) {
 		fake.SeedGoOrb()
 		fake.SetStatus("GET /api/v3/orb/packages", http.StatusInternalServerError)
 
-		orb, err := GetRemoteOrb("circleci/go@1.7.1", "token", fake.URL(), "")
+		orb, err := GetRemoteOrb(t.Context(), "circleci/go@1.7.1", "token", fake.URL(), "")
 		assert.NilError(t, err)
 
 		assert.Check(t, cmp.Equal(orb.Version, "1.7.1"))
@@ -253,7 +253,7 @@ func TestGetRemoteOrb(t *testing.T) {
 		fake.SeedGoOrb()
 		fake.SetSourceStatus("ver-1-7-1", http.StatusInternalServerError)
 
-		_, err := GetRemoteOrb("circleci/go@1.7.1", "token", fake.URL(), "")
+		_, err := GetRemoteOrb(t.Context(), "circleci/go@1.7.1", "token", fake.URL(), "")
 		assert.Assert(t, err != nil)
 		assert.Check(t, cmp.ErrorContains(err, "500"))
 	})
@@ -262,12 +262,12 @@ func TestGetRemoteOrb(t *testing.T) {
 		fake := fakes.NewCircleCI(t)
 		fake.SeedGoOrb()
 
-		_, err := GetRemoteOrb("circleci/nope@1.0.0", "token", fake.URL(), "")
+		_, err := GetRemoteOrb(t.Context(), "circleci/nope@1.0.0", "token", fake.URL(), "")
 		assert.Check(t, cmp.ErrorContains(err, "could not find orb"))
 	})
 
 	t.Run("reports an unconfigured host", func(t *testing.T) {
-		_, err := GetRemoteOrb("circleci/go@1.7.1", "token", "", "")
+		_, err := GetRemoteOrb(t.Context(), "circleci/go@1.7.1", "token", "", "")
 		assert.Check(t, cmp.ErrorContains(err, "host URL not defined"))
 	})
 }

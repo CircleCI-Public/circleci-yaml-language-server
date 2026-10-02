@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"context"
 	"net/http"
 	"slices"
 	"strings"
@@ -69,11 +70,11 @@ func indexContexts(contexts []*Context) *orgContexts {
 // The contexts are listed with their environment variable names, for
 // completion. Many users can list contexts but are refused once the variables
 // are included (private contexts), so a refusal lists them again without.
-func (c *Cache) LoadContexts(api circleci.Config, orgID string) error {
-	_, err := c.ContextCache.orgs.Get(orgID, func() (*orgContexts, error) {
-		listed, err := circleci.ListContexts(api, orgID, true)
+func (c *Cache) LoadContexts(ctx context.Context, api circleci.Config, orgID string) error {
+	_, err := c.ContextCache.orgs.Get(ctx, orgID, func(ctx context.Context) (*orgContexts, error) {
+		listed, err := circleci.ListContexts(ctx, api, orgID, true)
 		if httpcl.HasStatusCode(err, http.StatusForbidden) {
-			listed, err = circleci.ListContexts(api, orgID, false)
+			listed, err = circleci.ListContexts(ctx, api, orgID, false)
 		}
 		if err != nil {
 			return nil, err

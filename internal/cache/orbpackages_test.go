@@ -45,7 +45,7 @@ func TestOrbPackagesInNamespace(t *testing.T) {
 			fake.AddOrbVersion("ver-"+name, "orb-"+name, "circleci/"+name, "1.0.0", "", "")
 		}
 
-		orbs, err := New().OrbPackages.InNamespace(registryFor(fake), "circleci")
+		orbs, err := New().OrbPackages.InNamespace(t.Context(), registryFor(fake), "circleci")
 		assert.NilError(t, err)
 		assert.Check(t, cmp.DeepEqual(orbNames(orbs), []string{"circleci/go", "circleci/node", "circleci/python"}))
 	})
@@ -59,7 +59,7 @@ func TestOrbPackagesInNamespace(t *testing.T) {
 		}
 		fake.SetPageLimit("orb/packages", 2)
 
-		orbs, err := New().OrbPackages.InNamespace(registryFor(fake), "circleci")
+		orbs, err := New().OrbPackages.InNamespace(t.Context(), registryFor(fake), "circleci")
 		assert.NilError(t, err)
 		assert.Check(t, cmp.Len(orbs, 5))
 	})
@@ -75,14 +75,14 @@ func TestOrbPackagesInNamespace(t *testing.T) {
 
 		// Counted as a delta because the registry probes the host once, on
 		// first use, to decide between V3 and GraphQL.
-		_, err := c.OrbPackages.Orb(registry, "circleci/nope")
+		_, err := c.OrbPackages.Orb(t.Context(), registry, "circleci/nope")
 		assert.NilError(t, err)
 		before := len(fake.Requests())
 
 		var wg sync.WaitGroup
 		for range 10 {
 			wg.Go(func() {
-				orbs, err := c.OrbPackages.InNamespace(registry, "circleci")
+				orbs, err := c.OrbPackages.InNamespace(t.Context(), registry, "circleci")
 				assert.Check(t, err)
 				assert.Check(t, cmp.Len(orbs, 1))
 			})
@@ -96,7 +96,7 @@ func TestOrbPackagesInNamespace(t *testing.T) {
 	t.Run("reports an unknown namespace as none", func(t *testing.T) {
 		fake := fakes.NewCircleCI(t)
 
-		orbs, err := New().OrbPackages.InNamespace(registryFor(fake), "nope")
+		orbs, err := New().OrbPackages.InNamespace(t.Context(), registryFor(fake), "nope")
 		assert.NilError(t, err)
 		assert.Check(t, cmp.Nil(orbs))
 	})
@@ -109,13 +109,13 @@ func TestOrbPackagesInNamespace(t *testing.T) {
 
 		t.Run("fail the listing", func(t *testing.T) {
 			fake.SetStatus(orbPackagesRoute, http.StatusInternalServerError)
-			_, err := c.OrbPackages.InNamespace(registryFor(fake), "circleci")
+			_, err := c.OrbPackages.InNamespace(t.Context(), registryFor(fake), "circleci")
 			assert.Check(t, cmp.ErrorContains(err, "500"))
 		})
 
 		t.Run("check the next call lists it", func(t *testing.T) {
 			fake.SetStatus(orbPackagesRoute, 0)
-			orbs, err := c.OrbPackages.InNamespace(registryFor(fake), "circleci")
+			orbs, err := c.OrbPackages.InNamespace(t.Context(), registryFor(fake), "circleci")
 			assert.NilError(t, err)
 			assert.Check(t, cmp.Len(orbs, 1))
 		})
@@ -127,7 +127,7 @@ func TestOrbPackagesOrb(t *testing.T) {
 		fake := fakes.NewCircleCI(t)
 		fake.SeedGoOrb()
 
-		orb, err := New().OrbPackages.Orb(registryFor(fake), "circleci/go")
+		orb, err := New().OrbPackages.Orb(t.Context(), registryFor(fake), "circleci/go")
 		assert.NilError(t, err)
 		assert.Assert(t, orb != nil)
 		assert.Check(t, cmp.DeepEqual(versionsOf(orb), []string{
@@ -139,7 +139,7 @@ func TestOrbPackagesOrb(t *testing.T) {
 		fake := fakes.NewCircleCI(t)
 		fake.SeedGoOrb()
 
-		orb, err := New().OrbPackages.Orb(circleci.NewOrbRegistry(fake.URL(), "", "", false), "circleci/go")
+		orb, err := New().OrbPackages.Orb(t.Context(), circleci.NewOrbRegistry(fake.URL(), "", "", false), "circleci/go")
 		assert.NilError(t, err)
 		assert.Check(t, orb != nil)
 	})
@@ -150,11 +150,11 @@ func TestOrbPackagesOrb(t *testing.T) {
 		registry := registryFor(fake)
 		c := New()
 
-		_, err := c.OrbPackages.Orb(registry, "circleci/go")
+		_, err := c.OrbPackages.Orb(t.Context(), registry, "circleci/go")
 		assert.NilError(t, err)
 		before := len(fake.Requests())
 
-		_, err = c.OrbPackages.Orb(registry, "circleci/go")
+		_, err = c.OrbPackages.Orb(t.Context(), registry, "circleci/go")
 		assert.NilError(t, err)
 		assert.Check(t, cmp.Equal(len(fake.Requests()), before), "a remembered orb must not reach the network")
 	})
@@ -167,11 +167,11 @@ func TestOrbPackagesOrb(t *testing.T) {
 		registry := registryFor(fake)
 		c := New()
 
-		_, err := c.OrbPackages.InNamespace(registry, "circleci")
+		_, err := c.OrbPackages.InNamespace(t.Context(), registry, "circleci")
 		assert.NilError(t, err)
 		before := len(fake.Requests())
 
-		orb, err := c.OrbPackages.Orb(registry, "circleci/go")
+		orb, err := c.OrbPackages.Orb(t.Context(), registry, "circleci/go")
 		assert.NilError(t, err)
 		assert.Assert(t, orb != nil)
 		assert.Check(t, cmp.Equal(orb.Name, "circleci/go"))
@@ -182,7 +182,7 @@ func TestOrbPackagesOrb(t *testing.T) {
 		fake := fakes.NewCircleCI(t)
 		fake.SeedGoOrb()
 
-		orb, err := New().OrbPackages.Orb(registryFor(fake), "circleci/nope")
+		orb, err := New().OrbPackages.Orb(t.Context(), registryFor(fake), "circleci/nope")
 		assert.NilError(t, err)
 		assert.Check(t, cmp.Nil(orb))
 	})
@@ -191,12 +191,12 @@ func TestOrbPackagesOrb(t *testing.T) {
 		fake := fakes.NewCircleCI(t)
 		fake.SetStatus(orbPackagesRoute, http.StatusInternalServerError)
 
-		_, err := New().OrbPackages.Orb(registryFor(fake), "circleci/go")
+		_, err := New().OrbPackages.Orb(t.Context(), registryFor(fake), "circleci/go")
 		assert.Check(t, cmp.ErrorContains(err, "500"))
 	})
 
 	t.Run("reports an unconfigured host", func(t *testing.T) {
-		_, err := New().OrbPackages.Orb(circleci.NewOrbRegistry("", testToken, "", false), "circleci/go")
+		_, err := New().OrbPackages.Orb(t.Context(), circleci.NewOrbRegistry("", testToken, "", false), "circleci/go")
 		assert.Check(t, cmp.ErrorContains(err, "host URL not defined"))
 	})
 }

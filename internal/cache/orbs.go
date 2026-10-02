@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"context"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -33,8 +34,8 @@ func orbLifetime(orb *ast.OrbInfo) time.Duration {
 
 // Load returns the orb a reference names, calling fetch only when none is
 // remembered. An error from fetch is returned but not remembered.
-func (c *Orbs) Load(orbID string, fetch func() (*ast.OrbInfo, error)) (*ast.OrbInfo, error) {
-	return c.orbs.Get(orbID, fetch)
+func (c *Orbs) Load(ctx context.Context, orbID string, fetch func(context.Context) (*ast.OrbInfo, error)) (*ast.OrbInfo, error) {
+	return c.orbs.Get(ctx, orbID, fetch)
 }
 
 func (c *Orbs) HasOrb(orbID string) bool {

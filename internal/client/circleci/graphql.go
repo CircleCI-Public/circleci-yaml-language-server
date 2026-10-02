@@ -154,11 +154,6 @@ func getServerAddress(host, endpoint string) (string, error) {
 	return h.ResolveReference(e).String(), err
 }
 
-// Run sends an HTTP request to the GraphQL server and deserializes the response or returns an error.
-func (cl *GraphQLClient) Run(request *GraphQLRequest, resp interface{}) error {
-	return cl.RunWithContext(context.Background(), request, resp)
-}
-
 // RunWithContext sends an HTTP request to the GraphQL server and deserializes
 // the response or returns an error.
 func (cl *GraphQLClient) RunWithContext(ctx context.Context, request *GraphQLRequest, resp interface{}) error {

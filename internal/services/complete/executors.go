@@ -1,6 +1,7 @@
 package complete
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -65,7 +66,7 @@ func findExecutor(pos protocol.Position, doc parser.YamlDocument) (ast2.Executor
 
 func (ch *CompletionHandler) completeDockerExecutor(executor ast2.DockerExecutor) {
 	if position.InRange(executor.ResourceClassRange, ch.Params.Position) {
-		ch.addResourceClassCompletion(ch.Cache.Offerings(ch.Context.Api).DockerResourceClasses())
+		ch.addResourceClassCompletion(ch.Cache.Offerings(context.TODO(), ch.Context.Api).DockerResourceClasses())
 		return
 	}
 
@@ -86,7 +87,7 @@ func (ch *CompletionHandler) completeDockerExecutor(executor ast2.DockerExecutor
 
 			if theImg.Tag == "" && !strings.HasSuffix(completionString, ":") {
 				// Search for repositories
-				results := dockerhub.Search(ch.Context.DockerHub, completionString)
+				results := dockerhub.Search(context.TODO(), ch.Context.DockerHub, completionString)
 				i := 0
 
 				for i < 5 && results.HasNext() {
@@ -103,7 +104,7 @@ func (ch *CompletionHandler) completeDockerExecutor(executor ast2.DockerExecutor
 				}
 			} else {
 				// Search for tags instead
-				results, err := dockerhub.SearchTags(ch.Context.DockerHub, img.Image.Namespace, img.Image.Name, theImg.Tag)
+				results, err := dockerhub.SearchTags(context.TODO(), ch.Context.DockerHub, img.Image.Namespace, img.Image.Name, theImg.Tag)
 				if err != nil {
 					return
 				}
@@ -158,11 +159,11 @@ func typedImage(img ast2.DockerImage, pos protocol.Position) (string, bool) {
 
 func (ch *CompletionHandler) completeMachineExecutor(executor ast2.MachineExecutor) {
 	if position.InRange(executor.ResourceClassRange, ch.Params.Position) {
-		for _, resourceClass := range ch.Cache.Offerings(ch.Context.Api).MachineResourceClasses() {
+		for _, resourceClass := range ch.Cache.Offerings(context.TODO(), ch.Context.Api).MachineResourceClasses() {
 			ch.addCompletionItem(resourceClass)
 		}
 		if ch.Context.Api.IsLoggedIn() {
-			customResourceClasses := ch.Cache.ResourceClassesOfFile(ch.Context.V3Client(), ch.Doc.URI)
+			customResourceClasses := ch.Cache.ResourceClassesOfFile(context.TODO(), ch.Context.V3Client(), ch.Doc.URI)
 			for _, resourceClass := range customResourceClasses {
 				ch.addCompletionItem(resourceClass)
 			}
@@ -170,7 +171,7 @@ func (ch *CompletionHandler) completeMachineExecutor(executor ast2.MachineExecut
 		return
 	}
 
-	images := ch.Cache.Offerings(ch.Context.Api).MachineImages()
+	images := ch.Cache.Offerings(context.TODO(), ch.Context.Api).MachineImages()
 
 	if position.InRange(executor.ImageRange, ch.Params.Position) {
 		for _, img := range images {
@@ -197,7 +198,7 @@ func (ch *CompletionHandler) completeMachineExecutor(executor ast2.MachineExecut
 
 func (ch *CompletionHandler) completeMacOSExecutor(executor ast2.MacOSExecutor) {
 	if position.InRange(executor.ResourceClassRange, ch.Params.Position) {
-		ch.addResourceClassCompletion(ch.Cache.Offerings(ch.Context.Api).MacOSResourceClasses())
+		ch.addResourceClassCompletion(ch.Cache.Offerings(context.TODO(), ch.Context.Api).MacOSResourceClasses())
 		return
 	} else {
 		ch.checkAndAddResourceClassFieldCompletion(executor)

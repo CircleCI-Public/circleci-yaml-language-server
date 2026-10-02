@@ -1,6 +1,7 @@
 package memo
 
 import (
+	"context"
 	"errors"
 	"sync"
 	"sync/atomic"
@@ -28,6 +29,9 @@ func (c *fakeClock) advance(d time.Duration) { c.now.Add(int64(d)) }
 
 func TestMemo(t *testing.T) {
 	t.Run("concurrent callers share one fetch", func(t *testing.T) {
+		// The callers outlive the subtest that starts them, so they wait
+		// under this test's context.
+		ctx := t.Context()
 		m := New(keepForever, nil)
 		var fetches atomic.Int32
 		release := make(chan struct{})
@@ -41,7 +45,7 @@ func TestMemo(t *testing.T) {
 				started.Add(1)
 				done.Go(func() {
 					started.Done()
-					results[i], _ = m.Get("key", func() (string, error) {
+					results[i], _ = m.Get(ctx, "key", func(context.Context) (string, error) {
 						fetches.Add(1)
 						<-release
 						return "value", nil
@@ -66,10 +70,10 @@ func TestMemo(t *testing.T) {
 
 	t.Run("a remembered value is not fetched again", func(t *testing.T) {
 		m := New(keepForever, nil)
-		_, err := m.Get("key", func() (string, error) { return "value", nil })
+		_, err := m.Get(t.Context(), "key", func(context.Context) (string, error) { return "value", nil })
 		assert.NilError(t, err)
 
-		got, err := m.Get("key", func() (string, error) {
+		got, err := m.Get(t.Context(), "key", func(context.Context) (string, error) {
 			t.Error("fetched a value that was remembered")
 			return "", nil
 		})
@@ -81,18 +85,19 @@ func TestMemo(t *testing.T) {
 		m := New(keepForever, nil)
 		errFetch := errors.New("unavailable")
 
-		_, err := m.Get("key", func() (string, error) { return "", errFetch })
+		_, err := m.Get(t.Context(), "key", func(context.Context) (string, error) { return "", errFetch })
 		assert.Check(t, cmp.ErrorIs(err, errFetch))
 
 		_, known := m.Peek("key")
 		assert.Check(t, !known, "a failed fetch must not be remembered")
 
-		got, err := m.Get("key", func() (string, error) { return "value", nil })
+		got, err := m.Get(t.Context(), "key", func(context.Context) (string, error) { return "value", nil })
 		assert.NilError(t, err)
 		assert.Check(t, cmp.Equal(got, "value"))
 	})
 
 	t.Run("a fetch in flight across clear is not remembered", func(t *testing.T) {
+		ctx := t.Context()
 		m := New(keepForever, nil)
 		fetching := make(chan struct{})
 		release := make(chan struct{})
@@ -100,7 +105,7 @@ func TestMemo(t *testing.T) {
 
 		t.Run("start a fetch", func(t *testing.T) {
 			done.Go(func() {
-				_, _ = m.Get("key", func() (string, error) {
+				_, _ = m.Get(ctx, "key", func(context.Context) (string, error) {
 					close(fetching)
 					<-release
 					return "stale", nil
@@ -118,6 +123,75 @@ func TestMemo(t *testing.T) {
 		t.Run("check the value was dropped", func(t *testing.T) {
 			_, known := m.Peek("key")
 			assert.Check(t, !known, "a value read before clear must not survive it")
+		})
+	})
+	t.Run("a caller that gives up does not end the fetch for the rest", func(t *testing.T) {
+		m := New(keepForever, nil)
+		fetching := make(chan struct{})
+		release := make(chan struct{})
+		var fetchErr error
+		var fetched sync.WaitGroup
+
+		t.Run("start a fetch, then give up on it", func(t *testing.T) {
+			ctx, cancel := context.WithCancel(t.Context())
+			fetched.Add(1)
+			go func() {
+				<-fetching
+				cancel()
+			}()
+
+			_, err := m.Get(ctx, "key", func(ctx context.Context) (string, error) {
+				defer fetched.Done()
+				close(fetching)
+				<-release
+				fetchErr = ctx.Err()
+				return "value", nil
+			})
+			assert.Check(t, cmp.ErrorIs(err, context.Canceled))
+		})
+
+		t.Run("let the fetch finish", func(t *testing.T) {
+			close(release)
+			fetched.Wait()
+		})
+
+		t.Run("check the fetch ran on and was remembered", func(t *testing.T) {
+			assert.Check(t, cmp.Nil(fetchErr), "the fetch's context must not end with the caller's")
+			got, known := m.Peek("key")
+			assert.Check(t, known, "a fetch whose caller gave up must still be remembered")
+			assert.Check(t, cmp.Equal(got, "value"))
+		})
+	})
+
+	t.Run("a caller waiting on another's fetch can give up on it", func(t *testing.T) {
+		m := New(keepForever, nil)
+		fetching := make(chan struct{})
+		release := make(chan struct{})
+		var done sync.WaitGroup
+		// Cleanups run last first: the fetch is released, then waited for.
+		t.Cleanup(done.Wait)
+		t.Cleanup(func() { close(release) })
+
+		t.Run("start a fetch", func(t *testing.T) {
+			ctx := context.WithoutCancel(t.Context())
+			done.Go(func() {
+				_, _ = m.Get(ctx, "key", func(context.Context) (string, error) {
+					close(fetching)
+					<-release
+					return "value", nil
+				})
+			})
+			<-fetching
+		})
+
+		t.Run("check a cancelled caller returns at once", func(t *testing.T) {
+			ctx, cancel := context.WithCancel(t.Context())
+			cancel()
+			_, err := m.Get(ctx, "key", func(context.Context) (string, error) {
+				t.Error("started a second fetch of a key in flight")
+				return "", nil
+			})
+			assert.Check(t, cmp.ErrorIs(err, context.Canceled))
 		})
 	})
 	t.Run("an answer is kept for as long as its lifetime", func(t *testing.T) {
@@ -146,7 +220,7 @@ func TestMemo(t *testing.T) {
 		})
 
 		t.Run("check an expired answer is fetched again", func(t *testing.T) {
-			got, err := m.Get("missing", func() (bool, error) { return true, nil })
+			got, err := m.Get(t.Context(), "missing", func(context.Context) (bool, error) { return true, nil })
 			assert.NilError(t, err)
 			assert.Check(t, got, "the answer fetched after expiry")
 		})

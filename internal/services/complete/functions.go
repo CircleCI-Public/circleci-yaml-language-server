@@ -1,6 +1,7 @@
 package complete
 
 import (
+	"context"
 	"regexp"
 	"strings"
 )
@@ -24,7 +25,7 @@ func (ch *CompletionHandler) completeFunctionVersion() {
 		return
 	}
 
-	published, err := ch.Cache.Functions.Function(ch.Context.V3Client(), match[1])
+	published, err := ch.Cache.Functions.Function(context.TODO(), ch.Context.V3Client(), match[1])
 	if err != nil || published == nil {
 		return
 	}

@@ -33,9 +33,9 @@ func namespaceOrbsLifetime(orbs []circleci.OrbPackage) time.Duration {
 // such orb or it is private to an organization the token cannot see. It asks
 // the registry only when no answer is remembered, and an error from the
 // registry is returned but not remembered.
-func (c *OrbPackages) Orb(registry circleci.OrbRegistry, name string) (*circleci.OrbPackage, error) {
-	return c.packages.Get(name, func() (*circleci.OrbPackage, error) {
-		orb, err := registry.FetchOrb(context.Background(), name)
+func (c *OrbPackages) Orb(ctx context.Context, registry circleci.OrbRegistry, name string) (*circleci.OrbPackage, error) {
+	return c.packages.Get(ctx, name, func(ctx context.Context) (*circleci.OrbPackage, error) {
+		orb, err := registry.FetchOrb(ctx, name)
 		if circleci.IsNotFound(err) {
 			return nil, nil
 		}
@@ -49,9 +49,9 @@ func (c *OrbPackages) Orb(registry circleci.OrbRegistry, name string) (*circleci
 //
 // The listing carries each orb's versions, so each orb it finds is remembered
 // for Orb too.
-func (c *OrbPackages) InNamespace(registry circleci.OrbRegistry, namespace string) ([]circleci.OrbPackage, error) {
-	return c.namespaces.Get(namespace, func() ([]circleci.OrbPackage, error) {
-		orbs, err := registry.ListNamespaceOrbs(context.Background(), namespace)
+func (c *OrbPackages) InNamespace(ctx context.Context, registry circleci.OrbRegistry, namespace string) ([]circleci.OrbPackage, error) {
+	return c.namespaces.Get(ctx, namespace, func(ctx context.Context) ([]circleci.OrbPackage, error) {
+		orbs, err := registry.ListNamespaceOrbs(ctx, namespace)
 		if circleci.IsNotFound(err) {
 			return nil, nil
 		}
