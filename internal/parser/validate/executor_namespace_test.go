@@ -17,7 +17,7 @@ import (
 // validateNamespaceAgainst runs the namespace check for a self-hosted runner
 // resource class against the given fake, and returns whatever diagnostics it
 // produced.
-func validateNamespaceAgainst(fake *fakes.CircleCI, namespace string) []protocol.Diagnostic {
+func validateNamespaceAgainst(t *testing.T, fake *fakes.CircleCI, namespace string) []protocol.Diagnostic {
 	diagnostics := []protocol.Diagnostic{}
 	val := Validate{
 		Diagnostics: &diagnostics,
@@ -25,7 +25,7 @@ func validateNamespaceAgainst(fake *fakes.CircleCI, namespace string) []protocol
 		Context:     testHelpers.SettingsForHost(fake.URL()),
 	}
 
-	val.validateExecutorNamespace(namespace, protocol.Range{})
+	val.validateExecutorNamespace(t.Context(), namespace, protocol.Range{})
 
 	return *val.Diagnostics
 }
@@ -35,7 +35,7 @@ func TestValidateExecutorNamespace(t *testing.T) {
 		fake := fakes.NewCircleCI(t)
 		fake.AddNamespace("ns-acme", "acme")
 
-		diagnostics := validateNamespaceAgainst(fake, "acme")
+		diagnostics := validateNamespaceAgainst(t, fake, "acme")
 		assert.Check(t, cmp.Len(diagnostics, 0))
 	})
 
@@ -43,7 +43,7 @@ func TestValidateExecutorNamespace(t *testing.T) {
 		fake := fakes.NewCircleCI(t)
 		fake.AddNamespace("ns-acme", "acme")
 
-		diagnostics := validateNamespaceAgainst(fake, "nope")
+		diagnostics := validateNamespaceAgainst(t, fake, "nope")
 		assert.Assert(t, cmp.Len(diagnostics, 1))
 
 		assert.Check(t, cmp.Equal(diagnostic.MessageText(diagnostics[0]), `Namespace "nope" does not exist`))
@@ -67,7 +67,7 @@ func TestValidateExecutorNamespace(t *testing.T) {
 				fake.AddNamespace("ns-acme", "acme")
 				fake.SetStatus("GET /api/v3/namespaces", testCase.status)
 
-				diagnostics := validateNamespaceAgainst(fake, "acme")
+				diagnostics := validateNamespaceAgainst(t, fake, "acme")
 				assert.Check(t, cmp.Len(diagnostics, 0))
 			})
 		}
@@ -83,10 +83,10 @@ func TestValidateExecutorNamespace(t *testing.T) {
 		}
 
 		t.Run("validate the same namespace twice, and one that does not exist twice", func(t *testing.T) {
-			val.validateExecutorNamespace("acme", protocol.Range{})
-			val.validateExecutorNamespace("acme", protocol.Range{})
-			val.validateExecutorNamespace("nope", protocol.Range{})
-			val.validateExecutorNamespace("nope", protocol.Range{})
+			val.validateExecutorNamespace(t.Context(), "acme", protocol.Range{})
+			val.validateExecutorNamespace(t.Context(), "acme", protocol.Range{})
+			val.validateExecutorNamespace(t.Context(), "nope", protocol.Range{})
+			val.validateExecutorNamespace(t.Context(), "nope", protocol.Range{})
 		})
 
 		t.Run("check each was requested once", func(t *testing.T) {
@@ -108,8 +108,8 @@ func TestValidateExecutorNamespace(t *testing.T) {
 			Context:     testHelpers.SettingsForHost(fake.URL()),
 		}
 
-		val.validateExecutorNamespace("acme", protocol.Range{})
-		val.validateExecutorNamespace("acme", protocol.Range{})
+		val.validateExecutorNamespace(t.Context(), "acme", protocol.Range{})
+		val.validateExecutorNamespace(t.Context(), "acme", protocol.Range{})
 
 		assert.Check(t, cmp.Equal(fake.RequestCount(http.MethodGet, "/api/v3/namespaces"), 2))
 	})
@@ -122,7 +122,7 @@ func TestValidateExecutorNamespace(t *testing.T) {
 			Context:     testHelpers.SettingsForHost(""),
 		}
 
-		val.validateExecutorNamespace("acme", protocol.Range{})
+		val.validateExecutorNamespace(t.Context(), "acme", protocol.Range{})
 
 		assert.Check(t, cmp.Len(*val.Diagnostics, 0))
 	})

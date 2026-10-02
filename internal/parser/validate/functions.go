@@ -1,6 +1,7 @@
 package validate
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"slices"
@@ -53,7 +54,7 @@ func (step functionStep) where() string {
 // ValidateFunctions checks the steps that run a declared function, and the
 // declarations they use. A declaration nothing uses isn't checked, as the
 // compiler doesn't check it.
-func (val Validate) ValidateFunctions() {
+func (val Validate) ValidateFunctions(ctx context.Context) {
 	if len(val.Doc.Functions) == 0 {
 		return
 	}
@@ -90,7 +91,7 @@ func (val Validate) ValidateFunctions() {
 
 		descriptors[alias] = nil
 		if val.validateFunctionReference(step.function) {
-			descriptors[alias] = val.validateFunctionPublished(step.function)
+			descriptors[alias] = val.validateFunctionPublished(ctx, step.function)
 		}
 	}
 
@@ -359,8 +360,8 @@ func (val Validate) validateFunctionReference(function ast.Function) bool {
 
 // validateFunctionPublished checks a declaration against the functions
 // catalog, and returns the descriptor of the version it pins, if it is found.
-func (val Validate) validateFunctionPublished(function ast.Function) *circleci.FunctionDescriptor {
-	published, descriptor, err := val.Doc.LookUpFunction(function, val.Cache)
+func (val Validate) validateFunctionPublished(ctx context.Context, function ast.Function) *circleci.FunctionDescriptor {
+	published, descriptor, err := val.Doc.LookUpFunction(ctx, function, val.Cache)
 	if err != nil {
 		return nil
 	}

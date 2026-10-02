@@ -19,7 +19,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/yamltree"
 )
 
-func (val Validate) ValidateExecutors() {
+func (val Validate) ValidateExecutors(ctx context.Context) {
 	if len(val.Doc.Executors) == 0 && len(val.Doc.Aliases.Executors) == 0 && !position.IsDefaultRange(val.Doc.ExecutorsRange) {
 		val.addDiagnostic(
 			diagnostic.EmptySectionWarning(val.Doc.ExecutorsRange, "executors"),
@@ -31,17 +31,17 @@ func (val Validate) ValidateExecutors() {
 	for _, executor := range val.Doc.Executors {
 		switch executor := executor.(type) {
 		case ast.MacOSExecutor:
-			val.validateMacOSExecutor(executor)
+			val.validateMacOSExecutor(ctx, executor)
 		case ast.MachineExecutor:
-			val.validateMachineExecutor(executor)
+			val.validateMachineExecutor(ctx, executor)
 			val.validateMachineMapClashes(executor, executor.ResourceClassBeside, executor.ShellBeside, true)
 		case ast.DockerExecutor:
-			val.validateDockerExecutor(executor)
+			val.validateDockerExecutor(ctx, executor)
 		}
 	}
 
 	values := val.valuesOutsideExecutors()
-	val.validateExecutorAliases(values)
+	val.validateExecutorAliases(ctx, values)
 	val.checkOverriddenExecutorSettings(values)
 
 	// Local orbs do not need unused checks because those checks collides with the overall YAML unused checks
@@ -156,25 +156,26 @@ func isKey(scalar *sitter.Node) bool {
 
 // MacOSExecutor
 
-func (val Validate) validateMacOSExecutor(executor ast.MacOSExecutor) {
+func (val Validate) validateMacOSExecutor(ctx context.Context, executor ast.MacOSExecutor) {
 	// A version from a parameter is only known once the config is compiled.
 	if paramref.ContainsReference(executor.Xcode) {
 		return
 	}
 
-	xcodeVersions := val.Cache.Offerings(context.TODO(), val.Context.Api).XcodeVersions()
+	xcodeVersions := val.Cache.Offerings(ctx, val.Context.Api).XcodeVersions()
 	if xcodeVersions == nil {
 		return
 	}
 
 	if slices.Contains(xcodeVersions, executor.Xcode) {
 		val.checkIfValidResourceClass(
+			ctx,
 			executor.ResourceClass,
-			val.Cache.Offerings(context.TODO(), val.Context.Api).MacOSResourceClasses(),
+			val.Cache.Offerings(ctx, val.Context.Api).MacOSResourceClasses(),
 			executor.ResourceClassRange,
 			fmt.Sprintf("Xcode version \"%s\"", executor.Xcode),
 		)
-	} else if slices.Contains(val.Cache.Offerings(context.TODO(), val.Context.Api).DeprecatedXcodeVersions(), executor.Xcode) {
+	} else if slices.Contains(val.Cache.Offerings(ctx, val.Context.Api).DeprecatedXcodeVersions(), executor.Xcode) {
 		val.addDiagnostic(diagnostic.Deprecated(
 			executor.XcodeRange,
 			fmt.Sprintf("Xcode version \"%s\" is deprecated", executor.Xcode),
@@ -206,12 +207,12 @@ func (val Validate) validateMachineMapClashes(executor ast.MachineExecutor, reso
 	}
 }
 
-func (val Validate) validateMachineExecutor(executor ast.MachineExecutor) {
+func (val Validate) validateMachineExecutor(ctx context.Context, executor ast.MachineExecutor) {
 	if executor.IsDeprecated {
 		return
 	}
 
-	pairs := val.Cache.Offerings(context.TODO(), val.Context.Api).MachinePairs()
+	pairs := val.Cache.Offerings(ctx, val.Context.Api).MachinePairs()
 	if pairs == nil {
 		return
 	}
@@ -223,7 +224,7 @@ func (val Validate) validateMachineExecutor(executor ast.MachineExecutor) {
 		if executor.ResourceClass != "" &&
 			!circleci.IsSelfHostedRunner(executor.ResourceClass) &&
 			!rcParam &&
-			!slices.Contains(val.Cache.Offerings(context.TODO(), val.Context.Api).MachineResourceClasses(), executor.ResourceClass) {
+			!slices.Contains(val.Cache.Offerings(ctx, val.Context.Api).MachineResourceClasses(), executor.ResourceClass) {
 
 			val.addDiagnostic(diagnostic.Warning(
 				executor.ResourceClassRange,
@@ -280,7 +281,7 @@ func (val Validate) validateMachineExecutor(executor ast.MachineExecutor) {
 	}
 
 	if !validImage {
-		if slices.Contains(val.Cache.Offerings(context.TODO(), val.Context.Api).DeprecatedMachineImages(), executor.Image) {
+		if slices.Contains(val.Cache.Offerings(ctx, val.Context.Api).DeprecatedMachineImages(), executor.Image) {
 			val.addDiagnostic(diagnostic.Deprecated(
 				executor.ImageRange,
 				fmt.Sprintf(
@@ -290,7 +291,7 @@ func (val Validate) validateMachineExecutor(executor ast.MachineExecutor) {
 			))
 		} else {
 			message := fmt.Sprintf("Unknown machine image \"%s\"", executor.Image)
-			if isMistakenImage(executor.Image, val.Cache.Offerings(context.TODO(), val.Context.Api)) {
+			if isMistakenImage(executor.Image, val.Cache.Offerings(ctx, val.Context.Api)) {
 				val.addDiagnostic(diagnostic.Error(executor.ImageRange, message))
 			} else {
 				val.addDiagnostic(diagnostic.Warning(executor.ImageRange, message))
@@ -321,9 +322,10 @@ func isMistakenImage(image string, offerings *circleci.Offerings) bool {
 
 // DockerExecutor
 
-func (val Validate) validateDockerExecutor(executor ast.DockerExecutor) {
-	if dockerResourceClasses := val.Cache.Offerings(context.TODO(), val.Context.Api).DockerResourceClasses(); dockerResourceClasses != nil {
+func (val Validate) validateDockerExecutor(ctx context.Context, executor ast.DockerExecutor) {
+	if dockerResourceClasses := val.Cache.Offerings(ctx, val.Context.Api).DockerResourceClasses(); dockerResourceClasses != nil {
 		val.checkIfValidResourceClass(
+			ctx,
 			executor.ResourceClass,
 			dockerResourceClasses,
 			executor.ResourceClassRange,
@@ -340,7 +342,7 @@ func (val Validate) validateDockerExecutor(executor ast.DockerExecutor) {
 			continue
 		}
 
-		imageExists := DoesDockerImageExists(&img, &val.Cache.DockerCache, val.APIs.DockerHub)
+		imageExists := DoesDockerImageExists(ctx, &img, &val.Cache.DockerCache, val.APIs.DockerHub)
 		if !imageExists {
 			val.addDiagnostic(
 				diagnostic.Error(
@@ -375,10 +377,10 @@ func (val Validate) validateDockerExecutor(executor ast.DockerExecutor) {
 					imgTag = "latest"
 				}
 
-				tagExists := DoesTagExist(&img, imgTag, &val.Cache.DockerTagsCache, val.APIs.DockerHub)
+				tagExists := DoesTagExist(ctx, &img, imgTag, &val.Cache.DockerTagsCache, val.APIs.DockerHub)
 
 				if !tagExists {
-					actions := GetImageTagActions(&val.Doc, &img, &val.Cache.DockerTagsCache, val.APIs.DockerHub)
+					actions := GetImageTagActions(ctx, &val.Doc, &img, &val.Cache.DockerTagsCache, val.APIs.DockerHub)
 					val.addDiagnostic(
 						diagnostic.New(
 							img.ImageRange,
@@ -390,7 +392,7 @@ func (val Validate) validateDockerExecutor(executor ast.DockerExecutor) {
 				}
 
 				if tagExists && img.Image.Tag == "" {
-					actions := GetImageTagActions(&val.Doc, &img, &val.Cache.DockerTagsCache, val.APIs.DockerHub)
+					actions := GetImageTagActions(ctx, &val.Doc, &img, &val.Cache.DockerTagsCache, val.APIs.DockerHub)
 					val.addDiagnostic(
 						diagnostic.New(
 							img.ImageRange,
@@ -467,6 +469,7 @@ func (val Validate) checkDeprecatedNamespace(img ast.DockerImage) {
 }
 
 func (val Validate) checkIfValidResourceClass(
+	ctx context.Context,
 	resourceClass string,
 	validResourceClasses []string,
 	resourceClassRange protocol.Range,
@@ -498,7 +501,7 @@ func (val Validate) checkIfValidResourceClass(
 			return
 		}
 		namespace := strings.Split(resourceClass, "/")[0]
-		val.validateExecutorNamespace(namespace, resourceClassRange)
+		val.validateExecutorNamespace(ctx, namespace, resourceClassRange)
 	}
 }
 
@@ -518,8 +521,8 @@ func (val Validate) validateRunnerResourceClass(resourceClass string, resourceCl
 // resource class, namespace/name.
 var runnerResourceClassRegex = regexp.MustCompile(`^[a-z0-9_\-]+/[a-zA-Z0-9:_\-+]+$`)
 
-func (val Validate) validateExecutorNamespace(resourceClass string, resourceClassRange protocol.Range) {
-	exists, err := val.Cache.NamespaceCache.Exists(context.TODO(), resourceClass, func(ctx context.Context) (bool, error) {
+func (val Validate) validateExecutorNamespace(ctx context.Context, resourceClass string, resourceClassRange protocol.Range) {
+	exists, err := val.Cache.NamespaceCache.Exists(ctx, resourceClass, func(ctx context.Context) (bool, error) {
 		_, err := val.Context.OrbRegistry().FetchNamespace(ctx, resourceClass)
 		switch {
 		case err == nil:
@@ -542,7 +545,7 @@ func (val Validate) validateExecutorNamespace(resourceClass string, resourceClas
 	}
 }
 
-func (val Validate) validateExecutorReference(executor string, rng protocol.Range) {
+func (val Validate) validateExecutorReference(ctx context.Context, executor string, rng protocol.Range) {
 	// A name built from a reference is only known once the config is compiled.
 	if paramref.ContainsReference(executor) {
 		return
@@ -550,7 +553,7 @@ func (val Validate) validateExecutorReference(executor string, rng protocol.Rang
 
 	if !val.Doc.DoesExecutorExist(executor) {
 		if val.Doc.IsOrbReference(executor) {
-			val.validateOrbExecutor(executor, rng)
+			val.validateOrbExecutor(ctx, executor, rng)
 		} else {
 			if possibleOrbName, couldBeOrbReference := val.Doc.CouldBeOrbReference(executor); couldBeOrbReference &&
 				!val.Doc.IsOrbReference(executor) {

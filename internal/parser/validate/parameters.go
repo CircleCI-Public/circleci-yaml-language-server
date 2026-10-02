@@ -1,6 +1,7 @@
 package validate
 
 import (
+	"context"
 	"fmt"
 	"slices"
 	"strings"
@@ -46,7 +47,7 @@ func (val Validate) checkIfParamAssigned(params map[string]ast2.ParameterValue, 
 	return assigned
 }
 
-func (val Validate) checkParamSimpleType(param ast2.ParameterValue, stepName string, definedParam ast2.Parameter) {
+func (val Validate) checkParamSimpleType(ctx context.Context, param ast2.ParameterValue, stepName string, definedParam ast2.Parameter) {
 	if value, ok := param.Value.(string); ok && param.Type == "string" {
 		if name, ok := paramref.OnlyPipelineValue(value); ok {
 			val.checkPipelineValueType(param, name, stepName, definedParam)
@@ -76,7 +77,7 @@ func (val Validate) checkParamSimpleType(param ast2.ParameterValue, stepName str
 		}
 
 	case "executor":
-		val.checkExecutorParamValue(param)
+		val.checkExecutorParamValue(ctx, param)
 
 	case "steps":
 		values, ok := param.Value.([]ast2.ParameterValue)
@@ -89,7 +90,7 @@ func (val Validate) checkParamSimpleType(param ast2.ParameterValue, stepName str
 				commandName := value.Value.(string)
 				_, _, isFunction := val.Doc.FunctionForStep(commandName)
 
-				if !val.isKnownStep(commandName) && !isFunction {
+				if !val.isKnownStep(ctx, commandName) && !isFunction {
 					val.addDiagnostic(
 						diagnostic.Error(
 							value.Range,
@@ -200,7 +201,7 @@ func (val Validate) checkParamUsedWithParam(param ast2.ParameterValue, stepName 
 
 // CheckIfParamsExist reports the parameters a template uses that aren't
 // defined, anywhere in a tag's expression or as a section's name.
-func (val Validate) CheckIfParamsExist() {
+func (val Validate) CheckIfParamsExist(ctx context.Context) {
 	checkOnNode := func(match *sitter.QueryMatch) {
 		for _, capture := range match.Captures {
 			node := &capture.Node
@@ -223,7 +224,7 @@ func (val Validate) CheckIfParamsExist() {
 					reference.Name = name
 				} else if name, ok := strings.CutPrefix(reference.Name, "parameters."); ok {
 					parameters = val.Doc.GetParamsWithPosition(val.Doc.NodeToRange(node).Start)
-					if jobParameters, ok := val.executorArgumentParametersAt(val.Doc.NodeToRange(node).Start); ok {
+					if jobParameters, ok := val.executorArgumentParametersAt(ctx, val.Doc.NodeToRange(node).Start); ok {
 						parameters = jobParameters
 					}
 					message = fmt.Sprintf("Parameter %s is not defined", name)
@@ -271,7 +272,7 @@ func (val Validate) inlineOrbAt(pos protocol.Position) (*ast2.OrbInfo, bool) {
 	return nil, false
 }
 
-func (val Validate) validateParametersValue(paramsValue map[string]ast2.ParameterValue, calledEntity string, entityRange protocol.Range, calledEntityDefinedParams map[string]ast2.Parameter, usableParams map[string]ast2.Parameter) {
+func (val Validate) validateParametersValue(ctx context.Context, paramsValue map[string]ast2.ParameterValue, calledEntity string, entityRange protocol.Range, calledEntityDefinedParams map[string]ast2.Parameter, usableParams map[string]ast2.Parameter) {
 	for _, calledEntityDefinedParam := range calledEntityDefinedParams {
 		// TODO: find a better place to do this
 		if calledEntityDefinedParam.GetType() == "enum" {
@@ -290,7 +291,7 @@ func (val Validate) validateParametersValue(paramsValue map[string]ast2.Paramete
 		if param.Type == "string" && paramref.IsOnlyParameter(param.Value.(string)) {
 			val.checkParamUsedWithParam(param, calledEntity, calledEntityDefinedParam, usableParams)
 		} else {
-			val.checkParamSimpleType(param, calledEntity, calledEntityDefinedParam)
+			val.checkParamSimpleType(ctx, param, calledEntity, calledEntityDefinedParam)
 		}
 	}
 
@@ -306,7 +307,7 @@ func (val Validate) validateParametersValue(paramsValue map[string]ast2.Paramete
 	}
 }
 
-func (val Validate) checkExecutorParamValue(param ast2.ParameterValue) {
+func (val Validate) checkExecutorParamValue(ctx context.Context, param ast2.ParameterValue) {
 	executorName := ""
 	executorNameRange := param.Range
 
@@ -330,7 +331,7 @@ func (val Validate) checkExecutorParamValue(param ast2.ParameterValue) {
 		executorName = param.Value.(string)
 	}
 
-	val.validateExecutorReference(executorName, executorNameRange)
+	val.validateExecutorReference(ctx, executorName, executorNameRange)
 }
 
 // matrixParametersAt returns the matrix parameters set at pos, which are set

@@ -539,7 +539,7 @@ workflows:
 				EnvVariables: make([]string, 0),
 			})
 
-			diagnostics, err := DiagnosticFile(testUri, c, context, "")
+			diagnostics, err := DiagnosticFile(t.Context(), testUri, c, context, "")
 			if err != nil {
 				t.Errorf("DiagnosticFile failed: %v", err)
 				return

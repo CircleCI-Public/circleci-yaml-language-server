@@ -2,6 +2,7 @@ package hover
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"regexp"
 	"strings"
@@ -18,7 +19,7 @@ var pipelineValueName = regexp.MustCompile(`\bpipeline(?:\.[A-Za-z0-9_]+)+`)
 
 // PipelineValue is the hover for a built-in pipeline value, such as
 // pipeline.git.branch: its type and what it holds.
-func PipelineValue(doc yamlparser.YamlDocument, _ *cache.Cache, pos protocol.Position) (string, bool) {
+func PipelineValue(_ context.Context, doc yamlparser.YamlDocument, _ *cache.Cache, pos protocol.Position) (string, bool) {
 	lineStart := position.ToIndex(protocol.Position{Line: pos.Line}, doc.Content)
 	lineEnd := bytes.IndexByte(doc.Content[lineStart:], '\n')
 	if lineEnd == -1 {

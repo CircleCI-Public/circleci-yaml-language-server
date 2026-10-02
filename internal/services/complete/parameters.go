@@ -1,6 +1,7 @@
 package complete
 
 import (
+	"context"
 	"maps"
 	"regexp"
 	"slices"
@@ -17,13 +18,13 @@ var parameterTypes = []string{"string", "boolean", "integer", "enum", "executor"
 // only mean something inside a job, a command or an executor.
 var pipelineParameterTypes = []string{"string", "boolean", "integer", "enum"}
 
-func (ch *CompletionHandler) addParametersDefinitionCompletion(parameters map[string]ast.Parameter) {
-	ch.completeParameterDefinitions(parameters, parameterTypes)
+func (ch *CompletionHandler) addParametersDefinitionCompletion(ctx context.Context, parameters map[string]ast.Parameter) {
+	ch.completeParameterDefinitions(ctx, parameters, parameterTypes)
 }
 
 // completeParameterDefinitions completes in the definition of one of the
 // parameters, whose type is one of types.
-func (ch *CompletionHandler) completeParameterDefinitions(parameters map[string]ast.Parameter, types []string) {
+func (ch *CompletionHandler) completeParameterDefinitions(ctx context.Context, parameters map[string]ast.Parameter, types []string) {
 	for _, param := range parameters {
 		if position.InRange(param.GetRange(), ch.Params.Position) {
 			if position.InRange(param.GetTypeRange(), ch.Params.Position) {
@@ -50,7 +51,7 @@ func (ch *CompletionHandler) completeParameterDefinitions(parameters map[string]
 
 			if param.GetType() == "executor" {
 				if position.InRange(param.GetDefaultRange(), ch.Params.Position) {
-					ch.addExecutorsCompletion()
+					ch.addExecutorsCompletion(ctx)
 					return
 				}
 			}

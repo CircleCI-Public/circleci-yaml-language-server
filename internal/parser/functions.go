@@ -75,14 +75,14 @@ func (doc *YamlDocument) FunctionForStep(stepName string) (ast.Function, string,
 // descriptor is nil when that function has no such version. An error means
 // the catalog couldn't be read, as on a host that doesn't serve it, and says
 // nothing about the declaration.
-func (doc *YamlDocument) LookUpFunction(function ast.Function, c *cache.Cache) (*circleci.FunctionPackage, *circleci.FunctionDescriptor, error) {
+func (doc *YamlDocument) LookUpFunction(ctx context.Context, function ast.Function, c *cache.Cache) (*circleci.FunctionPackage, *circleci.FunctionDescriptor, error) {
 	path, version, found := strings.Cut(function.Reference, "@")
 	if !function.IsString || !found {
 		return nil, nil, fmt.Errorf("function %s has no version", function.Alias)
 	}
 
 	client := doc.Context.V3Client()
-	published, err := c.Functions.Function(context.TODO(), client, path)
+	published, err := c.Functions.Function(ctx, client, path)
 	if err != nil || published == nil {
 		return nil, nil, err
 	}
@@ -92,7 +92,7 @@ func (doc *YamlDocument) LookUpFunction(function ast.Function, c *cache.Cache) (
 			continue
 		}
 
-		descriptor, err := c.Functions.Descriptor(context.TODO(), client, candidate)
+		descriptor, err := c.Functions.Descriptor(ctx, client, candidate)
 		return published, descriptor, err
 	}
 

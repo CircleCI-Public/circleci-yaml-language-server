@@ -1,6 +1,8 @@
 package hover
 
 import (
+	"context"
+
 	"go.lsp.dev/protocol"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
@@ -12,15 +14,15 @@ import (
 // Executor is the hover for the executor a job names, whether the config's
 // own, an inline orb's or an orb's, directly or through an alias: the
 // executor's description and parameters.
-func Executor(doc yamlparser.YamlDocument, c *cache.Cache, pos protocol.Position) (string, bool) {
+func Executor(ctx context.Context, doc yamlparser.YamlDocument, c *cache.Cache, pos protocol.Position) (string, bool) {
 	if name, ok := executorNamedAt(pos, doc.Jobs); ok {
-		return describeExecutor(doc, c, name)
+		return describeExecutor(ctx, doc, c, name)
 	}
 
 	// An inline orb's jobs name its executors without the orb's prefix.
 	for _, orb := range doc.LocalOrbInfo {
 		if name, ok := executorNamedAt(pos, orb.Jobs); ok {
-			return describeExecutor(doc.FromOrbParsedAttributesToYamlDocument(orb.OrbParsedAttributes), c, name)
+			return describeExecutor(ctx, doc.FromOrbParsedAttributesToYamlDocument(orb.OrbParsedAttributes), c, name)
 		}
 	}
 	return "", false
@@ -38,8 +40,8 @@ func executorNamedAt(pos protocol.Position, jobs map[string]ast.Job) (string, bo
 	return "", false
 }
 
-func describeExecutor(doc yamlparser.YamlDocument, c *cache.Cache, name string) (string, bool) {
-	executor, ok := doc.ResolveExecutor(name, c)
+func describeExecutor(ctx context.Context, doc yamlparser.YamlDocument, c *cache.Cache, name string) (string, bool) {
+	executor, ok := doc.ResolveExecutor(ctx, name, c)
 	if !ok {
 		return "", false
 	}

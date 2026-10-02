@@ -1,6 +1,7 @@
 package validate
 
 import (
+	"context"
 	"fmt"
 	"maps"
 	"slices"
@@ -13,7 +14,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 )
 
-func (val Validate) ValidateCommands() {
+func (val Validate) ValidateCommands(ctx context.Context) {
 	if len(val.Doc.Commands) == 0 && len(val.Doc.Aliases.Commands) == 0 && !position.IsDefaultRange(val.Doc.CommandsRange) {
 		val.addDiagnostic(
 			diagnostic.EmptySectionWarning(val.Doc.CommandsRange, "commands"),
@@ -23,10 +24,10 @@ func (val Validate) ValidateCommands() {
 	}
 
 	for _, command := range val.Doc.Commands {
-		val.validateSingleCommand(command)
+		val.validateSingleCommand(ctx, command)
 	}
 	val.validateCommandRecursion()
-	val.validateCommandAliases()
+	val.validateCommandAliases(ctx)
 }
 
 // validateCommandRecursion reports each command that calls itself, directly
@@ -102,8 +103,8 @@ var primitiveSteps = []string{
 	"install_signing_bundle",
 }
 
-func (val Validate) validateSingleCommand(command ast.Command) {
-	val.validateSteps(command.Steps, command.Name, command.Parameters)
+func (val Validate) validateSingleCommand(ctx context.Context, command ast.Command) {
+	val.validateSteps(ctx, command.Steps, command.Name, command.Parameters)
 
 	val.warnShadowedPrimitive(command.Name, command.NameRange)
 

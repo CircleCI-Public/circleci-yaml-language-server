@@ -69,19 +69,19 @@ workflows:
 	}
 
 	t.Run("a step shows the command its alias names", func(t *testing.T) {
-		got, ok := Step(doc, cache.New(), at(t, "      - renamed-c"))
+		got, ok := Step(t.Context(), doc, cache.New(), at(t, "      - renamed-c"))
 		assert.Assert(t, ok)
 		assert.Check(t, cmp.Equal(got, "**renamed-c** command\n\nSay hello."))
 	})
 
 	t.Run("a workflow's job shows the job its alias names", func(t *testing.T) {
-		got, ok := JobInvocation(doc, cache.New(), at(t, "      - renamed-build"))
+		got, ok := JobInvocation(t.Context(), doc, cache.New(), at(t, "      - renamed-build"))
 		assert.Assert(t, ok)
 		assert.Check(t, cmp.Equal(got, "**renamed-build** job\n\nBuild it."))
 	})
 
 	t.Run("a job's executor shows the executor its alias names", func(t *testing.T) {
-		got, ok := Executor(doc, cache.New(), at(t, "    executor: my-exec"))
+		got, ok := Executor(t.Context(), doc, cache.New(), at(t, "    executor: my-exec"))
 		assert.Assert(t, ok)
 		assert.Check(t, cmp.Equal(got, "**my-exec** executor\n\nThe orb's machine."))
 	})

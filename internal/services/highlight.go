@@ -1,6 +1,7 @@
 package languageservice
 
 import (
+	"context"
 	"slices"
 	"strings"
 
@@ -16,6 +17,7 @@ import (
 // DocumentHighlight is every mention in the document of what is named at a
 // position, such as a job's definition and each workflow that runs it.
 func DocumentHighlight(
+	ctx context.Context,
 	params protocol.DocumentHighlightParams, cache *cache.Cache, context *session.Settings,
 ) ([]protocol.DocumentHighlight, error) {
 	doc, err := yamlparser.ParseFromUriWithCache(params.TextDocument.URI, cache, context)
@@ -45,7 +47,7 @@ func DocumentHighlight(
 		Params: protocol.DefinitionParams{TextDocumentPositionParams: params.TextDocumentPositionParams},
 		Doc:    doc,
 	}
-	links, _ := def.Definition()
+	links, _ := def.Definition(ctx)
 	for _, link := range links {
 		if link.URI == params.TextDocument.URI && link.NameRange != (protocol.Range{}) {
 			definedAt = link.NameRange
@@ -63,7 +65,7 @@ func DocumentHighlight(
 		Cache:      cache,
 		FoundSteps: &[]StepRangeAndName{},
 	}
-	locations, err := ref.GetReferences()
+	locations, err := ref.GetReferences(ctx)
 	if err != nil {
 		return nil, err
 	}

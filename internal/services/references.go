@@ -1,6 +1,7 @@
 package languageservice
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -14,7 +15,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/session"
 )
 
-func References(params protocol.ReferenceParams, cache *cache.Cache, context *session.Settings) ([]protocol.Location, error) {
+func References(ctx context.Context, params protocol.ReferenceParams, cache *cache.Cache, context *session.Settings) ([]protocol.Location, error) {
 	yamlDocument, err := yamlparser.ParseFromUriWithCache(params.TextDocument.URI, cache, context)
 
 	if err != nil {
@@ -29,7 +30,7 @@ func References(params protocol.ReferenceParams, cache *cache.Cache, context *se
 		FoundSteps: &[]StepRangeAndName{},
 	}
 
-	return ref.GetReferences()
+	return ref.GetReferences(ctx)
 }
 
 type ReferenceHandler struct {
@@ -39,7 +40,7 @@ type ReferenceHandler struct {
 	FoundSteps *[]StepRangeAndName
 }
 
-func (ref ReferenceHandler) GetReferences() ([]protocol.Location, error) {
+func (ref ReferenceHandler) GetReferences(ctx context.Context) ([]protocol.Location, error) {
 	cmdName := ""
 	isOrb := false
 
@@ -52,14 +53,14 @@ func (ref ReferenceHandler) GetReferences() ([]protocol.Location, error) {
 			}
 		}
 
-		orbInfo, err := ref.Doc.GetOrbInfoFromName(orb.Name, ref.Cache)
+		orbInfo, err := ref.Doc.GetOrbInfoFromName(ctx, orb.Name, ref.Cache)
 		if err == nil && orb.Url.IsLocal {
 			return ReferenceHandler{
 				Cache:      ref.Cache,
 				Params:     ref.Params,
 				FoundSteps: ref.FoundSteps,
 				Doc:        ref.Doc.FromOrbParsedAttributesToYamlDocument(orbInfo.OrbParsedAttributes),
-			}.GetReferences()
+			}.GetReferences(ctx)
 		}
 	}
 

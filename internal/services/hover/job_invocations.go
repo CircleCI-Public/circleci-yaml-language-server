@@ -1,6 +1,8 @@
 package hover
 
 import (
+	"context"
+
 	"go.lsp.dev/protocol"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
@@ -11,13 +13,13 @@ import (
 // JobInvocation is the hover for the name of a job that a workflow or a job
 // group runs, whether the config's own or an orb's, directly or through an
 // alias: the job's description and parameters.
-func JobInvocation(doc yamlparser.YamlDocument, c *cache.Cache, pos protocol.Position) (string, bool) {
+func JobInvocation(ctx context.Context, doc yamlparser.YamlDocument, c *cache.Cache, pos protocol.Position) (string, bool) {
 	name, ok := invokedJobAt(doc, pos)
 	if !ok {
 		return "", false
 	}
 
-	job, ok := doc.ResolveJob(name, c)
+	job, ok := doc.ResolveJob(ctx, name, c)
 	if !ok {
 		return "", false
 	}

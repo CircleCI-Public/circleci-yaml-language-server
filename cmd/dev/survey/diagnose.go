@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/fs"
@@ -30,7 +31,7 @@ type row struct {
 	Text string `json:"text"`
 }
 
-func diagnose(args []string) error {
+func diagnose(ctx context.Context, args []string) error {
 	dir := defaultDir
 	if len(args) > 0 {
 		dir = args[0]
@@ -66,7 +67,7 @@ func diagnose(args []string) error {
 		fileURI := uri.File(abs)
 		c.FileCache.SetFile(cache.File{TextDocument: protocol.TextDocumentItem{URI: fileURI, Text: string(content)}})
 
-		diags, err := languageservice.DiagnosticFile(fileURI, c, settings, "")
+		diags, err := languageservice.DiagnosticFile(ctx, fileURI, c, settings, "")
 		if err != nil {
 			fmt.Fprintln(os.Stderr, path, err)
 		}

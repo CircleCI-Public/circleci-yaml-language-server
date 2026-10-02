@@ -82,7 +82,7 @@ func TestAliasNavigation(t *testing.T) {
 	}
 	definition := func(t *testing.T, pos protocol.Position) []uint32 {
 		t.Helper()
-		locations, err := Definition(protocol.DefinitionParams{TextDocumentPositionParams: protocol.TextDocumentPositionParams{
+		locations, err := Definition(t.Context(), protocol.DefinitionParams{TextDocumentPositionParams: protocol.TextDocumentPositionParams{
 			TextDocument: protocol.TextDocumentIdentifier{URI: file},
 			Position:     pos,
 		}}, c, settings)
@@ -91,7 +91,7 @@ func TestAliasNavigation(t *testing.T) {
 	}
 	references := func(t *testing.T, pos protocol.Position) []uint32 {
 		t.Helper()
-		locations, err := References(protocol.ReferenceParams{TextDocumentPositionParams: protocol.TextDocumentPositionParams{
+		locations, err := References(t.Context(), protocol.ReferenceParams{TextDocumentPositionParams: protocol.TextDocumentPositionParams{
 			TextDocument: protocol.TextDocumentIdentifier{URI: file},
 			Position:     pos,
 		}}, c, settings)

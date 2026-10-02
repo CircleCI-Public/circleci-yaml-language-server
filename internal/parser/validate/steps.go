@@ -1,6 +1,7 @@
 package validate
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"slices"
@@ -25,7 +26,7 @@ var WHEN_KEYWORDS = []string{
 // AutoRerunDelay validation regex: matches 1-10 minutes or any number of seconds (but not both)
 var AUTO_RERUN_DELAY_REGEX = regexp.MustCompile(`^((10|[1-9])m|([1-9][0-9]*)s)$`)
 
-func (val Validate) validateSteps(steps []ast2.Step, name string, jobOrCommandParameters map[string]ast2.Parameter) {
+func (val Validate) validateSteps(ctx context.Context, steps []ast2.Step, name string, jobOrCommandParameters map[string]ast2.Parameter) {
 	for _, step := range steps {
 		switch step := step.(type) {
 		case ast2.Run:
@@ -42,7 +43,7 @@ func (val Validate) validateSteps(steps []ast2.Step, name string, jobOrCommandPa
 			if _, _, ok := val.Doc.FunctionForStep(step.Name); ok {
 				continue
 			}
-			val.validateNamedStep(step, jobOrCommandParameters)
+			val.validateNamedStep(ctx, step, jobOrCommandParameters)
 		case ast2.Steps:
 			val.validateStepSteps(step, name)
 		case ast2.Checkout:
@@ -220,31 +221,32 @@ func (val Validate) validateRunCommand(step ast2.Run, jobOrCommandParameters map
 // isKnownStep reports whether a step can be called by name: a command or a
 // command's alias, a built-in, an orb command or a YAML alias, or one from an
 // orb that can't be fetched. A job is not a step.
-func (val Validate) isKnownStep(name string) bool {
+func (val Validate) isKnownStep(ctx context.Context, name string) bool {
 	_, isCommandAlias := val.Doc.CommandAlias(name)
 	return val.Doc.DoesCommandExist(name) || isCommandAlias ||
 		val.Doc.IsBuiltIn(name) ||
-		val.Doc.IsOrbCommand(name, val.Cache) ||
+		val.Doc.IsOrbCommand(ctx, name, val.Cache) ||
 		val.Doc.IsAlias(name) ||
-		val.Doc.IsFromUnfetchableOrb(name, val.Cache)
+		val.Doc.IsFromUnfetchableOrb(ctx, name, val.Cache)
 }
 
-func (val Validate) validateNamedStep(step ast2.NamedStep, usableParams map[string]ast2.Parameter) {
+func (val Validate) validateNamedStep(ctx context.Context, step ast2.NamedStep, usableParams map[string]ast2.Parameter) {
 	// A name taken from a parameter, `- << parameters.step >>`, is only
 	// known once the config is compiled.
-	if val.Doc.IsFromUnfetchableOrb(step.Name, val.Cache) || paramref.ContainsReference(step.Name) {
+	if val.Doc.IsFromUnfetchableOrb(ctx, step.Name, val.Cache) || paramref.ContainsReference(step.Name) {
 		return
 	}
 
-	if message := val.unknownStepMessage(step.Name); message != "" {
+	if message := val.unknownStepMessage(ctx, step.Name); message != "" {
 		val.addDiagnostic(diagnostic.Error(step.Range, message))
 	}
 
 	// An alias that names nothing is reported where it is declared.
 	alias, isAlias := val.Doc.CommandAlias(step.Name)
-	if !val.Doc.IsBuiltIn(step.Name) && (!isAlias || val.commandAliasProblem(alias) == "") {
-		targetEntityDefinedParams := val.Doc.GetDefinedParams(step.Name, parser.CommandEntity, val.Cache)
+	if !val.Doc.IsBuiltIn(step.Name) && (!isAlias || val.commandAliasProblem(ctx, alias) == "") {
+		targetEntityDefinedParams := val.Doc.GetDefinedParams(ctx, step.Name, parser.CommandEntity, val.Cache)
 		val.validateParametersValue(
+			ctx,
 			step.Parameters,
 			step.Name,
 			step.Range,
@@ -263,11 +265,11 @@ func (val Validate) validateNamedStep(step ast2.NamedStep, usableParams map[stri
 	}
 }
 
-func (val Validate) unknownStepMessage(name string) string {
+func (val Validate) unknownStepMessage(ctx context.Context, name string) string {
 	switch {
-	case val.isKnownStep(name):
+	case val.isKnownStep(ctx, name):
 		return ""
-	case val.isKnownJob(name):
+	case val.isKnownJob(ctx, name):
 		return fmt.Sprintf("%s is a job, not a command: a job can't be run as a step", name)
 	default:
 		return fmt.Sprintf("Cannot find declaration for step %s", name)

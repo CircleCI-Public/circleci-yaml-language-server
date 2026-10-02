@@ -58,24 +58,24 @@ jobs:
 	const node = "**node** executor\n\nNode, at a version.\n\nParameters:\n\n- `version` (string, default `22.0`)"
 
 	t.Run("a job's executor shows its description and parameters", func(t *testing.T) {
-		got, ok := Executor(doc, cache.New(), protocol.Position{Line: 27, Character: 16})
+		got, ok := Executor(t.Context(), doc, cache.New(), protocol.Position{Line: 27, Character: 16})
 		assert.Assert(t, ok)
 		assert.Check(t, cmp.Equal(got, node))
 	})
 
 	t.Run("so does one given as a mapping, on its executor line", func(t *testing.T) {
-		got, ok := Executor(doc, cache.New(), protocol.Position{Line: 31, Character: 6})
+		got, ok := Executor(t.Context(), doc, cache.New(), protocol.Position{Line: 31, Character: 6})
 		assert.Assert(t, ok)
 		assert.Check(t, cmp.Equal(got, node))
 	})
 
 	t.Run("but not on its parameters", func(t *testing.T) {
-		_, ok := Executor(doc, cache.New(), protocol.Position{Line: 33, Character: 8})
+		_, ok := Executor(t.Context(), doc, cache.New(), protocol.Position{Line: 33, Character: 8})
 		assert.Check(t, !ok)
 	})
 
 	t.Run("an inline orb's job shows the orb's executor", func(t *testing.T) {
-		got, ok := Executor(doc, cache.New(), protocol.Position{Line: 11, Character: 18})
+		got, ok := Executor(t.Context(), doc, cache.New(), protocol.Position{Line: 11, Character: 18})
 		assert.Assert(t, ok)
 		assert.Check(t, cmp.Equal(got, "**tiny** executor\n\nThe smallest there is."))
 	})

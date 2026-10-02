@@ -198,7 +198,7 @@ func TestUnknownMachineImageSeverity(t *testing.T) {
 	for image, want := range severities {
 		t.Run(image, func(t *testing.T) {
 			val := CreateValidateFromYAML(yamlForMachine("", image))
-			val.Validate()
+			val.Validate(t.Context())
 
 			assert.Assert(t, cmp.Len(*val.Diagnostics, 1))
 			got := (*val.Diagnostics)[0]
@@ -219,7 +219,7 @@ func TestMachineExecutorSkipsWhenOfferingsUnavailable(t *testing.T) {
 	val := CreateValidateFromYAML(yamlForMachine("toto", "bogus:image"))
 	val.Context.Api.HostUrl = server.URL
 	val.Cache = cache.New() // no catalog, so it is fetched from the failing server
-	val.Validate()
+	val.Validate(t.Context())
 
 	assert.Check(t, cmp.Len(*val.Diagnostics, 0))
 }
@@ -249,7 +249,7 @@ executors:
 	for _, c := range testCases {
 		t.Run(c.name, func(t *testing.T) {
 			val := CreateValidateFromYAML(c.yamlContent)
-			val.Validate()
+			val.Validate(t.Context())
 
 			var found *protocol.Diagnostic
 			for i := range *val.Diagnostics {
@@ -335,7 +335,7 @@ workflows:
     jobs:
       - build
 `)
-			val.Validate()
+			val.Validate(t.Context())
 
 			var got []ComparableDiagnostic
 			for _, d := range *val.Diagnostics {
@@ -388,7 +388,7 @@ workflows:
     jobs:
       - build
 `)
-			val.Validate()
+			val.Validate(t.Context())
 
 			var messages []string
 			for _, d := range *val.Diagnostics {
@@ -495,7 +495,7 @@ jobs:
 	for _, c := range testCases {
 		t.Run(c.name, func(t *testing.T) {
 			val := CreateValidateFromYAML(c.yamlContent)
-			val.Validate()
+			val.Validate(t.Context())
 
 			if c.errRegex == "" {
 				assert.Check(t, cmp.Len(*val.Diagnostics, 0))

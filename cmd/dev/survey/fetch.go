@@ -32,7 +32,7 @@ type contentEntry struct {
 
 var errNotFound = errors.New("not found")
 
-func fetch(args []string) error {
+func fetch(ctx context.Context, args []string) error {
 	flags := flag.NewFlagSet("fetch", flag.ExitOnError)
 	out := flags.String("out", defaultDir, "directory to write the configs to")
 	since := flags.String("since", time.Now().AddDate(-1, 0, 0).Format(time.DateOnly), "only repositories pushed to since this date")
@@ -49,7 +49,6 @@ func fetch(args []string) error {
 	}
 
 	gh := gitHubClient{token: gitHubToken()}
-	ctx := context.Background()
 
 	var repos []repository
 	for _, org := range orgs {

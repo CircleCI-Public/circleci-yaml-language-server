@@ -283,7 +283,7 @@ func TestReferences(t *testing.T) {
 				},
 			}
 
-			got, err := References(params, c, context)
+			got, err := References(t.Context(), params, c, context)
 
 			// We don't care about the order of the items,
 			// so we sort them before comparing to avoid the order
@@ -370,7 +370,7 @@ workflows:
 			Position:     protocol.Position{Line: 2, Character: 4},
 		},
 	}
-	got, err := References(params, c, testHelpers.DefaultSettings())
+	got, err := References(t.Context(), params, c, testHelpers.DefaultSettings())
 	assert.NilError(t, err)
 
 	// Each is found on its own line, 0-based: the job's executor, the

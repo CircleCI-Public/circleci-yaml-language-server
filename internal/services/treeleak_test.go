@@ -76,28 +76,28 @@ func TestRequestsCloseTheTreesTheyParse(t *testing.T) {
 		run  func()
 	}{
 		{"diagnostics of a file", func() {
-			_, _ = DiagnosticFile(docURI, c, settings, "")
+			_, _ = DiagnosticFile(t.Context(), docURI, c, settings, "")
 		}},
 		{"diagnostics of a string", func() {
-			_, _ = DiagnosticString(leakConfig, c, settings, "")
+			_, _ = DiagnosticString(t.Context(), leakConfig, c, settings, "")
 		}},
 		{"completion", func() {
-			_, _ = Complete(protocol.CompletionParams{
+			_, _ = Complete(t.Context(), protocol.CompletionParams{
 				TextDocumentPositionParams: protocol.TextDocumentPositionParams{TextDocument: document, Position: inSteps},
 			}, c, settings)
 		}},
 		{"hover", func() {
-			_, _ = Hover(protocol.HoverParams{
+			_, _ = Hover(t.Context(), protocol.HoverParams{
 				TextDocumentPositionParams: protocol.TextDocumentPositionParams{TextDocument: document, Position: onGreet},
 			}, c, settings)
 		}},
 		{"definition", func() {
-			_, _ = Definition(protocol.DefinitionParams{
+			_, _ = Definition(t.Context(), protocol.DefinitionParams{
 				TextDocumentPositionParams: protocol.TextDocumentPositionParams{TextDocument: document, Position: onGreet},
 			}, c, settings)
 		}},
 		{"references", func() {
-			_, _ = References(protocol.ReferenceParams{
+			_, _ = References(t.Context(), protocol.ReferenceParams{
 				TextDocumentPositionParams: protocol.TextDocumentPositionParams{TextDocument: document, Position: onGreet},
 			}, c, settings)
 		}},

@@ -1,6 +1,8 @@
 package validate
 
 import (
+	"context"
+
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/dockerhub"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/parser"
 
@@ -26,25 +28,25 @@ type Validate struct {
 	OrbName string
 }
 
-func (val *Validate) Validate() {
+func (val *Validate) Validate(ctx context.Context) {
 	if !val.IsLocalOrb {
-		val.CheckIfParamsExist()
+		val.CheckIfParamsExist(ctx)
 		val.ValidateAnchors()
-		val.ValidateJobGroups()
-		val.ValidateWorkflows()
-		val.ValidateOrbs()
+		val.ValidateJobGroups(ctx)
+		val.ValidateWorkflows(ctx)
+		val.ValidateOrbs(ctx)
 		val.CheckNames()
 		val.ValidatePipelineParameters()
-		val.ValidateLocalOrbs()
-		val.ValidateFunctions()
+		val.ValidateLocalOrbs(ctx)
+		val.ValidateFunctions(ctx)
 		val.ValidateConditions()
 		val.ValidateRegexes()
 		val.ValidateMatchesValues()
 		val.ValidateTemplates()
 		val.ValidatePipelineValues()
 	}
-	val.ValidateJobs()
-	val.ValidateCommands()
-	val.ValidateExecutors()
+	val.ValidateJobs(ctx)
+	val.ValidateCommands(ctx)
+	val.ValidateExecutors(ctx)
 	val.ValidateTypedKeyReferences()
 }

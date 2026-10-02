@@ -62,7 +62,7 @@ func TestCompleteSteps(t *testing.T) {
 		Cache:   cache.New(),
 		Context: settings,
 	}
-	ch.GetCompletionItems()
+	ch.GetCompletionItems(t.Context())
 
 	labels := []string{}
 	for _, item := range ch.Items {

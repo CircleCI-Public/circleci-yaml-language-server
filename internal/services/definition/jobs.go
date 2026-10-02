@@ -1,13 +1,15 @@
 package definition
 
 import (
+	"context"
+
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 )
 
-func (def DefinitionStruct) searchForJobs() []Link {
+func (def DefinitionStruct) searchForJobs(ctx context.Context) []Link {
 	for _, job := range def.Doc.Jobs {
-		if res := def.getStepDefinition(job.Steps); len(res) > 0 {
+		if res := def.getStepDefinition(ctx, job.Steps); len(res) > 0 {
 			return res
 		}
 
@@ -23,7 +25,7 @@ func (def DefinitionStruct) searchForJobs() []Link {
 		}
 
 		if position.InRange(job.ExecutorRange, def.Params.Position) {
-			link, _ := def.getExecutorLink(job.ExecutorRange, job.Executor)
+			link, _ := def.getExecutorLink(ctx, job.ExecutorRange, job.Executor)
 			return []Link{link}
 		}
 
@@ -32,21 +34,21 @@ func (def DefinitionStruct) searchForJobs() []Link {
 		}
 	}
 
-	return def.searchForAliasTargets(def.Doc.Aliases.Jobs)
+	return def.searchForAliasTargets(ctx, def.Doc.Aliases.Jobs)
 }
 
-func (def DefinitionStruct) getStepDefinition(steps []ast.Step) []Link {
+func (def DefinitionStruct) getStepDefinition(ctx context.Context, steps []ast.Step) []Link {
 	for _, commandStep := range steps {
 		switch step := commandStep.(type) {
 		case ast.NamedStep:
 			if position.InRange(step.Range, def.Params.Position) {
-				if loc, err := def.getCommandOrJobLocation(step.Name, true); err == nil {
+				if loc, err := def.getCommandOrJobLocation(ctx, step.Name, true); err == nil {
 					return loc
 				}
 				return []Link{}
 			}
 
-			if res := def.searchForParamValueDefinition(step.Name, step.Parameters); len(res) > 0 {
+			if res := def.searchForParamValueDefinition(ctx, step.Name, step.Parameters); len(res) > 0 {
 				return res
 			}
 		}

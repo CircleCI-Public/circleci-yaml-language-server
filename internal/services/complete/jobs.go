@@ -1,6 +1,7 @@
 package complete
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"slices"
@@ -13,7 +14,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 )
 
-func (ch *CompletionHandler) completeJobs() {
+func (ch *CompletionHandler) completeJobs(ctx context.Context) {
 	job, err := findJob(ch.Params.Position, ch.Doc)
 	if err != nil {
 		return
@@ -21,7 +22,7 @@ func (ch *CompletionHandler) completeJobs() {
 
 	if key, lines, parent := ch.valueAt(); parent != -1 && !position.IsDefaultRange(job.ExecutorRange) &&
 		parent == int(job.ExecutorRange.Start.Line) && executorMapping.MatchString(lines[parent]) {
-		if param, ok := ch.executorParameters(job.Executor)[key]; ok {
+		if param, ok := ch.executorParameters(ctx, job.Executor)[key]; ok {
 			ch.addParameterValues(param)
 			return
 		}
@@ -29,26 +30,26 @@ func (ch *CompletionHandler) completeJobs() {
 
 	if lines, parent := ch.keyParent(); parent != -1 && !position.IsDefaultRange(job.ExecutorRange) &&
 		parent == int(job.ExecutorRange.Start.Line) && executorMapping.MatchString(lines[parent]) {
-		ch.completeExecutorMapping(job.Executor, parent)
+		ch.completeExecutorMapping(ctx, job.Executor, parent)
 		return
 	}
 
-	if ch.completeJobExecutor(job) || ch.completeDockerEntry() || ch.completeReleaseValidation(job) {
+	if ch.completeJobExecutor(ctx, job) || ch.completeDockerEntry() || ch.completeReleaseValidation(job) {
 		return
 	}
 
 	switch true {
 	case position.InRange(job.ExecutorRange, ch.Params.Position):
-		ch.addExecutorsCompletion()
+		ch.addExecutorsCompletion(ctx)
 		return
 	case position.InRange(job.ParametersRange, ch.Params.Position):
-		ch.addParametersDefinitionCompletion(job.Parameters)
+		ch.addParametersDefinitionCompletion(ctx, job.Parameters)
 		return
 	case position.InRange(job.StepsRange, ch.Params.Position):
-		ch.completeSteps(job.Name, true, ch.nodeToComplete())
+		ch.completeSteps(ctx, job.Name, true, ch.nodeToComplete())
 		return
 	case position.InRange(job.DockerRange, ch.Params.Position):
-		ch.completeDockerExecutor(job.Docker)
+		ch.completeDockerExecutor(ctx, job.Docker)
 		return
 	case position.InRange(job.TypeRange, ch.Params.Position):
 		ch.addJobTypeCompletion()
@@ -60,10 +61,10 @@ func (ch *CompletionHandler) completeJobs() {
 	}
 }
 
-func (ch *CompletionHandler) orbsJobs() {
+func (ch *CompletionHandler) orbsJobs(ctx context.Context) {
 	for _, orb := range ch.Doc.Orbs {
 		// Local orbs jobs are added directly within ch.Doc.Jobs
-		orbInfo := ch.GetOrbInfo(orb)
+		orbInfo := ch.GetOrbInfo(ctx, orb)
 		if orbInfo != nil {
 			for jobName := range orbInfo.Jobs {
 				jobName = fmt.Sprintf("%s/%s", orb.Name, jobName)
@@ -73,7 +74,7 @@ func (ch *CompletionHandler) orbsJobs() {
 	}
 }
 
-func (ch *CompletionHandler) addExecutorsCompletion() {
+func (ch *CompletionHandler) addExecutorsCompletion(ctx context.Context) {
 	for _, executor := range ch.Doc.Executors {
 		ch.addCompletionItem(executor.GetName())
 	}
@@ -82,7 +83,7 @@ func (ch *CompletionHandler) addExecutorsCompletion() {
 	}
 
 	for _, orb := range ch.Doc.Orbs {
-		executor := ch.getOrbExecutors(orb)
+		executor := ch.getOrbExecutors(ctx, orb)
 		for _, executor := range executor {
 			ch.addCompletionItem(fmt.Sprintf("%s/%s", orb.Name, executor.GetName()))
 		}
@@ -93,10 +94,10 @@ var executorMapping = regexp.MustCompile(`^\s*executor\s*:\s*$`)
 
 // completeExecutorMapping offers the keys an executor given as a mapping
 // doesn't have yet: its name, and the parameters the executor declares.
-func (ch *CompletionHandler) completeExecutorMapping(name string, executorLine int) {
+func (ch *CompletionHandler) completeExecutorMapping(ctx context.Context, name string, executorLine int) {
 	keys := []string{"name"}
 	params := []string{}
-	for param := range ch.executorParameters(name) {
+	for param := range ch.executorParameters(ctx, name) {
 		params = append(params, param)
 	}
 	slices.Sort(params)
@@ -112,8 +113,8 @@ func (ch *CompletionHandler) completeExecutorMapping(name string, executorLine i
 
 // executorParameters are the parameters a local, inline-orb or orb executor
 // declares, named directly or through an alias.
-func (ch *CompletionHandler) executorParameters(name string) map[string]ast2.Parameter {
-	if executor, ok := ch.Doc.ResolveExecutor(name, ch.Cache); ok {
+func (ch *CompletionHandler) executorParameters(ctx context.Context, name string) map[string]ast2.Parameter {
+	if executor, ok := ch.Doc.ResolveExecutor(ctx, name, ch.Cache); ok {
 		return executor.GetParameters()
 	}
 	return nil

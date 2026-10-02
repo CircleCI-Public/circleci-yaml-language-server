@@ -1,6 +1,7 @@
 package definition
 
 import (
+	"context"
 	"strings"
 
 	"go.lsp.dev/protocol"
@@ -9,7 +10,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 )
 
-func (def DefinitionStruct) getExecutorDefinition() ([]Link, error) {
+func (def DefinitionStruct) getExecutorDefinition(ctx context.Context) ([]Link, error) {
 	for _, executor := range def.Doc.Executors {
 		if position.InRange(executor.GetNameRange(), def.Params.Position) {
 			return []Link{
@@ -25,7 +26,7 @@ func (def DefinitionStruct) getExecutorDefinition() ([]Link, error) {
 
 	for _, alias := range def.Doc.Aliases.Executors {
 		if position.InRange(alias.TargetRange, def.Params.Position) {
-			link, _ := def.getExecutorLink(alias.TargetRange, alias.Target)
+			link, _ := def.getExecutorLink(ctx, alias.TargetRange, alias.Target)
 			return []Link{link}, nil
 		}
 	}
@@ -35,7 +36,7 @@ func (def DefinitionStruct) getExecutorDefinition() ([]Link, error) {
 
 // getExecutorLink links origin to the executor named name, and reports
 // whether there is one.
-func (def DefinitionStruct) getExecutorLink(origin protocol.Range, name string) (Link, bool) {
+func (def DefinitionStruct) getExecutorLink(ctx context.Context, origin protocol.Range, name string) (Link, bool) {
 	link := Link{Origin: origin, URI: def.Params.TextDocument.URI}
 
 	if alias, ok := def.Doc.ExecutorAlias(name); ok {
@@ -45,7 +46,7 @@ func (def DefinitionStruct) getExecutorLink(origin protocol.Range, name string) 
 
 	executor, ok := def.Doc.Executors[name]
 	if !ok {
-		orbLoc, _ := def.getOrbLocation(name, false)
+		orbLoc, _ := def.getOrbLocation(ctx, name, false)
 		if len(orbLoc) > 0 {
 			link.Range, link.NameRange = orbLoc[0].Range, orbLoc[0].NameRange
 			return link, true
@@ -59,8 +60,8 @@ func (def DefinitionStruct) getExecutorLink(origin protocol.Range, name string) 
 
 // searchForExecutorArgument goes from a value given to a parameter of type
 // executor, directly or among a matrix's values, to the executor it names.
-func (def DefinitionStruct) searchForExecutorArgument(callName string, argument ast.ParameterValue) []Link {
-	if declared, ok := def.declaredParam(callName, argument.Name); !ok || declared.GetType() != "executor" {
+func (def DefinitionStruct) searchForExecutorArgument(ctx context.Context, callName string, argument ast.ParameterValue) []Link {
+	if declared, ok := def.declaredParam(ctx, callName, argument.Name); !ok || declared.GetType() != "executor" {
 		return []Link{}
 	}
 
@@ -73,7 +74,7 @@ func (def DefinitionStruct) searchForExecutorArgument(callName string, argument 
 		if !ok || !position.InRange(value.ValueRange, def.Params.Position) {
 			continue
 		}
-		if link, ok := def.getExecutorLink(value.ValueRange, strings.Trim(name, `"'`)); ok {
+		if link, ok := def.getExecutorLink(ctx, value.ValueRange, strings.Trim(name, `"'`)); ok {
 			return []Link{link}
 		}
 	}

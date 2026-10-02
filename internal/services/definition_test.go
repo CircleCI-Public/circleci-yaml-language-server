@@ -423,7 +423,7 @@ func TestDefinition(t *testing.T) {
 				},
 			}
 
-			links, err := Definition(params, c, context)
+			links, err := Definition(t.Context(), params, c, context)
 			got := locationsOf(links)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Definition(): %s error = %v, wantErr %v", tt.name, err, tt.wantErr)
@@ -469,7 +469,7 @@ orbs:
 			},
 		},
 	}, Doc: doc}
-	links, err := def.Definition()
+	links, err := def.Definition(t.Context())
 	assert.Check(t, err)
 	locations := locationsOf(links)
 	assert.Check(t, cmp.DeepEqual(locations, []protocol.Location{
@@ -515,7 +515,7 @@ orbs:
 			},
 		},
 	}, Doc: doc}
-	links, err := def.Definition()
+	links, err := def.Definition(t.Context())
 	assert.Check(t, err)
 	locations := locationsOf(links)
 	assert.Check(t, cmp.DeepEqual(locations, []protocol.Location{
@@ -613,7 +613,7 @@ func definitionAt(t *testing.T, doc parser.YamlDocument, fileURI uri.URI, line, 
 			Position:     protocol.Position{Line: line, Character: char},
 		},
 	}, Doc: doc}
-	links, err := def.Definition()
+	links, err := def.Definition(t.Context())
 	assert.Check(t, err)
 	return locationsOf(links)
 }
@@ -754,7 +754,7 @@ func TestDefinitionOfAParameterUnderAKeylessPair(t *testing.T) {
 		TextDocument: protocol.TextDocumentItem{URI: docURI, Text: content},
 	})
 
-	locations, err := Definition(protocol.DefinitionParams{
+	locations, err := Definition(t.Context(), protocol.DefinitionParams{
 		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
 			TextDocument: protocol.TextDocumentIdentifier{URI: docURI},
 			Position:     protocol.Position{Line: 4, Character: 32},
@@ -795,7 +795,7 @@ workflows:
 				Position:     protocol.Position{Line: line, Character: char},
 			},
 		}, Doc: doc}
-		links, err := def.Definition()
+		links, err := def.Definition(t.Context())
 		assert.Check(t, err)
 		return links
 	}
@@ -900,7 +900,7 @@ workflows:
 					Position:     tc.at,
 				},
 			}, Doc: doc}
-			links, err := def.Definition()
+			links, err := def.Definition(t.Context())
 			assert.NilError(t, err)
 
 			assert.Assert(t, cmp.Len(links, 1))
@@ -1000,7 +1000,7 @@ workflows:
 					Position:     tc.at,
 				},
 			}, Doc: doc}
-			links, err := def.Definition()
+			links, err := def.Definition(t.Context())
 			assert.NilError(t, err)
 
 			assert.Assert(t, cmp.Len(links, 1))

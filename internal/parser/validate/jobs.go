@@ -15,20 +15,20 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 )
 
-func (val Validate) ValidateJobs() {
+func (val Validate) ValidateJobs(ctx context.Context) {
 	for _, job := range val.Doc.Jobs {
-		val.validateSingleJob(job)
+		val.validateSingleJob(ctx, job)
 	}
-	val.validateJobAliases()
+	val.validateJobAliases(ctx)
 }
 
-func (val Validate) validateSingleJob(job ast2.Job) {
+func (val Validate) validateSingleJob(ctx context.Context, job ast2.Job) {
 	val.validateJobType(job)
 	val.validateReservedParameterNames(job)
 
-	val.validateSteps(job.Steps, job.Name, job.Parameters)
+	val.validateSteps(ctx, job.Steps, job.Name, job.Parameters)
 	val.validateRemoteDockerOnce(job)
-	val.validateRemoteDockerVersion(job)
+	val.validateRemoteDockerVersion(ctx, job)
 
 	if job.Steps != nil && job.Type != "" && job.Type != "build" {
 		val.addDiagnostic(
@@ -45,7 +45,7 @@ func (val Validate) validateSingleJob(job ast2.Job) {
 		val.checkAndReportUnusedJob(job)
 	}
 
-	if strings.Contains(job.Name, "test") && !val.mayStoreTestResults(job.Steps) {
+	if strings.Contains(job.Name, "test") && !val.mayStoreTestResults(ctx, job.Steps) {
 		val.addDiagnostic(
 			protocol.Diagnostic{
 				Range:    job.NameRange,
@@ -67,7 +67,7 @@ func (val Validate) validateSingleJob(job ast2.Job) {
 				if !param.IsOptional() {
 					return
 				}
-				isOrbExecutor, err := val.doesOrbExecutorExist(executorDefault, rng)
+				isOrbExecutor, err := val.doesOrbExecutorExist(ctx, executorDefault, rng)
 				if val.Context.Api.UseDefaultInstance() && !val.Doc.DoesExecutorExist(executorDefault) &&
 					(!isOrbExecutor && err == nil) {
 					// Error on the default value
@@ -93,9 +93,10 @@ func (val Validate) validateSingleJob(job ast2.Job) {
 			}
 
 		} else if executor, ok := val.localExecutor(job.Executor); !ok {
-			val.validateExecutorReference(job.Executor, job.ExecutorRange)
+			val.validateExecutorReference(ctx, job.Executor, job.ExecutorRange)
 		} else {
 			val.validateParametersValue(
+				ctx,
 				job.ExecutorParameters,
 				executor.GetName(),
 				job.ExecutorRange,
@@ -132,11 +133,11 @@ func (val Validate) validateSingleJob(job ast2.Job) {
 	}
 
 	if len(job.Docker.Image) > 0 {
-		val.validateDockerExecutor(job.Docker)
+		val.validateDockerExecutor(ctx, job.Docker)
 	} else if job.MacOS.Xcode != "" {
-		val.validateMacOSExecutor(job.MacOS)
+		val.validateMacOSExecutor(ctx, job.MacOS)
 	} else if job.Machine.Image != "" {
-		val.validateMachineExecutor(job.Machine)
+		val.validateMachineExecutor(ctx, job.Machine)
 	} else {
 		// Such as `machine: true` on a self-hosted runner, which the executor
 		// checks don't see.
@@ -191,7 +192,7 @@ func (val Validate) validateRemoteDockerOnce(job ast2.Job) {
 // validateRemoteDockerVersion checks a job's setup_remote_docker against the
 // catalog: the machine provisioner rejects a job whose resource class can't
 // run remote Docker, or doesn't offer the Docker version it asks for.
-func (val Validate) validateRemoteDockerVersion(job ast2.Job) {
+func (val Validate) validateRemoteDockerVersion(ctx context.Context, job ast2.Job) {
 	var steps []ast2.SetupRemoteDocker
 	for _, step := range job.Steps {
 		if step, ok := step.(ast2.SetupRemoteDocker); ok {
@@ -203,11 +204,11 @@ func (val Validate) validateRemoteDockerVersion(job ast2.Job) {
 	if len(steps) == 0 {
 		return
 	}
-	class, ok := val.Doc.DockerResourceClass(job, val.Cache)
+	class, ok := val.Doc.DockerResourceClass(ctx, job, val.Cache)
 	if !ok {
 		return
 	}
-	offerings := val.Cache.Offerings(context.TODO(), val.Context.Api)
+	offerings := val.Cache.Offerings(ctx, val.Context.Api)
 	versions := offerings.RemoteDockerVersions(class)
 	if versions == nil {
 		return
@@ -374,12 +375,12 @@ func (val Validate) validateJobType(job ast2.Job) {
 // through the commands they call. Steps it can't see into count as storing
 // them: a job's steps parameter, and an orb command whose source isn't
 // available.
-func (val Validate) mayStoreTestResults(steps []ast2.Step) bool {
+func (val Validate) mayStoreTestResults(ctx context.Context, steps []ast2.Step) bool {
 	return anyStep(steps, func(step ast2.Step) bool {
 		if _, ok := step.(ast2.Steps); ok {
 			return true
 		}
-		return val.callStoresTestResults(step, "", val.Doc.Commands, map[string]bool{})
+		return val.callStoresTestResults(ctx, step, "", val.Doc.Commands, map[string]bool{})
 	})
 }
 
@@ -387,7 +388,7 @@ func (val Validate) mayStoreTestResults(steps []ast2.Step) bool {
 // commands of scope, which is "" for the config's own and an orb's name for
 // that orb's. A command's steps parameter isn't followed, since anyStep has
 // already looked at the steps its caller passed.
-func (val Validate) callStoresTestResults(step ast2.Step, scope string, commands map[string]ast2.Command, seen map[string]bool) bool {
+func (val Validate) callStoresTestResults(ctx context.Context, step ast2.Step, scope string, commands map[string]ast2.Command, seen map[string]bool) bool {
 	switch step := step.(type) {
 	case ast2.StoreTestResults:
 		return true
@@ -396,7 +397,7 @@ func (val Validate) callStoresTestResults(step ast2.Step, scope string, commands
 			return true
 		}
 		if command, ok := commands[step.Name]; ok {
-			return val.commandStoresTestResults(command, scope, commands, seen)
+			return val.commandStoresTestResults(ctx, command, scope, commands, seen)
 		}
 		if scope != "" {
 			return false
@@ -406,20 +407,20 @@ func (val Validate) callStoresTestResults(step ast2.Step, scope string, commands
 		if !ok {
 			return false
 		}
-		if val.Doc.IsFromUnfetchableOrb(step.Name, val.Cache) {
+		if val.Doc.IsFromUnfetchableOrb(ctx, step.Name, val.Cache) {
 			return true
 		}
-		orbInfo, err := val.Doc.GetOrbInfoFromName(orbName, val.Cache)
+		orbInfo, err := val.Doc.GetOrbInfoFromName(ctx, orbName, val.Cache)
 		if err != nil || orbInfo == nil {
 			return true
 		}
 		command, ok := orbInfo.Commands[commandName]
-		return ok && val.commandStoresTestResults(command, orbName, orbInfo.Commands, seen)
+		return ok && val.commandStoresTestResults(ctx, command, orbName, orbInfo.Commands, seen)
 	}
 	return false
 }
 
-func (val Validate) commandStoresTestResults(command ast2.Command, scope string, commands map[string]ast2.Command, seen map[string]bool) bool {
+func (val Validate) commandStoresTestResults(ctx context.Context, command ast2.Command, scope string, commands map[string]ast2.Command, seen map[string]bool) bool {
 	key := scope + "/" + command.Name
 	if seen[key] {
 		return false
@@ -427,6 +428,6 @@ func (val Validate) commandStoresTestResults(command ast2.Command, scope string,
 	seen[key] = true
 
 	return anyStep(command.Steps, func(step ast2.Step) bool {
-		return val.callStoresTestResults(step, scope, commands, seen)
+		return val.callStoresTestResults(ctx, step, scope, commands, seen)
 	})
 }

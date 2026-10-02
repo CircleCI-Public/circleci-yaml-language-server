@@ -26,7 +26,7 @@ func TestRemoteOrbsCloseTheTreesTheyParse(t *testing.T) {
 		c := cache.New()
 		t.Cleanup(c.Close)
 
-		orb, err := GetOrbInfo("circleci/go@1.7.1", c, settings)
+		orb, err := GetOrbInfo(t.Context(), "circleci/go@1.7.1", c, settings)
 		assert.NilError(t, err)
 		// The fake's source is a single comment: what matters is that it was
 		// fetched and parsed.

@@ -2,6 +2,7 @@ package validate
 
 import (
 	"bytes"
+	"context"
 	"slices"
 	"strings"
 
@@ -106,7 +107,7 @@ func (val Validate) validateExecutorArgumentReference(arg ast.ParameterValue, jo
 // executorArgumentParametersAt returns the parameters of the job invoked
 // around pos when pos is in an executor argument given as a map, which the
 // compiler reads inside that job.
-func (val Validate) executorArgumentParametersAt(pos protocol.Position) (map[string]ast.Parameter, bool) {
+func (val Validate) executorArgumentParametersAt(ctx context.Context, pos protocol.Position) (map[string]ast.Parameter, bool) {
 	for invocation := range invocations(&val.Doc) {
 		if !position.InRange(invocation.JobInvocationRange, pos) {
 			continue
@@ -115,7 +116,7 @@ func (val Validate) executorArgumentParametersAt(pos protocol.Position) (map[str
 			if arg.Type != "map" || !position.InRange(arg.Range, pos) {
 				continue
 			}
-			jobParameters := val.Doc.GetDefinedParams(invocation.JobName, parser.JobEntity, val.Cache)
+			jobParameters := val.Doc.GetDefinedParams(ctx, invocation.JobName, parser.JobEntity, val.Cache)
 			if param, ok := jobParameters[arg.Name]; ok && param.GetType() == "executor" {
 				return jobParameters, true
 			}

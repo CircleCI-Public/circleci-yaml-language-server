@@ -1,6 +1,7 @@
 package complete
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -11,19 +12,19 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 )
 
-func (ch *CompletionHandler) completeWorkflows() {
+func (ch *CompletionHandler) completeWorkflows(ctx context.Context) {
 	wf, err := findWorkflow(ch.Params.Position, ch.Doc)
 	if err != nil {
 		return
 	}
 
 	if isJobInvocation(ch.Params.Position, wf.JobInvocations) {
-		ch.addJobsAndOrbsCompletion()
+		ch.addJobsAndOrbsCompletion(ctx)
 		ch.addJobGroupsCompletion()
 		return
 	}
 
-	if ch.completeInJobInvocations(wf.JobInvocations) {
+	if ch.completeInJobInvocations(ctx, wf.JobInvocations) {
 		return
 	}
 
@@ -32,7 +33,7 @@ func (ch *CompletionHandler) completeWorkflows() {
 
 // completeInJobInvocations completes inside the body of one of a workflow's
 // or job group's job invocations, and says whether the cursor was in one.
-func (ch *CompletionHandler) completeInJobInvocations(invocations []ast.JobInvocation) bool {
+func (ch *CompletionHandler) completeInJobInvocations(ctx context.Context, invocations []ast.JobInvocation) bool {
 	if ch.completeContextName(invocations) {
 		return true
 	}
@@ -47,13 +48,13 @@ func (ch *CompletionHandler) completeInJobInvocations(invocations []ast.JobInvoc
 	}
 
 	if isInPreOrPostSteps(ch.Params.Position, invocations) {
-		ch.completeStepList(ch.nodeToComplete(), "")
+		ch.completeStepList(ctx, ch.nodeToComplete(), "")
 		return true
 	}
 
 	if key, lines, parent := ch.valueAt(); parent != -1 && stepWithBody.MatchString(lines[parent]) {
 		if invocation := invocationNamedOn(parent, invocations); invocation != nil {
-			params := ch.Doc.GetDefinedParams(invocation.JobName, yamlparser.JobEntity, ch.Cache)
+			params := ch.Doc.GetDefinedParams(ctx, invocation.JobName, yamlparser.JobEntity, ch.Cache)
 			if param, ok := params[key]; ok {
 				ch.addParameterValues(param)
 			}
@@ -61,12 +62,12 @@ func (ch *CompletionHandler) completeInJobInvocations(invocations []ast.JobInvoc
 		}
 	}
 
-	if ch.completeInvocationMapping(invocations) {
+	if ch.completeInvocationMapping(ctx, invocations) {
 		return true
 	}
 
 	if invocation, nameLine := ch.jobInvocationBodyAt(invocations); invocation != nil {
-		ch.completeJobInvocationBody(invocation, nameLine)
+		ch.completeJobInvocationBody(ctx, invocation, nameLine)
 		return true
 	}
 

@@ -41,7 +41,7 @@ func orbDiagnostics(t *testing.T, fake *fakes.CircleCI, yamlContent string) []pr
 		Context:     lsContext,
 	}
 
-	val.ValidateOrbs()
+	val.ValidateOrbs(t.Context())
 
 	return *val.Diagnostics
 }
@@ -333,7 +333,7 @@ workflows:
 			Doc:         doc,
 			Context:     lsContext,
 		}
-		val.ValidateOrbs()
+		val.ValidateOrbs(t.Context())
 
 		messages := diagnosticMessages(val.Diagnostics)
 		assert.Check(t, cmp.DeepEqual(messages, []string{}))
@@ -411,7 +411,7 @@ workflows:
 		Context:     lsContext,
 	}
 	val.Cache.MachineOfferingsCache.Set(testHelpers.MachineOfferings())
-	val.Validate()
+	val.Validate(t.Context())
 
 	errors := []string{}
 	for _, d := range getErrorDiagnostic(val.Diagnostics) {

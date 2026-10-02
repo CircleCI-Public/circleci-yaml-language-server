@@ -1,6 +1,7 @@
 package validate
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -22,13 +23,13 @@ func (val Validate) localExecutor(name string) (ast.Executor, bool) {
 // target is either an orb's executor, `orb-alias/executor-name`, or an
 // executor the config defines. The problem is an error where the alias is
 // used, and only a warning where nothing uses it.
-func (val Validate) validateExecutorAliases(used map[string]int) {
+func (val Validate) validateExecutorAliases(ctx context.Context, used map[string]int) {
 	for _, alias := range val.Doc.Aliases.Executors {
 		if _, ok := val.Doc.Executors[alias.Name]; ok {
 			continue
 		}
 
-		val.reportAliasProblem(alias, val.executorAliasProblem(alias), used[alias.Name] > 0)
+		val.reportAliasProblem(alias, val.executorAliasProblem(ctx, alias), used[alias.Name] > 0)
 	}
 }
 
@@ -42,13 +43,13 @@ func (val Validate) reportAliasProblem(alias ast.Alias, message string, used boo
 	}
 }
 
-func (val Validate) executorAliasProblem(alias ast.Alias) string {
+func (val Validate) executorAliasProblem(ctx context.Context, alias ast.Alias) string {
 	if orbName, executorName, ok := alias.OrbTarget(); ok {
 		if _, ok := val.Doc.Orbs[orbName]; !ok {
 			return fmt.Sprintf("Unable to determine target for executor invocation %s (renamed from local executor %s)",
 				alias.Target, alias.Name)
 		}
-		if exists, err := val.doesOrbExecutorExist(alias.Target, alias.TargetRange); !exists && err == nil {
+		if exists, err := val.doesOrbExecutorExist(ctx, alias.Target, alias.TargetRange); !exists && err == nil {
 			return fmt.Sprintf("Cannot find executor %s in orb %s", executorName, orbName)
 		}
 		return ""
@@ -70,7 +71,7 @@ const malformedAliasMessage = "Invalid orb element alias, expected a single 'orb
 
 // validateCommandAliases reports a command alias that names nothing. Its
 // target must be an orb's command, `orb-alias/command-name`.
-func (val Validate) validateCommandAliases() {
+func (val Validate) validateCommandAliases(ctx context.Context) {
 	for _, alias := range val.Doc.Aliases.Commands {
 		if _, ok := val.Doc.Commands[alias.Name]; ok {
 			continue
@@ -89,11 +90,11 @@ func (val Validate) validateCommandAliases() {
 			val.addDiagnostic(diagnostic.Warning(alias.TargetRange, malformedAliasWarning(alias)))
 			continue
 		}
-		val.reportAliasProblem(alias, val.commandAliasProblem(alias), used || alias.Name == "run")
+		val.reportAliasProblem(alias, val.commandAliasProblem(ctx, alias), used || alias.Name == "run")
 	}
 }
 
-func (val Validate) commandAliasProblem(alias ast.Alias) string {
+func (val Validate) commandAliasProblem(ctx context.Context, alias ast.Alias) string {
 	orbName, _, ok := alias.OrbTarget()
 	if !ok {
 		return malformedAliasMessage
@@ -102,7 +103,7 @@ func (val Validate) commandAliasProblem(alias ast.Alias) string {
 		return fmt.Sprintf("Unable to determine target for step invocation %s (renamed from local command %s)",
 			alias.Target, alias.Name)
 	}
-	return val.unknownStepMessage(alias.Target)
+	return val.unknownStepMessage(ctx, alias.Target)
 }
 
 // malformedAliasWarning is the compiler's warning for a malformed alias
@@ -114,7 +115,7 @@ func malformedAliasWarning(alias ast.Alias) string {
 
 // validateJobAliases reports a job alias that names nothing. Its target must
 // be an orb's job, `orb-alias/job-name`.
-func (val Validate) validateJobAliases() {
+func (val Validate) validateJobAliases(ctx context.Context) {
 	for _, alias := range val.Doc.Aliases.Jobs {
 		if _, ok := val.Doc.Jobs[alias.Name]; ok {
 			continue
@@ -129,11 +130,11 @@ func (val Validate) validateJobAliases() {
 			val.addDiagnostic(diagnostic.Warning(alias.TargetRange, malformedAliasWarning(alias)))
 			continue
 		}
-		val.reportAliasProblem(alias, val.jobAliasProblem(alias), used)
+		val.reportAliasProblem(alias, val.jobAliasProblem(ctx, alias), used)
 	}
 }
 
-func (val Validate) jobAliasProblem(alias ast.Alias) string {
+func (val Validate) jobAliasProblem(ctx context.Context, alias ast.Alias) string {
 	orbName, _, ok := alias.OrbTarget()
 	if !ok {
 		return malformedAliasMessage
@@ -142,8 +143,8 @@ func (val Validate) jobAliasProblem(alias ast.Alias) string {
 		return fmt.Sprintf("Unable to determine target for job invocation %s (renamed from local job %s)",
 			alias.Target, alias.Name)
 	}
-	if val.Doc.IsFromUnfetchableOrb(alias.Target, val.Cache) {
+	if val.Doc.IsFromUnfetchableOrb(ctx, alias.Target, val.Cache) {
 		return ""
 	}
-	return val.unknownJobMessage(alias.Target)
+	return val.unknownJobMessage(ctx, alias.Target)
 }

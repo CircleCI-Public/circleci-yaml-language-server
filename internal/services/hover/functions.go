@@ -1,6 +1,7 @@
 package hover
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -16,7 +17,7 @@ import (
 // FunctionStep is the hover for the name of a step that runs a declared
 // function, or one of its commands: the description and flags its descriptor
 // in the functions catalog gives.
-func FunctionStep(doc yamlparser.YamlDocument, c *cache.Cache, pos protocol.Position) (string, bool) {
+func FunctionStep(ctx context.Context, doc yamlparser.YamlDocument, c *cache.Cache, pos protocol.Position) (string, bool) {
 	step, ok := namedStepAt(pos, doc.Jobs, doc.Commands)
 	if !ok {
 		return "", false
@@ -26,7 +27,7 @@ func FunctionStep(doc yamlparser.YamlDocument, c *cache.Cache, pos protocol.Posi
 		return "", false
 	}
 
-	_, descriptor, err := doc.LookUpFunction(function, c)
+	_, descriptor, err := doc.LookUpFunction(ctx, function, c)
 	if err != nil || descriptor == nil {
 		return "", false
 	}
@@ -41,13 +42,13 @@ func FunctionStep(doc yamlparser.YamlDocument, c *cache.Cache, pos protocol.Posi
 
 // FunctionDeclaration is the hover for a declaration under `functions:`: the
 // description and flags of the version it declares.
-func FunctionDeclaration(doc yamlparser.YamlDocument, c *cache.Cache, pos protocol.Position) (string, bool) {
+func FunctionDeclaration(ctx context.Context, doc yamlparser.YamlDocument, c *cache.Cache, pos protocol.Position) (string, bool) {
 	function, ok := declarationAt(doc, pos)
 	if !ok {
 		return "", false
 	}
 
-	_, descriptor, err := doc.LookUpFunction(function, c)
+	_, descriptor, err := doc.LookUpFunction(ctx, function, c)
 	if err != nil || descriptor == nil {
 		return "", false
 	}

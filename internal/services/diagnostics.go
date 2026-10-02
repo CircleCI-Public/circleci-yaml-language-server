@@ -1,6 +1,7 @@
 package languageservice
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/dockerhub"
@@ -21,8 +22,8 @@ type DiagnosticType struct {
 	yamlDocument parser.YamlDocument
 }
 
-func Diagnostic(params protocol.PublishDiagnosticsParams, cache *cache.Cache, context *session.Settings, schemaLocation string) protocol.PublishDiagnosticsParams {
-	diagnostics, _ := DiagnosticFile(params.URI, cache, context, schemaLocation)
+func Diagnostic(ctx context.Context, params protocol.PublishDiagnosticsParams, cache *cache.Cache, context *session.Settings, schemaLocation string) protocol.PublishDiagnosticsParams {
+	diagnostics, _ := DiagnosticFile(ctx, params.URI, cache, context, schemaLocation)
 
 	diagnosticParams := protocol.PublishDiagnosticsParams{
 		URI:         params.URI,
@@ -32,7 +33,7 @@ func Diagnostic(params protocol.PublishDiagnosticsParams, cache *cache.Cache, co
 	return diagnosticParams
 }
 
-func DiagnosticFile(uri uri.URI, cache *cache.Cache, context *session.Settings, schemaLocation string) ([]protocol.Diagnostic, error) {
+func DiagnosticFile(ctx context.Context, uri uri.URI, cache *cache.Cache, context *session.Settings, schemaLocation string) ([]protocol.Diagnostic, error) {
 	yamlDocument, err := parser.ParseFromUriWithCache(uri, cache, context)
 	yamlDocument.SchemaLocation = schemaLocation
 
@@ -41,10 +42,10 @@ func DiagnosticFile(uri uri.URI, cache *cache.Cache, context *session.Settings, 
 	}
 	defer yamlDocument.Close()
 
-	return DiagnosticYAML(yamlDocument, cache, context)
+	return DiagnosticYAML(ctx, yamlDocument, cache, context)
 }
 
-func DiagnosticString(content string, cache *cache.Cache, context *session.Settings, schemaLocation string) ([]protocol.Diagnostic, error) {
+func DiagnosticString(ctx context.Context, content string, cache *cache.Cache, context *session.Settings, schemaLocation string) ([]protocol.Diagnostic, error) {
 	yamlDocument, err := parser.ParseFromContent([]byte(content), context, uri.File(""), protocol.Position{})
 	yamlDocument.SchemaLocation = schemaLocation
 
@@ -53,10 +54,10 @@ func DiagnosticString(content string, cache *cache.Cache, context *session.Setti
 	}
 	defer yamlDocument.Close()
 
-	return DiagnosticYAML(yamlDocument, cache, context)
+	return DiagnosticYAML(ctx, yamlDocument, cache, context)
 }
 
-func DiagnosticYAML(yamlDocument parser.YamlDocument, cache *cache.Cache, context *session.Settings) ([]protocol.Diagnostic, error) {
+func DiagnosticYAML(ctx context.Context, yamlDocument parser.YamlDocument, cache *cache.Cache, context *session.Settings) ([]protocol.Diagnostic, error) {
 	if yamlDocument.Version != 0 && yamlDocument.Version < 2.1 {
 		// Older configs aren't checked, but setup workflows need 2.1.
 		if yamlDocument.Setup {
@@ -112,7 +113,7 @@ func DiagnosticYAML(yamlDocument parser.YamlDocument, cache *cache.Cache, contex
 		Cache:       cache,
 		Context:     context,
 	}
-	validateStruct.Validate()
+	validateStruct.Validate(ctx)
 	diag.addDiagnostics(*validateStruct.Diagnostics)
 
 	*diag.diagnostics = deduplicateDiagnosticsByRange(*diag.diagnostics)

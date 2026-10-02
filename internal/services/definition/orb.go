@@ -1,6 +1,7 @@
 package definition
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -10,7 +11,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 )
 
-func (def DefinitionStruct) getOrbDefinition() ([]Link, error) {
+func (def DefinitionStruct) getOrbDefinition(ctx context.Context) ([]Link, error) {
 	var orb ast.Orb
 	for _, currentOrb := range def.Doc.Orbs {
 		if position.InRange(currentOrb.NameRange, def.Params.Position) ||
@@ -19,14 +20,14 @@ func (def DefinitionStruct) getOrbDefinition() ([]Link, error) {
 		}
 	}
 
-	orbInfo, err := def.GetOrbInfo(orb.Name)
+	orbInfo, err := def.GetOrbInfo(ctx, orb.Name)
 
 	if orb.Url.IsLocal {
 		return DefinitionStruct{
 			Cache:  def.Cache,
 			Params: def.Params,
 			Doc:    def.Doc.FromOrbParsedAttributesToYamlDocument(orbInfo.OrbParsedAttributes),
-		}.search()
+		}.search(ctx)
 	}
 
 	if err != nil {
@@ -40,13 +41,13 @@ func (def DefinitionStruct) getOrbDefinition() ([]Link, error) {
 	return []Link{{URI: uri.File(orbInfo.RemoteInfo.FilePath)}}, nil
 }
 
-func (def DefinitionStruct) getOrbLocation(name string, redirectToOrbFile bool) ([]Link, error) {
+func (def DefinitionStruct) getOrbLocation(ctx context.Context, name string, redirectToOrbFile bool) ([]Link, error) {
 	splittedName := strings.Split(name, "/")
 	if len(splittedName) >= 2 {
 		if orb, ok := def.Doc.Orbs[splittedName[0]]; ok {
 
 			if redirectToOrbFile {
-				orbFile, err := def.GetOrbInfo(orb.Name)
+				orbFile, err := def.GetOrbInfo(ctx, orb.Name)
 
 				if err != nil {
 					return nil, err
@@ -84,14 +85,14 @@ func (def DefinitionStruct) getOrbCommandOrJobLocation(orbInfo *ast.OrbInfo, nam
 	return []Link{}, fmt.Errorf("orb command or job not found")
 }
 
-func (def DefinitionStruct) getOrbParamLocation(name string, paramName string) ([]Link, error) {
+func (def DefinitionStruct) getOrbParamLocation(ctx context.Context, name string, paramName string) ([]Link, error) {
 	splittedName := strings.Split(name, "/")
 	if len(splittedName) < 2 {
 		return []Link{}, fmt.Errorf("orb not found")
 	}
 
 	orbName := splittedName[0]
-	orbFile, err := def.GetOrbInfo(orbName)
+	orbFile, err := def.GetOrbInfo(ctx, orbName)
 
 	if err != nil {
 		return []Link{}, err

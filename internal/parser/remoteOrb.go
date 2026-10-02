@@ -36,8 +36,8 @@ type OrbQuery struct {
 // GetOrbInfo returns the remote orb a reference such as "circleci/go@1.7.1"
 // names, resolving it only when the cache has no answer for it. Concurrent
 // callers for the same reference share one resolution.
-func GetOrbInfo(orbVersionCode string, cache *cache.Cache, settings *session.Settings) (*ast.OrbInfo, error) {
-	orb, err := cache.OrbCache.Load(context.TODO(), orbVersionCode, func(ctx context.Context) (*ast.OrbInfo, error) {
+func GetOrbInfo(ctx context.Context, orbVersionCode string, cache *cache.Cache, settings *session.Settings) (*ast.OrbInfo, error) {
+	orb, err := cache.OrbCache.Load(ctx, orbVersionCode, func(ctx context.Context) (*ast.OrbInfo, error) {
 		return fetchOrbInfo(ctx, orbVersionCode, cache, settings)
 	})
 	if err != nil {
@@ -49,7 +49,7 @@ func GetOrbInfo(orbVersionCode string, cache *cache.Cache, settings *session.Set
 
 // ParseRemoteOrbs resolves the remote orbs a config names, so that they are in
 // hand by the time the config is validated.
-func ParseRemoteOrbs(orbs map[string]ast.Orb, cache *cache.Cache, context *session.Settings) {
+func ParseRemoteOrbs(ctx context.Context, orbs map[string]ast.Orb, cache *cache.Cache, context *session.Settings) {
 	for _, orb := range orbs {
 		if orb.Url.IsLocal {
 			continue
@@ -57,9 +57,9 @@ func ParseRemoteOrbs(orbs map[string]ast.Orb, cache *cache.Cache, context *sessi
 
 		var err error
 		if orb.Url.IsURL {
-			_, err = GetURLOrbInfo(orb.Url.Name, cache, context)
+			_, err = GetURLOrbInfo(ctx, orb.Url.Name, cache, context)
 		} else {
-			_, err = GetOrbInfo(orb.Url.GetOrbID(), cache, context)
+			_, err = GetOrbInfo(ctx, orb.Url.GetOrbID(), cache, context)
 		}
 		if err != nil {
 			slog.Warn("fetching remote orb", "orb", orb.Url.GetOrbID(), "err", err)
@@ -71,8 +71,8 @@ func ParseRemoteOrbs(orbs map[string]ast.Orb, cache *cache.Cache, context *sessi
 // no answer for it, or nil when the host says there is nothing there it will
 // serve, which is what a private orb gets too. Concurrent callers for the same
 // URL share one fetch.
-func GetURLOrbInfo(address string, cache *cache.Cache, settings *session.Settings) (*ast.OrbInfo, error) {
-	return cache.OrbCache.Load(context.TODO(), address, func(ctx context.Context) (*ast.OrbInfo, error) {
+func GetURLOrbInfo(ctx context.Context, address string, cache *cache.Cache, settings *session.Settings) (*ast.OrbInfo, error) {
+	return cache.OrbCache.Load(ctx, address, func(ctx context.Context) (*ast.OrbInfo, error) {
 		return fetchURLOrbInfo(ctx, address, cache, settings)
 	})
 }

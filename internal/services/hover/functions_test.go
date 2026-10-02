@@ -52,19 +52,19 @@ jobs:
 		"Flags, under `with`:\n\n- `version` (string, default `stable`): The Go version."
 
 	t.Run("a function's step shows its description and flags", func(t *testing.T) {
-		got, ok := FunctionStep(doc, c, protocol.Position{Line: 10, Character: 10})
+		got, ok := FunctionStep(t.Context(), doc, c, protocol.Position{Line: 10, Character: 10})
 		assert.Assert(t, ok)
 		assert.Check(t, cmp.Equal(got, setupGo))
 	})
 
 	t.Run("a function command's step shows the command", func(t *testing.T) {
-		got, ok := FunctionStep(doc, c, protocol.Position{Line: 13, Character: 10})
+		got, ok := FunctionStep(t.Context(), doc, c, protocol.Position{Line: 13, Character: 10})
 		assert.Assert(t, ok)
 		assert.Check(t, cmp.Equal(got, "**setup-go/cache** function command\n\nRestore and save the Go caches."))
 	})
 
 	t.Run("a declaration shows the function it declares", func(t *testing.T) {
-		got, ok := FunctionDeclaration(doc, c, protocol.Position{Line: 3, Character: 4})
+		got, ok := FunctionDeclaration(t.Context(), doc, c, protocol.Position{Line: 3, Character: 4})
 		assert.Assert(t, ok)
 		assert.Check(t, cmp.Equal(got, setupGo))
 	})

@@ -1,6 +1,7 @@
 package complete
 
 import (
+	"context"
 	"fmt"
 
 	sitter "github.com/tree-sitter/go-tree-sitter"
@@ -11,7 +12,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 )
 
-func (ch *CompletionHandler) completeCommands() {
+func (ch *CompletionHandler) completeCommands(ctx context.Context) {
 	command, err := findCommand(ch.Params.Position, ch.Doc)
 	if err != nil {
 		return
@@ -19,10 +20,10 @@ func (ch *CompletionHandler) completeCommands() {
 
 	switch true {
 	case position.InRange(command.ParametersRange, ch.Params.Position):
-		ch.addParametersDefinitionCompletion(command.Parameters)
+		ch.addParametersDefinitionCompletion(ctx, command.Parameters)
 		return
 	case position.InRange(command.StepsRange, ch.Params.Position):
-		ch.completeSteps(command.Name, false, ch.nodeToComplete())
+		ch.completeSteps(ctx, command.Name, false, ch.nodeToComplete())
 		return
 	}
 
@@ -55,9 +56,9 @@ func (ch *CompletionHandler) userDefinedCommands() {
 	}
 }
 
-func (ch *CompletionHandler) orbCommands(nodeToComplete *sitter.Node) []protocol.CompletionItem {
+func (ch *CompletionHandler) orbCommands(ctx context.Context, nodeToComplete *sitter.Node) []protocol.CompletionItem {
 	for _, orb := range ch.Doc.Orbs {
-		orbInfo := ch.GetOrbInfo(orb)
+		orbInfo := ch.GetOrbInfo(ctx, orb)
 		if orbInfo != nil {
 			for cmdName := range orbInfo.Commands {
 				cmdName = fmt.Sprintf("%s/%s", orb.Name, cmdName)
