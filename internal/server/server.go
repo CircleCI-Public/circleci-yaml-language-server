@@ -50,7 +50,7 @@ func (server JSONRPCServer) serve(stream jsonrpc2.Stream) error {
 	// sign every other client in with it.
 	lsp := methods.New(ctx, protocol.ClientDispatcher(conn), cache.New(), *server.lsContext, server.SchemaLocation)
 	handler := protocol.ServerHandler(lsp, jsonrpc2.MethodNotFoundHandler)
-	conn.Go(ctx, recoverPanics(dropFailedNotifications(logMethods(servedDocuments(lsp, releaseQueries(handler))))))
+	conn.Go(ctx, recoverPanics(dropFailedNotifications(logMethods(servedDocuments(lsp, releaseQueries(ctx, handler))))))
 
 	select {
 	case <-lsp.Exited():
@@ -100,7 +100,11 @@ var queries = map[string]bool{
 // it. Its context is only made cancellable once it is released, since the
 // connection reuses the context of a request handled in order as soon as the
 // handler returns, while a context derived from it may still be reading it.
-func releaseQueries(handler jsonrpc2.Handler) jsonrpc2.Handler {
+//
+// For the same reason, a request handled in order runs under the session's
+// context rather than its own: what it starts, such as a fetch shared with
+// later requests, can outlive it. Nothing can cancel such a request anyway.
+func releaseQueries(session context.Context, handler jsonrpc2.Handler) jsonrpc2.Handler {
 	type query struct {
 		cancel    context.CancelFunc
 		cancelled bool
@@ -140,7 +144,7 @@ func releaseQueries(handler jsonrpc2.Handler) jsonrpc2.Handler {
 		}
 
 		if !queries[req.Method()] || !req.IsCall() {
-			return handler(ctx, req)
+			return handler(session, req)
 		}
 
 		// The id is the request's own, which the connection reuses once the
