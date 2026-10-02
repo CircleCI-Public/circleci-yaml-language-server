@@ -35,7 +35,7 @@ func TestConfigGetUserId(t *testing.T) {
 
 		apiContext := circleci.Config{Token: "the-real-token", HostUrl: fake.URL()}
 
-		userID := apiContext.GetUserId()
+		userID := apiContext.GetUserId(t.Context())
 		assert.Check(t, cmp.Equal(userID, "user-jane"))
 	})
 
@@ -45,8 +45,8 @@ func TestConfigGetUserId(t *testing.T) {
 		fake := userFake(t)
 		apiContext := circleci.Config{Token: "the-real-token", HostUrl: fake.URL()}
 
-		first := apiContext.GetUserId()
-		second := apiContext.GetUserId()
+		first := apiContext.GetUserId(t.Context())
+		second := apiContext.GetUserId(t.Context())
 
 		assert.Check(t, cmp.Equal(first, "user-jane"))
 		assert.Check(t, cmp.Equal(second, first))
@@ -61,11 +61,11 @@ func TestConfigGetUserId(t *testing.T) {
 		fake := userFake(t)
 		api := circleci.Config{Token: "the-real-token", HostUrl: fake.URL()}
 
-		fetched := api.GetUserId()
+		fetched := api.GetUserId(t.Context())
 		assert.Check(t, cmp.Equal(fetched, "user-jane"))
 
 		copied := api
-		fromCopy := copied.GetUserId()
+		fromCopy := copied.GetUserId(t.Context())
 		assert.Check(t, cmp.Equal(fromCopy, "user-jane"))
 
 		requestCount := fake.RequestCount(http.MethodGet, "/api/v2/me")
@@ -78,10 +78,10 @@ func TestConfigGetUserId(t *testing.T) {
 		fake := userFake(t)
 
 		first := circleci.Config{Token: "the-first-token", HostUrl: fake.URL()}
-		assert.Check(t, cmp.Equal(first.GetUserId(), "user-jane"))
+		assert.Check(t, cmp.Equal(first.GetUserId(t.Context()), "user-jane"))
 
 		second := circleci.Config{Token: "the-second-token", HostUrl: fake.URL()}
-		assert.Check(t, cmp.Equal(second.GetUserId(), "user-jane"))
+		assert.Check(t, cmp.Equal(second.GetUserId(t.Context()), "user-jane"))
 
 		requestCount := fake.RequestCount(http.MethodGet, "/api/v2/me")
 		assert.Check(t, cmp.Equal(requestCount, 2))
@@ -104,7 +104,7 @@ func TestConfigGetUserId(t *testing.T) {
 			go func() {
 				defer callers.Done()
 
-				ids[i] = api.GetUserId()
+				ids[i] = api.GetUserId(t.Context())
 			}()
 		}
 		callers.Wait()
@@ -120,7 +120,7 @@ func TestConfigGetUserId(t *testing.T) {
 
 		apiContext := circleci.Config{Token: "a-stale-token", HostUrl: fake.URL()}
 
-		userID := apiContext.GetUserId()
+		userID := apiContext.GetUserId(t.Context())
 		assert.Check(t, cmp.Equal(userID, ""))
 	})
 
@@ -133,7 +133,7 @@ func TestConfigGetUserId(t *testing.T) {
 
 		apiContext := circleci.Config{Token: "the-real-token", HostUrl: fake.URL()}
 
-		userID := apiContext.GetUserId()
+		userID := apiContext.GetUserId(t.Context())
 		assert.Check(t, cmp.Equal(userID, ""), "an error body's id is not the account's")
 	})
 
@@ -145,10 +145,10 @@ func TestConfigGetUserId(t *testing.T) {
 
 		apiContext := circleci.Config{Token: "the-real-token", HostUrl: fake.URL()}
 
-		first := apiContext.GetUserId()
+		first := apiContext.GetUserId(t.Context())
 		assert.Check(t, cmp.Equal(first, ""))
 
-		second := apiContext.GetUserId()
+		second := apiContext.GetUserId(t.Context())
 		assert.Check(t, cmp.Equal(second, ""))
 
 		requestCount := fake.RequestCount(http.MethodGet, "/api/v2/me")
@@ -162,7 +162,7 @@ func TestConfigGetUserId(t *testing.T) {
 
 		apiContext := circleci.Config{Token: "the-real-token", HostUrl: hostUrl}
 
-		userID := apiContext.GetUserId()
+		userID := apiContext.GetUserId(t.Context())
 		assert.Check(t, cmp.Equal(userID, ""))
 	})
 
@@ -171,7 +171,7 @@ func TestConfigGetUserId(t *testing.T) {
 	t.Run("reports no id for an unusable host URL", func(t *testing.T) {
 		apiContext := circleci.Config{Token: "the-real-token", HostUrl: "not a url"}
 
-		userID := apiContext.GetUserId()
+		userID := apiContext.GetUserId(t.Context())
 		assert.Check(t, cmp.Equal(userID, ""), "an unparseable host must report no id, not panic")
 	})
 }

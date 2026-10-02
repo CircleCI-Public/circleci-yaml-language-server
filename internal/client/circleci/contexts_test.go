@@ -35,7 +35,7 @@ func Test_getContext(t *testing.T) {
 	t.Run("lists the contexts of an organization", func(t *testing.T) {
 		fake := contextFake(t)
 
-		res, err := getContext(configFor(fake.URL()), acmeOrgID, "", false)
+		res, err := getContext(t.Context(), configFor(fake.URL()), acmeOrgID, "", false)
 		assert.NilError(t, err)
 		assert.Assert(t, cmp.Len(res.Items, 2))
 
@@ -71,7 +71,7 @@ func Test_getContext(t *testing.T) {
 	t.Run("includes environment variables when asked", func(t *testing.T) {
 		fake := contextFake(t)
 
-		res, err := getContext(configFor(fake.URL()), acmeOrgID, "", true)
+		res, err := getContext(t.Context(), configFor(fake.URL()), acmeOrgID, "", true)
 		assert.NilError(t, err)
 		assert.Assert(t, cmp.Len(res.Items, 2))
 
@@ -90,7 +90,7 @@ func Test_getContext(t *testing.T) {
 		fake := contextFake(t)
 		fake.RequireToken("a-different-token")
 
-		res, err := getContext(configFor(fake.URL()), acmeOrgID, "", false)
+		res, err := getContext(t.Context(), configFor(fake.URL()), acmeOrgID, "", false)
 		assert.Check(t, httpcl.HasStatusCode(err, 401), "got %v", err)
 		assert.Check(t, cmp.Nil(res))
 	})
@@ -99,7 +99,7 @@ func Test_getContext(t *testing.T) {
 		fake := contextFake(t)
 		fake.SetStatus(contextRoute, http.StatusInternalServerError)
 
-		res, err := getContext(configFor(fake.URL()), acmeOrgID, "", false)
+		res, err := getContext(t.Context(), configFor(fake.URL()), acmeOrgID, "", false)
 		assert.Check(t, httpcl.HasStatusCode(err, 500), "got %v", err)
 		assert.Check(t, cmp.Nil(res))
 	})
@@ -108,7 +108,7 @@ func Test_getContext(t *testing.T) {
 		fake := contextFake(t)
 		fake.SetBody(contextRoute, "{")
 
-		res, err := getContext(configFor(fake.URL()), acmeOrgID, "", false)
+		res, err := getContext(t.Context(), configFor(fake.URL()), acmeOrgID, "", false)
 		assert.Check(t, cmp.ErrorContains(err, "decode response"))
 		assert.Check(t, cmp.Nil(res))
 	})
@@ -118,7 +118,7 @@ func Test_getContext(t *testing.T) {
 		api := configFor(fake.URL())
 		fake.Close()
 
-		res, err := getContext(api, acmeOrgID, "", false)
+		res, err := getContext(t.Context(), api, acmeOrgID, "", false)
 		assert.Check(t, err != nil, "a host that is not answering must be reported")
 		assert.Check(t, cmp.Nil(res))
 	})

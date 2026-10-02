@@ -26,7 +26,7 @@ func TestGetProject(t *testing.T) {
 	t.Run("reports the project and its organization", func(t *testing.T) {
 		fake := projectFake(t)
 
-		project, err := GetProject(configFor(fake.URL()), slug)
+		project, err := GetProject(t.Context(), configFor(fake.URL()), slug)
 		assert.NilError(t, err)
 
 		// The organization id is what the context and env var lookups key on,
@@ -54,7 +54,7 @@ func TestGetProject(t *testing.T) {
 	t.Run("reports an unknown project", func(t *testing.T) {
 		fake := projectFake(t)
 
-		project, err := GetProject(configFor(fake.URL()), "gh/acme/unknown")
+		project, err := GetProject(t.Context(), configFor(fake.URL()), "gh/acme/unknown")
 		assert.Check(t, httpcl.HasStatusCode(err, 404), "got %v", err)
 		assert.Check(t, cmp.DeepEqual(project, Project{}))
 	})
@@ -63,7 +63,7 @@ func TestGetProject(t *testing.T) {
 		fake := projectFake(t)
 		fake.SetStatus("GET /api/v2/project/"+slug, http.StatusInternalServerError)
 
-		project, err := GetProject(configFor(fake.URL()), slug)
+		project, err := GetProject(t.Context(), configFor(fake.URL()), slug)
 		assert.Check(t, httpcl.HasStatusCode(err, 500), "got %v", err)
 		assert.Check(t, cmp.DeepEqual(project, Project{}))
 	})
@@ -72,7 +72,7 @@ func TestGetProject(t *testing.T) {
 		fake := projectFake(t)
 		fake.SetBody("GET /api/v2/project/"+slug, "{")
 
-		project, err := GetProject(configFor(fake.URL()), slug)
+		project, err := GetProject(t.Context(), configFor(fake.URL()), slug)
 		assert.Check(t, cmp.ErrorContains(err, "decode response"))
 		assert.Check(t, cmp.DeepEqual(project, Project{}))
 	})
@@ -82,14 +82,14 @@ func TestGetProject(t *testing.T) {
 		api := configFor(fake.URL())
 		fake.Close()
 
-		_, err := GetProject(api, slug)
+		_, err := GetProject(t.Context(), api, slug)
 		assert.Check(t, err != nil, "a host that is not answering must be reported")
 	})
 
 	// A self-hosted URL comes from user settings, so it is not necessarily a
 	// URL at all.
 	t.Run("reports an unusable host URL", func(t *testing.T) {
-		_, err := GetProject(configFor("not a url"), slug)
+		_, err := GetProject(t.Context(), configFor("not a url"), slug)
 		assert.Check(t, err != nil, "an unparseable host must be reported, not panic")
 	})
 }

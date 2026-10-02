@@ -17,7 +17,7 @@ func TestGetImageTags(t *testing.T) {
 		fake := cimgFake(t)
 		api := apiFor(fake)
 
-		tags, err := api.GetImageTags("cimg", "node")
+		tags, err := api.GetImageTags(t.Context(), "cimg", "node")
 		assert.NilError(t, err)
 		assert.Check(t, cmp.DeepEqual(tags, []string{"20.11", "22.1", "latest"}))
 	})
@@ -29,7 +29,7 @@ func TestGetImageTags(t *testing.T) {
 		fake.SetPageLimit(2)
 		api := apiFor(fake)
 
-		tags, err := api.GetImageTags("cimg", "node")
+		tags, err := api.GetImageTags(t.Context(), "cimg", "node")
 		assert.NilError(t, err)
 		assert.Check(t, cmp.DeepEqual(tags, []string{"20.11", "22.1"}))
 
@@ -46,7 +46,7 @@ func TestGetImageTags(t *testing.T) {
 		fake := cimgFake(t)
 		api := apiFor(fake)
 
-		tags, err := api.GetImageTags("cimg", "nope")
+		tags, err := api.GetImageTags(t.Context(), "cimg", "nope")
 		assert.Check(t, cmp.Nil(tags))
 		assert.Check(t, httpcl.HasStatusCode(err, http.StatusNotFound), "got %v", err)
 	})
@@ -58,7 +58,7 @@ func TestGetImageTags(t *testing.T) {
 		fake.SetStatus(cimgNodeTagsRoute, http.StatusTooManyRequests)
 		api := apiFor(fake)
 
-		tags, err := api.GetImageTags("cimg", "node")
+		tags, err := api.GetImageTags(t.Context(), "cimg", "node")
 		assert.Check(t, cmp.Nil(tags))
 		assert.Check(t, httpcl.HasStatusCode(err, http.StatusTooManyRequests), "got %v", err)
 	})
@@ -69,7 +69,7 @@ func TestGetImageTags(t *testing.T) {
 		fake.SetBody(cimgNodeTagsRoute, "{")
 		api := apiFor(fake)
 
-		tags, err := api.GetImageTags("cimg", "node")
+		tags, err := api.GetImageTags(t.Context(), "cimg", "node")
 		assert.Check(t, cmp.Nil(tags))
 		assert.Check(t, err != nil, "a body that will not decode must be reported")
 	})
@@ -79,7 +79,7 @@ func TestGetImageTags(t *testing.T) {
 		api := apiFor(fake)
 		fake.Close()
 
-		tags, err := api.GetImageTags("cimg", "node")
+		tags, err := api.GetImageTags(t.Context(), "cimg", "node")
 		assert.Check(t, cmp.Nil(tags))
 		assert.Check(t, err != nil, "a host that is not answering must be reported")
 	})
@@ -90,7 +90,7 @@ func TestImageHasTag(t *testing.T) {
 		fake := cimgFake(t)
 		api := apiFor(fake)
 
-		hasTag, err := api.ImageHasTag("cimg", "node", "22.1")
+		hasTag, err := api.ImageHasTag(t.Context(), "cimg", "node", "22.1")
 		assert.NilError(t, err)
 		assert.Check(t, hasTag)
 	})
@@ -99,7 +99,7 @@ func TestImageHasTag(t *testing.T) {
 		fake := cimgFake(t)
 		api := apiFor(fake)
 
-		hasTag, err := api.ImageHasTag("cimg", "node", "99.9")
+		hasTag, err := api.ImageHasTag(t.Context(), "cimg", "node", "99.9")
 		assert.NilError(t, err)
 		assert.Check(t, !hasTag)
 	})
@@ -111,7 +111,7 @@ func TestImageHasTag(t *testing.T) {
 		fake := cimgFake(t)
 		api := apiFor(fake)
 
-		hasTag, err := api.ImageHasTag("cimg", "node", "18.0")
+		hasTag, err := api.ImageHasTag(t.Context(), "cimg", "node", "18.0")
 		assert.NilError(t, err)
 		assert.Check(t, hasTag)
 	})
@@ -122,7 +122,7 @@ func TestImageHasTag(t *testing.T) {
 		api := apiFor(fake)
 		fake.Close()
 
-		hasTag, err := api.ImageHasTag("cimg", "node", "22.1")
+		hasTag, err := api.ImageHasTag(t.Context(), "cimg", "node", "22.1")
 		assert.Check(t, !hasTag)
 		assert.Check(t, err != nil, "a host that is not answering must be reported")
 	})
@@ -132,7 +132,7 @@ func TestImageHasTag(t *testing.T) {
 		fake.SetStatus("GET /v2/namespaces/cimg/repositories/node/tags/22.1", http.StatusTooManyRequests)
 		api := apiFor(fake)
 
-		hasTag, err := api.ImageHasTag("cimg", "node", "22.1")
+		hasTag, err := api.ImageHasTag(t.Context(), "cimg", "node", "22.1")
 		assert.Check(t, !hasTag)
 		assert.Check(t, httpcl.HasStatusCode(err, http.StatusTooManyRequests), "got %v", err)
 	})

@@ -1,6 +1,7 @@
 package validate
 
 import (
+	"context"
 	"regexp"
 	"strings"
 
@@ -27,8 +28,8 @@ func DoesDockerImageExists(img *ast.DockerImage, cache *cache.DockerImages, api 
 		return true
 	}
 
-	exists, err := cache.Exists(img.Image.Namespace, img.Image.Name, func() (bool, error) {
-		return api.DoesImageExist(img.Image.Namespace, img.Image.Name)
+	exists, err := cache.Exists(context.TODO(), img.Image.Namespace, img.Image.Name, func(ctx context.Context) (bool, error) {
+		return api.DoesImageExist(ctx, img.Image.Namespace, img.Image.Name)
 	})
 	if err != nil {
 		// Docker Hub could not say, which is no reason to flag the image.
@@ -64,8 +65,8 @@ func DoesTagExist(img *ast.DockerImage, searchedTag string, cache *cache.DockerT
 		return true
 	}
 
-	tagExists, err := cache.HasTag(img.Image.Namespace, img.Image.Name, searchedTag, func() (bool, error) {
-		return api.ImageHasTag(img.Image.Namespace, img.Image.Name, searchedTag)
+	tagExists, err := cache.HasTag(context.TODO(), img.Image.Namespace, img.Image.Name, searchedTag, func(ctx context.Context) (bool, error) {
+		return api.ImageHasTag(ctx, img.Image.Namespace, img.Image.Name, searchedTag)
 	})
 	if err != nil {
 		// As for the image: no answer is neither a diagnostic nor cached.
@@ -110,8 +111,8 @@ func GetImageTagActions(doc *parser.YamlDocument, img *ast.DockerImage, cache *c
 
 // Get the image tag info and fill the image info if it is not present in the cache
 func GetImageTagInfo(img *ast.DockerImage, c *cache.DockerTags, api dockerhub.API) *cache.ImageTags {
-	tagInfo, err := c.Load(img.Image.Namespace, img.Image.Name, func() (cache.ImageTags, error) {
-		tags, err := api.GetImageTags(img.Image.Namespace, img.Image.Name)
+	tagInfo, err := c.Load(context.TODO(), img.Image.Namespace, img.Image.Name, func(ctx context.Context) (cache.ImageTags, error) {
+		tags, err := api.GetImageTags(ctx, img.Image.Namespace, img.Image.Name)
 		if err != nil {
 			return cache.ImageTags{}, err
 		}

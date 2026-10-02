@@ -1,6 +1,7 @@
 package complete
 
 import (
+	"context"
 	"regexp"
 	"slices"
 	"strings"
@@ -50,7 +51,7 @@ func (ch *CompletionHandler) builtInStepValues(step, key, job string) []string {
 	}
 	if step == "setup_remote_docker" && key == "version" {
 		if class, ok := ch.Doc.DockerResourceClass(ch.Doc.Jobs[job], ch.Cache); ok {
-			if versions := ch.Cache.Offerings(ch.Context.Api).RemoteDockerVersions(class); len(versions) > 0 {
+			if versions := ch.Cache.Offerings(context.TODO(), ch.Context.Api).RemoteDockerVersions(class); len(versions) > 0 {
 				return versions
 			}
 		}

@@ -49,13 +49,13 @@ func TestMachineOfferings(t *testing.T) {
 		fake := offeringsFake(t)
 		cache := New()
 
-		offerings := cache.Offerings(configFor(fake.URL()))
+		offerings := cache.Offerings(t.Context(), configFor(fake.URL()))
 		assert.Assert(t, offerings != nil)
 		assert.Check(t, cmp.DeepEqual(offerings.Linux["medium"], []string{"ubuntu-2404:current"}))
 
 		// Every completion and validation pass asks for the catalog, so it has
 		// to be fetched once for the life of the cache.
-		cache.Offerings(configFor(fake.URL()))
+		cache.Offerings(t.Context(), configFor(fake.URL()))
 
 		requestCount := fake.RequestCount(http.MethodGet, "/api/v3/catalog/offerings")
 		assert.Check(t, cmp.Equal(requestCount, 1))
@@ -64,7 +64,7 @@ func TestMachineOfferings(t *testing.T) {
 	t.Run("authenticates with Circle-Token", func(t *testing.T) {
 		fake := offeringsFake(t)
 
-		New().Offerings(configFor(fake.URL()))
+		New().Offerings(t.Context(), configFor(fake.URL()))
 
 		requests := fake.Requests()
 		assert.Assert(t, cmp.Len(requests, 1))
@@ -80,10 +80,10 @@ func TestMachineOfferings(t *testing.T) {
 		fake.SetStatus(catalogRoute, http.StatusInternalServerError)
 		cache := New()
 
-		offerings := cache.Offerings(configFor(fake.URL()))
+		offerings := cache.Offerings(t.Context(), configFor(fake.URL()))
 		assert.Check(t, cmp.Nil(offerings))
 
-		cache.Offerings(configFor(fake.URL()))
+		cache.Offerings(t.Context(), configFor(fake.URL()))
 
 		requestCount := fake.RequestCount(http.MethodGet, "/api/v3/catalog/offerings")
 		assert.Check(t, cmp.Equal(requestCount, 1))
@@ -96,7 +96,7 @@ func TestMachineOfferings(t *testing.T) {
 		var wg sync.WaitGroup
 		for range 10 {
 			wg.Go(func() {
-				assert.Check(t, cache.Offerings(configFor(fake.URL())) != nil)
+				assert.Check(t, cache.Offerings(t.Context(), configFor(fake.URL())) != nil)
 			})
 		}
 		wg.Wait()
@@ -110,7 +110,7 @@ func TestMachineOfferings(t *testing.T) {
 		hostUrl := fake.URL()
 		fake.Close()
 
-		offerings := New().Offerings(configFor(hostUrl))
+		offerings := New().Offerings(t.Context(), configFor(hostUrl))
 		assert.Check(t, cmp.Nil(offerings))
 	})
 
@@ -118,7 +118,7 @@ func TestMachineOfferings(t *testing.T) {
 		fake := offeringsFake(t)
 		fake.SetBody(catalogRoute, "{")
 
-		offerings := New().Offerings(configFor(fake.URL()))
+		offerings := New().Offerings(t.Context(), configFor(fake.URL()))
 		assert.Check(t, cmp.Nil(offerings))
 	})
 
@@ -127,7 +127,7 @@ func TestMachineOfferings(t *testing.T) {
 	t.Run("reports nothing for an empty catalog", func(t *testing.T) {
 		fake := fakes.NewCircleCI(t)
 
-		offerings := New().Offerings(configFor(fake.URL()))
+		offerings := New().Offerings(t.Context(), configFor(fake.URL()))
 		assert.Check(t, cmp.Nil(offerings))
 	})
 }
@@ -142,14 +142,14 @@ func TestDeprecatedOfferings(t *testing.T) {
 
 	anyOrder := cmpopts.SortSlices(func(a, b string) bool { return a < b })
 
-	deprecatedImages := cache.Offerings(api).DeprecatedMachineImages()
+	deprecatedImages := cache.Offerings(t.Context(), api).DeprecatedMachineImages()
 	assert.Check(t, cmp.DeepEqual(deprecatedImages, []string{
 		"ubuntu-2004:current", "windows-server-2019:current",
 	}, anyOrder))
 
 	// The config field is the bare version, so the "xcode:" prefix the API
 	// reports has to come off.
-	deprecatedXcode := cache.Offerings(api).DeprecatedXcodeVersions()
+	deprecatedXcode := cache.Offerings(t.Context(), api).DeprecatedXcodeVersions()
 	assert.Check(t, cmp.DeepEqual(deprecatedXcode, []string{"14.0.0"}, anyOrder))
 }
 
@@ -176,23 +176,23 @@ func TestOfferingAccessors(t *testing.T) {
 	// meaningful and the comparison has to be order-insensitive.
 	anyOrder := cmpopts.SortSlices(func(a, b string) bool { return a < b })
 
-	images := cache.Offerings(ctx).MachineImages()
+	images := cache.Offerings(t.Context(), ctx).MachineImages()
 	assert.Check(t, cmp.DeepEqual(images, []string{
 		"ubuntu-2404:current", "windows-server-2022-gui:current", "linux-cuda-12:current",
 	}, anyOrder))
 
-	machineClasses := cache.Offerings(ctx).MachineResourceClasses()
+	machineClasses := cache.Offerings(t.Context(), ctx).MachineResourceClasses()
 	assert.Check(t, cmp.DeepEqual(machineClasses, []string{
 		"large", "medium", "medium.gen3", "gpu.nvidia.medium", "windows.medium",
 	}, anyOrder))
 
-	xcodeVersions := cache.Offerings(ctx).XcodeVersions()
+	xcodeVersions := cache.Offerings(t.Context(), ctx).XcodeVersions()
 	assert.Check(t, cmp.DeepEqual(xcodeVersions, []string{"16.4.0"}, anyOrder))
 
-	macOSClasses := cache.Offerings(ctx).MacOSResourceClasses()
+	macOSClasses := cache.Offerings(t.Context(), ctx).MacOSResourceClasses()
 	assert.Check(t, cmp.DeepEqual(macOSClasses, []string{"m4pro.medium"}, anyOrder))
 
-	dockerClasses := cache.Offerings(ctx).DockerResourceClasses()
+	dockerClasses := cache.Offerings(t.Context(), ctx).DockerResourceClasses()
 	assert.Check(t, cmp.DeepEqual(dockerClasses, []string{"small", "medium", "medium+.gen2"}, anyOrder))
 }
 
@@ -254,6 +254,6 @@ func TestMachinePairs_NilWhenUnavailable(t *testing.T) {
 	cache := New()
 	cache.MachineOfferingsCache.Set(nil) // as a failed fetch leaves it
 
-	pairs := cache.Offerings(configFor("")).MachinePairs()
+	pairs := cache.Offerings(t.Context(), configFor("")).MachinePairs()
 	assert.Check(t, cmp.Nil(pairs))
 }

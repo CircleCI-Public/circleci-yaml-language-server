@@ -7,6 +7,7 @@
 package cache
 
 import (
+	"context"
 	"slices"
 	"sync"
 	"time"
@@ -208,8 +209,8 @@ func imageKey(namespace, image string) string {
 
 // Exists reports whether an image exists, calling check only when no answer
 // is remembered. An error from check is returned but not remembered.
-func (c *DockerImages) Exists(namespace, image string, check func() (bool, error)) (bool, error) {
-	return c.images.Get(imageKey(namespace, image), check)
+func (c *DockerImages) Exists(ctx context.Context, namespace, image string, check func(context.Context) (bool, error)) (bool, error) {
+	return c.images.Get(ctx, imageKey(namespace, image), check)
 }
 
 func (c *DockerImages) Add(namespace, image string, exists bool) {
@@ -225,8 +226,8 @@ func (c *DockerImages) Get(namespace, image string) (exists, known bool) {
 
 // Load returns the tags of an image, calling list only when none are
 // remembered. An error from list is returned but not remembered.
-func (c *DockerTags) Load(namespace, image string, list func() (ImageTags, error)) (ImageTags, error) {
-	return c.lists.Get(imageKey(namespace, image), list)
+func (c *DockerTags) Load(ctx context.Context, namespace, image string, list func(context.Context) (ImageTags, error)) (ImageTags, error) {
+	return c.lists.Get(ctx, imageKey(namespace, image), list)
 }
 
 func (c *DockerTags) Add(namespace, image string, value ImageTags) {
@@ -243,8 +244,8 @@ func (c *DockerTags) Get(namespace, image string) *ImageTags {
 
 // HasTag reports whether an image has a tag, calling check only when no
 // answer is remembered. An error from check is returned but not remembered.
-func (c *DockerTags) HasTag(namespace, image, tag string, check func() (bool, error)) (bool, error) {
-	return c.checks.Get(imageKey(namespace, image)+":"+tag, check)
+func (c *DockerTags) HasTag(ctx context.Context, namespace, image, tag string, check func(context.Context) (bool, error)) (bool, error) {
+	return c.checks.Get(ctx, imageKey(namespace, image)+":"+tag, check)
 }
 
 // Checked returns whether an image has a tag, and whether that was asked

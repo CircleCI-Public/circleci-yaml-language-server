@@ -38,8 +38,8 @@ type MachinePair struct {
 // each machine executor offers. It returns nil on any failure, and for a
 // catalog with nothing in it, so that callers skip validation rather than flag
 // valid config.
-func FetchOfferings(api Config) *Offerings {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+func FetchOfferings(ctx context.Context, api Config) *Offerings {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	// The V3 response wraps the catalog in a data entity: {"data": {"attributes": {...}}}.

@@ -1,6 +1,7 @@
 package validate
 
 import (
+	"context"
 	"fmt"
 	"slices"
 	"sort"
@@ -206,7 +207,7 @@ func (val Validate) validateRemoteDockerVersion(job ast2.Job) {
 	if !ok {
 		return
 	}
-	offerings := val.Cache.Offerings(val.Context.Api)
+	offerings := val.Cache.Offerings(context.TODO(), val.Context.Api)
 	versions := offerings.RemoteDockerVersions(class)
 	if versions == nil {
 		return

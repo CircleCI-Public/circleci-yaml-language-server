@@ -67,7 +67,7 @@ func TestNewAPIWithConfig(t *testing.T) {
 
 	api := NewAPIWithConfig(Config{BaseURL: fake.URL()})
 
-	exists, err := api.DoesImageExist("cimg", "node")
+	exists, err := api.DoesImageExist(t.Context(), "cimg", "node")
 	assert.NilError(t, err)
 	assert.Check(t, exists)
 
@@ -81,10 +81,10 @@ func TestNewAPIWithConfig(t *testing.T) {
 	// for the next one — which the package-level cache this replaced did.
 	t.Run("shares no cache with another API", func(t *testing.T) {
 		searched := apiFor(fake)
-		searched.Search("cimg/node").HasNext()
+		searched.Search(t.Context(), "cimg/node").HasNext()
 
 		fresh := apiFor(fake)
-		exists, err := fresh.DoesImageExist("cimg", "node")
+		exists, err := fresh.DoesImageExist(t.Context(), "cimg", "node")
 		assert.NilError(t, err)
 		assert.Check(t, exists)
 
@@ -109,7 +109,7 @@ func TestConcurrentUse(t *testing.T) {
 		go func() {
 			defer wg.Done()
 
-			cursor := api.Search("cimg/" + repository)
+			cursor := api.Search(t.Context(), "cimg/"+repository)
 			for cursor.HasNext() {
 				cursor.Next()
 			}
@@ -118,15 +118,15 @@ func TestConcurrentUse(t *testing.T) {
 		go func() {
 			defer wg.Done()
 
-			_, _ = api.DoesImageExist("cimg", repository)
-			_, _ = api.DoesImageExist("other", repository)
+			_, _ = api.DoesImageExist(t.Context(), "cimg", repository)
+			_, _ = api.DoesImageExist(t.Context(), "other", repository)
 		}()
 	}
 	wg.Wait()
 
 	t.Run("still finds every repository", func(t *testing.T) {
 		for _, repository := range []string{"base", "go", "node", "python"} {
-			assert.Check(t, api.Search("cimg/"+repository).HasNext(), "cimg/%s", repository)
+			assert.Check(t, api.Search(t.Context(), "cimg/"+repository).HasNext(), "cimg/%s", repository)
 		}
 	})
 }

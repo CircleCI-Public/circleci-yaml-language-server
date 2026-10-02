@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -81,7 +82,7 @@ func (doc *YamlDocument) LookUpFunction(function ast.Function, c *cache.Cache) (
 	}
 
 	client := doc.Context.V3Client()
-	published, err := c.Functions.Function(client, path)
+	published, err := c.Functions.Function(context.TODO(), client, path)
 	if err != nil || published == nil {
 		return nil, nil, err
 	}
@@ -91,7 +92,7 @@ func (doc *YamlDocument) LookUpFunction(function ast.Function, c *cache.Cache) (
 			continue
 		}
 
-		descriptor, err := c.Functions.Descriptor(client, candidate)
+		descriptor, err := c.Functions.Descriptor(context.TODO(), client, candidate)
 		return published, descriptor, err
 	}
 

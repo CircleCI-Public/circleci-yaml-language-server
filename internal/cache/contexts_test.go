@@ -42,7 +42,7 @@ func TestLoadContexts(t *testing.T) {
 		fake.SetPageLimit("context", 1)
 		c := New()
 
-		err := c.LoadContexts(configFor(fake.URL()), acmeOrgID)
+		err := c.LoadContexts(t.Context(), configFor(fake.URL()), acmeOrgID)
 		assert.NilError(t, err)
 
 		deploy := contextNamed(c, "acme/deploy")
@@ -65,7 +65,7 @@ func TestLoadContexts(t *testing.T) {
 		var wg sync.WaitGroup
 		for range 10 {
 			wg.Go(func() {
-				assert.Check(t, c.LoadContexts(configFor(fake.URL()), acmeOrgID))
+				assert.Check(t, c.LoadContexts(t.Context(), configFor(fake.URL()), acmeOrgID))
 			})
 		}
 		wg.Wait()
@@ -81,7 +81,7 @@ func TestLoadContexts(t *testing.T) {
 		fake.RefuseContextEnvVars()
 		c := New()
 
-		err := c.LoadContexts(configFor(fake.URL()), acmeOrgID)
+		err := c.LoadContexts(t.Context(), configFor(fake.URL()), acmeOrgID)
 		assert.NilError(t, err)
 
 		deploy := contextNamed(c, "acme/deploy")
@@ -100,7 +100,7 @@ func TestLoadContexts(t *testing.T) {
 		fake.FailAfter(contextRoute, 1, http.StatusInternalServerError)
 		c := New()
 
-		err := c.LoadContexts(configFor(fake.URL()), acmeOrgID)
+		err := c.LoadContexts(t.Context(), configFor(fake.URL()), acmeOrgID)
 		assert.Check(t, httpcl.HasStatusCode(err, 500), "got %v", err)
 
 		assert.Check(t, !c.ContextCache.IsOrganizationContextListLoaded(acmeOrgID))
@@ -113,13 +113,13 @@ func TestLoadContexts(t *testing.T) {
 
 		t.Run("fail the listing", func(t *testing.T) {
 			fake.SetStatus(contextRoute, http.StatusInternalServerError)
-			err := c.LoadContexts(configFor(fake.URL()), acmeOrgID)
+			err := c.LoadContexts(t.Context(), configFor(fake.URL()), acmeOrgID)
 			assert.Check(t, httpcl.HasStatusCode(err, 500), "got %v", err)
 		})
 
 		t.Run("check the next call lists them", func(t *testing.T) {
 			fake.SetStatus(contextRoute, 0)
-			err := c.LoadContexts(configFor(fake.URL()), acmeOrgID)
+			err := c.LoadContexts(t.Context(), configFor(fake.URL()), acmeOrgID)
 			assert.NilError(t, err)
 			assert.Check(t, c.ContextCache.IsOrganizationContextListLoaded(acmeOrgID))
 		})
@@ -130,7 +130,7 @@ func TestContextEnvVariables(t *testing.T) {
 	fake := contextFake(t)
 	c := New()
 
-	err := c.LoadContexts(configFor(fake.URL()), acmeOrgID)
+	err := c.LoadContexts(t.Context(), configFor(fake.URL()), acmeOrgID)
 	assert.NilError(t, err)
 
 	t.Run("reports each variable with the context it came from", func(t *testing.T) {
@@ -156,7 +156,7 @@ func TestContextEnvVariables(t *testing.T) {
 
 func TestContextNames(t *testing.T) {
 	c := New()
-	err := c.LoadContexts(configFor(contextFake(t).URL()), acmeOrgID)
+	err := c.LoadContexts(t.Context(), configFor(contextFake(t).URL()), acmeOrgID)
 	assert.NilError(t, err)
 
 	t.Run("are the full names, not the short ones they are also found by", func(t *testing.T) {

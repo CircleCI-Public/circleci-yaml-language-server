@@ -1,6 +1,7 @@
 package validate
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -35,21 +36,21 @@ type DockerHubMock struct {
 	Err error
 }
 
-func (me DockerHubMock) DoesImageExist(namespace, image string) (bool, error) {
+func (me DockerHubMock) DoesImageExist(_ context.Context, namespace, image string) (bool, error) {
 	if me.Err != nil {
 		return false, me.Err
 	}
 	return !me.NoExist, nil
 }
 
-func (me DockerHubMock) GetImageTags(namespace, image string) ([]string, error) {
+func (me DockerHubMock) GetImageTags(_ context.Context, namespace, image string) ([]string, error) {
 	if me.Tags == nil {
 		return []string{}, nil
 	}
 	return me.Tags, nil
 }
 
-func (me DockerHubMock) ImageHasTag(namespace, image, tag string) (bool, error) {
+func (me DockerHubMock) ImageHasTag(_ context.Context, namespace, image, tag string) (bool, error) {
 	if me.Err != nil {
 		return false, me.Err
 	}

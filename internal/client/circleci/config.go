@@ -56,14 +56,14 @@ var errNoUserId = errors.New("no account id in the response")
 // Anything short of an id — a rejected token, an error status, an unreachable
 // host, a body without one — is reported as "" and is not memoised, so a later
 // call tries again rather than caching a non-answer.
-func (apiContext Config) GetUserId() string {
+func (apiContext Config) GetUserId(ctx context.Context) string {
 	key := apiContext.HostUrl + "\x00" + apiContext.Token
-	userId, err := userIds.Get(key, func() (string, error) {
+	userId, err := userIds.Get(ctx, key, func(ctx context.Context) (string, error) {
 		// httpcl decodes only a 2xx body, which matters here: an error body
 		// carrying an id of its own — a rate limit reports one — would
 		// otherwise be memoised as the account's.
 		var userRes MeRes
-		_, err := newV2Client(apiContext).Call(context.Background(), httpcl.NewRequest(
+		_, err := newV2Client(apiContext).Call(ctx, httpcl.NewRequest(
 			http.MethodGet, "/me",
 			httpcl.JSONDecoder(&userRes),
 		))

@@ -1,6 +1,8 @@
 package complete
 
 import (
+	"context"
+
 	"go.lsp.dev/protocol"
 
 	ast2 "github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
@@ -17,10 +19,10 @@ func (ch *CompletionHandler) completeJobExecutor(job ast2.Job) bool {
 			ch.addJobResourceClasses(job)
 			return true
 		case parent == startLine(job.MachineRange) && key == "image":
-			ch.addCompletionItems(ch.Cache.Offerings(ch.Context.Api).MachineImages())
+			ch.addCompletionItems(ch.Cache.Offerings(context.TODO(), ch.Context.Api).MachineImages())
 			return true
 		case parent == startLine(job.MacOSRange) && key == "xcode":
-			ch.addCompletionItems(ch.Cache.Offerings(ch.Context.Api).XcodeVersions())
+			ch.addCompletionItems(ch.Cache.Offerings(context.TODO(), ch.Context.Api).XcodeVersions())
 			return true
 		}
 		return false
@@ -78,14 +80,14 @@ func (ch *CompletionHandler) addJobResourceClasses(job ast2.Job) {
 		executor, _ = ch.Doc.ResolveExecutor(job.Executor, ch.Cache)
 	}
 
-	offerings := ch.Cache.Offerings(ch.Context.Api)
+	offerings := ch.Cache.Offerings(context.TODO(), ch.Context.Api)
 	switch executor.(type) {
 	case ast2.DockerExecutor:
 		ch.addResourceClassCompletion(offerings.DockerResourceClasses())
 	case ast2.MachineExecutor:
 		ch.addResourceClassCompletion(offerings.MachineResourceClasses())
 		if ch.Context.Api.IsLoggedIn() {
-			ch.addResourceClassCompletion(ch.Cache.ResourceClassesOfFile(ch.Context.V3Client(), ch.Doc.URI))
+			ch.addResourceClassCompletion(ch.Cache.ResourceClassesOfFile(context.TODO(), ch.Context.V3Client(), ch.Doc.URI))
 		}
 	case ast2.MacOSExecutor:
 		ch.addResourceClassCompletion(offerings.MacOSResourceClasses())

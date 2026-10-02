@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"context"
 	"log/slog"
 	"strings"
 
@@ -66,7 +67,7 @@ func (doc *YamlDocument) GetOrFetchOrbInfo(orb ast.Orb, cache *cache.Cache) (*as
 // An orb that could not be looked up is reported as existing: that the lookup
 // failed says nothing about the orb.
 func (doc *YamlDocument) DoesOrbExist(orb ast.Orb, cache *cache.Cache) bool {
-	found, err := cache.OrbPackages.Orb(doc.Context.OrbRegistry(), orb.Url.Name)
+	found, err := cache.OrbPackages.Orb(context.TODO(), doc.Context.OrbRegistry(), orb.Url.Name)
 	if err != nil {
 		slog.Warn("looking up orb", "orb", orb.Url.Name, "err", err)
 		return true
