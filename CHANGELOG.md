@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 0.50.0 (2026-10-05)
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+* feat: describe resource classes from the resource-classes catalog by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/769
+
+
+**Full Changelog**: https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.49.1...0.50.0
+
 ## 0.49.1 (2026-10-02)
 
 <!-- Release notes generated using configuration in .github/release.yml at main -->
