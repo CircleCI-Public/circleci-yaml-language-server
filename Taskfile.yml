@@ -122,8 +122,8 @@ tasks:
       - for:
           var: COMMITS
         cmd: |
-          git log -1 --format='%h %s' {{.ITEM}}
-          git log -1 --format=%B {{.ITEM}} | go tool -modfile tools/go.mod commitlint lint
+          git --no-pager log -1 --format='%h %s' {{.ITEM}}
+          git --no-pager log -1 --format=%B {{.ITEM}} | go tool -modfile tools/go.mod commitlint lint
 
   prepare:vscode:
     dir: editors/vscode
