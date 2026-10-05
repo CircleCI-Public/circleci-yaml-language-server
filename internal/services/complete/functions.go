@@ -39,8 +39,8 @@ func (ch *CompletionHandler) completeFunctionVersion(ctx context.Context) {
 }
 
 // completeFunctionFlags offers the flags a function step doesn't pass yet,
-// at a key of its `with`, or a boolean flag's values, at its value. It says
-// whether the cursor is in a function step's `with`.
+// at a key of its `with`, or a boolean flag's values or a flag's default, at
+// its value. It says whether the cursor is in a function step's `with`.
 func (ch *CompletionHandler) completeFunctionFlags(ctx context.Context) bool {
 	key, lines, withLine := ch.valueAt()
 	atValue := withLine != -1
@@ -75,9 +75,14 @@ func (ch *CompletionHandler) completeFunctionFlags(ctx context.Context) bool {
 
 	if atValue {
 		for _, flag := range flags {
-			if flag.Name == key && flag.Type == "bool" {
+			if flag.Name != key {
+				continue
+			}
+			if flag.Type == "bool" {
 				ch.addCompletionItem("true")
 				ch.addCompletionItem("false")
+			} else if value, ok := flag.DefaultValue(); ok {
+				ch.addCompletionItemWithDetail(value, "default", "")
 			}
 		}
 		return true

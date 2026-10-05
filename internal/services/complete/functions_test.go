@@ -57,6 +57,7 @@ func TestCompleteFunctionFlags(t *testing.T) {
 			"flags": []map[string]any{
 				{"name": "version", "type": "string", "default": "stable", "description": "The Go version."},
 				{"name": "cache", "type": "bool"},
+				{"name": "key", "type": "string"},
 			},
 			"commands": map[string]any{
 				"lint": map[string]any{"flags": []map[string]any{{"name": "fix", "type": "bool"}}},
@@ -88,11 +89,12 @@ jobs:
 		step string
 		want []string
 	}{
-		{"a function's flags", "      - setup-go:\n          with:\n            ", []string{"version", "cache"}},
-		{"the flags it doesn't pass yet", "      - setup-go:\n          with:\n            version: \"1.27\"\n            ", []string{"cache"}},
+		{"a function's flags", "      - setup-go:\n          with:\n            ", []string{"version", "cache", "key"}},
+		{"the flags it doesn't pass yet", "      - setup-go:\n          with:\n            version: \"1.27\"\n            ", []string{"cache", "key"}},
 		{"a command's flags", "      - setup-go/lint:\n          with:\n            ", []string{"fix"}},
 		{"a boolean flag's values", "      - setup-go:\n          with:\n            cache: ", []string{"true", "false"}},
-		{"no values for other flags", "      - setup-go:\n          with:\n            version: ", []string{}},
+		{"a flag's default", "      - setup-go:\n          with:\n            version: ", []string{"stable"}},
+		{"no values for a flag without a default", "      - setup-go:\n          with:\n            key: ", []string{}},
 	}
 
 	for _, tt := range tests {
