@@ -130,7 +130,7 @@ func NewCircleCI(t testing.TB) *CircleCI {
 	mux.HandleFunc("GET /api/v2/context/{id}/environment-variable", fake.handleListContextEnvVars)
 
 	// The machine catalog — circleci_catalog.go.
-	mux.HandleFunc("GET /api/v3/catalog/offerings", fake.handleGetOfferings)
+	mux.HandleFunc("GET /api/v3/catalog/resource-classes", fake.handleGetResourceClasses)
 
 	// The functions catalog — circleci_functions.go.
 	mux.HandleFunc("GET /api/v3/function/packages", fake.handleListFunctionPackages)

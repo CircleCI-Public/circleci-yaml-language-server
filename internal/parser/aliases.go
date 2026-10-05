@@ -75,6 +75,22 @@ func (doc *YamlDocument) ResolveExecutor(ctx context.Context, name string, cache
 	})
 }
 
+// JobExecutor is the executor a job runs on: the one it gives in place, or
+// the executor it names.
+func (doc *YamlDocument) JobExecutor(ctx context.Context, job ast2.Job, cache *cache.Cache) (ast2.Executor, bool) {
+	switch {
+	case !position.IsDefaultRange(job.DockerRange):
+		return job.Docker, true
+	case !position.IsDefaultRange(job.MachineRange):
+		return job.Machine, true
+	case !position.IsDefaultRange(job.MacOSRange):
+		return job.MacOS, true
+	case job.Executor == "":
+		return nil, false
+	}
+	return doc.ResolveExecutor(ctx, job.Executor, cache)
+}
+
 // resolveElement looks a name up among the config's elements of one kind,
 // or, for `orb-alias/element-name`, among the orb's.
 func resolveElement[T any](ctx context.Context, doc *YamlDocument, name string, cache *cache.Cache, elements func(ast2.OrbParsedAttributes) map[string]T) (T, bool) {

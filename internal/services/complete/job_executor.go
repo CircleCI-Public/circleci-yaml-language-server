@@ -6,6 +6,7 @@ import (
 	"go.lsp.dev/protocol"
 
 	ast2 "github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 )
 
@@ -68,28 +69,17 @@ func startLine(rng protocol.Range) int {
 // addJobResourceClasses offers the resource classes of the job's executor:
 // the one it gives in place, or the executor it names.
 func (ch *CompletionHandler) addJobResourceClasses(ctx context.Context, job ast2.Job) {
-	var executor ast2.Executor
-	switch {
-	case !position.IsDefaultRange(job.DockerRange):
-		executor = job.Docker
-	case !position.IsDefaultRange(job.MachineRange):
-		executor = job.Machine
-	case !position.IsDefaultRange(job.MacOSRange):
-		executor = job.MacOS
-	default:
-		executor, _ = ch.Doc.ResolveExecutor(ctx, job.Executor, ch.Cache)
-	}
-
+	executor, _ := ch.Doc.JobExecutor(ctx, job, ch.Cache)
 	offerings := ch.Cache.Offerings(ctx, ch.Context.Api)
 	switch executor.(type) {
 	case ast2.DockerExecutor:
-		ch.addResourceClassCompletion(offerings.DockerResourceClasses())
+		ch.addResourceClassCompletion(offerings, offerings.DockerResourceClasses(), circleci.ExecutorDocker)
 	case ast2.MachineExecutor:
-		ch.addResourceClassCompletion(offerings.MachineResourceClasses())
+		ch.addResourceClassCompletion(offerings, offerings.MachineResourceClasses(), circleci.MachineExecutors...)
 		if ch.Context.Api.IsLoggedIn() {
-			ch.addResourceClassCompletion(ch.Cache.ResourceClassesOfFile(ctx, ch.Context.V3Client(), ch.Doc.URI))
+			ch.addCompletionItems(ch.Cache.ResourceClassesOfFile(ctx, ch.Context.V3Client(), ch.Doc.URI))
 		}
 	case ast2.MacOSExecutor:
-		ch.addResourceClassCompletion(offerings.MacOSResourceClasses())
+		ch.addResourceClassCompletion(offerings, offerings.MacOSResourceClasses(), circleci.ExecutorMacOS)
 	}
 }

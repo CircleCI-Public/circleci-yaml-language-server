@@ -52,6 +52,10 @@ jobs:
 		Linux:  map[string][]string{"medium": {"ubuntu-2404:current"}, "large": {"ubuntu-2404:current", "ubuntu-2204:current"}},
 		MacOS:  map[string][]string{"m4pro.medium": {"xcode:16.0.0", "xcode:26.0.0"}},
 		Docker: map[string][]string{"medium": {}, "medium+": {}},
+		ResourceClasses: map[string]map[string]fakes.ResourceClass{
+			"linux":  {"medium": {Name: "Linux Medium", CPU: 2, RAMMB: 8192}},
+			"docker": {"medium": {Name: "Medium", CPU: 2, RAMMB: 4096}},
+		},
 	})
 	settings := testHelpers.SettingsForHost(fake.URL())
 	labels := func(pos protocol.Position) []string {
@@ -75,6 +79,24 @@ jobs:
 	t.Run("a machine job's resource class is offered the machine's", func(t *testing.T) {
 		got := labels(endOf("resource_class: me"))
 		assert.Check(t, cmp.DeepEqual(got, []string{"large", "medium"}))
+	})
+
+	t.Run("each class says what the catalog calls it, and its size", func(t *testing.T) {
+		details := func(pos protocol.Position) map[string]string {
+			got := map[string]string{}
+			for _, item := range completionItemsWith(t, settings, cache.New(), config, pos) {
+				got[item.Label], _ = item.Detail.Get()
+			}
+			return got
+		}
+		assert.Check(t, cmp.DeepEqual(details(endOf("resource_class:")), map[string]string{
+			"medium":  "Medium: 2 vCPUs, 4 GB RAM",
+			"medium+": "",
+		}))
+		assert.Check(t, cmp.DeepEqual(details(endOf("resource_class: me")), map[string]string{
+			"medium": "Linux Medium: 2 vCPUs, 8 GB RAM",
+			"large":  "",
+		}))
 	})
 
 	t.Run("a job naming an executor is offered the classes of its type", func(t *testing.T) {
