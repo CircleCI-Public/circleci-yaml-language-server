@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 
 	"go.lsp.dev/protocol"
@@ -471,13 +472,43 @@ func (val Validate) validateFunctionStepAgainst(step functionStep, descriptor *c
 			continue
 		}
 
-		if flags[index].Type == "bool" && !isBooleanArgument(argument) {
+		switch kind := flags[index].Type; {
+		case kind == "bool" && !isBooleanArgument(argument):
 			val.addDiagnostic(diagnostic.Warning(
 				argument.Range,
 				fmt.Sprintf("Flag %s of %s takes true or false.", name, step.step.Name),
 			))
+		case isNumericKind(kind) && !isNumericArgument(argument, kind):
+			val.addDiagnostic(diagnostic.Warning(
+				argument.Range,
+				fmt.Sprintf("Flag %s of %s takes a number.", name, step.step.Name),
+			))
 		}
 	}
+}
+
+// isNumericKind says whether a flag's type, a Go kind, is a number.
+func isNumericKind(kind string) bool {
+	return strings.HasPrefix(kind, "int") || strings.HasPrefix(kind, "uint") || strings.HasPrefix(kind, "float")
+}
+
+func isNumericArgument(argument ast.ParameterValue, kind string) bool {
+	switch argument.Type {
+	case "integer":
+		return true
+	case "string":
+		value := strings.Trim(fmt.Sprint(argument.Value), `"'`)
+		if isReference, _ := paramref.IsPartiallyReferenced(value); isReference {
+			return true
+		}
+		if strings.HasPrefix(kind, "float") {
+			_, err := strconv.ParseFloat(value, 64)
+			return err == nil
+		}
+		_, err := strconv.ParseInt(value, 10, 64)
+		return err == nil
+	}
+	return false
 }
 
 func isBooleanArgument(argument ast.ParameterValue) bool {

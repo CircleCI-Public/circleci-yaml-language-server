@@ -25,6 +25,8 @@ var setupGoDescriptor = map[string]any{
 		map[string]any{"name": "version", "type": "string", "default": "stable", "description": "Go version spec."},
 		map[string]any{"name": "version-file", "type": "string", "description": "Path to a go.mod file."},
 		map[string]any{"name": "golangci-lint-cache", "type": "bool", "default": "false"},
+		map[string]any{"name": "retries", "type": "int"},
+		map[string]any{"name": "timeout", "type": "float64"},
 	},
 	"commands": map[string]any{
 		"cache": map[string]any{
@@ -343,6 +345,35 @@ workflows:
 			"setup-go v0.5.1-684fd5b takes no flag versoin.",
 			"Flag golangci-lint-cache of setup-go takes true or false.",
 			"setup-go/cache v0.5.1-684fd5b takes no flag version.",
+		}, anyOrder))
+	})
+
+	t.Run("numbers for numeric flags get no warning", func(t *testing.T) {
+		assert.Check(t, cmp.DeepEqual(functionWarnings(t, config("github.com/circleci-functions/setup-go@v0.5.1-684fd5b", `      - setup-go:
+          with:
+            retries: 3
+            timeout: "1.5"
+      - setup-go:
+          with:
+            retries: "3"
+      - setup-go:
+          with:
+            retries: << parameters.retries >>
+`)), []string{}))
+	})
+
+	t.Run("a numeric flag that isn't given a number", func(t *testing.T) {
+		assert.Check(t, cmp.DeepEqual(functionWarnings(t, config("github.com/circleci-functions/setup-go@v0.5.1-684fd5b", `      - setup-go:
+          with:
+            retries: lots
+            timeout: soon
+      - setup-go:
+          with:
+            retries: true
+`)), []string{
+			"Flag retries of setup-go takes a number.",
+			"Flag timeout of setup-go takes a number.",
+			"Flag retries of setup-go takes a number.",
 		}, anyOrder))
 	})
 
