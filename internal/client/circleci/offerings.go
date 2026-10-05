@@ -2,9 +2,12 @@ package circleci
 
 import (
 	"context"
+	"fmt"
 	"maps"
+	"math"
 	"net/http"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -14,19 +17,67 @@ import (
 
 const CurrentLinuxImage = "ubuntu-2404:current"
 
+// The executors the catalog lists resource classes for.
+const (
+	ExecutorLinux        = "linux"
+	ExecutorWindows      = "windows"
+	ExecutorMacOS        = "macos"
+	ExecutorRemoteDocker = "remote_docker"
+	ExecutorDocker       = "docker"
+)
+
+// MachineExecutors are the executors a machine job runs on: a class is one or
+// the other's.
+var MachineExecutors = []string{ExecutorLinux, ExecutorWindows}
+
 type Offerings struct {
-	Linux   map[string][]string `json:"linux"`
-	Windows map[string][]string `json:"windows"`
-	MacOS   map[string][]string `json:"macos"`
+	Linux   map[string][]string
+	Windows map[string][]string
+	MacOS   map[string][]string
 	// RemoteDocker is the Docker versions setup_remote_docker takes, by the
 	// resource class of the remote machine.
-	RemoteDocker map[string][]string `json:"remote_docker"`
+	RemoteDocker map[string][]string
 	// Docker is the Docker executor's resource classes. They take any image,
 	// so their lists are empty.
-	Docker map[string][]string `json:"docker"`
+	Docker map[string][]string
 	// Unlike the lists above, Deprecated is keyed by executor, not resource class, and
 	// excludes images already present there.
-	Deprecated map[string][]string `json:"deprecated"`
+	Deprecated map[string][]string
+	// ResourceClasses is what the catalog says of each class besides what it
+	// runs, by executor and then by class.
+	ResourceClasses map[string]map[string]ResourceClass
+}
+
+// ResourceClass is a resource class as the catalog describes it: its name and
+// its size.
+type ResourceClass struct {
+	// Name is what CircleCI calls the class, such as "Linux Medium Gen2".
+	Name  string `json:"name"`
+	CPU   int    `json:"cpu"`
+	RAMMB int    `json:"ram_mb"`
+}
+
+// Size is the class's CPUs and memory, such as "2 vCPUs, 8 GB RAM".
+func (rc ResourceClass) Size() string {
+	cpus := "vCPUs"
+	if rc.CPU == 1 {
+		cpus = "vCPU"
+	}
+	gb := strconv.FormatFloat(math.Round(float64(rc.RAMMB)/1024*10)/10, 'f', -1, 64)
+	return fmt.Sprintf("%d %s, %s GB RAM", rc.CPU, cpus, gb)
+}
+
+// Summary is the class's name and size, such as "Linux Medium: 2 vCPUs, 8 GB
+// RAM", or just its name for a class with no size, and nothing for a class
+// the catalog doesn't describe.
+func (rc ResourceClass) Summary() string {
+	switch {
+	case rc.CPU == 0 || rc.RAMMB == 0:
+		return rc.Name
+	case rc.Name == "":
+		return rc.Size()
+	}
+	return rc.Name + ": " + rc.Size()
 }
 
 type MachinePair struct {
@@ -34,18 +85,28 @@ type MachinePair struct {
 	Images        []string
 }
 
-// FetchOfferings reads the machine catalog: the images and resource classes
-// each machine executor offers. It returns nil on any failure, and for a
-// catalog with nothing in it, so that callers skip validation rather than flag
-// valid config.
+// catalogClass is a resource class in the catalog's response.
+type catalogClass struct {
+	ResourceClass
+	Images           []string `json:"images"`
+	DeprecatedImages []string `json:"deprecated_images"`
+}
+
+// FetchOfferings reads the machine catalog: the resource classes each
+// executor offers, and the images, Xcode versions or Docker versions each
+// class takes. It returns nil on any failure, and for a catalog with nothing
+// in it, so that callers skip validation rather than flag valid config.
 func FetchOfferings(ctx context.Context, api Config) *Offerings {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	// The V3 response wraps the catalog in a data entity: {"data": {"attributes": {...}}}.
+	// The V3 response is a list of executors, each with its classes.
 	var body struct {
-		Data struct {
-			Attributes Offerings `json:"attributes"`
+		Data []struct {
+			Attributes struct {
+				Executor        string                  `json:"executor"`
+				ResourceClasses map[string]catalogClass `json:"resource_classes"`
+			} `json:"attributes"`
 		} `json:"data"`
 	}
 
@@ -56,16 +117,70 @@ func FetchOfferings(ctx context.Context, api Config) *Offerings {
 		AuthToken:  api.Token,
 		AuthHeader: "Circle-Token",
 	})
-	status, err := client.Call(ctx, httpcl.NewRequest(http.MethodGet, "/catalog/offerings", httpcl.JSONDecoder(&body)))
+	status, err := client.Call(ctx, httpcl.NewRequest(http.MethodGet, "/catalog/resource-classes", httpcl.JSONDecoder(&body)))
 	if err != nil || status != http.StatusOK {
 		return nil
 	}
 
-	o := body.Data.Attributes
+	o := &Offerings{
+		Linux:           map[string][]string{},
+		Windows:         map[string][]string{},
+		MacOS:           map[string][]string{},
+		RemoteDocker:    map[string][]string{},
+		Docker:          map[string][]string{},
+		Deprecated:      map[string][]string{},
+		ResourceClasses: map[string]map[string]ResourceClass{},
+	}
+	groups := map[string]map[string][]string{
+		ExecutorLinux:        o.Linux,
+		ExecutorWindows:      o.Windows,
+		ExecutorMacOS:        o.MacOS,
+		ExecutorRemoteDocker: o.RemoteDocker,
+		ExecutorDocker:       o.Docker,
+	}
+	for _, entry := range body.Data {
+		executor := entry.Attributes.Executor
+		group, ok := groups[executor]
+		if !ok {
+			continue
+		}
+		classes := map[string]ResourceClass{}
+		// The catalog deprecates images class by class; validation only asks
+		// whether an executor has deprecated an image.
+		deprecated := []string{}
+		for name, class := range entry.Attributes.ResourceClasses {
+			group[name] = append([]string{}, class.Images...)
+			classes[name] = class.ResourceClass
+			for _, image := range class.DeprecatedImages {
+				if !slices.Contains(deprecated, image) {
+					deprecated = append(deprecated, image)
+				}
+			}
+		}
+		slices.Sort(deprecated)
+		o.ResourceClasses[executor] = classes
+		o.Deprecated[executor] = deprecated
+	}
+
 	if len(o.Linux)+len(o.Windows)+len(o.MacOS) == 0 {
 		return nil
 	}
-	return &o
+	return o
+}
+
+// Class is what the catalog says of a resource class on the first of
+// executors that offers it. It is false for a class none of them offers, such
+// as a self-hosted runner's.
+func (o *Offerings) Class(name string, executors ...string) (ResourceClass, bool) {
+	if o == nil {
+		return ResourceClass{}, false
+	}
+	for _, executor := range executors {
+		if class, ok := o.ResourceClasses[executor][name]; ok {
+			return class, true
+		}
+	}
+	return ResourceClass{}, false
 }
 
 // MachinePairs covers Linux and Windows machine executors; macOS is handled separately.

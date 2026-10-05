@@ -25,6 +25,7 @@ var referenceHovers = []func(context.Context, parser.YamlDocument, *cache.Cache,
 	hover.OrbDeclaration,
 	hover.ParameterReference,
 	hover.PipelineValue,
+	hover.ResourceClass,
 }
 
 func Hover(ctx context.Context, params protocol.HoverParams, cache *cache.Cache, context *session.Settings) (protocol.Hover, error) {

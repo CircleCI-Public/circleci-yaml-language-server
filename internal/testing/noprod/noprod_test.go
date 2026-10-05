@@ -20,8 +20,8 @@ func TestTransport(t *testing.T) {
 
 	t.Run("refuses production and its subdomains", func(t *testing.T) {
 		for _, url := range []string{
-			"https://circleci.com/api/v3/catalog/offerings",
-			"https://circleci.com/api/v3/catalog/offerings?page=2",
+			"https://circleci.com/api/v3/catalog/resource-classes",
+			"https://circleci.com/api/v3/catalog/resource-classes?page=2",
 			"https://app.circleci.com/api/v2/me",
 		} {
 			resp, err := client.Get(url)
@@ -33,7 +33,7 @@ func TestTransport(t *testing.T) {
 	})
 
 	t.Run("lets other hosts through", func(t *testing.T) {
-		resp, err := client.Get(local.URL + "/api/v3/catalog/offerings")
+		resp, err := client.Get(local.URL + "/api/v3/catalog/resource-classes")
 		assert.NilError(t, err)
 		_ = resp.Body.Close()
 		assert.Check(t, cmp.Equal(resp.StatusCode, http.StatusNoContent))
@@ -48,7 +48,7 @@ func TestTransport(t *testing.T) {
 	t.Run("lists each refused request once", func(t *testing.T) {
 		assert.Check(t, cmp.DeepEqual(guard.refused(), []string{
 			"GET /api/v2/me",
-			"GET /api/v3/catalog/offerings",
+			"GET /api/v3/catalog/resource-classes",
 		}))
 	})
 }

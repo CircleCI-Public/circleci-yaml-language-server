@@ -9,6 +9,7 @@ import (
 	"go.lsp.dev/protocol"
 
 	ast2 "github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/dockerhub"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/parser"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
@@ -66,7 +67,8 @@ func findExecutor(pos protocol.Position, doc parser.YamlDocument) (ast2.Executor
 
 func (ch *CompletionHandler) completeDockerExecutor(ctx context.Context, executor ast2.DockerExecutor) {
 	if position.InRange(executor.ResourceClassRange, ch.Params.Position) {
-		ch.addResourceClassCompletion(ch.Cache.Offerings(ctx, ch.Context.Api).DockerResourceClasses())
+		offerings := ch.Cache.Offerings(ctx, ch.Context.Api)
+		ch.addResourceClassCompletion(offerings, offerings.DockerResourceClasses(), circleci.ExecutorDocker)
 		return
 	}
 
@@ -159,14 +161,10 @@ func typedImage(img ast2.DockerImage, pos protocol.Position) (string, bool) {
 
 func (ch *CompletionHandler) completeMachineExecutor(ctx context.Context, executor ast2.MachineExecutor) {
 	if position.InRange(executor.ResourceClassRange, ch.Params.Position) {
-		for _, resourceClass := range ch.Cache.Offerings(ctx, ch.Context.Api).MachineResourceClasses() {
-			ch.addCompletionItem(resourceClass)
-		}
+		offerings := ch.Cache.Offerings(ctx, ch.Context.Api)
+		ch.addResourceClassCompletion(offerings, offerings.MachineResourceClasses(), circleci.MachineExecutors...)
 		if ch.Context.Api.IsLoggedIn() {
-			customResourceClasses := ch.Cache.ResourceClassesOfFile(ctx, ch.Context.V3Client(), ch.Doc.URI)
-			for _, resourceClass := range customResourceClasses {
-				ch.addCompletionItem(resourceClass)
-			}
+			ch.addCompletionItems(ch.Cache.ResourceClassesOfFile(ctx, ch.Context.V3Client(), ch.Doc.URI))
 		}
 		return
 	}
@@ -198,16 +196,20 @@ func (ch *CompletionHandler) completeMachineExecutor(ctx context.Context, execut
 
 func (ch *CompletionHandler) completeMacOSExecutor(ctx context.Context, executor ast2.MacOSExecutor) {
 	if position.InRange(executor.ResourceClassRange, ch.Params.Position) {
-		ch.addResourceClassCompletion(ch.Cache.Offerings(ctx, ch.Context.Api).MacOSResourceClasses())
+		offerings := ch.Cache.Offerings(ctx, ch.Context.Api)
+		ch.addResourceClassCompletion(offerings, offerings.MacOSResourceClasses(), circleci.ExecutorMacOS)
 		return
 	} else {
 		ch.checkAndAddResourceClassFieldCompletion(executor)
 	}
 }
 
-func (ch *CompletionHandler) addResourceClassCompletion(resourceClasses []string) {
+// addResourceClassCompletion offers resourceClasses, each with its summary
+// from the first of executors that offers it.
+func (ch *CompletionHandler) addResourceClassCompletion(offerings *circleci.Offerings, resourceClasses []string, executors ...string) {
 	for _, resourceClass := range resourceClasses {
-		ch.addCompletionItem(resourceClass)
+		class, _ := offerings.Class(resourceClass, executors...)
+		ch.addCompletionItemWithDetail(resourceClass, class.Summary(), "")
 	}
 }
 

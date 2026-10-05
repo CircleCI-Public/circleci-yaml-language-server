@@ -14,11 +14,10 @@ import (
 )
 
 // catalogRoute is the route the machine catalog is served on.
-const catalogRoute = "GET /api/v3/catalog/offerings"
+const catalogRoute = "GET /api/v3/catalog/resource-classes"
 
-// offeringsFake builds a fake serving a small but representative catalog: a
-// couple of Linux classes, one Windows class, one macOS class, and a deprecated
-// entry for each executor.
+// offeringsFake builds a fake serving a small but representative catalog,
+// with a Docker class named as a Linux one is.
 func offeringsFake(t *testing.T) *fakes.CircleCI {
 	t.Helper()
 
@@ -34,10 +33,15 @@ func offeringsFake(t *testing.T) *fakes.CircleCI {
 		MacOS: map[string][]string{
 			"m4pro.medium": {"xcode:16.4.0"},
 		},
+		Docker: map[string][]string{"medium": {}},
 		Deprecated: map[string][]string{
 			"linux":   {"ubuntu-2004:current"},
 			"windows": {"windows-server-2019:current"},
 			"macos":   {"xcode:14.0.0"},
+		},
+		ResourceClasses: map[string]map[string]fakes.ResourceClass{
+			"linux":  {"medium": {Name: "Linux Medium", CPU: 2, RAMMB: 8192}},
+			"docker": {"medium": {Name: "Medium", CPU: 2, RAMMB: 4096}},
 		},
 	})
 
@@ -57,7 +61,7 @@ func TestMachineOfferings(t *testing.T) {
 		// to be fetched once for the life of the cache.
 		cache.Offerings(t.Context(), configFor(fake.URL()))
 
-		requestCount := fake.RequestCount(http.MethodGet, "/api/v3/catalog/offerings")
+		requestCount := fake.RequestCount(http.MethodGet, "/api/v3/catalog/resource-classes")
 		assert.Check(t, cmp.Equal(requestCount, 1))
 	})
 
@@ -85,7 +89,7 @@ func TestMachineOfferings(t *testing.T) {
 
 		cache.Offerings(t.Context(), configFor(fake.URL()))
 
-		requestCount := fake.RequestCount(http.MethodGet, "/api/v3/catalog/offerings")
+		requestCount := fake.RequestCount(http.MethodGet, "/api/v3/catalog/resource-classes")
 		assert.Check(t, cmp.Equal(requestCount, 1))
 	})
 
@@ -101,7 +105,7 @@ func TestMachineOfferings(t *testing.T) {
 		}
 		wg.Wait()
 
-		requestCount := fake.RequestCount(http.MethodGet, "/api/v3/catalog/offerings")
+		requestCount := fake.RequestCount(http.MethodGet, "/api/v3/catalog/resource-classes")
 		assert.Check(t, cmp.Equal(requestCount, 1))
 	})
 
@@ -133,8 +137,8 @@ func TestMachineOfferings(t *testing.T) {
 }
 
 // TestDeprecatedOfferings goes through the API rather than through a
-// pre-populated cache, because the deprecated groups are keyed by executor
-// rather than by resource class and that only shows up in the decoded body.
+// pre-populated cache, because the API lists deprecated images on each
+// resource class, and they are gathered by executor as the body is decoded.
 func TestDeprecatedOfferings(t *testing.T) {
 	fake := offeringsFake(t)
 	api := configFor(fake.URL())
@@ -151,6 +155,42 @@ func TestDeprecatedOfferings(t *testing.T) {
 	// reports has to come off.
 	deprecatedXcode := cache.Offerings(t.Context(), api).DeprecatedXcodeVersions()
 	assert.Check(t, cmp.DeepEqual(deprecatedXcode, []string{"14.0.0"}, anyOrder))
+}
+
+func TestResourceClasses(t *testing.T) {
+	fake := offeringsFake(t)
+	offerings := New().Offerings(t.Context(), configFor(fake.URL()))
+	assert.Assert(t, offerings != nil)
+
+	t.Run("names and sizes a class", func(t *testing.T) {
+		class, ok := offerings.Class("medium", circleci.MachineExecutors...)
+		assert.Assert(t, ok)
+		assert.Check(t, cmp.DeepEqual(class, circleci.ResourceClass{Name: "Linux Medium", CPU: 2, RAMMB: 8192}))
+	})
+
+	t.Run("a class is the executor's it is asked of", func(t *testing.T) {
+		class, ok := offerings.Class("medium", circleci.ExecutorDocker)
+		assert.Assert(t, ok)
+		assert.Check(t, cmp.DeepEqual(class, circleci.ResourceClass{Name: "Medium", CPU: 2, RAMMB: 4096}))
+	})
+
+	t.Run("a class the executors don't offer isn't found", func(t *testing.T) {
+		_, ok := offerings.Class("m4pro.medium", circleci.MachineExecutors...)
+		assert.Check(t, !ok, "a macOS class was found on a machine executor")
+		_, ok = offerings.Class("acme/runner", circleci.MachineExecutors...)
+		assert.Check(t, !ok, "a self-hosted runner's class was found in the catalog")
+	})
+
+	t.Run("a class the catalog doesn't describe is still offered", func(t *testing.T) {
+		class, ok := offerings.Class("large", circleci.MachineExecutors...)
+		assert.Assert(t, ok)
+		assert.Check(t, cmp.DeepEqual(class, circleci.ResourceClass{}))
+		assert.Check(t, cmp.DeepEqual(offerings.Linux["large"], []string{"ubuntu-2404:current"}))
+	})
+
+	t.Run("a Docker class takes no images", func(t *testing.T) {
+		assert.Check(t, cmp.DeepEqual(offerings.Docker, map[string][]string{"medium": {}}))
+	})
 }
 
 func TestOfferingAccessors(t *testing.T) {
