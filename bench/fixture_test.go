@@ -2,6 +2,7 @@ package bench
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"testing"
 
@@ -22,7 +23,15 @@ type fixture struct {
 	// completion is at the end of a job named in the workflow, where the
 	// config's job names are offered.
 	completion protocol.Position
+	// withNewStep is the config with a step started after a job's first
+	// one, as it is just after typing "- ", and newStep is at the end of it,
+	// where the steps a job can run are offered.
+	withNewStep string
+	newStep     protocol.Position
 }
+
+// newStepLine is a step that has been started and not yet named.
+const newStepLine = "      - "
 
 // maxCommands is how many commands a fixture defines at most. Jobs take turns
 // running them, so a large config does not get a command per job, and a small
@@ -94,6 +103,10 @@ func generate(name string, jobs, steps int) fixture {
 
 	f.config = g.String()
 
+	lines := strings.SplitAfter(f.config, "\n")
+	f.withNewStep = strings.Join(slices.Insert(lines, int(f.hover.Line), newStepLine+"\n"), "")
+	f.newStep = protocol.Position{Line: f.hover.Line, Character: uint32(len(newStepLine))}
+
 	return f
 }
 
@@ -129,6 +142,11 @@ func TestFixtures(t *testing.T) {
 			assert.Check(t, cmp.Regexp(`^            - job-\d+$`, completionLine))
 			assert.Check(t, cmp.Equal(int(f.completion.Character), len(completionLine)),
 				"completion should be at the end of the job's name")
+
+			newStepLines := strings.Split(f.withNewStep, "\n")
+			assert.Check(t, cmp.Equal(newStepLines[f.newStep.Line-1], "      - checkout"))
+			assert.Check(t, cmp.Equal(newStepLines[f.newStep.Line], newStepLine))
+			assert.Check(t, cmp.Equal(int(f.newStep.Character), len(newStepLine)))
 		})
 	}
 }
