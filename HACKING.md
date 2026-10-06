@@ -65,6 +65,44 @@ goreleaser, and leaves the release under its published names in
 $ task test
 ```
 
+## Benchmarks
+
+`bench/` times the compiled server the way an editor experiences it, in the
+style of gopls's benchmarks: the real binary, started as a subprocess and
+driven over LSP, against generated configs of two sizes — `small` (5 jobs) and
+`large` (200 jobs, 5,000 steps) — and a fake CircleCI.
+
+| Benchmark | Times |
+| --- | --- |
+| `Startup` | starting a server and the initialize handshake |
+| `Open` | opening a config in a fresh server, to its first diagnostics |
+| `Change` | an edit, to the diagnostics for it, with the edit debounce off |
+| `Hover` | hovering over a step that runs one of the config's commands |
+| `Completion` | completing a job name in a workflow |
+
+```bash
+$ task bench                       # every benchmark, 6 runs each
+$ task bench -- -bench Hover       # just one
+$ task bench COUNT=10              # more runs, for a tighter comparison
+```
+
+`ns/op` is the number to read. Allocation figures would be the client's, not
+the server's, so they are not reported.
+
+To see what a change does, run the benchmarks on both sides of it and compare
+them with `benchstat`, which reports the difference and whether it is
+significant:
+
+```bash
+$ git switch main && task bench && cp test-reports/bench.txt /tmp/old.txt
+$ git switch my-branch && task bench
+$ go tool -modfile tools/go.mod benchstat /tmp/old.txt test-reports/bench.txt
+```
+
+Timings depend on the machine and on what else it is doing, so only compare
+runs made on the same machine, one after the other. Nothing in CI runs the
+benchmarks yet.
+
 ## Contract probes
 
 The tests run against fakes of the CircleCI and Docker Hub APIs
