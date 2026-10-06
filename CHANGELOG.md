@@ -1,5 +1,26 @@
 # CHANGELOG
 
+## 0.51.0 (2026-10-06)
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+* fix: keep commitlint from waiting on a pager by @stiyyagura0901 in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/775
+* refactor: one CircleCI client per session, authenticated per request by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/778
+* refactor: remove the unused Config.GetUserId by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/779
+* refactor: send the V2 requests through the session's one client by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/780
+* feat: show a function flag's type and default when completing it by @stiyyagura0901 in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/771
+* feat: complete a function flag's default value by @stiyyagura0901 in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/772
+* feat: check a numeric function flag gets a number by @stiyyagura0901 in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/774
+* test: let the test helpers take testing.TB by @stiyyagura0901 in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/777
+* feat: hover on a function step's flag by @stiyyagura0901 in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/776
+* test: benchmark the server over LSP by @stiyyagura0901 in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/782
+
+## New Contributors
+* @stiyyagura0901 made their first contribution in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/775
+
+**Full Changelog**: https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.50.0...0.51.0
+
 ## 0.50.0 (2026-10-05)
 
 <!-- Release notes generated using configuration in .github/release.yml at main -->
