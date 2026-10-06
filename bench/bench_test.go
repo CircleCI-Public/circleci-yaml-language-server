@@ -255,3 +255,34 @@ func BenchmarkCompletion(b *testing.B) {
 		})
 	}
 }
+
+// BenchmarkCompletionNewStep times completing a step just started with "- ",
+// where the steps a job can run are offered.
+func BenchmarkCompletionNewStep(b *testing.B) {
+	for _, f := range fixtures {
+		b.Run(f.name, func(b *testing.B) {
+			fake := linkedProject(b)
+			project := workspace.New(b, f.config)
+			s := start(b, fake, project, map[string]any{"editDebounceMs": 0})
+			s.open(b, project, f)
+
+			assert.NilError(b, s.client.DidChange(project.URI(), 2, f.withNewStep))
+			_, err := s.client.WaitForDiagnostics(project.URI())
+			assert.NilError(b, err)
+
+			list, err := s.client.Completion(project.URI(), f.newStep)
+			assert.NilError(b, err)
+			labels := make([]string, 0, len(list.Items))
+			for _, item := range list.Items {
+				labels = append(labels, item.Label)
+			}
+			assert.Check(b, cmp.Contains(labels, "checkout"))
+			assert.Check(b, cmp.Contains(labels, "setup-0"))
+
+			for b.Loop() {
+				_, err := s.client.Completion(project.URI(), f.newStep)
+				assert.NilError(b, err)
+			}
+		})
+	}
+}

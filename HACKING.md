@@ -79,6 +79,7 @@ driven over LSP, against generated configs of two sizes — `small` (5 jobs) and
 | `Change` | an edit, to the diagnostics for it, with the edit debounce off |
 | `Hover` | hovering over a step that runs one of the config's commands |
 | `Completion` | completing a job name in a workflow |
+| `CompletionNewStep` | completing a step just started with `- ` |
 
 ```bash
 $ task bench                       # every benchmark, 6 runs each

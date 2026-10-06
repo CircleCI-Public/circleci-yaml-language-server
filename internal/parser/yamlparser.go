@@ -583,6 +583,11 @@ func (doc *YamlDocument) ModifyTextForAutocomplete(pos protocol.Position) []Modi
 	}
 
 	for _, candidate := range candidates {
+		// Parsing a candidate means parsing the whole document again, so one
+		// that would not be offered is not made at all.
+		if !candidate.keep {
+			continue
+		}
 		edited, err := doc.InsertText(pos, candidate.diff)
 		if err != nil {
 			continue
@@ -592,7 +597,7 @@ func (doc *YamlDocument) ModifyTextForAutocomplete(pos protocol.Position) []Modi
 		hasError := slices.ContainsFunc(*edited.Diagnostics, func(d protocol.Diagnostic) bool {
 			return d.Severity == protocol.DiagnosticSeverityError
 		})
-		if !candidate.keep || hasError {
+		if hasError {
 			edited.Close()
 			continue
 		}
