@@ -5,14 +5,10 @@ import (
 	"fmt"
 	"maps"
 	"math"
-	"net/http"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client"
-	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/httpcl"
 )
 
 const CurrentLinuxImage = "ubuntu-2404:current"
@@ -96,29 +92,18 @@ type catalogClass struct {
 // executor offers, and the images, Xcode versions or Docker versions each
 // class takes. It returns nil on any failure, and for a catalog with nothing
 // in it, so that callers skip validation rather than flag valid config.
-func FetchOfferings(ctx context.Context, api Config) *Offerings {
+func FetchOfferings(ctx context.Context, cl *Client) *Offerings {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	// The V3 response is a list of executors, each with its classes.
-	var body struct {
-		Data []struct {
-			Attributes struct {
-				Executor        string                  `json:"executor"`
-				ResourceClasses map[string]catalogClass `json:"resource_classes"`
-			} `json:"attributes"`
-		} `json:"data"`
+	// The response is a list of executors, each with its classes.
+	var executors []struct {
+		Attributes struct {
+			Executor        string                  `json:"executor"`
+			ResourceClasses map[string]catalogClass `json:"resource_classes"`
+		} `json:"attributes"`
 	}
-
-	// This is a V3 route, but it authenticates with Circle-Token as the V2
-	// routes do, rather than with the bearer token V3Client sends.
-	client := client.New(httpcl.Config{
-		BaseURL:    api.HostUrl + "/api/v3",
-		AuthToken:  api.Token,
-		AuthHeader: "Circle-Token",
-	})
-	status, err := client.Call(ctx, httpcl.NewRequest(http.MethodGet, "/catalog/resource-classes", httpcl.JSONDecoder(&body)))
-	if err != nil || status != http.StatusOK {
+	if err := cl.Get(ctx, "catalog/resource-classes", nil, &executors); err != nil {
 		return nil
 	}
 
@@ -138,7 +123,7 @@ func FetchOfferings(ctx context.Context, api Config) *Offerings {
 		ExecutorRemoteDocker: o.RemoteDocker,
 		ExecutorDocker:       o.Docker,
 	}
-	for _, entry := range body.Data {
+	for _, entry := range executors {
 		executor := entry.Attributes.Executor
 		group, ok := groups[executor]
 		if !ok {

@@ -26,7 +26,7 @@ func TestGetProject(t *testing.T) {
 	t.Run("reports the project and its organization", func(t *testing.T) {
 		fake := projectFake(t)
 
-		project, err := GetProject(t.Context(), configFor(fake.URL()), slug)
+		project, err := GetProject(t.Context(), clientFor(fake.URL()), slug)
 		assert.NilError(t, err)
 
 		// The organization id is what the context and env var lookups key on,
@@ -40,11 +40,11 @@ func TestGetProject(t *testing.T) {
 		assert.Check(t, cmp.Equal(project.VcsInfo.Provider, "GitHub"))
 		assert.Check(t, cmp.Equal(project.VcsInfo.Default_branch, "main"))
 
-		t.Run("authenticating with Circle-Token", func(t *testing.T) {
+		t.Run("authenticating with a bearer token", func(t *testing.T) {
 			requests := fake.Requests()
 			assert.Assert(t, cmp.Len(requests, 1))
 			assert.Check(t, cmp.Equal(requests[0].Path, "/api/v2/project/"+slug))
-			assert.Check(t, cmp.Equal(requests[0].CircleToken, testToken))
+			assert.Check(t, cmp.Equal(requests[0].Authorization, "Bearer "+testToken))
 		})
 	})
 
@@ -54,7 +54,7 @@ func TestGetProject(t *testing.T) {
 	t.Run("reports an unknown project", func(t *testing.T) {
 		fake := projectFake(t)
 
-		project, err := GetProject(t.Context(), configFor(fake.URL()), "gh/acme/unknown")
+		project, err := GetProject(t.Context(), clientFor(fake.URL()), "gh/acme/unknown")
 		assert.Check(t, httpcl.HasStatusCode(err, 404), "got %v", err)
 		assert.Check(t, cmp.DeepEqual(project, Project{}))
 	})
@@ -63,7 +63,7 @@ func TestGetProject(t *testing.T) {
 		fake := projectFake(t)
 		fake.SetStatus("GET /api/v2/project/"+slug, http.StatusInternalServerError)
 
-		project, err := GetProject(t.Context(), configFor(fake.URL()), slug)
+		project, err := GetProject(t.Context(), clientFor(fake.URL()), slug)
 		assert.Check(t, httpcl.HasStatusCode(err, 500), "got %v", err)
 		assert.Check(t, cmp.DeepEqual(project, Project{}))
 	})
@@ -72,14 +72,14 @@ func TestGetProject(t *testing.T) {
 		fake := projectFake(t)
 		fake.SetBody("GET /api/v2/project/"+slug, "{")
 
-		project, err := GetProject(t.Context(), configFor(fake.URL()), slug)
+		project, err := GetProject(t.Context(), clientFor(fake.URL()), slug)
 		assert.Check(t, cmp.ErrorContains(err, "decode response"))
 		assert.Check(t, cmp.DeepEqual(project, Project{}))
 	})
 
 	t.Run("reports an unreachable host", func(t *testing.T) {
 		fake := projectFake(t)
-		api := configFor(fake.URL())
+		api := clientFor(fake.URL())
 		fake.Close()
 
 		_, err := GetProject(t.Context(), api, slug)
@@ -89,7 +89,7 @@ func TestGetProject(t *testing.T) {
 	// A self-hosted URL comes from user settings, so it is not necessarily a
 	// URL at all.
 	t.Run("reports an unusable host URL", func(t *testing.T) {
-		_, err := GetProject(t.Context(), configFor("not a url"), slug)
+		_, err := GetProject(t.Context(), clientFor("not a url"), slug)
 		assert.Check(t, err != nil, "an unparseable host must be reported, not panic")
 	})
 }

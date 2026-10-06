@@ -63,7 +63,7 @@ func TestLoadProjectEnvVariables(t *testing.T) {
 		c := New()
 		cachedFile := openRocketConfig(t, c)
 
-		err := c.LoadProjectEnvVariables(t.Context(), configFor(fake.URL()), cachedFile)
+		err := c.LoadProjectEnvVariables(t.Context(), clientFor(fake.URL()), cachedFile)
 		assert.NilError(t, err)
 
 		t.Run("in the order the API reported them", func(t *testing.T) {
@@ -90,10 +90,10 @@ func TestLoadProjectEnvVariables(t *testing.T) {
 				"third page must ask for the cursor the second page reported")
 		})
 
-		t.Run("authenticating with Circle-Token", func(t *testing.T) {
+		t.Run("authenticating with a bearer token", func(t *testing.T) {
 			requests := fake.Requests()
 			assert.Assert(t, cmp.Len(requests, 3))
-			assert.Check(t, cmp.Equal(requests[0].CircleToken, testToken))
+			assert.Check(t, cmp.Equal(requests[0].Authorization, "Bearer "+testToken))
 		})
 	})
 
@@ -105,7 +105,7 @@ func TestLoadProjectEnvVariables(t *testing.T) {
 		c := New()
 		cachedFile := openRocketConfig(t, c)
 
-		err := c.LoadProjectEnvVariables(t.Context(), configFor(fake.URL()), cachedFile)
+		err := c.LoadProjectEnvVariables(t.Context(), clientFor(fake.URL()), cachedFile)
 		assert.NilError(t, err)
 
 		names := cachedEnvVarNames(c, cachedFile)
@@ -121,7 +121,7 @@ func TestLoadProjectEnvVariables(t *testing.T) {
 		c := New()
 		cachedFile := openRocketConfig(t, c)
 
-		err := c.LoadProjectEnvVariables(t.Context(), configFor(fake.URL()), cachedFile)
+		err := c.LoadProjectEnvVariables(t.Context(), clientFor(fake.URL()), cachedFile)
 		assert.Check(t, httpcl.HasStatusCode(err, 401), "got %v", err)
 
 		names := cachedEnvVarNames(c, cachedFile)
@@ -134,7 +134,7 @@ func TestLoadProjectEnvVariables(t *testing.T) {
 		c := New()
 		cachedFile := openRocketConfig(t, c)
 
-		err := c.LoadProjectEnvVariables(t.Context(), configFor(fake.URL()), cachedFile)
+		err := c.LoadProjectEnvVariables(t.Context(), clientFor(fake.URL()), cachedFile)
 		assert.Check(t, httpcl.HasStatusCode(err, 404), "got %v", err)
 	})
 
@@ -145,7 +145,7 @@ func TestLoadProjectEnvVariables(t *testing.T) {
 		c := New()
 		cachedFile := openRocketConfig(t, c)
 
-		err := c.LoadProjectEnvVariables(t.Context(), configFor(fake.URL()), cachedFile)
+		err := c.LoadProjectEnvVariables(t.Context(), clientFor(fake.URL()), cachedFile)
 		assert.Check(t, cmp.ErrorContains(err, "decode response"))
 
 		names := cachedEnvVarNames(c, cachedFile)
@@ -162,7 +162,7 @@ func TestLoadProjectEnvVariables(t *testing.T) {
 		c := New()
 		cachedFile := openRocketConfig(t, c)
 
-		err := c.LoadProjectEnvVariables(t.Context(), configFor(fake.URL()), cachedFile)
+		err := c.LoadProjectEnvVariables(t.Context(), clientFor(fake.URL()), cachedFile)
 		assert.Check(t, httpcl.HasStatusCode(err, 500), "got %v", err)
 
 		names := cachedEnvVarNames(c, cachedFile)
@@ -171,7 +171,7 @@ func TestLoadProjectEnvVariables(t *testing.T) {
 
 	t.Run("reports an unreachable host", func(t *testing.T) {
 		fake := projectFake(t, "AWS_REGION")
-		api := configFor(fake.URL())
+		api := clientFor(fake.URL())
 		fake.Close()
 
 		c := New()
@@ -187,7 +187,7 @@ func TestLoadProjectEnvVariables(t *testing.T) {
 		c := New()
 		cachedFile := openRocketConfig(t, c)
 
-		err := c.LoadProjectEnvVariables(t.Context(), configFor("not a url"), cachedFile)
+		err := c.LoadProjectEnvVariables(t.Context(), clientFor("not a url"), cachedFile)
 		assert.Check(t, err != nil, "an unparseable host must be reported, not panic")
 	})
 }
@@ -202,7 +202,7 @@ func TestProject(t *testing.T) {
 		var wg sync.WaitGroup
 		for range 10 {
 			wg.Go(func() {
-				project, err := c.Project(t.Context(), configFor(fake.URL()), rocketSlug)
+				project, err := c.Project(t.Context(), clientFor(fake.URL()), rocketSlug)
 				assert.Check(t, err)
 				assert.Check(t, cmp.Equal(project.OrganizationId, "org-acme"))
 			})
@@ -219,7 +219,7 @@ func TestProject(t *testing.T) {
 		c := New()
 
 		for range 2 {
-			project, err := c.Project(t.Context(), configFor(fake.URL()), rocketSlug)
+			project, err := c.Project(t.Context(), clientFor(fake.URL()), rocketSlug)
 			assert.NilError(t, err)
 			assert.Check(t, cmp.DeepEqual(project, circleci.Project{}))
 		}
@@ -233,13 +233,13 @@ func TestProject(t *testing.T) {
 
 		t.Run("fail the lookup", func(t *testing.T) {
 			fake.SetStatus("GET "+projectRoute, http.StatusInternalServerError)
-			_, err := c.Project(t.Context(), configFor(fake.URL()), rocketSlug)
+			_, err := c.Project(t.Context(), clientFor(fake.URL()), rocketSlug)
 			assert.Check(t, httpcl.HasStatusCode(err, 500), "got %v", err)
 		})
 
 		t.Run("check the next call resolves it", func(t *testing.T) {
 			fake.SetStatus("GET "+projectRoute, 0)
-			project, err := c.Project(t.Context(), configFor(fake.URL()), rocketSlug)
+			project, err := c.Project(t.Context(), clientFor(fake.URL()), rocketSlug)
 			assert.NilError(t, err)
 			assert.Check(t, cmp.Equal(project.Slug, rocketSlug))
 		})

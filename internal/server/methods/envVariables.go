@@ -10,7 +10,7 @@ import (
 )
 
 func (methods *Methods) getAllEnvVariables(ctx context.Context, textDocument protocol.TextDocumentItem) {
-	api := methods.Settings().Api
+	client := methods.Settings().Client()
 	cachedFile := methods.Cache.FileCache.GetFile(textDocument.URI)
 	if cachedFile == nil {
 		return
@@ -20,7 +20,7 @@ func (methods *Methods) getAllEnvVariables(ctx context.Context, textDocument pro
 		if projectSlug == "" {
 			return
 		}
-		project, err := methods.Cache.Project(ctx, api, projectSlug)
+		project, err := methods.Cache.Project(ctx, client, projectSlug)
 		if err != nil || project.Slug == "" {
 			return
 		}
@@ -29,7 +29,7 @@ func (methods *Methods) getAllEnvVariables(ctx context.Context, textDocument pro
 		methods.updateProjectEnvVariables(ctx, cachedFile)
 	}
 
-	if err := methods.Cache.LoadContexts(ctx, api, cachedFile.Project.OrganizationId); err != nil {
+	if err := methods.Cache.LoadContexts(ctx, client, cachedFile.Project.OrganizationId); err != nil {
 		slog.Warn("error getting contexts", "err", err)
 	}
 }
@@ -51,8 +51,8 @@ func (methods *Methods) updateProjectEnvVariables(ctx context.Context, file *cac
 	if cachedFile.Project.Slug == "" {
 		return
 	}
-	if api := methods.Settings().Api; api.Token != "" {
-		if err := methods.Cache.LoadProjectEnvVariables(ctx, api, cachedFile); err != nil {
+	if settings := methods.Settings(); settings.Api.Token != "" {
+		if err := methods.Cache.LoadProjectEnvVariables(ctx, settings.Client(), cachedFile); err != nil {
 			slog.Warn("error getting project environment variables", "err", err)
 		}
 	}

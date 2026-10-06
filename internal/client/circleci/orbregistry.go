@@ -38,13 +38,13 @@ type ResolvedOrbVersion struct {
 	Versions []OrbPackageVersion
 }
 
-// NewOrbRegistry returns the registry served by a V3 client.
-func NewOrbRegistry(client *V3Client) OrbRegistry {
+// NewOrbRegistry returns the registry a client serves.
+func NewOrbRegistry(client *Client) OrbRegistry {
 	return v3OrbRegistry{client: client}
 }
 
 type v3OrbRegistry struct {
-	client *V3Client
+	client *Client
 }
 
 func (registry v3OrbRegistry) FetchOrb(ctx context.Context, fullName string) (*OrbPackage, error) {

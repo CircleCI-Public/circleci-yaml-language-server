@@ -34,12 +34,12 @@ func (source *changingCredentials) set(credentials circleci.Credentials) {
 	source.credentials = credentials
 }
 
-func TestV3ClientCredentials(t *testing.T) {
+func TestClientCredentials(t *testing.T) {
 	t.Run("one client follows its credentials as they change", func(t *testing.T) {
 		fake := fakes.NewCircleCI(t)
 		fake.AddNamespace("ns-1", "circleci")
 		source := &changingCredentials{credentials: circleci.Credentials{HostURL: fake.URL()}}
-		client := circleci.NewV3Client(source, false)
+		client := circleci.NewClient(source, false)
 
 		get := func(t *testing.T) {
 			t.Helper()
@@ -76,7 +76,7 @@ func TestV3ClientCredentials(t *testing.T) {
 		second := fakes.NewCircleCI(t)
 		second.AddNamespace("ns-2", "circleci")
 		source := &changingCredentials{credentials: circleci.Credentials{HostURL: first.URL(), Token: "first-token"}}
-		client := circleci.NewV3Client(source, false)
+		client := circleci.NewClient(source, false)
 
 		_, err := circleci.FetchNamespace(t.Context(), client, "circleci")
 		assert.NilError(t, err)
@@ -109,7 +109,7 @@ func TestV3ClientCredentials(t *testing.T) {
 		}))
 		t.Cleanup(redirecting.Close)
 
-		client := circleci.NewV3Client(circleci.Credentials{
+		client := circleci.NewClient(circleci.Credentials{
 			HostURL: redirecting.URL,
 			Token:   "secret-token",
 			UserID:  "user-1",

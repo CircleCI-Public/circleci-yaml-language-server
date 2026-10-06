@@ -58,7 +58,7 @@ type FunctionFlag struct {
 //
 // A host that doesn't serve the route, such as CircleCI Server, answers 404,
 // which is returned as an APIError: that says nothing about the function.
-func FetchFunction(ctx context.Context, cl *V3Client, name string) (*FunctionPackage, error) {
+func FetchFunction(ctx context.Context, cl *Client, name string) (*FunctionPackage, error) {
 	query := url.Values{}
 	query.Set("filter[name]", name)
 
@@ -105,7 +105,7 @@ func FetchFunction(ctx context.Context, cl *V3Client, name string) (*FunctionPac
 
 // FetchFunctionDescriptor returns the descriptor of a function version, by
 // the id FetchFunction gave it.
-func FetchFunctionDescriptor(ctx context.Context, cl *V3Client, versionID string) (*FunctionDescriptor, error) {
+func FetchFunctionDescriptor(ctx context.Context, cl *Client, versionID string) (*FunctionDescriptor, error) {
 	var entity struct {
 		Attributes struct {
 			Descriptor FunctionDescriptor `json:"descriptor"`

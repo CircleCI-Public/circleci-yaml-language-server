@@ -19,13 +19,13 @@ type ProjectEnvVariableRes struct {
 // ListProjectEnvVarNames reads the name of every environment variable of a
 // project, following the page tokens. It reports the names it read before any
 // failure, so a caller can use a partial answer.
-func ListProjectEnvVarNames(ctx context.Context, api Config, projectSlug string) ([]string, error) {
+func ListProjectEnvVarNames(ctx context.Context, cl *Client, projectSlug string) ([]string, error) {
 	var names []string
 
 	pageToken := ""
 
 	for {
-		res, err := getProjectEnvVariables(ctx, api, projectSlug, pageToken)
+		res, err := getProjectEnvVariables(ctx, cl, projectSlug, pageToken)
 		if err != nil {
 			return names, err
 		}
@@ -42,17 +42,16 @@ func ListProjectEnvVarNames(ctx context.Context, api Config, projectSlug string)
 	}
 }
 
-func getProjectEnvVariables(ctx context.Context, api Config, projectSlug string, nextPageToken string) (*ProjectEnvVariableRes, error) {
+func getProjectEnvVariables(ctx context.Context, cl *Client, projectSlug string, nextPageToken string) (*ProjectEnvVariableRes, error) {
 	var projectRes ProjectEnvVariableRes
 
 	// The slug is joined onto the route as it is: its slashes are path
 	// separators, which httpcl.RouteParams would escape.
-	_, err := newV2Client(api).Call(ctx, httpcl.NewRequest(
-		http.MethodGet, "/project/"+projectSlug+"/envvar",
+	err := cl.callV2(ctx, http.MethodGet, "/project/"+projectSlug+"/envvar",
 		// The first page is asked for without a page-token at all.
 		httpcl.OptionalQueryParam("page-token", nextPageToken),
 		httpcl.JSONDecoder(&projectRes),
-	))
+	)
 	if err != nil {
 		return nil, fmt.Errorf("list env vars of project %q: %w", projectSlug, err)
 	}
@@ -76,15 +75,14 @@ type Project struct {
 
 // GetProject reads the project a slug names, which is how its organization id
 // is found.
-func GetProject(ctx context.Context, api Config, projectSlug string) (Project, error) {
+func GetProject(ctx context.Context, cl *Client, projectSlug string) (Project, error) {
 	var projectIdRes Project
 
 	// The slug is joined onto the route as it is: its slashes are path
 	// separators, which httpcl.RouteParams would escape.
-	_, err := newV2Client(api).Call(ctx, httpcl.NewRequest(
-		http.MethodGet, "/project/"+projectSlug,
+	err := cl.callV2(ctx, http.MethodGet, "/project/"+projectSlug,
 		httpcl.JSONDecoder(&projectIdRes),
-	))
+	)
 	if err != nil {
 		return Project{}, fmt.Errorf("get project %q: %w", projectSlug, err)
 	}

@@ -280,7 +280,7 @@ func TestGetRemoteOrb(t *testing.T) {
 
 // registryFor is the orb registry for a host, asked with credentials.
 func registryFor(credentials circleci.Credentials) circleci.OrbRegistry {
-	return circleci.NewOrbRegistry(circleci.NewV3Client(credentials, false))
+	return circleci.NewOrbRegistry(circleci.NewClient(credentials, false))
 }
 
 func versionsOf(versions []struct{ Version string }) []string {

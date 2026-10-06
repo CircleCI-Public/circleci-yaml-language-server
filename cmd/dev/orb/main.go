@@ -65,7 +65,7 @@ func run() int {
 	// response is logged to stderr alongside it.
 	logging.Setup(debug)
 
-	client := circleci.NewV3Client(circleci.Credentials{HostURL: host, Token: token}, debug)
+	client := circleci.NewClient(circleci.Credentials{HostURL: host, Token: token}, debug)
 	registry := circleci.NewOrbRegistry(client)
 
 	ctx, cancel := context.WithTimeout(context.Background(), probeTimeout)
@@ -158,7 +158,7 @@ func run() int {
 // page's worth and getting it is the only way to prove, from outside, that the
 // cursors the API hands out can be followed — which is the fake's main claim
 // about this API.
-func checkPaging(ctx context.Context, client *circleci.V3Client, orbProbe *probe.Probe) error {
+func checkPaging(ctx context.Context, client *circleci.Client, orbProbe *probe.Probe) error {
 	namespace, err := circleci.FetchNamespace(ctx, client, pagedNamespace)
 	if err != nil {
 		return fmt.Errorf("reading the %s namespace: %w", pagedNamespace, err)

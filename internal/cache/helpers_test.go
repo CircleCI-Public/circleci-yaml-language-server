@@ -8,10 +8,7 @@ import "github.com/CircleCI-Public/circleci-yaml-language-server/internal/client
 // RequireToken at something else to exercise an unauthorized call.
 const testToken = "test-token"
 
-// configFor is the API configuration for a host, carrying testToken.
-func configFor(hostUrl string) circleci.Config {
-	return circleci.Config{
-		Token:   testToken,
-		HostUrl: hostUrl,
-	}
+// clientFor is a client for a host, carrying testToken.
+func clientFor(hostUrl string) *circleci.Client {
+	return circleci.NewClient(circleci.Credentials{HostURL: hostUrl, Token: testToken}, false)
 }

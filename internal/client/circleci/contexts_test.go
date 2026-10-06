@@ -35,7 +35,7 @@ func Test_getContext(t *testing.T) {
 	t.Run("lists the contexts of an organization", func(t *testing.T) {
 		fake := contextFake(t)
 
-		res, err := getContext(t.Context(), configFor(fake.URL()), acmeOrgID, "", false)
+		res, err := getContext(t.Context(), clientFor(fake.URL()), acmeOrgID, "", false)
 		assert.NilError(t, err)
 		assert.Assert(t, cmp.Len(res.Items, 2))
 
@@ -49,7 +49,7 @@ func Test_getContext(t *testing.T) {
 			requests := fake.Requests()
 			assert.Assert(t, cmp.Len(requests, 1))
 			assert.Check(t, cmp.Equal(requests[0].Query["owner-id"], acmeOrgID))
-			assert.Check(t, cmp.Equal(requests[0].CircleToken, testToken))
+			assert.Check(t, cmp.Equal(requests[0].Authorization, "Bearer "+testToken))
 
 			// The first page is asked for without a page-token rather than
 			// with an empty one.
@@ -71,7 +71,7 @@ func Test_getContext(t *testing.T) {
 	t.Run("includes environment variables when asked", func(t *testing.T) {
 		fake := contextFake(t)
 
-		res, err := getContext(t.Context(), configFor(fake.URL()), acmeOrgID, "", true)
+		res, err := getContext(t.Context(), clientFor(fake.URL()), acmeOrgID, "", true)
 		assert.NilError(t, err)
 		assert.Assert(t, cmp.Len(res.Items, 2))
 
@@ -90,7 +90,7 @@ func Test_getContext(t *testing.T) {
 		fake := contextFake(t)
 		fake.RequireToken("a-different-token")
 
-		res, err := getContext(t.Context(), configFor(fake.URL()), acmeOrgID, "", false)
+		res, err := getContext(t.Context(), clientFor(fake.URL()), acmeOrgID, "", false)
 		assert.Check(t, httpcl.HasStatusCode(err, 401), "got %v", err)
 		assert.Check(t, cmp.Nil(res))
 	})
@@ -99,7 +99,7 @@ func Test_getContext(t *testing.T) {
 		fake := contextFake(t)
 		fake.SetStatus(contextRoute, http.StatusInternalServerError)
 
-		res, err := getContext(t.Context(), configFor(fake.URL()), acmeOrgID, "", false)
+		res, err := getContext(t.Context(), clientFor(fake.URL()), acmeOrgID, "", false)
 		assert.Check(t, httpcl.HasStatusCode(err, 500), "got %v", err)
 		assert.Check(t, cmp.Nil(res))
 	})
@@ -108,14 +108,14 @@ func Test_getContext(t *testing.T) {
 		fake := contextFake(t)
 		fake.SetBody(contextRoute, "{")
 
-		res, err := getContext(t.Context(), configFor(fake.URL()), acmeOrgID, "", false)
+		res, err := getContext(t.Context(), clientFor(fake.URL()), acmeOrgID, "", false)
 		assert.Check(t, cmp.ErrorContains(err, "decode response"))
 		assert.Check(t, cmp.Nil(res))
 	})
 
 	t.Run("reports an unreachable host", func(t *testing.T) {
 		fake := contextFake(t)
-		api := configFor(fake.URL())
+		api := clientFor(fake.URL())
 		fake.Close()
 
 		res, err := getContext(t.Context(), api, acmeOrgID, "", false)

@@ -73,7 +73,7 @@ func New(ctx context.Context, client protocol.Client, cache *cache.Cache, settin
 		debounceRevalidation: debounce.New(1000 * time.Millisecond),
 		exited:               make(chan struct{}),
 	}
-	settings.CircleCI = circleci.NewV3Client(methods, false)
+	settings.CircleCI = circleci.NewClient(methods, false)
 	methods.settings.Store(&settings)
 
 	return methods

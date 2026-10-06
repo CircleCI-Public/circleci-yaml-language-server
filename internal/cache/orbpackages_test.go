@@ -15,7 +15,7 @@ import (
 const orbPackagesRoute = "GET /api/v3/orb/packages"
 
 func registryFor(fake *fakes.CircleCI) circleci.OrbRegistry {
-	client := circleci.NewV3Client(circleci.Credentials{HostURL: fake.URL(), Token: testToken}, false)
+	client := circleci.NewClient(circleci.Credentials{HostURL: fake.URL(), Token: testToken}, false)
 
 	return circleci.NewOrbRegistry(client)
 }
@@ -137,7 +137,7 @@ func TestOrbPackagesOrb(t *testing.T) {
 		fake := fakes.NewCircleCI(t)
 		fake.SeedGoOrb()
 
-		anonymous := circleci.NewV3Client(circleci.Credentials{HostURL: fake.URL()}, false)
+		anonymous := circleci.NewClient(circleci.Credentials{HostURL: fake.URL()}, false)
 		orb, err := New().OrbPackages.Orb(t.Context(), circleci.NewOrbRegistry(anonymous), "circleci/go")
 		assert.NilError(t, err)
 		assert.Check(t, orb != nil)
@@ -195,7 +195,7 @@ func TestOrbPackagesOrb(t *testing.T) {
 	})
 
 	t.Run("reports an unconfigured host", func(t *testing.T) {
-		hostless := circleci.NewV3Client(circleci.Credentials{Token: testToken}, false)
+		hostless := circleci.NewClient(circleci.Credentials{Token: testToken}, false)
 		_, err := New().OrbPackages.Orb(t.Context(), circleci.NewOrbRegistry(hostless), "circleci/go")
 		assert.Check(t, cmp.ErrorContains(err, "host URL not defined"))
 	})

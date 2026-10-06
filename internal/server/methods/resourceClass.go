@@ -14,5 +14,5 @@ func (methods *Methods) SetResourceClassOfFile(ctx context.Context, params proto
 	textDocumentUri := params.TextDocument.URI
 	orgSlug := projectslug.OrgSlug(methods.Cache.ProjectSlugOfFile(ctx, textDocumentUri.FsPath()))
 
-	methods.Cache.SetOrgOfFile(ctx, methods.Settings().V3Client(), textDocumentUri, orgSlug)
+	methods.Cache.SetOrgOfFile(ctx, methods.Settings().Client(), textDocumentUri, orgSlug)
 }

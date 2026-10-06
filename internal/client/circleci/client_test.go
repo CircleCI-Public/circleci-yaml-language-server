@@ -18,7 +18,7 @@ func TestV3ClientGet(t *testing.T) {
 		fake := fakes.NewCircleCI(t)
 		fake.AddNamespace("ns-1", "circleci")
 
-		client := circleci.NewV3Client(circleci.Credentials{HostURL: fake.URL()}, false)
+		client := circleci.NewClient(circleci.Credentials{HostURL: fake.URL()}, false)
 
 		query := url.Values{"filter[name]": {"circleci"}}
 		var data struct {
@@ -38,7 +38,7 @@ func TestV3ClientGet(t *testing.T) {
 		fake := fakes.NewCircleCI(t)
 		fake.AddNamespace("ns-1", "circleci")
 
-		client := circleci.NewV3Client(circleci.Credentials{HostURL: fake.URL(), Token: "secret-token", UserID: "user-42"}, false)
+		client := circleci.NewClient(circleci.Credentials{HostURL: fake.URL(), Token: "secret-token", UserID: "user-42"}, false)
 
 		var data struct{}
 		err := client.Get(t.Context(), "namespaces", url.Values{"filter[name]": {"circleci"}}, &data)
@@ -75,7 +75,7 @@ func TestV3ClientGet(t *testing.T) {
 		fake := fakes.NewCircleCI(t)
 		fake.AddNamespace("ns-1", "circleci")
 
-		client := circleci.NewV3Client(circleci.Credentials{HostURL: fake.URL()}, false)
+		client := circleci.NewClient(circleci.Credentials{HostURL: fake.URL()}, false)
 
 		var data struct{}
 		err := client.Get(t.Context(), "namespaces", url.Values{"filter[name]": {"circleci"}}, &data)
@@ -90,7 +90,7 @@ func TestV3ClientGet(t *testing.T) {
 		fake := fakes.NewCircleCI(t)
 		fake.AddNamespace("ns-1", "circleci")
 
-		client := circleci.NewV3Client(circleci.Credentials{HostURL: fake.URL()}, false)
+		client := circleci.NewClient(circleci.Credentials{HostURL: fake.URL()}, false)
 
 		var data struct{}
 		err := client.Get(t.Context(), "namespaces", url.Values{"filter[name]": {"circleci"}}, &data)
@@ -105,7 +105,7 @@ func TestV3ClientGet(t *testing.T) {
 func TestV3ClientGetErrors(t *testing.T) {
 	t.Run("a 404 matches ErrNotFound", func(t *testing.T) {
 		fake := fakes.NewCircleCI(t)
-		client := circleci.NewV3Client(circleci.Credentials{HostURL: fake.URL()}, false)
+		client := circleci.NewClient(circleci.Credentials{HostURL: fake.URL()}, false)
 
 		var data struct{}
 		err := client.Get(t.Context(), "namespaces", url.Values{"filter[name]": {"nope"}}, &data)
@@ -118,7 +118,7 @@ func TestV3ClientGetErrors(t *testing.T) {
 		fake := fakes.NewCircleCI(t)
 		fake.SetStatus("GET /api/v3/namespaces", http.StatusInternalServerError)
 
-		client := circleci.NewV3Client(circleci.Credentials{HostURL: fake.URL()}, false)
+		client := circleci.NewClient(circleci.Credentials{HostURL: fake.URL()}, false)
 
 		var data struct{}
 		err := client.Get(t.Context(), "namespaces", url.Values{"filter[name]": {"circleci"}}, &data)
@@ -130,7 +130,7 @@ func TestV3ClientGetErrors(t *testing.T) {
 
 	t.Run("reports the error envelope", func(t *testing.T) {
 		fake := fakes.NewCircleCI(t)
-		client := circleci.NewV3Client(circleci.Credentials{HostURL: fake.URL()}, false)
+		client := circleci.NewClient(circleci.Credentials{HostURL: fake.URL()}, false)
 
 		// filter[name] is required, so omitting it produces a 400 carrying the
 		// V3 error envelope.
@@ -147,7 +147,7 @@ func TestV3ClientGetErrors(t *testing.T) {
 		fake.AddNamespace("ns-1", "circleci")
 		fake.RequireToken("the-real-token")
 
-		client := circleci.NewV3Client(circleci.Credentials{HostURL: fake.URL(), Token: "wrong-token"}, false)
+		client := circleci.NewClient(circleci.Credentials{HostURL: fake.URL(), Token: "wrong-token"}, false)
 
 		var data struct{}
 		err := client.Get(t.Context(), "namespaces", url.Values{"filter[name]": {"circleci"}}, &data)
@@ -156,7 +156,7 @@ func TestV3ClientGetErrors(t *testing.T) {
 	})
 
 	t.Run("rejects an unconfigured host", func(t *testing.T) {
-		client := circleci.NewV3Client(circleci.Credentials{}, false)
+		client := circleci.NewClient(circleci.Credentials{}, false)
 
 		var data struct{}
 		err := client.Get(t.Context(), "namespaces", nil, &data)
@@ -164,7 +164,7 @@ func TestV3ClientGetErrors(t *testing.T) {
 	})
 
 	t.Run("rejects a host without a scheme", func(t *testing.T) {
-		client := circleci.NewV3Client(circleci.Credentials{HostURL: "circleci.com"}, false)
+		client := circleci.NewClient(circleci.Credentials{HostURL: "circleci.com"}, false)
 
 		var data struct{}
 		err := client.Get(t.Context(), "namespaces", nil, &data)
@@ -173,7 +173,7 @@ func TestV3ClientGetErrors(t *testing.T) {
 
 	t.Run("honours a cancelled context", func(t *testing.T) {
 		fake := fakes.NewCircleCI(t)
-		client := circleci.NewV3Client(circleci.Credentials{HostURL: fake.URL()}, false)
+		client := circleci.NewClient(circleci.Credentials{HostURL: fake.URL()}, false)
 
 		ctx, cancel := context.WithCancel(t.Context())
 		cancel()
@@ -190,7 +190,7 @@ func TestV3ClientGetText(t *testing.T) {
 		fake.AddOrbPackage("orb-1", "ns-1", "circleci", "go", false, true)
 		fake.AddOrbVersion("ver-1", "orb-1", "circleci/go", "1.7.1", "version: 2.1\n", "")
 
-		client := circleci.NewV3Client(circleci.Credentials{HostURL: fake.URL()}, false)
+		client := circleci.NewClient(circleci.Credentials{HostURL: fake.URL()}, false)
 
 		source, err := client.GetText(t.Context(), "orb/versions/ver-1/source", nil)
 		assert.NilError(t, err)
@@ -199,7 +199,7 @@ func TestV3ClientGetText(t *testing.T) {
 
 	t.Run("surfaces a missing body as ErrNotFound", func(t *testing.T) {
 		fake := fakes.NewCircleCI(t)
-		client := circleci.NewV3Client(circleci.Credentials{HostURL: fake.URL()}, false)
+		client := circleci.NewClient(circleci.Credentials{HostURL: fake.URL()}, false)
 
 		source, err := client.GetText(t.Context(), "orb/versions/nope/source", nil)
 		assert.Check(t, cmp.ErrorIs(err, circleci.ErrNotFound))
@@ -218,7 +218,7 @@ func TestGetPaged(t *testing.T) {
 		}
 		fake.SetPageLimit("orb/packages", 2)
 
-		client := circleci.NewV3Client(circleci.Credentials{HostURL: fake.URL()}, false)
+		client := circleci.NewClient(circleci.Credentials{HostURL: fake.URL()}, false)
 
 		type packageData struct {
 			Attributes struct {
@@ -264,7 +264,7 @@ func TestGetPaged(t *testing.T) {
 		fake.AddOrbPackage("orb-2", "ns-1", "circleci", "bravo", false, true)
 		fake.SetPageLimit("orb/packages", 1)
 
-		client := circleci.NewV3Client(circleci.Credentials{HostURL: fake.URL()}, false)
+		client := circleci.NewClient(circleci.Credentials{HostURL: fake.URL()}, false)
 
 		query := url.Values{"filter[namespace_id]": {"ns-1"}}
 		_, err := circleci.GetPaged[struct{}](t.Context(), client, "orb/packages", query)
@@ -275,7 +275,7 @@ func TestGetPaged(t *testing.T) {
 
 	t.Run("returns an empty slice rather than nil for no matches", func(t *testing.T) {
 		fake := fakes.NewCircleCI(t)
-		client := circleci.NewV3Client(circleci.Credentials{HostURL: fake.URL()}, false)
+		client := circleci.NewClient(circleci.Credentials{HostURL: fake.URL()}, false)
 
 		query := url.Values{"filter[name]": {"circleci/nope"}}
 		packages, err := circleci.GetPaged[struct{}](t.Context(), client, "orb/packages", query)
@@ -293,7 +293,7 @@ func TestGetPaged(t *testing.T) {
 		fake.SetPageLimit("orb/packages", 1)
 		fake.FailAfter("GET /api/v3/orb/packages", 1, http.StatusInternalServerError)
 
-		client := circleci.NewV3Client(circleci.Credentials{HostURL: fake.URL()}, false)
+		client := circleci.NewClient(circleci.Credentials{HostURL: fake.URL()}, false)
 
 		_, err := circleci.GetPaged[struct{}](t.Context(), client, "orb/packages", nil)
 		assert.Check(t, err != nil, "a failed later page must not be silently truncated")
@@ -303,7 +303,7 @@ func TestGetPaged(t *testing.T) {
 		fake := fakes.NewCircleCI(t)
 		fake.SetBody("GET /api/v3/orb/packages", `not json`)
 
-		client := circleci.NewV3Client(circleci.Credentials{HostURL: fake.URL()}, false)
+		client := circleci.NewClient(circleci.Credentials{HostURL: fake.URL()}, false)
 
 		_, err := circleci.GetPaged[struct{}](t.Context(), client, "orb/packages", nil)
 		assert.Check(t, cmp.ErrorContains(err, "decoding response"))

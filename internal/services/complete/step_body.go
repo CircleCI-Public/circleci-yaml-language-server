@@ -51,7 +51,7 @@ func (ch *CompletionHandler) builtInStepValues(ctx context.Context, step, key, j
 	}
 	if step == "setup_remote_docker" && key == "version" {
 		if class, ok := ch.Doc.DockerResourceClass(ctx, ch.Doc.Jobs[job], ch.Cache); ok {
-			if versions := ch.Cache.Offerings(ctx, ch.Context.Api).RemoteDockerVersions(class); len(versions) > 0 {
+			if versions := ch.Cache.Offerings(ctx, ch.Context.Client()).RemoteDockerVersions(class); len(versions) > 0 {
 				return versions
 			}
 		}

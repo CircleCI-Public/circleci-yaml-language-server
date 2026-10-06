@@ -20,10 +20,10 @@ func (ch *CompletionHandler) completeJobExecutor(ctx context.Context, job ast2.J
 			ch.addJobResourceClasses(ctx, job)
 			return true
 		case parent == startLine(job.MachineRange) && key == "image":
-			ch.addCompletionItems(ch.Cache.Offerings(ctx, ch.Context.Api).MachineImages())
+			ch.addCompletionItems(ch.Cache.Offerings(ctx, ch.Context.Client()).MachineImages())
 			return true
 		case parent == startLine(job.MacOSRange) && key == "xcode":
-			ch.addCompletionItems(ch.Cache.Offerings(ctx, ch.Context.Api).XcodeVersions())
+			ch.addCompletionItems(ch.Cache.Offerings(ctx, ch.Context.Client()).XcodeVersions())
 			return true
 		}
 		return false
@@ -70,14 +70,14 @@ func startLine(rng protocol.Range) int {
 // the one it gives in place, or the executor it names.
 func (ch *CompletionHandler) addJobResourceClasses(ctx context.Context, job ast2.Job) {
 	executor, _ := ch.Doc.JobExecutor(ctx, job, ch.Cache)
-	offerings := ch.Cache.Offerings(ctx, ch.Context.Api)
+	offerings := ch.Cache.Offerings(ctx, ch.Context.Client())
 	switch executor.(type) {
 	case ast2.DockerExecutor:
 		ch.addResourceClassCompletion(offerings, offerings.DockerResourceClasses(), circleci.ExecutorDocker)
 	case ast2.MachineExecutor:
 		ch.addResourceClassCompletion(offerings, offerings.MachineResourceClasses(), circleci.MachineExecutors...)
 		if ch.Context.Api.IsLoggedIn() {
-			ch.addCompletionItems(ch.Cache.ResourceClassesOfFile(ctx, ch.Context.V3Client(), ch.Doc.URI))
+			ch.addCompletionItems(ch.Cache.ResourceClassesOfFile(ctx, ch.Context.Client(), ch.Doc.URI))
 		}
 	case ast2.MacOSExecutor:
 		ch.addResourceClassCompletion(offerings, offerings.MacOSResourceClasses(), circleci.ExecutorMacOS)

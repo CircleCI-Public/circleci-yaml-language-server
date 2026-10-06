@@ -67,7 +67,7 @@ func findExecutor(pos protocol.Position, doc parser.YamlDocument) (ast2.Executor
 
 func (ch *CompletionHandler) completeDockerExecutor(ctx context.Context, executor ast2.DockerExecutor) {
 	if position.InRange(executor.ResourceClassRange, ch.Params.Position) {
-		offerings := ch.Cache.Offerings(ctx, ch.Context.Api)
+		offerings := ch.Cache.Offerings(ctx, ch.Context.Client())
 		ch.addResourceClassCompletion(offerings, offerings.DockerResourceClasses(), circleci.ExecutorDocker)
 		return
 	}
@@ -161,15 +161,15 @@ func typedImage(img ast2.DockerImage, pos protocol.Position) (string, bool) {
 
 func (ch *CompletionHandler) completeMachineExecutor(ctx context.Context, executor ast2.MachineExecutor) {
 	if position.InRange(executor.ResourceClassRange, ch.Params.Position) {
-		offerings := ch.Cache.Offerings(ctx, ch.Context.Api)
+		offerings := ch.Cache.Offerings(ctx, ch.Context.Client())
 		ch.addResourceClassCompletion(offerings, offerings.MachineResourceClasses(), circleci.MachineExecutors...)
 		if ch.Context.Api.IsLoggedIn() {
-			ch.addCompletionItems(ch.Cache.ResourceClassesOfFile(ctx, ch.Context.V3Client(), ch.Doc.URI))
+			ch.addCompletionItems(ch.Cache.ResourceClassesOfFile(ctx, ch.Context.Client(), ch.Doc.URI))
 		}
 		return
 	}
 
-	images := ch.Cache.Offerings(ctx, ch.Context.Api).MachineImages()
+	images := ch.Cache.Offerings(ctx, ch.Context.Client()).MachineImages()
 
 	if position.InRange(executor.ImageRange, ch.Params.Position) {
 		for _, img := range images {
@@ -196,7 +196,7 @@ func (ch *CompletionHandler) completeMachineExecutor(ctx context.Context, execut
 
 func (ch *CompletionHandler) completeMacOSExecutor(ctx context.Context, executor ast2.MacOSExecutor) {
 	if position.InRange(executor.ResourceClassRange, ch.Params.Position) {
-		offerings := ch.Cache.Offerings(ctx, ch.Context.Api)
+		offerings := ch.Cache.Offerings(ctx, ch.Context.Client())
 		ch.addResourceClassCompletion(offerings, offerings.MacOSResourceClasses(), circleci.ExecutorMacOS)
 		return
 	} else {
