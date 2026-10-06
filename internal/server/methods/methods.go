@@ -11,6 +11,7 @@ import (
 	"go.lsp.dev/uri"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/session"
 )
 
@@ -72,9 +73,16 @@ func New(ctx context.Context, client protocol.Client, cache *cache.Cache, settin
 		debounceRevalidation: debounce.New(1000 * time.Millisecond),
 		exited:               make(chan struct{}),
 	}
+	settings.CircleCI = circleci.NewV3Client(methods, false)
 	methods.settings.Store(&settings)
 
 	return methods
+}
+
+// Credentials are the credentials of the session's settings as they are now,
+// which makes the session the source its CircleCI client reads them from.
+func (methods *Methods) Credentials() circleci.Credentials {
+	return methods.Settings().Credentials()
 }
 
 // Settings are the session's settings as they are now. They are never changed

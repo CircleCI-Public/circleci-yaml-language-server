@@ -21,47 +21,39 @@ import (
 // come back as {"data": {...}} and collections as
 // {"data": [...], "page": {"next": ..., "prev": ...}}, so this client unwraps
 // the envelope and leaves callers to describe only the payload.
+//
+// The host and the token are read from a CredentialSource on every request
+// rather than fixed when the client is made, so one client serves a whole
+// session while the user logs in, out, or across to another host.
 type V3Client struct {
-	// Host is the scheme and authority of the CircleCI instance, e.g.
-	// "https://circleci.com".
-	Host string
-	// Token is a personal API token. When empty, no Authorization header is
-	// sent: the orb and namespace routes answer unauthenticated requests for
-	// public orbs, which is how the language server serves users who have not
-	// logged in.
-	Token string
-	// UserId is sent as the user_id header for telemetry, mirroring what the
-	// GraphQL requests used to do.
-	UserId string
-	Debug  bool
-
-	httpClient *httpcl.Client
+	credentials CredentialSource
+	httpClient  *httpcl.Client
 }
 
-// NewV3Client returns a client for the V3 API on the given host.
-func NewV3Client(host, token, userId string, debug bool) *V3Client {
-	var transport http.RoundTripper
+// NewV3Client returns a client for the V3 API, sending each request as
+// whoever credentials says it should be sent as at the time.
+func NewV3Client(credentials CredentialSource, debug bool) *V3Client {
+	var transport = http.DefaultTransport
 	if debug {
-		transport = newDebugTransport(http.DefaultTransport)
+		transport = newDebugTransport(transport)
 	}
 
 	return &V3Client{
-		Host:   host,
-		Token:  token,
-		UserId: userId,
-		Debug:  debug,
+		credentials: credentials,
 		// The host is joined onto each route rather than set as the base URL,
 		// so that a missing or relative host is reported by the request that
-		// needs it, as it was before this client moved onto httpcl.
-		//
-		// An empty token means "anonymous": httpcl sends no Authorization
-		// header at all, which is served for public orbs, where "Bearer " with
-		// nothing after it would be rejected.
+		// needs it, and so that it can change between requests. The token is
+		// left out of httpcl's config for the same reason; credentialsTransport
+		// adds it.
 		httpClient: client.New(httpcl.Config{
-			AuthToken: token,
-			Transport: transport,
+			Transport: &credentialsTransport{credentials: credentials, next: transport},
 		}),
 	}
+}
+
+// Credentials are the credentials the next request will be sent with.
+func (cl *V3Client) Credentials() Credentials {
+	return cl.credentials.Credentials()
 }
 
 // ErrNotFound reports that the API answered 404. Callers that turn "absent"
@@ -198,9 +190,6 @@ func (cl *V3Client) get(ctx context.Context, path string, query url.Values) ([]b
 	}
 
 	opts := []func(*httpcl.Request){}
-	if cl.UserId != "" {
-		opts = append(opts, httpcl.Header("user_id", cl.UserId))
-	}
 	for key, values := range query {
 		for _, value := range values {
 			// url.Values.Encode percent-encodes the brackets in filter[name]
@@ -224,16 +213,17 @@ func (cl *V3Client) get(ctx context.Context, path string, query url.Values) ([]b
 }
 
 func (cl *V3Client) address(path string) (string, error) {
-	if cl.Host == "" {
+	hostURL := cl.Credentials().HostURL
+	if hostURL == "" {
 		return "", ErrHostNotDefined
 	}
 
-	host, err := url.Parse(cl.Host)
+	host, err := url.Parse(hostURL)
 	if err != nil {
-		return "", fmt.Errorf("parsing host %q: %w", cl.Host, err)
+		return "", fmt.Errorf("parsing host %q: %w", hostURL, err)
 	}
 	if !host.IsAbs() {
-		return "", fmt.Errorf("host (%s) must be an absolute URL, including scheme", cl.Host)
+		return "", fmt.Errorf("host (%s) must be an absolute URL, including scheme", hostURL)
 	}
 
 	return strings.TrimSuffix(host.String(), "/") + "/api/v3/" + strings.TrimPrefix(path, "/"), nil

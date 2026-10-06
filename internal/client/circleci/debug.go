@@ -7,9 +7,9 @@ import (
 	"net/http"
 )
 
-// debugTransport logs each response body, which is what the Debug flag on the
-// V3 and GraphQL clients adds. httpcl already logs every request's method,
-// address, status and duration at debug level, so this logs only the rest.
+// debugTransport logs each response body, which is what the debug flag on the
+// V3 client adds. httpcl already logs every request's method, address, status
+// and duration at debug level, so this logs only the rest.
 type debugTransport struct {
 	next http.RoundTripper
 }

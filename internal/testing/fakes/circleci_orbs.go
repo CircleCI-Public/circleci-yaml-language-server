@@ -1,8 +1,7 @@
 package fakes
 
 // This file serves the orb registry: the V3 namespace, orb package and orb
-// version routes the language server resolves orbs through. circleci_graphql.go
-// serves the same domain over GraphQL, for hosts that do not carry these routes.
+// version routes the language server resolves orbs through.
 //
 // It differs from the circleci-cli fake in three ways, each because this
 // repository's code depends on the behavior:
@@ -27,7 +26,6 @@ type orbState struct {
 	versions         map[string]OrbVersion // id -> version
 	versionsByOrb    map[string][]string   // orb id -> version ids, insertion order
 	sourceStatus     map[string]int        // version id -> status override for /source
-	v3RoutesGone     bool                  // when set, the V3 orb/namespace routes answer 404
 }
 
 func newOrbState() orbState {
@@ -148,22 +146,6 @@ func (f *CircleCI) SetSourceStatus(orbVersionID string, status int) {
 	defer f.mu.Unlock()
 
 	f.orbs.sourceStatus[orbVersionID] = status
-}
-
-// DisableV3OrbRoutes makes every V3 orb and namespace route answer 404, the way
-// a CircleCI Server instance does. GraphQL keeps working, so this is the switch
-// that exercises the fallback.
-func (f *CircleCI) DisableV3OrbRoutes() {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-
-	f.orbs.v3RoutesGone = true
-}
-
-// isV3OrbRoute reports whether a path is one of the V3 orb or namespace routes
-// that CircleCI Server does not serve.
-func isV3OrbRoute(path string) bool {
-	return path == "/api/v3/namespaces" || strings.HasPrefix(path, "/api/v3/orb/")
 }
 
 func (f *CircleCI) handleGetNamespace(w http.ResponseWriter, r *http.Request) {

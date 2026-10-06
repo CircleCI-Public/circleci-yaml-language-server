@@ -120,7 +120,7 @@ func urlOrbSourceID(address string) string {
 }
 
 func fetchOrbInfo(ctx context.Context, orbVersionCode string, cache *cache.Cache, settings *session.Settings) (*ast.OrbInfo, error) {
-	orbQuery, err := GetRemoteOrb(ctx, orbVersionCode, settings.Api.Token, settings.Api.HostUrl, settings.UserIdForTelemetry)
+	orbQuery, err := GetRemoteOrb(ctx, settings.OrbRegistry(), orbVersionCode)
 	if err != nil {
 		return nil, err
 	}
@@ -216,9 +216,7 @@ func GetVersionInfo(
 //
 // Exact versions, partial versions ("circleci/go@1.7"), "volatile" and
 // development tags all resolve.
-func GetRemoteOrb(ctx context.Context, orbId string, token string, hostUrl, userId string) (OrbQuery, error) {
-	registry := circleci.NewOrbRegistry(hostUrl, token, userId, false)
-
+func GetRemoteOrb(ctx context.Context, registry circleci.OrbRegistry, orbId string) (OrbQuery, error) {
 	resolved, err := registry.ResolveVersion(ctx, orbId)
 	if err != nil {
 		if circleci.IsNotFound(err) {

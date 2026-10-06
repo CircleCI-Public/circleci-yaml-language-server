@@ -11,6 +11,7 @@ import (
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/fakes"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/testHelpers"
 )
@@ -73,8 +74,6 @@ func TestDoesOrbExist(t *testing.T) {
 		c := cache.New()
 
 		assert.Check(t, doc.DoesOrbExist(t.Context(), remoteOrb("circleci/go"), c))
-		// Counted as a delta because the registry probes the host once, on
-		// first use, to decide between V3 and GraphQL.
 		before := len(fake.Requests())
 
 		var wg sync.WaitGroup
@@ -171,7 +170,8 @@ func TestGetRemoteOrb(t *testing.T) {
 		fake := fakes.NewCircleCI(t)
 		fake.SeedGoOrb()
 
-		orb, err := GetRemoteOrb(t.Context(), "circleci/go@1.7.1", "token", fake.URL(), "user-1")
+		registry := registryFor(circleci.Credentials{HostURL: fake.URL(), Token: "token", UserID: "user-1"})
+		orb, err := GetRemoteOrb(t.Context(), registry, "circleci/go@1.7.1")
 		assert.NilError(t, err)
 
 		t.Run("names the resolved version", func(t *testing.T) {
@@ -211,7 +211,8 @@ func TestGetRemoteOrb(t *testing.T) {
 			{"a development tag", "circleci/go@dev:alpha", "dev:alpha"},
 		} {
 			t.Run(testCase.name, func(t *testing.T) {
-				orb, err := GetRemoteOrb(t.Context(), testCase.ref, "token", fake.URL(), "")
+				registry := registryFor(circleci.Credentials{HostURL: fake.URL(), Token: "token"})
+				orb, err := GetRemoteOrb(t.Context(), registry, testCase.ref)
 				assert.NilError(t, err)
 
 				assert.Check(t, cmp.Equal(orb.Version, testCase.want))
@@ -226,7 +227,8 @@ func TestGetRemoteOrb(t *testing.T) {
 		fake := fakes.NewCircleCI(t)
 		fake.SeedGoOrb()
 
-		_, err := GetRemoteOrb(t.Context(), "circleci/go@9.9.9", "token", fake.URL(), "")
+		registry := registryFor(circleci.Credentials{HostURL: fake.URL(), Token: "token"})
+		_, err := GetRemoteOrb(t.Context(), registry, "circleci/go@9.9.9")
 		assert.Assert(t, err != nil)
 
 		errMessage := err.Error()
@@ -240,7 +242,8 @@ func TestGetRemoteOrb(t *testing.T) {
 		fake.SeedGoOrb()
 		fake.SetStatus("GET /api/v3/orb/packages", http.StatusInternalServerError)
 
-		orb, err := GetRemoteOrb(t.Context(), "circleci/go@1.7.1", "token", fake.URL(), "")
+		registry := registryFor(circleci.Credentials{HostURL: fake.URL(), Token: "token"})
+		orb, err := GetRemoteOrb(t.Context(), registry, "circleci/go@1.7.1")
 		assert.NilError(t, err)
 
 		assert.Check(t, cmp.Equal(orb.Version, "1.7.1"))
@@ -253,7 +256,8 @@ func TestGetRemoteOrb(t *testing.T) {
 		fake.SeedGoOrb()
 		fake.SetSourceStatus("ver-1-7-1", http.StatusInternalServerError)
 
-		_, err := GetRemoteOrb(t.Context(), "circleci/go@1.7.1", "token", fake.URL(), "")
+		registry := registryFor(circleci.Credentials{HostURL: fake.URL(), Token: "token"})
+		_, err := GetRemoteOrb(t.Context(), registry, "circleci/go@1.7.1")
 		assert.Assert(t, err != nil)
 		assert.Check(t, cmp.ErrorContains(err, "500"))
 	})
@@ -262,14 +266,21 @@ func TestGetRemoteOrb(t *testing.T) {
 		fake := fakes.NewCircleCI(t)
 		fake.SeedGoOrb()
 
-		_, err := GetRemoteOrb(t.Context(), "circleci/nope@1.0.0", "token", fake.URL(), "")
+		registry := registryFor(circleci.Credentials{HostURL: fake.URL(), Token: "token"})
+		_, err := GetRemoteOrb(t.Context(), registry, "circleci/nope@1.0.0")
 		assert.Check(t, cmp.ErrorContains(err, "could not find orb"))
 	})
 
 	t.Run("reports an unconfigured host", func(t *testing.T) {
-		_, err := GetRemoteOrb(t.Context(), "circleci/go@1.7.1", "token", "", "")
+		registry := registryFor(circleci.Credentials{Token: "token"})
+		_, err := GetRemoteOrb(t.Context(), registry, "circleci/go@1.7.1")
 		assert.Check(t, cmp.ErrorContains(err, "host URL not defined"))
 	})
+}
+
+// registryFor is the orb registry for a host, asked with credentials.
+func registryFor(credentials circleci.Credentials) circleci.OrbRegistry {
+	return circleci.NewOrbRegistry(circleci.NewV3Client(credentials, false))
 }
 
 func versionsOf(versions []struct{ Version string }) []string {

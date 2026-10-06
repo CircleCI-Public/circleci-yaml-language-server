@@ -7,10 +7,8 @@
 //
 // This file holds the server, the route table for the whole API, the request
 // log and fault injection every route shares, and the rendering the handlers
-// answer through. One file per domain holds that domain's state, builders and
-// handlers: circleci_orbs.go, circleci_graphql.go, circleci_account.go,
-// circleci_projects.go, circleci_contexts.go, circleci_catalog.go,
-// circleci_orgs.go, circleci_runner.go and circleci_functions.go.
+// answer through. One circleci_<domain>.go file per domain holds that domain's
+// state, builders and handlers.
 //
 // Requests are served anonymously by default because the language server
 // resolves public orbs for users who have not logged in. Call RequireToken to
@@ -45,7 +43,6 @@ type CircleCI struct {
 	// One field per domain of the API. Each is guarded by the mutex above and
 	// is served by the handlers in the file named against it.
 	orbs      orbState       // circleci_orbs.go
-	graphql   graphqlState   // circleci_graphql.go
 	account   accountState   // circleci_account.go
 	projects  projectsState  // circleci_projects.go
 	contexts  contextsState  // circleci_contexts.go
@@ -110,10 +107,6 @@ func NewCircleCI(t testing.TB) *CircleCI {
 	mux.HandleFunc("GET /api/v3/orb/versions", fake.handleListOrbVersions)
 	mux.HandleFunc("GET /api/v3/orb/versions/{id}", fake.handleGetOrbVersion)
 	mux.HandleFunc("GET /api/v3/orb/versions/{id}/source", fake.handleGetOrbVersionSource)
-
-	// The GraphQL fallback the registry uses on a host without the V3 orb
-	// routes — circleci_graphql.go.
-	mux.HandleFunc("POST /graphql-unstable", fake.handleGraphQL)
 
 	// The signed-in account — circleci_account.go.
 	mux.HandleFunc("GET /api/v2/me", fake.handleGetMe)
@@ -260,7 +253,6 @@ func (f *CircleCI) middleware(next http.Handler) http.Handler {
 		status := f.statusOverrides[route]
 		body, hasBody := f.bodyOverrides[route]
 		required := f.requiredToken
-		orbRoutesGone := f.orbs.v3RoutesGone
 		if deferred, ok := f.failAfter[route]; ok {
 			hits := 0
 			for _, seen := range f.requests {
@@ -275,19 +267,11 @@ func (f *CircleCI) middleware(next http.Handler) http.Handler {
 		}
 		f.mu.Unlock()
 
-		// A Server instance serves GraphQL but not the V3 orb routes.
-		if orbRoutesGone && isV3OrbRoute(r.URL.Path) {
-			writeError(w, http.StatusNotFound, "", "Not Found.", "")
-
-			return
-		}
-
-		// The V3 client sends "Bearer <token>", the GraphQL client sends the
-		// token raw, and the V2 callers send Circle-Token. All three are
-		// accepted, as the real edge accepts all three.
+		// The V3 client sends "Bearer <token>" and the V2 callers send
+		// Circle-Token. Both are accepted, as the real edge accepts both.
 		authorization := r.Header.Get("Authorization")
 		circleToken := r.Header.Get("Circle-Token")
-		if required != "" && authorization != "Bearer "+required && authorization != required && circleToken != required {
+		if required != "" && authorization != "Bearer "+required && circleToken != required {
 			writeStatus(w, r.URL.Path, http.StatusUnauthorized)
 
 			return

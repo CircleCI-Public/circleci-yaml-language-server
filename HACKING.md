@@ -96,9 +96,8 @@ The distinction between 1 and 2 is the point: on a schedule, drift is worth
 raising and an outage is not.
 
 Neither probe needs a token; both read public data. `cmd/dev/orb` uses
-`CIRCLE_TOKEN` when it is set, and takes `CIRCLECI_HOST` and `ORB_BACKEND`
-(`graphql` forces the fallback path) — see the comment at the top of
-`cmd/dev/orb`.
+`CIRCLE_TOKEN` when it is set, and takes `CIRCLECI_HOST` — see the comment at
+the top of `cmd/dev/orb`.
 
 Probes talk to the internet, so they should never run on a pull request: a
 service having a bad day is not a reason to block a merge. Nothing in CI runs

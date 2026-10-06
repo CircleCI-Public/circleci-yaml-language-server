@@ -34,24 +34,34 @@ type Settings struct {
 	// DefinitionLinks is whether the client reads a definition as a link,
 	// which says what text it was found from as well as where it is.
 	DefinitionLinks bool
+
+	// CircleCI is the session's one client for the CircleCI V3 API. It reads
+	// the host and token from the session's settings as they are at each
+	// request, so it outlives every change to them; being a pointer, it is
+	// shared by every copy of the settings. Nil outside a session, as in a
+	// test or a dev tool, where V3Client makes one for these settings.
+	CircleCI *circleci.V3Client
+}
+
+// Credentials are the credentials requests to CircleCI are made with.
+func (lsContext *Settings) Credentials() circleci.Credentials {
+	return circleci.Credentials{
+		HostURL: lsContext.Api.HostUrl,
+		Token:   lsContext.Api.Token,
+		UserID:  lsContext.UserIdForTelemetry,
+	}
 }
 
 // OrbRegistry returns the orb registry for the configured host and token.
 func (lsContext *Settings) OrbRegistry() circleci.OrbRegistry {
-	return circleci.NewOrbRegistry(
-		lsContext.Api.HostUrl,
-		lsContext.Api.Token,
-		lsContext.UserIdForTelemetry,
-		false,
-	)
+	return circleci.NewOrbRegistry(lsContext.V3Client())
 }
 
-// V3Client returns a client for the V3 API on the configured host.
+// V3Client returns the client for the V3 API on the configured host.
 func (lsContext *Settings) V3Client() *circleci.V3Client {
-	return circleci.NewV3Client(
-		lsContext.Api.HostUrl,
-		lsContext.Api.Token,
-		lsContext.UserIdForTelemetry,
-		false,
-	)
+	if lsContext.CircleCI != nil {
+		return lsContext.CircleCI
+	}
+
+	return circleci.NewV3Client(lsContext, false)
 }
