@@ -1,6 +1,8 @@
 package parser
 
 import (
+	"bytes"
+
 	sitter "github.com/tree-sitter/go-tree-sitter"
 	"go.lsp.dev/protocol"
 
@@ -19,6 +21,12 @@ func ParseYamlAnchors(doc *YamlDocument) map[string]YamlAnchor {
 	// Mapping anchors
 	anchorMap := map[string]YamlAnchor{}
 
+	// An anchor is written with "&", so a document without one has none,
+	// and walking the tree for them would find nothing.
+	if !bytes.Contains(doc.Content, []byte("&")) {
+		return anchorMap
+	}
+
 	// Mapping all anchors
 	anchorsQuery.Run(rootNode, func(match *sitter.QueryMatch) {
 		for _, capture := range match.Captures {
@@ -34,6 +42,12 @@ func ParseYamlAnchors(doc *YamlDocument) map[string]YamlAnchor {
 			}
 		}
 	})
+
+	// An alias with no anchor to refer to is skipped below, so with no
+	// anchors there is nothing to search for.
+	if len(anchorMap) == 0 {
+		return anchorMap
+	}
 
 	// Searching for all aliases
 	aliasesQuery.Run(rootNode, func(match *sitter.QueryMatch) {
