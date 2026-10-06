@@ -10,13 +10,7 @@
 //
 //	CIRCLE_TOKEN    used when set; without one, public orbs still resolve
 //	CIRCLECI_HOST   defaults to https://circleci.com
-//	ORB_BACKEND     "graphql" forces the GraphQL fallback; anything else, or
-//	                unset, probes the host and uses V3 where it answers
 //	ORB_DEBUG       when set, the client logs every request
-//
-// Forcing the backend is how the GraphQL fallback gets checked against real
-// infrastructure: circleci.com serves GraphQL as well as V3, so both paths can
-// be compared without a CircleCI Server instance.
 //
 // It exits 0 when the registry looks as expected, 1 when it has drifted, and 2
 // when it could not be reached. See internal/probe.
@@ -66,27 +60,19 @@ func run() int {
 
 	token := os.Getenv("CIRCLE_TOKEN")
 	debug := os.Getenv("ORB_DEBUG") != ""
-	backend := os.Getenv("ORB_BACKEND")
 
 	// The probe's report goes to stdout; with ORB_DEBUG, every request and
 	// response is logged to stderr alongside it.
 	logging.Setup(debug)
 
-	var registry circleci.OrbRegistry
-	switch backend {
-	case "graphql":
-		registry = circleci.NewGraphQLOrbRegistry(host, token, "", debug)
-	default:
-		backend = "v3 where it answers, graphql where it does not"
-		registry = circleci.NewOrbRegistry(host, token, "", debug)
-	}
+	client := circleci.NewV3Client(circleci.Credentials{HostURL: host, Token: token}, debug)
+	registry := circleci.NewOrbRegistry(client)
 
 	ctx, cancel := context.WithTimeout(context.Background(), probeTimeout)
 	defer cancel()
 
 	orbProbe := probe.New("circleci orb registry", os.Stdout)
 	orbProbe.Note("host:    %s", host)
-	orbProbe.Note("backend: %s", backend)
 	orbProbe.Note("token:   %s", describeToken(token))
 	orbProbe.Note("ref:     %s", ref)
 
@@ -161,15 +147,9 @@ func run() int {
 		return nil
 	})
 
-	// Only V3 paginates. The GraphQL fallback reads a single page by design,
-	// so there is nothing to check when it is forced.
-	if backend == "graphql" {
-		orbProbe.Note("paging: not checked, the GraphQL fallback reads a single page")
-	} else {
-		orbProbe.Check("a collection pages with an opaque cursor", func() error {
-			return checkPaging(ctx, host, token, debug, orbProbe)
-		})
-	}
+	orbProbe.Check("a collection pages with an opaque cursor", func() error {
+		return checkPaging(ctx, client, orbProbe)
+	})
 
 	return orbProbe.Report()
 }
@@ -178,9 +158,7 @@ func run() int {
 // page's worth and getting it is the only way to prove, from outside, that the
 // cursors the API hands out can be followed — which is the fake's main claim
 // about this API.
-func checkPaging(ctx context.Context, host, token string, debug bool, orbProbe *probe.Probe) error {
-	client := circleci.NewV3Client(host, token, "", debug)
-
+func checkPaging(ctx context.Context, client *circleci.V3Client, orbProbe *probe.Probe) error {
 	namespace, err := circleci.FetchNamespace(ctx, client, pagedNamespace)
 	if err != nil {
 		return fmt.Errorf("reading the %s namespace: %w", pagedNamespace, err)

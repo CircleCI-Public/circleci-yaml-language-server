@@ -46,7 +46,7 @@ func (cache *Cache) ResourceClassesOfFile(ctx context.Context, client *circleci.
 	orgSlug := c.orgOfFile[file]
 	c.mutex.Unlock()
 
-	if orgSlug == "" || client.Token == "" {
+	if orgSlug == "" || client.Credentials().Token == "" {
 		return nil
 	}
 

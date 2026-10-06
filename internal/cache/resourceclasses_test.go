@@ -33,7 +33,7 @@ func TestResourceClassesOfFile(t *testing.T) {
 		fake.AddRunnerResourceClass(acmeOrgID, "acme-labs/gpu", "")
 
 		api := configFor(fake.URL())
-		return fake, circleci.NewV3Client(api.HostUrl, api.Token, "", false)
+		return fake, circleci.NewV3Client(circleci.Credentials{HostURL: api.HostUrl, Token: api.Token}, false)
 	}
 
 	t.Run("lists an organization's classes by its id, whatever their namespaces", func(t *testing.T) {
@@ -97,7 +97,7 @@ func TestResourceClassesOfFile(t *testing.T) {
 
 	t.Run("asks nothing without a token", func(t *testing.T) {
 		fake, client := runnerFake(t)
-		anonymous := circleci.NewV3Client(client.Host, "", "", false)
+		anonymous := circleci.NewV3Client(circleci.Credentials{HostURL: client.Credentials().HostURL}, false)
 		c := New()
 
 		t.Run("open a file anonymously", func(t *testing.T) {

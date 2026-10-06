@@ -73,7 +73,7 @@ func TestSortOrbVersionsDesc(t *testing.T) {
 func TestFetchOrbPackage(t *testing.T) {
 	t.Run("returns the orb and its versions", func(t *testing.T) {
 		fake := goOrbFake(t)
-		client := circleci.NewV3Client(fake.URL(), "", "", false)
+		client := circleci.NewV3Client(circleci.Credentials{HostURL: fake.URL()}, false)
 
 		orb, err := circleci.FetchOrbPackage(t.Context(), client, "circleci/go")
 		assert.NilError(t, err)
@@ -111,7 +111,7 @@ func TestFetchOrbPackage(t *testing.T) {
 	// /namespaces, which 404s.
 	t.Run("reports an unknown orb as not found", func(t *testing.T) {
 		fake := goOrbFake(t)
-		client := circleci.NewV3Client(fake.URL(), "", "", false)
+		client := circleci.NewV3Client(circleci.Credentials{HostURL: fake.URL()}, false)
 
 		orb, err := circleci.FetchOrbPackage(t.Context(), client, "circleci/nope")
 		assert.Check(t, cmp.ErrorIs(err, circleci.ErrNotFound))
@@ -122,7 +122,7 @@ func TestFetchOrbPackage(t *testing.T) {
 		fake := goOrbFake(t)
 		fake.SetStatus("GET /api/v3/orb/packages", http.StatusInternalServerError)
 
-		client := circleci.NewV3Client(fake.URL(), "", "", false)
+		client := circleci.NewV3Client(circleci.Credentials{HostURL: fake.URL()}, false)
 
 		_, err := circleci.FetchOrbPackage(t.Context(), client, "circleci/go")
 		assert.Assert(t, err != nil)
@@ -136,7 +136,7 @@ func TestFetchOrbPackage(t *testing.T) {
 		fake.AddNamespace("ns-acme", "acme")
 		fake.AddOrbPackage("orb-secret", "ns-acme", "acme", "secret", true, false)
 
-		client := circleci.NewV3Client(fake.URL(), "", "", false)
+		client := circleci.NewV3Client(circleci.Credentials{HostURL: fake.URL()}, false)
 
 		orb, err := circleci.FetchOrbPackage(t.Context(), client, "acme/secret")
 		assert.NilError(t, err)
@@ -151,7 +151,7 @@ func TestFetchOrbPackage(t *testing.T) {
 		fake.AddNamespace("ns-acme", "acme")
 		fake.AddOrbPackage("orb-empty", "ns-acme", "acme", "empty", false, true)
 
-		client := circleci.NewV3Client(fake.URL(), "", "", false)
+		client := circleci.NewV3Client(circleci.Credentials{HostURL: fake.URL()}, false)
 
 		orb, err := circleci.FetchOrbPackage(t.Context(), client, "acme/empty")
 		assert.NilError(t, err)
@@ -165,7 +165,7 @@ func TestResolveOrbRef(t *testing.T) {
 	// argument had, or configs that used to work stop resolving.
 	t.Run("resolves every reference form", func(t *testing.T) {
 		fake := goOrbFake(t)
-		client := circleci.NewV3Client(fake.URL(), "", "", false)
+		client := circleci.NewV3Client(circleci.Credentials{HostURL: fake.URL()}, false)
 
 		for _, testCase := range []struct {
 			name string
@@ -191,7 +191,7 @@ func TestResolveOrbRef(t *testing.T) {
 
 	t.Run("reports an unresolvable version as not found", func(t *testing.T) {
 		fake := goOrbFake(t)
-		client := circleci.NewV3Client(fake.URL(), "", "", false)
+		client := circleci.NewV3Client(circleci.Credentials{HostURL: fake.URL()}, false)
 
 		resolved, err := circleci.ResolveOrbRef(t.Context(), client, "circleci/go@9.9.9", "")
 		assert.Check(t, cmp.ErrorIs(err, circleci.ErrNotFound))
@@ -200,7 +200,7 @@ func TestResolveOrbRef(t *testing.T) {
 
 	t.Run("reports an unknown orb as not found", func(t *testing.T) {
 		fake := goOrbFake(t)
-		client := circleci.NewV3Client(fake.URL(), "", "", false)
+		client := circleci.NewV3Client(circleci.Credentials{HostURL: fake.URL()}, false)
 
 		_, err := circleci.ResolveOrbRef(t.Context(), client, "circleci/nope@1.0.0", "")
 		assert.Check(t, cmp.ErrorIs(err, circleci.ErrNotFound))
@@ -210,7 +210,7 @@ func TestResolveOrbRef(t *testing.T) {
 	// without it, so it is sent whenever the caller already knows the id.
 	t.Run("narrows by orb id when one is known", func(t *testing.T) {
 		fake := goOrbFake(t)
-		client := circleci.NewV3Client(fake.URL(), "", "", false)
+		client := circleci.NewV3Client(circleci.Credentials{HostURL: fake.URL()}, false)
 
 		resolved, err := circleci.ResolveOrbRef(t.Context(), client, "circleci/go@1.7.1", "orb-go")
 		assert.NilError(t, err)
@@ -227,7 +227,7 @@ func TestResolveOrbRef(t *testing.T) {
 
 	t.Run("omits the orb id filter when none is known", func(t *testing.T) {
 		fake := goOrbFake(t)
-		client := circleci.NewV3Client(fake.URL(), "", "", false)
+		client := circleci.NewV3Client(circleci.Credentials{HostURL: fake.URL()}, false)
 
 		_, err := circleci.ResolveOrbRef(t.Context(), client, "circleci/go@1.7.1", "")
 		assert.NilError(t, err)
@@ -243,7 +243,7 @@ func TestResolveOrbRef(t *testing.T) {
 func TestFetchOrbSource(t *testing.T) {
 	t.Run("returns the YAML of a version", func(t *testing.T) {
 		fake := goOrbFake(t)
-		client := circleci.NewV3Client(fake.URL(), "", "", false)
+		client := circleci.NewV3Client(circleci.Credentials{HostURL: fake.URL()}, false)
 
 		source, err := circleci.FetchOrbSource(t.Context(), client, "ver-1-7-1")
 		assert.NilError(t, err)
@@ -252,7 +252,7 @@ func TestFetchOrbSource(t *testing.T) {
 
 	t.Run("reports an unknown version as not found", func(t *testing.T) {
 		fake := goOrbFake(t)
-		client := circleci.NewV3Client(fake.URL(), "", "", false)
+		client := circleci.NewV3Client(circleci.Credentials{HostURL: fake.URL()}, false)
 
 		_, err := circleci.FetchOrbSource(t.Context(), client, "ver-nope")
 		assert.Check(t, cmp.ErrorIs(err, circleci.ErrNotFound))
@@ -262,7 +262,7 @@ func TestFetchOrbSource(t *testing.T) {
 		fake := goOrbFake(t)
 		fake.SetSourceStatus("ver-1-7-1", http.StatusInternalServerError)
 
-		client := circleci.NewV3Client(fake.URL(), "", "", false)
+		client := circleci.NewV3Client(circleci.Credentials{HostURL: fake.URL()}, false)
 
 		_, err := circleci.FetchOrbSource(t.Context(), client, "ver-1-7-1")
 		assert.Assert(t, err != nil)
@@ -275,7 +275,7 @@ func TestFetchOrbSource(t *testing.T) {
 func TestFetchNamespace(t *testing.T) {
 	t.Run("resolves a name to an id", func(t *testing.T) {
 		fake := goOrbFake(t)
-		client := circleci.NewV3Client(fake.URL(), "", "", false)
+		client := circleci.NewV3Client(circleci.Credentials{HostURL: fake.URL()}, false)
 
 		namespace, err := circleci.FetchNamespace(t.Context(), client, "circleci")
 		assert.NilError(t, err)
@@ -287,7 +287,7 @@ func TestFetchNamespace(t *testing.T) {
 
 	t.Run("reports an unknown namespace as not found", func(t *testing.T) {
 		fake := goOrbFake(t)
-		client := circleci.NewV3Client(fake.URL(), "", "", false)
+		client := circleci.NewV3Client(circleci.Credentials{HostURL: fake.URL()}, false)
 
 		namespace, err := circleci.FetchNamespace(t.Context(), client, "nope")
 		assert.Check(t, cmp.ErrorIs(err, circleci.ErrNotFound))
@@ -300,7 +300,7 @@ func TestFetchNamespace(t *testing.T) {
 		fake := goOrbFake(t)
 		fake.SetStatus("GET /api/v3/namespaces", http.StatusInternalServerError)
 
-		client := circleci.NewV3Client(fake.URL(), "", "", false)
+		client := circleci.NewV3Client(circleci.Credentials{HostURL: fake.URL()}, false)
 
 		_, err := circleci.FetchNamespace(t.Context(), client, "circleci")
 		assert.Assert(t, err != nil)
@@ -322,7 +322,7 @@ func TestListNamespaceOrbs(t *testing.T) {
 		fake.AddNamespace("ns-other", "other")
 		fake.AddOrbPackage("orb-other", "ns-other", "other", "thing", false, true)
 
-		client := circleci.NewV3Client(fake.URL(), "", "", false)
+		client := circleci.NewV3Client(circleci.Credentials{HostURL: fake.URL()}, false)
 
 		orbs, err := circleci.ListNamespaceOrbs(t.Context(), client, "ns-circleci")
 		assert.NilError(t, err)
@@ -342,7 +342,7 @@ func TestListNamespaceOrbs(t *testing.T) {
 		}
 		fake.SetPageLimit("orb/packages", 2)
 
-		client := circleci.NewV3Client(fake.URL(), "", "", false)
+		client := circleci.NewV3Client(circleci.Credentials{HostURL: fake.URL()}, false)
 
 		orbs, err := circleci.ListNamespaceOrbs(t.Context(), client, "ns-circleci")
 		assert.NilError(t, err)
@@ -357,7 +357,7 @@ func TestListNamespaceOrbs(t *testing.T) {
 		fake := fakes.NewCircleCI(t)
 		fake.AddNamespace("ns-circleci", "circleci")
 
-		client := circleci.NewV3Client(fake.URL(), "", "", false)
+		client := circleci.NewV3Client(circleci.Credentials{HostURL: fake.URL()}, false)
 
 		_, err := circleci.ListNamespaceOrbs(t.Context(), client, "ns-circleci")
 		assert.NilError(t, err)
@@ -372,7 +372,7 @@ func TestListNamespaceOrbs(t *testing.T) {
 
 	t.Run("returns nothing for an unknown namespace", func(t *testing.T) {
 		fake := fakes.NewCircleCI(t)
-		client := circleci.NewV3Client(fake.URL(), "", "", false)
+		client := circleci.NewV3Client(circleci.Credentials{HostURL: fake.URL()}, false)
 
 		orbs, err := circleci.ListNamespaceOrbs(t.Context(), client, "ns-nope")
 		assert.NilError(t, err)
