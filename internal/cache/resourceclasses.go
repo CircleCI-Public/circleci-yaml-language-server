@@ -25,7 +25,7 @@ type ResourceClasses struct {
 // SetOrgOfFile records the organization, by slug (such as "gh/acme"), whose
 // resource classes a file may name, and fetches them, so that they are in hand
 // by the time completion asks. An empty slug means the file's is not known.
-func (cache *Cache) SetOrgOfFile(ctx context.Context, client *circleci.V3Client, file uri.URI, orgSlug string) {
+func (cache *Cache) SetOrgOfFile(ctx context.Context, client *circleci.Client, file uri.URI, orgSlug string) {
 	c := &cache.ResourceClassCache
 	c.mutex.Lock()
 	c.orgOfFile[file] = orgSlug
@@ -40,7 +40,7 @@ func (cache *Cache) SetOrgOfFile(ctx context.Context, client *circleci.V3Client,
 //
 // Without a token it returns none and asks nothing. Nothing is remembered, so
 // the classes are fetched once a token is set.
-func (cache *Cache) ResourceClassesOfFile(ctx context.Context, client *circleci.V3Client, file uri.URI) []string {
+func (cache *Cache) ResourceClassesOfFile(ctx context.Context, client *circleci.Client, file uri.URI) []string {
 	c := &cache.ResourceClassCache
 	c.mutex.Lock()
 	orgSlug := c.orgOfFile[file]
@@ -63,7 +63,7 @@ func (cache *Cache) ResourceClassesOfFile(ctx context.Context, client *circleci.
 
 // listResourceClasses lists an organization's resource classes by its slug.
 // An organization CircleCI does not know has none.
-func listResourceClasses(ctx context.Context, client *circleci.V3Client, orgSlug string) ([]string, error) {
+func listResourceClasses(ctx context.Context, client *circleci.Client, orgSlug string) ([]string, error) {
 	orgID, err := circleci.FetchOrgID(ctx, client, orgSlug)
 	if errors.Is(err, circleci.ErrNotFound) {
 		return []string{}, nil

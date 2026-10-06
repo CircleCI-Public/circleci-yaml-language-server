@@ -33,9 +33,9 @@ func projectLifetime(project circleci.Project) time.Duration {
 //
 // A repository that is not a CircleCI project is common, and is asked about
 // on every edit of its config, so that it names no project is remembered too.
-func (c *Cache) Project(ctx context.Context, api circleci.Config, slug string) (circleci.Project, error) {
+func (c *Cache) Project(ctx context.Context, client *circleci.Client, slug string) (circleci.Project, error) {
 	return c.ProjectCache.projects.Get(ctx, slug, func(ctx context.Context) (circleci.Project, error) {
-		project, err := circleci.GetProject(ctx, api, slug)
+		project, err := circleci.GetProject(ctx, client, slug)
 		if httpcl.HasStatusCode(err, http.StatusNotFound) {
 			return circleci.Project{}, nil
 		}
@@ -63,8 +63,8 @@ func (c *Cache) ProjectSlugOfFile(ctx context.Context, configPath string) string
 // context cache and its IsOrganizationContextListLoaded: a partial read looks
 // like a project with fewer variables. That only costs completions that are
 // absent rather than wrong, so the caller logs the error and carries on.
-func (c *Cache) LoadProjectEnvVariables(ctx context.Context, api circleci.Config, cachedFile *File) error {
-	names, err := circleci.ListProjectEnvVarNames(ctx, api, cachedFile.Project.Slug)
+func (c *Cache) LoadProjectEnvVariables(ctx context.Context, client *circleci.Client, cachedFile *File) error {
+	names, err := circleci.ListProjectEnvVarNames(ctx, client, cachedFile.Project.Slug)
 
 	for _, name := range names {
 		c.FileCache.AddEnvVariableToProjectLinkedToFile(cachedFile.TextDocument.URI, name)

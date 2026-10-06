@@ -35,7 +35,7 @@ func ResourceClass(ctx context.Context, doc yamlparser.YamlDocument, c *cache.Ca
 	case ast.MacOSExecutor:
 		executors = []string{circleci.ExecutorMacOS}
 	}
-	class, ok := c.Offerings(ctx, doc.Context.Api).Class(name, executors...)
+	class, ok := c.Offerings(ctx, doc.Context.Client()).Class(name, executors...)
 	if !ok || class.Summary() == "" {
 		return "", false
 	}

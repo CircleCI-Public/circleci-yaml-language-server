@@ -35,9 +35,9 @@ func (c *MachineOfferings) Set(offerings *circleci.Offerings) {
 // remembered; concurrent callers share one fetch. Returns nil on failure, so
 // callers skip validation rather than flag valid config; every view of
 // *Offerings answers nil for a nil catalog.
-func (cache *Cache) Offerings(ctx context.Context, api circleci.Config) *circleci.Offerings {
+func (cache *Cache) Offerings(ctx context.Context, client *circleci.Client) *circleci.Offerings {
 	offerings, _ := cache.MachineOfferingsCache.catalog.Get(ctx, catalogKey, func(ctx context.Context) (*circleci.Offerings, error) {
-		return circleci.FetchOfferings(ctx, api), nil
+		return circleci.FetchOfferings(ctx, client), nil
 	})
 	return offerings
 }

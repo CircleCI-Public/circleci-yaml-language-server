@@ -53,26 +53,26 @@ func TestMachineOfferings(t *testing.T) {
 		fake := offeringsFake(t)
 		cache := New()
 
-		offerings := cache.Offerings(t.Context(), configFor(fake.URL()))
+		offerings := cache.Offerings(t.Context(), clientFor(fake.URL()))
 		assert.Assert(t, offerings != nil)
 		assert.Check(t, cmp.DeepEqual(offerings.Linux["medium"], []string{"ubuntu-2404:current"}))
 
 		// Every completion and validation pass asks for the catalog, so it has
 		// to be fetched once for the life of the cache.
-		cache.Offerings(t.Context(), configFor(fake.URL()))
+		cache.Offerings(t.Context(), clientFor(fake.URL()))
 
 		requestCount := fake.RequestCount(http.MethodGet, "/api/v3/catalog/resource-classes")
 		assert.Check(t, cmp.Equal(requestCount, 1))
 	})
 
-	t.Run("authenticates with Circle-Token", func(t *testing.T) {
+	t.Run("authenticates with a bearer token", func(t *testing.T) {
 		fake := offeringsFake(t)
 
-		New().Offerings(t.Context(), configFor(fake.URL()))
+		New().Offerings(t.Context(), clientFor(fake.URL()))
 
 		requests := fake.Requests()
 		assert.Assert(t, cmp.Len(requests, 1))
-		assert.Check(t, cmp.Equal(requests[0].CircleToken, testToken))
+		assert.Check(t, cmp.Equal(requests[0].Authorization, "Bearer "+testToken))
 	})
 
 	// A failed fetch has to leave the accessors reporting nothing, so that
@@ -84,10 +84,10 @@ func TestMachineOfferings(t *testing.T) {
 		fake.SetStatus(catalogRoute, http.StatusInternalServerError)
 		cache := New()
 
-		offerings := cache.Offerings(t.Context(), configFor(fake.URL()))
+		offerings := cache.Offerings(t.Context(), clientFor(fake.URL()))
 		assert.Check(t, cmp.Nil(offerings))
 
-		cache.Offerings(t.Context(), configFor(fake.URL()))
+		cache.Offerings(t.Context(), clientFor(fake.URL()))
 
 		requestCount := fake.RequestCount(http.MethodGet, "/api/v3/catalog/resource-classes")
 		assert.Check(t, cmp.Equal(requestCount, 1))
@@ -100,7 +100,7 @@ func TestMachineOfferings(t *testing.T) {
 		var wg sync.WaitGroup
 		for range 10 {
 			wg.Go(func() {
-				assert.Check(t, cache.Offerings(t.Context(), configFor(fake.URL())) != nil)
+				assert.Check(t, cache.Offerings(t.Context(), clientFor(fake.URL())) != nil)
 			})
 		}
 		wg.Wait()
@@ -114,7 +114,7 @@ func TestMachineOfferings(t *testing.T) {
 		hostUrl := fake.URL()
 		fake.Close()
 
-		offerings := New().Offerings(t.Context(), configFor(hostUrl))
+		offerings := New().Offerings(t.Context(), clientFor(hostUrl))
 		assert.Check(t, cmp.Nil(offerings))
 	})
 
@@ -122,7 +122,7 @@ func TestMachineOfferings(t *testing.T) {
 		fake := offeringsFake(t)
 		fake.SetBody(catalogRoute, "{")
 
-		offerings := New().Offerings(t.Context(), configFor(fake.URL()))
+		offerings := New().Offerings(t.Context(), clientFor(fake.URL()))
 		assert.Check(t, cmp.Nil(offerings))
 	})
 
@@ -131,7 +131,7 @@ func TestMachineOfferings(t *testing.T) {
 	t.Run("reports nothing for an empty catalog", func(t *testing.T) {
 		fake := fakes.NewCircleCI(t)
 
-		offerings := New().Offerings(t.Context(), configFor(fake.URL()))
+		offerings := New().Offerings(t.Context(), clientFor(fake.URL()))
 		assert.Check(t, cmp.Nil(offerings))
 	})
 }
@@ -141,7 +141,7 @@ func TestMachineOfferings(t *testing.T) {
 // resource class, and they are gathered by executor as the body is decoded.
 func TestDeprecatedOfferings(t *testing.T) {
 	fake := offeringsFake(t)
-	api := configFor(fake.URL())
+	api := clientFor(fake.URL())
 	cache := New()
 
 	anyOrder := cmpopts.SortSlices(func(a, b string) bool { return a < b })
@@ -159,7 +159,7 @@ func TestDeprecatedOfferings(t *testing.T) {
 
 func TestResourceClasses(t *testing.T) {
 	fake := offeringsFake(t)
-	offerings := New().Offerings(t.Context(), configFor(fake.URL()))
+	offerings := New().Offerings(t.Context(), clientFor(fake.URL()))
 	assert.Assert(t, offerings != nil)
 
 	t.Run("names and sizes a class", func(t *testing.T) {
@@ -210,7 +210,7 @@ func TestOfferingAccessors(t *testing.T) {
 		},
 		Docker: map[string][]string{"small": {}, "medium": {}, "medium+.gen2": {}},
 	})
-	ctx := configFor("")
+	ctx := clientFor("")
 
 	// These accessors gather from maps, so the order they come back in is not
 	// meaningful and the comparison has to be order-insensitive.
@@ -294,6 +294,6 @@ func TestMachinePairs_NilWhenUnavailable(t *testing.T) {
 	cache := New()
 	cache.MachineOfferingsCache.Set(nil) // as a failed fetch leaves it
 
-	pairs := cache.Offerings(t.Context(), configFor("")).MachinePairs()
+	pairs := cache.Offerings(t.Context(), clientFor("")).MachinePairs()
 	assert.Check(t, cmp.Nil(pairs))
 }

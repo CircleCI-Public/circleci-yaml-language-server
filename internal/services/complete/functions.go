@@ -25,7 +25,7 @@ func (ch *CompletionHandler) completeFunctionVersion(ctx context.Context) {
 		return
 	}
 
-	published, err := ch.Cache.Functions.Function(ctx, ch.Context.V3Client(), match[1])
+	published, err := ch.Cache.Functions.Function(ctx, ch.Context.Client(), match[1])
 	if err != nil || published == nil {
 		return
 	}

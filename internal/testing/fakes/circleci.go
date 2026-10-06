@@ -65,18 +65,12 @@ type Request struct {
 	Path          string
 	Query         map[string]string
 	Authorization string
-	CircleToken   string
 	UserID        string
 	UserAgent     string
 }
 
-// Token is the token a request presented, in whichever of the three headers
-// the real edge accepts it carried it.
+// Token is the bearer token a request presented.
 func (r Request) Token() string {
-	if r.CircleToken != "" {
-		return r.CircleToken
-	}
-
 	return strings.TrimPrefix(r.Authorization, "Bearer ")
 }
 
@@ -156,8 +150,8 @@ func (f *CircleCI) Close() {
 // --- Fault injection ---
 
 // RequireToken turns on token enforcement: every request must carry the token
-// in one of the three headers the real edge accepts — Authorization: Bearer
-// <token>, a raw Authorization, or Circle-Token — or be rejected with 401.
+// as Authorization: Bearer <token>, which the V2 and V3 routes both accept, or
+// be rejected with 401.
 func (f *CircleCI) RequireToken(token string) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -245,7 +239,6 @@ func (f *CircleCI) middleware(next http.Handler) http.Handler {
 			Path:          r.URL.Path,
 			Query:         query,
 			Authorization: r.Header.Get("Authorization"),
-			CircleToken:   r.Header.Get("Circle-Token"),
 			UserID:        r.Header.Get("user_id"),
 			UserAgent:     r.Header.Get("User-Agent"),
 		})
@@ -267,11 +260,7 @@ func (f *CircleCI) middleware(next http.Handler) http.Handler {
 		}
 		f.mu.Unlock()
 
-		// The V3 client sends "Bearer <token>" and the V2 callers send
-		// Circle-Token. Both are accepted, as the real edge accepts both.
-		authorization := r.Header.Get("Authorization")
-		circleToken := r.Header.Get("Circle-Token")
-		if required != "" && authorization != "Bearer "+required && circleToken != required {
+		if required != "" && r.Header.Get("Authorization") != "Bearer "+required {
 			writeStatus(w, r.URL.Path, http.StatusUnauthorized)
 
 			return

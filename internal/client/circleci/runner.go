@@ -13,7 +13,7 @@ func IsSelfHostedRunner(resourceClass string) bool {
 // FetchOrgID looks an organization up by its slug, such as "gh/acme".
 //
 // Returns ErrNotFound when no organization has that slug.
-func FetchOrgID(ctx context.Context, cl *V3Client, slug string) (string, error) {
+func FetchOrgID(ctx context.Context, cl *Client, slug string) (string, error) {
 	query := url.Values{}
 	query.Set("filter[slug]", slug)
 
@@ -38,7 +38,7 @@ func FetchOrgID(ctx context.Context, cl *V3Client, slug string) (string, error) 
 // is named with is an orb namespace the organization has claimed, which need
 // not share the organization's name, and one organization can hold classes
 // under several namespaces.
-func ListRunnerResourceClasses(ctx context.Context, cl *V3Client, orgID string) ([]string, error) {
+func ListRunnerResourceClasses(ctx context.Context, cl *Client, orgID string) ([]string, error) {
 	query := url.Values{}
 	query.Set("filter[org_id]", orgID)
 

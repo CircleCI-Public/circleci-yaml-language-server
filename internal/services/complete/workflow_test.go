@@ -463,7 +463,7 @@ workflows:
 	settings := testHelpers.SettingsForHost(fake.URL())
 	c := cache.New()
 	t.Run("remember the organization's contexts", func(t *testing.T) {
-		assert.NilError(t, c.LoadContexts(t.Context(), settings.Api, orgID))
+		assert.NilError(t, c.LoadContexts(t.Context(), settings.Client(), orgID))
 		c.FileCache.SetFile(cache.File{TextDocument: protocol.TextDocumentItem{URI: uri.File("/config.yml")}})
 		c.FileCache.AddProjectSlugToFile(uri.File("/config.yml"), circleci.Project{Slug: "gh/acme/rocket", OrganizationId: orgID})
 	})

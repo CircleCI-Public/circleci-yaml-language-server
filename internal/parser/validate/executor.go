@@ -162,7 +162,7 @@ func (val Validate) validateMacOSExecutor(ctx context.Context, executor ast.MacO
 		return
 	}
 
-	xcodeVersions := val.Cache.Offerings(ctx, val.Context.Api).XcodeVersions()
+	xcodeVersions := val.Cache.Offerings(ctx, val.Context.Client()).XcodeVersions()
 	if xcodeVersions == nil {
 		return
 	}
@@ -171,11 +171,11 @@ func (val Validate) validateMacOSExecutor(ctx context.Context, executor ast.MacO
 		val.checkIfValidResourceClass(
 			ctx,
 			executor.ResourceClass,
-			val.Cache.Offerings(ctx, val.Context.Api).MacOSResourceClasses(),
+			val.Cache.Offerings(ctx, val.Context.Client()).MacOSResourceClasses(),
 			executor.ResourceClassRange,
 			fmt.Sprintf("Xcode version \"%s\"", executor.Xcode),
 		)
-	} else if slices.Contains(val.Cache.Offerings(ctx, val.Context.Api).DeprecatedXcodeVersions(), executor.Xcode) {
+	} else if slices.Contains(val.Cache.Offerings(ctx, val.Context.Client()).DeprecatedXcodeVersions(), executor.Xcode) {
 		val.addDiagnostic(diagnostic.Deprecated(
 			executor.XcodeRange,
 			fmt.Sprintf("Xcode version \"%s\" is deprecated", executor.Xcode),
@@ -212,7 +212,7 @@ func (val Validate) validateMachineExecutor(ctx context.Context, executor ast.Ma
 		return
 	}
 
-	pairs := val.Cache.Offerings(ctx, val.Context.Api).MachinePairs()
+	pairs := val.Cache.Offerings(ctx, val.Context.Client()).MachinePairs()
 	if pairs == nil {
 		return
 	}
@@ -224,7 +224,7 @@ func (val Validate) validateMachineExecutor(ctx context.Context, executor ast.Ma
 		if executor.ResourceClass != "" &&
 			!circleci.IsSelfHostedRunner(executor.ResourceClass) &&
 			!rcParam &&
-			!slices.Contains(val.Cache.Offerings(ctx, val.Context.Api).MachineResourceClasses(), executor.ResourceClass) {
+			!slices.Contains(val.Cache.Offerings(ctx, val.Context.Client()).MachineResourceClasses(), executor.ResourceClass) {
 
 			val.addDiagnostic(diagnostic.Warning(
 				executor.ResourceClassRange,
@@ -281,7 +281,7 @@ func (val Validate) validateMachineExecutor(ctx context.Context, executor ast.Ma
 	}
 
 	if !validImage {
-		if slices.Contains(val.Cache.Offerings(ctx, val.Context.Api).DeprecatedMachineImages(), executor.Image) {
+		if slices.Contains(val.Cache.Offerings(ctx, val.Context.Client()).DeprecatedMachineImages(), executor.Image) {
 			val.addDiagnostic(diagnostic.Deprecated(
 				executor.ImageRange,
 				fmt.Sprintf(
@@ -291,7 +291,7 @@ func (val Validate) validateMachineExecutor(ctx context.Context, executor ast.Ma
 			))
 		} else {
 			message := fmt.Sprintf("Unknown machine image \"%s\"", executor.Image)
-			if isMistakenImage(executor.Image, val.Cache.Offerings(ctx, val.Context.Api)) {
+			if isMistakenImage(executor.Image, val.Cache.Offerings(ctx, val.Context.Client())) {
 				val.addDiagnostic(diagnostic.Error(executor.ImageRange, message))
 			} else {
 				val.addDiagnostic(diagnostic.Warning(executor.ImageRange, message))
@@ -323,7 +323,7 @@ func isMistakenImage(image string, offerings *circleci.Offerings) bool {
 // DockerExecutor
 
 func (val Validate) validateDockerExecutor(ctx context.Context, executor ast.DockerExecutor) {
-	if dockerResourceClasses := val.Cache.Offerings(ctx, val.Context.Api).DockerResourceClasses(); dockerResourceClasses != nil {
+	if dockerResourceClasses := val.Cache.Offerings(ctx, val.Context.Client()).DockerResourceClasses(); dockerResourceClasses != nil {
 		val.checkIfValidResourceClass(
 			ctx,
 			executor.ResourceClass,

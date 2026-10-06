@@ -14,31 +14,33 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/httpcl"
 )
 
-// V3Client is an HTTP client for the CircleCI V3 REST API
-// (https://circleci.com/docs/api/v3).
+// Client is an HTTP client for the CircleCI REST API: V3
+// (https://circleci.com/docs/api/v3), and the V2 routes V3 has no equivalent
+// of yet. Both take the same bearer token.
 //
-// Every route is served under /api/v3 on the configured host. Single entities
+// V3 routes are served under /api/v3 on the configured host. Single entities
 // come back as {"data": {...}} and collections as
-// {"data": [...], "page": {"next": ..., "prev": ...}}, so this client unwraps
-// the envelope and leaves callers to describe only the payload.
+// {"data": [...], "page": {"next": ..., "prev": ...}}, so Get, GetText and
+// GetPaged unwrap the envelope and leave callers to describe only the
+// payload. V2 routes are served under /api/v2, and answer bare JSON.
 //
 // The host and the token are read from a CredentialSource on every request
 // rather than fixed when the client is made, so one client serves a whole
 // session while the user logs in, out, or across to another host.
-type V3Client struct {
+type Client struct {
 	credentials CredentialSource
 	httpClient  *httpcl.Client
 }
 
-// NewV3Client returns a client for the V3 API, sending each request as
+// NewClient returns a client for the CircleCI API, sending each request as
 // whoever credentials says it should be sent as at the time.
-func NewV3Client(credentials CredentialSource, debug bool) *V3Client {
+func NewClient(credentials CredentialSource, debug bool) *Client {
 	var transport = http.DefaultTransport
 	if debug {
 		transport = newDebugTransport(transport)
 	}
 
-	return &V3Client{
+	return &Client{
 		credentials: credentials,
 		// The host is joined onto each route rather than set as the base URL,
 		// so that a missing or relative host is reported by the request that
@@ -52,7 +54,7 @@ func NewV3Client(credentials CredentialSource, debug bool) *V3Client {
 }
 
 // Credentials are the credentials the next request will be sent with.
-func (cl *V3Client) Credentials() Credentials {
+func (cl *Client) Credentials() Credentials {
 	return cl.credentials.Credentials()
 }
 
@@ -114,7 +116,7 @@ type page struct {
 }
 
 // Get requests a single entity and decodes the "data" member into out.
-func (cl *V3Client) Get(ctx context.Context, path string, query url.Values, out interface{}) error {
+func (cl *Client) Get(ctx context.Context, path string, query url.Values, out interface{}) error {
 	body, err := cl.get(ctx, path, query)
 	if err != nil {
 		return err
@@ -132,7 +134,7 @@ func (cl *V3Client) Get(ctx context.Context, path string, query url.Values, out 
 }
 
 // GetText requests a text/plain body, such as an orb version's YAML source.
-func (cl *V3Client) GetText(ctx context.Context, path string, query url.Values) (string, error) {
+func (cl *Client) GetText(ctx context.Context, path string, query url.Values) (string, error) {
 	body, err := cl.get(ctx, path, query)
 	if err != nil {
 		return "", err
@@ -146,7 +148,7 @@ func (cl *V3Client) GetText(ctx context.Context, path string, query url.Values) 
 //
 // This is a function rather than a method because Go does not allow methods to
 // introduce their own type parameters.
-func GetPaged[T any](ctx context.Context, cl *V3Client, path string, query url.Values) ([]T, error) {
+func GetPaged[T any](ctx context.Context, cl *Client, path string, query url.Values) ([]T, error) {
 	if query == nil {
 		query = url.Values{}
 	}
@@ -183,8 +185,21 @@ func GetPaged[T any](ctx context.Context, cl *V3Client, path string, query url.V
 	}
 }
 
-func (cl *V3Client) get(ctx context.Context, path string, query url.Values) ([]byte, error) {
-	address, err := cl.address(path)
+// callV2 sends a request to a V2 route, which is relative to /api/v2. A non-2xx
+// answer is reported as the *httpcl.HTTPError httpcl returns.
+func (cl *Client) callV2(ctx context.Context, method, route string, opts ...func(*httpcl.Request)) error {
+	address, err := cl.address("api/v2", route)
+	if err != nil {
+		return err
+	}
+
+	_, err = cl.httpClient.Call(ctx, httpcl.NewRequest(method, address, opts...))
+
+	return err
+}
+
+func (cl *Client) get(ctx context.Context, path string, query url.Values) ([]byte, error) {
+	address, err := cl.address("api/v3", path)
 	if err != nil {
 		return nil, err
 	}
@@ -212,7 +227,9 @@ func (cl *V3Client) get(ctx context.Context, path string, query url.Values) ([]b
 	return body, nil
 }
 
-func (cl *V3Client) address(path string) (string, error) {
+// address joins a route onto the configured host under an API's prefix, such
+// as "api/v3".
+func (cl *Client) address(prefix, path string) (string, error) {
 	hostURL := cl.Credentials().HostURL
 	if hostURL == "" {
 		return "", ErrHostNotDefined
@@ -226,7 +243,7 @@ func (cl *V3Client) address(path string) (string, error) {
 		return "", fmt.Errorf("host (%s) must be an absolute URL, including scheme", hostURL)
 	}
 
-	return strings.TrimSuffix(host.String(), "/") + "/api/v3/" + strings.TrimPrefix(path, "/"), nil
+	return strings.TrimSuffix(host.String(), "/") + "/" + prefix + "/" + strings.TrimPrefix(path, "/"), nil
 }
 
 func parseAPIError(httpErr *httpcl.HTTPError) error {

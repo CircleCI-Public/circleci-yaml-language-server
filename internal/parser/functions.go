@@ -81,7 +81,7 @@ func (doc *YamlDocument) LookUpFunction(ctx context.Context, function ast.Functi
 		return nil, nil, fmt.Errorf("function %s has no version", function.Alias)
 	}
 
-	client := doc.Context.V3Client()
+	client := doc.Context.Client()
 	published, err := c.Functions.Function(ctx, client, path)
 	if err != nil || published == nil {
 		return nil, nil, err

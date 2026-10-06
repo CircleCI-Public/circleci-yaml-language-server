@@ -21,7 +21,7 @@ func registryFor(t *testing.T, configure func(*fakes.CircleCI)) (circleci.OrbReg
 		configure(fake)
 	}
 
-	client := circleci.NewV3Client(circleci.Credentials{HostURL: fake.URL(), Token: "token", UserID: "user-1"}, false)
+	client := circleci.NewClient(circleci.Credentials{HostURL: fake.URL(), Token: "token", UserID: "user-1"}, false)
 
 	return circleci.NewOrbRegistry(client), fake
 }

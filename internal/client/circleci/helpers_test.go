@@ -6,10 +6,7 @@ package circleci
 // RequireToken at something else to exercise an unauthorized call.
 const testToken = "test-token"
 
-// configFor is the API configuration for a host, carrying testToken.
-func configFor(hostUrl string) Config {
-	return Config{
-		Token:   testToken,
-		HostUrl: hostUrl,
-	}
+// clientFor is a client for a host, carrying testToken.
+func clientFor(hostUrl string) *Client {
+	return NewClient(Credentials{HostURL: hostUrl, Token: testToken}, false)
 }

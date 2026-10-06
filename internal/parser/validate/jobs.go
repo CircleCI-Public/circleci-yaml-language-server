@@ -208,7 +208,7 @@ func (val Validate) validateRemoteDockerVersion(ctx context.Context, job ast2.Jo
 	if !ok {
 		return
 	}
-	offerings := val.Cache.Offerings(ctx, val.Context.Api)
+	offerings := val.Cache.Offerings(ctx, val.Context.Client())
 	versions := offerings.RemoteDockerVersions(class)
 	if versions == nil {
 		return

@@ -77,7 +77,7 @@ func OrbPackageName(ref string) string {
 //
 // Returns ErrNotFound when no orb matches, which for this route is a 200 with
 // an empty data array rather than a 404.
-func FetchOrbPackage(ctx context.Context, cl *V3Client, fullName string) (*OrbPackage, error) {
+func FetchOrbPackage(ctx context.Context, cl *Client, fullName string) (*OrbPackage, error) {
 	query := url.Values{}
 	query.Set("filter[name]", fullName)
 
@@ -106,7 +106,7 @@ func FetchOrbPackage(ctx context.Context, cl *V3Client, fullName string) (*OrbPa
 // whenever it is already known and leave it empty otherwise.
 //
 // Returns ErrNotFound when the reference does not resolve.
-func ResolveOrbRef(ctx context.Context, cl *V3Client, ref, orbPackageID string) (*OrbVersionRef, error) {
+func ResolveOrbRef(ctx context.Context, cl *Client, ref, orbPackageID string) (*OrbVersionRef, error) {
 	query := url.Values{}
 	query.Set("filter[ref]", ref)
 	if orbPackageID != "" {
@@ -132,7 +132,7 @@ func ResolveOrbRef(ctx context.Context, cl *V3Client, ref, orbPackageID string) 
 
 // FetchOrbSource returns the YAML source of an orb version, addressed by the
 // version's id rather than its reference. The route answers text/plain.
-func FetchOrbSource(ctx context.Context, cl *V3Client, orbVersionID string) (string, error) {
+func FetchOrbSource(ctx context.Context, cl *Client, orbVersionID string) (string, error) {
 	return cl.GetText(ctx, "orb/versions/"+url.PathEscape(orbVersionID)+"/source", nil)
 }
 
@@ -141,7 +141,7 @@ func FetchOrbSource(ctx context.Context, cl *V3Client, orbVersionID string) (str
 // Returns ErrNotFound when the namespace does not exist, which for this route
 // is a 404. Callers turning that into a diagnostic must not treat other errors
 // the same way: a transport failure is not evidence of absence.
-func FetchNamespace(ctx context.Context, cl *V3Client, name string) (*Namespace, error) {
+func FetchNamespace(ctx context.Context, cl *Client, name string) (*Namespace, error) {
 	query := url.Values{}
 	query.Set("filter[name]", name)
 
@@ -167,7 +167,7 @@ func FetchNamespace(ctx context.Context, cl *V3Client, name string) (*Namespace,
 //
 // filter[namespace_id] takes a namespace uuid, so callers holding only a name
 // need FetchNamespace first.
-func ListNamespaceOrbs(ctx context.Context, cl *V3Client, namespaceID string) ([]OrbPackage, error) {
+func ListNamespaceOrbs(ctx context.Context, cl *Client, namespaceID string) ([]OrbPackage, error) {
 	query := url.Values{}
 	query.Set("filter[namespace_id]", namespaceID)
 	query.Set("page[limit]", maxPageLimit)

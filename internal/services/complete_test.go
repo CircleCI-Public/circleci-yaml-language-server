@@ -253,7 +253,7 @@ func TestComplete(t *testing.T) {
 					Character: 19,
 				},
 			},
-			want: createCompletionItemForLabels(c.Offerings(t.Context(), context.Api).MachineImages()),
+			want: createCompletionItemForLabels(c.Offerings(t.Context(), context.Client()).MachineImages()),
 		},
 		{
 			name: "Completion for resource class",
@@ -264,7 +264,7 @@ func TestComplete(t *testing.T) {
 					Character: 24,
 				},
 			},
-			want: createCompletionItemForLabels(c.Offerings(t.Context(), context.Api).MacOSResourceClasses()),
+			want: createCompletionItemForLabels(c.Offerings(t.Context(), context.Client()).MacOSResourceClasses()),
 		},
 		{
 			name: "Completion for executors reference in jobs",
