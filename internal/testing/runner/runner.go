@@ -57,7 +57,7 @@ type Server struct {
 
 // StartStdio runs the binary with --stdio and talks to it over its pipes,
 // which is how an editor runs it. The server is stopped when the test ends.
-func StartStdio(t *testing.T, binary string, environment ...string) *Server {
+func StartStdio(t testing.TB, binary string, environment ...string) *Server {
 	t.Helper()
 
 	server := command(t, binary, []string{"--stdio"}, environment)
@@ -86,7 +86,7 @@ func StartStdio(t *testing.T, binary string, environment ...string) *Server {
 // StartSocket runs the binary as a socket server on a port it chooses, waits
 // for the line it prints once it is listening, and dials it. The server is
 // stopped when the test ends.
-func StartSocket(t *testing.T, binary string, environment ...string) *Server {
+func StartSocket(t testing.TB, binary string, environment ...string) *Server {
 	t.Helper()
 
 	server := command(t, binary, []string{"--host", "127.0.0.1", "--port", "0"}, environment)
@@ -186,7 +186,7 @@ func (s *Server) Stop() {
 // command builds the process without starting it, with its own home and
 // temporary directory: the server writes fetched orb sources under the
 // temporary directory, and tests must not leave them in the developer's.
-func command(t *testing.T, binary string, args []string, environment []string) *Server {
+func command(t testing.TB, binary string, args []string, environment []string) *Server {
 	t.Helper()
 
 	home := t.TempDir()
@@ -217,7 +217,7 @@ func command(t *testing.T, binary string, args []string, environment []string) *
 // register waits for the started process, stops the server when the test
 // ends, and reports what it logged if the test failed, which is where a
 // server-side panic shows up.
-func register(t *testing.T, server *Server) {
+func register(t testing.TB, server *Server) {
 	t.Helper()
 
 	go func() {

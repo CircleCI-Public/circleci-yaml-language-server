@@ -33,13 +33,13 @@ type Workspace struct {
 
 // New writes config to .circleci/config.yml in a new directory, and makes that
 // directory a repository whose origin remote resolves to DefaultSlug.
-func New(t *testing.T, config string) *Workspace {
+func New(t testing.TB, config string) *Workspace {
 	return NewWithRemote(t, config, DefaultRemote)
 }
 
 // NewWithRemote is New with a remote of its own, for a case about how a slug is
 // resolved — or not resolved.
-func NewWithRemote(t *testing.T, config, remote string) *Workspace {
+func NewWithRemote(t testing.TB, config, remote string) *Workspace {
 	t.Helper()
 
 	root := t.TempDir()
@@ -76,7 +76,7 @@ func NewWithRemote(t *testing.T, config, remote string) *Workspace {
 // Write replaces the config on disk. The server reads a document's content
 // from the protocol rather than from the file, so this is for the cases that
 // care what is on disk — an orb resolved from a local path, for instance.
-func (w *Workspace) Write(t *testing.T, config string) {
+func (w *Workspace) Write(t testing.TB, config string) {
 	t.Helper()
 
 	if err := os.WriteFile(w.ConfigPath, []byte(config), 0o600); err != nil {

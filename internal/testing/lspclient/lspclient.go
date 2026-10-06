@@ -56,7 +56,7 @@ type publication struct {
 }
 
 // New connects to a server over stream and starts listening for what it sends.
-func New(t *testing.T, ctx context.Context, stream io.ReadWriteCloser) *Client {
+func New(t testing.TB, ctx context.Context, stream io.ReadWriteCloser) *Client {
 	t.Helper()
 
 	client := &Client{
