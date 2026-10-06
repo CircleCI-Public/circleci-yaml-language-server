@@ -42,15 +42,7 @@ func describeCommand(ctx context.Context, doc yamlparser.YamlDocument, c *cache.
 // namedStepAt is the step, in one of the jobs or commands, whose name the
 // cursor is on.
 func namedStepAt(pos protocol.Position, jobs map[string]ast.Job, commands map[string]ast.Command) (ast.NamedStep, bool) {
-	var lists [][]ast.Step
-	for _, job := range jobs {
-		lists = append(lists, job.Steps)
-	}
-	for _, command := range commands {
-		lists = append(lists, command.Steps)
-	}
-
-	for _, steps := range lists {
+	for _, steps := range stepLists(jobs, commands) {
 		for _, step := range steps {
 			if named, ok := step.(ast.NamedStep); ok && named.Name != "" && position.InRange(named.Range, pos) {
 				return named, true
@@ -58,6 +50,18 @@ func namedStepAt(pos protocol.Position, jobs map[string]ast.Job, commands map[st
 		}
 	}
 	return ast.NamedStep{}, false
+}
+
+// stepLists are the steps of each of the jobs and commands.
+func stepLists(jobs map[string]ast.Job, commands map[string]ast.Command) [][]ast.Step {
+	var lists [][]ast.Step
+	for _, job := range jobs {
+		lists = append(lists, job.Steps)
+	}
+	for _, command := range commands {
+		lists = append(lists, command.Steps)
+	}
+	return lists
 }
 
 // describe is the hover for a definition: its name and kind, its description

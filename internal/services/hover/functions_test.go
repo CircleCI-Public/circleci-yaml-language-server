@@ -28,6 +28,7 @@ jobs:
       - setup-go:
           with:
             version: "1.25"
+            versoin: "1.25"
       - setup-go/cache
 `
 	fake := fakes.NewCircleCI(t)
@@ -58,9 +59,25 @@ jobs:
 	})
 
 	t.Run("a function command's step shows the command", func(t *testing.T) {
-		got, ok := FunctionStep(t.Context(), doc, c, protocol.Position{Line: 13, Character: 10})
+		got, ok := FunctionStep(t.Context(), doc, c, protocol.Position{Line: 14, Character: 10})
 		assert.Assert(t, ok)
 		assert.Check(t, cmp.Equal(got, "**setup-go/cache** function command\n\nRestore and save the Go caches."))
+	})
+
+	t.Run("a flag's key shows the flag", func(t *testing.T) {
+		got, ok := FunctionFlag(t.Context(), doc, c, protocol.Position{Line: 12, Character: 14})
+		assert.Assert(t, ok)
+		assert.Check(t, cmp.Equal(got, "**version** flag of **setup-go**\n\n(string, default `stable`): The Go version."))
+	})
+
+	t.Run("a flag's value is left to other hovers", func(t *testing.T) {
+		_, ok := FunctionFlag(t.Context(), doc, c, protocol.Position{Line: 12, Character: 23})
+		assert.Check(t, !ok)
+	})
+
+	t.Run("a flag the function doesn't take shows nothing", func(t *testing.T) {
+		_, ok := FunctionFlag(t.Context(), doc, c, protocol.Position{Line: 13, Character: 14})
+		assert.Check(t, !ok)
 	})
 
 	t.Run("a declaration shows the function it declares", func(t *testing.T) {

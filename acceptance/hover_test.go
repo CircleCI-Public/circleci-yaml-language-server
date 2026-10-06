@@ -7,6 +7,7 @@ import (
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/fakes"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/workspace"
 )
 
@@ -91,6 +92,49 @@ func TestHover(t *testing.T) {
 		assert.Check(t, cmp.Equal(got,
 			"**tools** orb `acme/tools@1.0.0`\n\nTools for acme.\n\nCommands: `install`\n\nJobs: `test`"))
 	})
+}
+
+// functionStepConfig passes a flag to a declared function, on line 12.
+const functionStepConfig = `version: 2.1
+
+functions:
+  setup-go: github.com/circleci-functions/setup-go@v0.5.3-4edeb2a
+
+jobs:
+  build:
+    machine:
+      image: ubuntu-2404:current
+    steps:
+      - setup-go:
+          with:
+            version: "1.22"
+
+workflows:
+  main:
+    jobs:
+      - build
+`
+
+func TestFunctionFlagHover(t *testing.T) {
+	fake := linkedProjectFake(t)
+	fake.AddFunction("fn-setup-go", "github.com/circleci-functions/setup-go", "Install a Go toolchain.",
+		fakes.FunctionVersion{ID: "ver-setup-go", Version: "v0.5.3-4edeb2a", Descriptor: map[string]any{
+			"name": "setup-go",
+			"flags": []any{
+				map[string]any{"name": "version", "type": "string", "default": "stable", "description": "Go version spec."},
+			},
+		}},
+	)
+
+	session := start(t, fake, functionStepConfig, testToken)
+	session.open(t, functionStepConfig)
+
+	hover, err := session.client.Hover(session.workspace.URI(), position(12, 14))
+	assert.NilError(t, err)
+	assert.Assert(t, hover != nil, "no hover")
+	markup, ok := hover.Contents.(*protocol.MarkupContent)
+	assert.Assert(t, ok, "hover contents are %T, not markup", hover.Contents)
+	assert.Check(t, cmp.Equal(markup.Value, "**version** flag of **setup-go**\n\n(string, default `stable`): Go version spec."))
 }
 
 // resourceClassConfig has a job whose resource_class is on line 6.
