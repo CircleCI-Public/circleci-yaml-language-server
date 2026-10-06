@@ -52,6 +52,16 @@ type FunctionFlag struct {
 	Description string `json:"description"`
 }
 
+// DefaultValue is the flag's default written as a value, and whether it has
+// one.
+func (flag FunctionFlag) DefaultValue() (string, bool) {
+	if flag.Default == nil {
+		return "", false
+	}
+	value := fmt.Sprint(flag.Default)
+	return value, value != ""
+}
+
 // FetchFunction returns the function a name such as
 // "github.com/circleci-functions/setup-go" names, with its versions. It
 // reports ErrFunctionNotPublished when no such function is published.

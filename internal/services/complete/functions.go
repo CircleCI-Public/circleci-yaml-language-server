@@ -4,6 +4,10 @@ import (
 	"context"
 	"regexp"
 	"strings"
+
+	"go.lsp.dev/protocol"
+
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
 )
 
 // functionVersionBeingWritten is a function's declaration with its version
@@ -82,8 +86,25 @@ func (ch *CompletionHandler) completeFunctionFlags(ctx context.Context) bool {
 	present := ch.stepBodyKeys(withLine)
 	for _, flag := range flags {
 		if !present[flag.Name] {
-			ch.addCompletionItemFieldWithCustomText(flag.Name, "", ": ", flag.Description, "")
+			ch.addFunctionFlag(flag)
 		}
 	}
 	return true
+}
+
+func (ch *CompletionHandler) addFunctionFlag(flag circleci.FunctionFlag) {
+	detail := flag.Type
+	if value, ok := flag.DefaultValue(); ok {
+		detail += ", default " + value
+	}
+	item := protocol.CompletionItem{
+		Label:      flag.Name,
+		Kind:       protocol.CompletionItemKindProperty,
+		Detail:     unlessEmpty(detail),
+		InsertText: protocol.NewOptional(flag.Name + ": "),
+	}
+	if flag.Description != "" {
+		item.Documentation = &protocol.MarkupContent{Kind: protocol.MarkupKindMarkdown, Value: flag.Description}
+	}
+	ch.Items = append(ch.Items, item)
 }

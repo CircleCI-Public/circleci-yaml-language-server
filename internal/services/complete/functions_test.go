@@ -55,7 +55,7 @@ func TestCompleteFunctionFlags(t *testing.T) {
 		fakes.FunctionVersion{ID: "ver-1", Version: "v0.5.1-684fd5b", Descriptor: map[string]any{
 			"name": "setup-go",
 			"flags": []map[string]any{
-				{"name": "version", "type": "string", "description": "The Go version."},
+				{"name": "version", "type": "string", "default": "stable", "description": "The Go version."},
 				{"name": "cache", "type": "bool"},
 			},
 			"commands": map[string]any{
@@ -102,4 +102,19 @@ jobs:
 			assert.Check(t, cmp.DeepEqual(got, tt.want))
 		})
 	}
+	t.Run("a flag shows its type, default and description", func(t *testing.T) {
+		config, pos := withStep("      - setup-go:\n          with:\n            ")
+		items := completionItemsWith(t, settings, cache.New(), config, pos)
+
+		version := findItem(t, items, "version")
+		assert.Check(t, cmp.Equal(version.Kind, protocol.CompletionItemKindProperty))
+		assert.Check(t, cmp.Equal(version.Detail, protocol.NewOptional("string, default stable")))
+		assert.Check(t, cmp.Equal(version.InsertText, protocol.NewOptional("version: ")))
+		assert.Check(t, cmp.DeepEqual(version.Documentation,
+			&protocol.MarkupContent{Kind: protocol.MarkupKindMarkdown, Value: "The Go version."}))
+
+		cacheFlag := findItem(t, items, "cache")
+		assert.Check(t, cmp.Equal(cacheFlag.Detail, protocol.NewOptional("bool")))
+		assert.Check(t, cacheFlag.Documentation == nil)
+	})
 }
