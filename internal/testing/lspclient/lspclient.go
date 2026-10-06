@@ -29,18 +29,18 @@ import (
 // DefaultTimeout bounds a request, and a wait for diagnostics.
 const DefaultTimeout = 20 * time.Second
 
-// pollInterval is how often a wait re-checks what has arrived.
-const pollInterval = 10 * time.Millisecond
-
 // Client is a language server client over one connection.
 type Client struct {
 	ctx     context.Context
 	conn    jsonrpc2.Conn
 	timeout time.Duration
 
-	mu          sync.Mutex
-	published   map[uri.URI]publication
-	consumed    map[uri.URI]int
+	mu        sync.Mutex
+	published map[uri.URI]publication
+	consumed  map[uri.URI]int
+	// arrived is closed when diagnostics are published, and replaced, so a
+	// wait wakes as they arrive rather than on its next poll.
+	arrived     chan struct{}
 	telemetry   []map[string]any
 	logMessages []string
 	// inlayHintRefreshes counts the times the server has asked for inlay
@@ -65,6 +65,7 @@ func New(t testing.TB, ctx context.Context, stream io.ReadWriteCloser) *Client {
 		timeout:   DefaultTimeout,
 		published: map[uri.URI]publication{},
 		consumed:  map[uri.URI]int{},
+		arrived:   make(chan struct{}),
 	}
 
 	client.conn.Go(ctx, client.handle)
@@ -240,7 +241,8 @@ func (c *Client) WaitForDiagnostics(docURI uri.URI) ([]protocol.Diagnostic, erro
 // WaitForDiagnosticsWithin is WaitForDiagnostics with an explicit bound, for a
 // case that expects to wait longer, or to give up sooner.
 func (c *Client) WaitForDiagnosticsWithin(docURI uri.URI, timeout time.Duration) ([]protocol.Diagnostic, error) {
-	deadline := time.Now().Add(timeout)
+	deadline := time.NewTimer(timeout)
+	defer deadline.Stop()
 
 	for {
 		c.mu.Lock()
@@ -249,17 +251,18 @@ func (c *Client) WaitForDiagnosticsWithin(docURI uri.URI, timeout time.Duration)
 		if unread {
 			c.consumed[docURI] = latest.count
 		}
+		arrived := c.arrived
 		c.mu.Unlock()
 
 		if unread {
 			return latest.items, nil
 		}
 
-		if time.Now().After(deadline) {
+		select {
+		case <-arrived:
+		case <-deadline.C:
 			return nil, fmt.Errorf("no diagnostics published for %s within %s", docURI, timeout)
 		}
-
-		time.Sleep(pollInterval)
 	}
 }
 
@@ -362,4 +365,7 @@ func (c *Client) recordDiagnostics(params protocol.PublishDiagnosticsParams) {
 		count: previous.count + 1,
 		items: params.Diagnostics,
 	}
+
+	close(c.arrived)
+	c.arrived = make(chan struct{})
 }
