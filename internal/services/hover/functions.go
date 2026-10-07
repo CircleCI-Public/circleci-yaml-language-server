@@ -42,7 +42,7 @@ func FunctionStep(ctx context.Context, doc yamlparser.YamlDocument, c *cache.Cac
 }
 
 // FunctionDeclaration is the hover for a declaration under `functions:`: the
-// description and flags of the version it declares.
+// description, flags and example config of the version it declares.
 func FunctionDeclaration(ctx context.Context, doc yamlparser.YamlDocument, c *cache.Cache, pos protocol.Position) (string, bool) {
 	function, ok := declarationAt(doc, pos)
 	if !ok {
@@ -53,7 +53,11 @@ func FunctionDeclaration(ctx context.Context, doc yamlparser.YamlDocument, c *ca
 	if err != nil || descriptor == nil {
 		return "", false
 	}
-	return describeFunction(function.Alias, "function", descriptor.Description, descriptor.Flags), true
+	text := describeFunction(function.Alias, "function", descriptor.Description, descriptor.Flags)
+	if descriptor.Example != "" {
+		text += "\n\nExample:\n\n```yaml\n" + strings.TrimRight(descriptor.Example, "\n") + "\n```"
+	}
+	return text, true
 }
 
 // FunctionFlag is the hover for a flag a function step passes under `with`:
