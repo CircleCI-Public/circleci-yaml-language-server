@@ -37,18 +37,20 @@ func (ch *CompletionHandler) GetCompletionItems(ctx context.Context) {
 		return
 	}
 
-	modifiedDocs := ch.Doc.ModifyTextForAutocomplete(ch.Params.Position)
-	// The variants are this handler's to close; the original belongs to
-	// whoever parsed it.
+	// The copies are this handler's to close; the original belongs to
+	// whoever parsed it. ch.Doc is read until the handler returns, so the
+	// copies are closed then.
+	var copies []yamlparser.YamlDocument
 	defer func() {
-		for _, doc := range modifiedDocs {
-			if doc.Tag != "original" {
-				doc.Document.Close()
-			}
+		for _, doc := range copies {
+			doc.Close()
 		}
 	}()
 
-	for _, doc := range modifiedDocs {
+	for doc := range ch.Doc.ModifyTextForAutocomplete(ch.Params.Position) {
+		if doc.Tag != "original" {
+			copies = append(copies, doc.Document)
+		}
 		ch.Doc = doc.Document
 		ch.DocTag = doc.Tag
 		ch.DocDiff = doc.Diff

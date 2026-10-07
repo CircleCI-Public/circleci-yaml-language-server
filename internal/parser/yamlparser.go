@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"iter"
 	"os"
 	"slices"
 	"strconv"
@@ -540,75 +541,75 @@ type ModifiedYamlDocument struct {
 	Diff string
 }
 
-func (doc *YamlDocument) ModifyTextForAutocomplete(pos protocol.Position) []ModifiedYamlDocument {
-	node, _, err := position.NodeAt(doc.RootNode, pos)
-	if err != nil {
-		return []ModifiedYamlDocument{
-			{
-				Document: *doc,
-				Tag:      "original",
-			},
-		}
-	}
+// ModifyTextForAutocomplete yields the documents completion can read the
+// context of pos from: copies with a placeholder inserted at pos, for each
+// one that parses cleanly, then doc itself, tagged "original". A copy is
+// parsed only when the one before it has been consumed, so a caller that
+// stops at the first one it can use parses no more. The copies belong to the
+// caller, who must close each one yielded; the original does not.
+func (doc *YamlDocument) ModifyTextForAutocomplete(pos protocol.Position) iter.Seq[ModifiedYamlDocument] {
+	// The copies are made from doc as it is now, even if the caller reuses
+	// what doc points to while iterating.
+	source := *doc
 
-	res := []ModifiedYamlDocument{}
+	return func(yield func(ModifiedYamlDocument) bool) {
+		original := ModifiedYamlDocument{Document: source, Tag: "original"}
 
-	// The node at the position is the root when nothing narrower holds it, as
-	// between the documents of a stream.
-	if parent := node.Parent(); parent != nil && parent.Kind() == "double_quote_scalar" {
-		// Fixes a crash, investigate later
-		// Autocompletion still works fine.
-		return []ModifiedYamlDocument{
-			{
-				Document: *doc,
-				Tag:      "original",
-			},
-		}
-	}
-
-	text := doc.GetNodeText(node)
-
-	// Each candidate is a document of its own. The ones kept belong to the
-	// caller; the ones that do not parse cleanly are closed here, as nothing
-	// else will ever see them.
-	candidates := []struct {
-		diff string
-		tag  string
-		// keep decides whether a candidate that parsed cleanly is offered.
-		keep bool
-	}{
-		{"- a: 1", "edit-item", !strings.HasPrefix(strings.TrimSpace(text), "-")},
-		{"a: 1", "edit-key", true},
-		{"a", "edit-value", true},
-	}
-
-	for _, candidate := range candidates {
-		edited, err := doc.InsertText(pos, candidate.diff)
+		node, _, err := position.NodeAt(source.RootNode, pos)
 		if err != nil {
-			continue
+			yield(original)
+			return
 		}
-		// The parser's own warnings, such as for the executor with no type
-		// that inserting a key makes, don't mean the edit broke the parse.
-		hasError := slices.ContainsFunc(*edited.Diagnostics, func(d protocol.Diagnostic) bool {
-			return d.Severity == protocol.DiagnosticSeverityError
-		})
-		if !candidate.keep || hasError {
-			edited.Close()
-			continue
+
+		// The node at the position is the root when nothing narrower holds
+		// it, as between the documents of a stream.
+		if parent := node.Parent(); parent != nil && parent.Kind() == "double_quote_scalar" {
+			// Fixes a crash, investigate later
+			// Autocompletion still works fine.
+			yield(original)
+			return
 		}
-		res = append(res, ModifiedYamlDocument{
-			Document: edited,
-			Tag:      candidate.tag,
-			Diff:     candidate.diff,
-		})
+
+		text := source.GetNodeText(node)
+
+		candidates := []struct {
+			diff string
+			tag  string
+			// keep decides whether a candidate that parsed cleanly is offered.
+			keep bool
+		}{
+			{"- a: 1", "edit-item", !strings.HasPrefix(strings.TrimSpace(text), "-")},
+			{"a: 1", "edit-key", true},
+			{"a", "edit-value", true},
+		}
+
+		for _, candidate := range candidates {
+			// Parsing a candidate means parsing the whole document again, so
+			// one that would not be offered is not made at all.
+			if !candidate.keep {
+				continue
+			}
+			edited, err := source.InsertText(pos, candidate.diff)
+			if err != nil {
+				continue
+			}
+			// The parser's own warnings, such as for the executor with no
+			// type that inserting a key makes, don't mean the edit broke the
+			// parse.
+			hasError := slices.ContainsFunc(*edited.Diagnostics, func(d protocol.Diagnostic) bool {
+				return d.Severity == protocol.DiagnosticSeverityError
+			})
+			if hasError {
+				edited.Close()
+				continue
+			}
+			if !yield(ModifiedYamlDocument{Document: edited, Tag: candidate.tag, Diff: candidate.diff}) {
+				return
+			}
+		}
+
+		yield(original)
 	}
-
-	res = append(res, ModifiedYamlDocument{
-		Document: *doc,
-		Tag:      "original",
-	})
-
-	return res
 }
 
 func (doc *YamlDocument) DoesCommandOrJobOrExecutorExist(name string, includeCommands bool) bool {

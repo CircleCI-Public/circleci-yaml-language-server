@@ -1,6 +1,7 @@
 package parser_test
 
 import (
+	"slices"
 	"strings"
 	"testing"
 
@@ -15,6 +16,7 @@ import (
 	parser2 "github.com/CircleCI-Public/circleci-yaml-language-server/internal/parser"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/expect"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/testHelpers"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/tsalloc"
 )
 
 func TestErrCacheMissing(t *testing.T) {
@@ -441,7 +443,7 @@ func TestModifyTextForAutocomplete(t *testing.T) {
 			assert.NilError(t, err)
 			t.Cleanup(doc.Close)
 
-			modified := doc.ModifyTextForAutocomplete(tc.pos)
+			modified := slices.Collect(doc.ModifyTextForAutocomplete(tc.pos))
 
 			assert.Assert(t, len(modified) != 0)
 			last := modified[len(modified)-1]
@@ -451,6 +453,72 @@ func TestModifyTextForAutocomplete(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestModifyTextForAutocompleteYieldsCopiesAsTheyAreAskedFor(t *testing.T) {
+	const content = "version: 2.1\njobs:\n  build:\n    steps:\n      - checkout\n"
+	// At the end of "checkout", where all three copies parse cleanly.
+	pos := protocol.Position{Line: 4, Character: 16}
+
+	parse := func(t *testing.T) parser2.YamlDocument {
+		t.Helper()
+		doc, err := parser2.ParseFromContent([]byte(content), testHelpers.DefaultSettings(), uri.File(""), protocol.Position{})
+		assert.NilError(t, err)
+		t.Cleanup(doc.Close)
+		return doc
+	}
+
+	t.Run("each copy, then the original", func(t *testing.T) {
+		doc := parse(t)
+
+		var tags []string
+		for modified := range doc.ModifyTextForAutocomplete(pos) {
+			tags = append(tags, modified.Tag)
+			if modified.Tag != "original" {
+				modified.Document.Close()
+			}
+		}
+
+		assert.Check(t, cmp.DeepEqual(tags, []string{"edit-item", "edit-key", "edit-value", "original"}))
+	})
+
+	t.Run("stopping at the first copy leaves no tree open", func(t *testing.T) {
+		doc := parse(t)
+		leaked := tsalloc.Track(t)
+
+		for modified := range doc.ModifyTextForAutocomplete(pos) {
+			modified.Document.Close()
+			break
+		}
+
+		assert.Check(t, cmp.Equal(leaked(), int64(0)), "tree-sitter allocations left open")
+	})
+
+	// Completion points the document it iterates from at each copy in turn,
+	// and each copy must still be the original with one placeholder in it.
+	t.Run("each copy is made from the document as it was", func(t *testing.T) {
+		current := parse(t)
+		at := strings.Index(content, "checkout") + len("checkout")
+
+		var copies []parser2.YamlDocument
+		t.Cleanup(func() {
+			for _, doc := range copies {
+				doc.Close()
+			}
+		})
+		for modified := range current.ModifyTextForAutocomplete(pos) {
+			if modified.Tag == "original" {
+				assert.Check(t, cmp.Equal(string(modified.Document.Content), content))
+				break
+			}
+			want := content[:at] + modified.Diff + content[at:]
+			assert.Check(t, cmp.Equal(string(modified.Document.Content), want), modified.Tag)
+			copies = append(copies, modified.Document)
+			current = modified.Document
+		}
+
+		assert.Check(t, cmp.Len(copies, 3))
+	})
 }
 
 func TestInsertText(t *testing.T) {
