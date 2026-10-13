@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 0.52.0 (2026-10-13)
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+* feat: show a function's example config on its declaration hover by @stiyyagura0901 in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/786
+* fix: leave pseudo-versions out of function suggestions by @stiyyagura0901 in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/787
+
+
+**Full Changelog**: https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.51.0...0.52.0
+
 ## 0.51.0 (2026-10-06)
 
 <!-- Release notes generated using configuration in .github/release.yml at main -->
