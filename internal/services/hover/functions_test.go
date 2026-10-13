@@ -36,6 +36,7 @@ jobs:
 		fakes.FunctionVersion{ID: "ver-setup-go", Version: "v0.5.1", Descriptor: map[string]any{
 			"name":        "setup-go",
 			"description": "Install a Go toolchain.",
+			"example":     "functions:\n  setup-go: github.com/circleci-functions/setup-go@v0.5.1\n",
 			"flags": []any{
 				map[string]any{"name": "version", "type": "string", "default": "stable", "description": "The Go version."},
 			},
@@ -80,9 +81,10 @@ jobs:
 		assert.Check(t, !ok)
 	})
 
-	t.Run("a declaration shows the function it declares", func(t *testing.T) {
+	t.Run("a declaration shows the function it declares, with its example", func(t *testing.T) {
 		got, ok := FunctionDeclaration(t.Context(), doc, c, protocol.Position{Line: 3, Character: 4})
 		assert.Assert(t, ok)
-		assert.Check(t, cmp.Equal(got, setupGo))
+		assert.Check(t, cmp.Equal(got, setupGo+
+			"\n\nExample:\n\n```yaml\nfunctions:\n  setup-go: github.com/circleci-functions/setup-go@v0.5.1\n```"))
 	})
 }

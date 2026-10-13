@@ -27,12 +27,13 @@ type FunctionVersion struct {
 	Version string
 }
 
-// FunctionDescriptor is a function version's function.yaml: what it does and
-// the flags it takes, which a step passes under `with`.
+// FunctionDescriptor is a function version's function.yaml: what it does, the
+// flags it takes, which a step passes under `with`, and the config that runs it.
 type FunctionDescriptor struct {
 	Name        string                     `json:"name"`
 	Description string                     `json:"description"`
 	Version     string                     `json:"version"`
+	Example     string                     `json:"example"`
 	Flags       []FunctionFlag             `json:"flags"`
 	Commands    map[string]FunctionCommand `json:"commands"`
 }
