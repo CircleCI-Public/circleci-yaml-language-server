@@ -30,11 +30,12 @@ jobs:
 	fake := fakes.NewCircleCI(t)
 	fake.AddFunction("fn-setup-go", "github.com/circleci-functions/setup-go", "Install a Go toolchain.",
 		fakes.FunctionVersion{ID: "ver-1", Version: "v0.5.1-684fd5b", Descriptor: map[string]any{"name": "setup-go"}},
+		fakes.FunctionVersion{ID: "ver-pseudo", Version: "v0.5.2-0.20261007152818-72ffa3f7a023", Descriptor: map[string]any{"name": "setup-go"}},
 		fakes.FunctionVersion{ID: "ver-2", Version: "v0.6.0-1a2b3c4", Descriptor: map[string]any{"name": "setup-go"}},
 	)
 	settings := testHelpers.SettingsForHost(fake.URL())
 
-	t.Run("a function's version is offered its published versions", func(t *testing.T) {
+	t.Run("a function's version is offered its released versions, not pseudo-versions", func(t *testing.T) {
 		pos := protocol.Position{Line: 3, Character: uint32(len("  setup-go: github.com/circleci-functions/setup-go@v0"))}
 		got := completionLabelsWith(t, settings, cache.New(), config, pos)
 		assert.Check(t, cmp.DeepEqual(got, []string{

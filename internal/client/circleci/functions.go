@@ -72,6 +72,10 @@ func (flag FunctionFlag) DefaultValue() (string, bool) {
 func FetchFunction(ctx context.Context, cl *Client, name string) (*FunctionPackage, error) {
 	query := url.Values{}
 	query.Set("filter[name]", name)
+	// The API leaves pseudo-versions out of the versions unless asked. A
+	// declaration can pin one, so it must be found, but completion and upgrade
+	// hints must not offer one.
+	query.Set("filter[pseudo]", "true")
 
 	type entity struct {
 		Attributes struct {
