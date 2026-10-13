@@ -7,6 +7,8 @@ package fakes
 import (
 	"net/http"
 	"sort"
+
+	"golang.org/x/mod/module"
 )
 
 // functionsState is the stored state of the functions catalog.
@@ -57,6 +59,7 @@ func (f *CircleCI) AddFunction(id, name, description string, versions ...Functio
 
 func (f *CircleCI) handleListFunctionPackages(w http.ResponseWriter, r *http.Request) {
 	nameFilter := r.URL.Query().Get("filter[name]")
+	includePseudo := r.URL.Query().Get("filter[pseudo]") == "true"
 
 	f.mu.RLock()
 	names := make([]string, 0, len(f.functions.packages))
@@ -72,6 +75,10 @@ func (f *CircleCI) handleListFunctionPackages(w http.ResponseWriter, r *http.Req
 		function := f.functions.packages[name]
 		versions := make([]any, 0, len(function.Versions))
 		for _, version := range function.Versions {
+			// Like the real route, leave out pseudo-versions unless asked, but keep the latest.
+			if !includePseudo && version.Version != function.LatestVersion && module.IsPseudoVersion(version.Version) {
+				continue
+			}
 			versions = append(versions, map[string]any{
 				"id":         version.ID,
 				"attributes": map[string]any{"version": version.Version},

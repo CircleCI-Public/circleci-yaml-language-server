@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"go.lsp.dev/protocol"
+	"golang.org/x/mod/module"
 	"golang.org/x/mod/semver"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
@@ -395,6 +396,9 @@ func (val Validate) hintFunctionUpgrade(function ast.Function, published *circle
 
 	patch := pin
 	for _, candidate := range published.Versions {
+		if module.IsPseudoVersion(candidate.Version) {
+			continue
+		}
 		if semver.MajorMinor(candidate.Version) == semver.MajorMinor(pin) && newerVersion(candidate.Version, patch) {
 			patch = candidate.Version
 		}

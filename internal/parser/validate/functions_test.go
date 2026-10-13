@@ -402,6 +402,28 @@ workflows:
 			"A newer version of github.com/circleci-functions/setup-go is published: v0.5.1-684fd5b."))
 	})
 
+	t.Run("a pinned pseudo-version is found", func(t *testing.T) {
+		const pseudo = "v0.5.2-0.20261007152818-72ffa3f7a023"
+		val := validateWithSetupGo(t, config("github.com/circleci-functions/setup-go@"+pseudo, "      - setup-go\n"),
+			fakes.FunctionVersion{ID: "ver-pseudo", Version: pseudo, Descriptor: map[string]any{"name": "setup-go"}},
+			fakes.FunctionVersion{ID: "ver-0-6-0", Version: "v0.6.0", Descriptor: map[string]any{"name": "setup-go"}},
+		)
+		assert.Assert(t, cmp.Len(*val.Diagnostics, 1))
+		assert.Check(t, cmp.Equal(diagnostic.MessageText((*val.Diagnostics)[0]),
+			"A newer version of github.com/circleci-functions/setup-go is published: v0.6.0."))
+	})
+
+	t.Run("a pseudo-version is not suggested as a newer patch", func(t *testing.T) {
+		val := validateWithSetupGo(t, config("github.com/circleci-functions/setup-go@v0.5.0", "      - setup-go\n"),
+			fakes.FunctionVersion{ID: "ver-0-5-0", Version: "v0.5.0", Descriptor: map[string]any{"name": "setup-go"}},
+			fakes.FunctionVersion{ID: "ver-pseudo", Version: "v0.5.1-0.20261007152818-72ffa3f7a023", Descriptor: map[string]any{"name": "setup-go"}},
+			fakes.FunctionVersion{ID: "ver-0-6-0", Version: "v0.6.0", Descriptor: map[string]any{"name": "setup-go"}},
+		)
+		assert.Assert(t, cmp.Len(*val.Diagnostics, 1))
+		assert.Check(t, cmp.Equal(diagnostic.MessageText((*val.Diagnostics)[0]),
+			"A newer version of github.com/circleci-functions/setup-go is published: v0.6.0."))
+	})
+
 	t.Run("the latest version gets nothing", func(t *testing.T) {
 		val := validateWithSetupGo(t, config("github.com/circleci-functions/setup-go@v0.5.1-684fd5b", "      - setup-go\n"),
 			fakes.FunctionVersion{ID: "ver-0-5-1", Version: "v0.5.1-684fd5b", Descriptor: map[string]any{"name": "setup-go"}},

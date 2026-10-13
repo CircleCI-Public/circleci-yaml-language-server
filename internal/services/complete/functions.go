@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"go.lsp.dev/protocol"
+	"golang.org/x/mod/module"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/client/circleci"
 )
@@ -34,6 +35,9 @@ func (ch *CompletionHandler) completeFunctionVersion(ctx context.Context) {
 		return
 	}
 	for _, version := range published.Versions {
+		if module.IsPseudoVersion(version.Version) {
+			continue
+		}
 		ch.addCompletionItem(version.Version)
 	}
 }
