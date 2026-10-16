@@ -19,6 +19,7 @@ func TestFunctions(t *testing.T) {
 
 functions:
   setup-go: github.com/circleci-functions/setup-go@v0.5.1
+  setup-java: github.com/circleci-functions/setup-java@v0.1.0
 
 jobs:
   build:
@@ -30,6 +31,7 @@ jobs:
             version: "1.25"
             versoin: "1.25"
       - setup-go/cache
+      - setup-java
 `
 	fake := fakes.NewCircleCI(t)
 	fake.AddFunction("fn-setup-go", "github.com/circleci-functions/setup-go", "Install a Go toolchain.",
@@ -43,6 +45,16 @@ jobs:
 			"commands": map[string]any{"cache": map[string]any{"description": "Restore and save the Go caches."}},
 		}},
 	)
+	fake.AddFunction("fn-setup-java", "github.com/circleci-functions/setup-java", "Install a JDK.",
+		fakes.FunctionVersion{ID: "ver-setup-java", Version: "v0.1.0", Descriptor: map[string]any{
+			"name":        "setup-java",
+			"description": "Install a JDK.",
+			"default":     "install",
+			"commands": map[string]any{"install": map[string]any{"flags": []any{
+				map[string]any{"name": "distribution", "type": "string", "description": "The distribution."},
+			}}},
+		}},
+	)
 	settings := testHelpers.SettingsForHost(fake.URL())
 
 	doc, err := yamlparser.ParseFromContent([]byte(config), settings, uri.File("/config.yml"), protocol.Position{})
@@ -54,31 +66,38 @@ jobs:
 		"Flags, under `with`:\n\n- `version` (string, default `stable`): The Go version."
 
 	t.Run("a function's step shows its description and flags", func(t *testing.T) {
-		got, ok := FunctionStep(t.Context(), doc, c, protocol.Position{Line: 10, Character: 10})
+		got, ok := FunctionStep(t.Context(), doc, c, protocol.Position{Line: 11, Character: 10})
 		assert.Assert(t, ok)
 		assert.Check(t, cmp.Equal(got, setupGo))
 	})
 
 	t.Run("a function command's step shows the command", func(t *testing.T) {
-		got, ok := FunctionStep(t.Context(), doc, c, protocol.Position{Line: 14, Character: 10})
+		got, ok := FunctionStep(t.Context(), doc, c, protocol.Position{Line: 15, Character: 10})
 		assert.Assert(t, ok)
 		assert.Check(t, cmp.Equal(got, "**setup-go/cache** function command\n\nRestore and save the Go caches."))
 	})
 
 	t.Run("a flag's key shows the flag", func(t *testing.T) {
-		got, ok := FunctionFlag(t.Context(), doc, c, protocol.Position{Line: 12, Character: 14})
+		got, ok := FunctionFlag(t.Context(), doc, c, protocol.Position{Line: 13, Character: 14})
 		assert.Assert(t, ok)
 		assert.Check(t, cmp.Equal(got, "**version** flag of **setup-go**\n\n(string, default `stable`): The Go version."))
 	})
 
 	t.Run("a flag's value is left to other hovers", func(t *testing.T) {
-		_, ok := FunctionFlag(t.Context(), doc, c, protocol.Position{Line: 12, Character: 23})
+		_, ok := FunctionFlag(t.Context(), doc, c, protocol.Position{Line: 13, Character: 23})
 		assert.Check(t, !ok)
 	})
 
 	t.Run("a flag the function doesn't take shows nothing", func(t *testing.T) {
-		_, ok := FunctionFlag(t.Context(), doc, c, protocol.Position{Line: 13, Character: 14})
+		_, ok := FunctionFlag(t.Context(), doc, c, protocol.Position{Line: 14, Character: 14})
 		assert.Check(t, !ok)
+	})
+
+	t.Run("a function with a default command shows that command's flags", func(t *testing.T) {
+		got, ok := FunctionStep(t.Context(), doc, c, protocol.Position{Line: 16, Character: 10})
+		assert.Assert(t, ok)
+		assert.Check(t, cmp.Equal(got, "**setup-java** function\n\nInstall a JDK.\n\n"+
+			"Flags, under `with`:\n\n- `distribution` (string): The distribution."))
 	})
 
 	t.Run("a declaration shows the function it declares, with its example", func(t *testing.T) {

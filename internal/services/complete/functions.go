@@ -72,10 +72,7 @@ func (ch *CompletionHandler) completeFunctionFlags(ctx context.Context) bool {
 	if err != nil || descriptor == nil {
 		return true
 	}
-	flags := descriptor.Flags
-	if command != "" {
-		flags = descriptor.Commands[command].Flags
-	}
+	flags, _ := descriptor.StepFlags(command)
 
 	if atValue {
 		for _, flag := range flags {

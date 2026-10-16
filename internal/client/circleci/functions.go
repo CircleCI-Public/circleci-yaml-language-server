@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"slices"
 )
 
 // ErrFunctionNotPublished reports that the catalog has no function by a name.
@@ -34,6 +35,7 @@ type FunctionDescriptor struct {
 	Description string                     `json:"description"`
 	Version     string                     `json:"version"`
 	Example     string                     `json:"example"`
+	Default     string                     `json:"default"`
 	Flags       []FunctionFlag             `json:"flags"`
 	Commands    map[string]FunctionCommand `json:"commands"`
 }
@@ -41,8 +43,36 @@ type FunctionDescriptor struct {
 // FunctionCommand is a subcommand of a function, which a step names as
 // `alias/command`.
 type FunctionCommand struct {
-	Description string         `json:"description"`
-	Flags       []FunctionFlag `json:"flags"`
+	Description string                     `json:"description"`
+	Default     string                     `json:"default"`
+	Flags       []FunctionFlag             `json:"flags"`
+	Commands    map[string]FunctionCommand `json:"commands"`
+}
+
+// StepFlags is the flags a step that runs command passes under `with`, and
+// whether the descriptor has that command. A bare step, command "", runs the
+// function itself. Running a command that names a default runs that default
+// too, so the step takes the flags of each command down the chain, as the
+// config compiler does.
+func (descriptor *FunctionDescriptor) StepFlags(command string) ([]FunctionFlag, bool) {
+	target := FunctionCommand{Default: descriptor.Default, Flags: descriptor.Flags, Commands: descriptor.Commands}
+	if command != "" {
+		found, ok := descriptor.Commands[command]
+		if !ok {
+			return nil, false
+		}
+		target = found
+	}
+	flags := target.Flags
+	for target.Default != "" {
+		found, ok := target.Commands[target.Default]
+		if !ok {
+			break
+		}
+		flags = append(slices.Clip(flags), found.Flags...)
+		target = found
+	}
+	return flags, true
 }
 
 // FunctionFlag is a flag a function or one of its commands takes.
