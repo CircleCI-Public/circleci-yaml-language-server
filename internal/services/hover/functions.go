@@ -33,7 +33,8 @@ func FunctionStep(ctx context.Context, doc yamlparser.YamlDocument, c *cache.Cac
 		return "", false
 	}
 	if command == "" {
-		return describeFunction(step.Name, "function", descriptor.Description, descriptor.Flags), true
+		flags, _ := descriptor.StepFlags("")
+		return describeFunction(step.Name, "function", descriptor.Description, flags), true
 	}
 	if found, ok := descriptor.Commands[command]; ok {
 		return describeFunction(step.Name, "function command", found.Description, found.Flags), true
@@ -53,7 +54,8 @@ func FunctionDeclaration(ctx context.Context, doc yamlparser.YamlDocument, c *ca
 	if err != nil || descriptor == nil {
 		return "", false
 	}
-	text := describeFunction(function.Alias, "function", descriptor.Description, descriptor.Flags)
+	flags, _ := descriptor.StepFlags("")
+	text := describeFunction(function.Alias, "function", descriptor.Description, flags)
 	if descriptor.Example != "" {
 		text += "\n\nExample:\n\n```yaml\n" + strings.TrimRight(descriptor.Example, "\n") + "\n```"
 	}
@@ -76,10 +78,7 @@ func FunctionFlag(ctx context.Context, doc yamlparser.YamlDocument, c *cache.Cac
 	if err != nil || descriptor == nil {
 		return "", false
 	}
-	flags := descriptor.Flags
-	if command != "" {
-		flags = descriptor.Commands[command].Flags
-	}
+	flags, _ := descriptor.StepFlags(command)
 	index := slices.IndexFunc(flags, func(flag circleci.FunctionFlag) bool { return flag.Name == name })
 	if index == -1 {
 		return "", false

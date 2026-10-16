@@ -447,17 +447,16 @@ func newerVersion(version, than string) bool {
 // function version it runs: the command it names, and the flags it passes
 // under `with`.
 func (val Validate) validateFunctionStepAgainst(step functionStep, descriptor *circleci.FunctionDescriptor) {
-	flags := descriptor.Flags
-	if step.command != "" && !strings.Contains(step.command, "/") {
-		command, ok := descriptor.Commands[step.command]
-		if !ok {
-			val.addDiagnostic(diagnostic.Warning(
-				step.step.Range,
-				fmt.Sprintf("Function %s %s has no command %s.", step.function.Alias, descriptor.Version, step.command),
-			))
-			return
-		}
-		flags = command.Flags
+	if strings.Contains(step.command, "/") {
+		return
+	}
+	flags, ok := descriptor.StepFlags(step.command)
+	if !ok {
+		val.addDiagnostic(diagnostic.Warning(
+			step.step.Range,
+			fmt.Sprintf("Function %s %s has no command %s.", step.function.Alias, descriptor.Version, step.command),
+		))
+		return
 	}
 
 	with, ok := step.step.Parameters["with"]

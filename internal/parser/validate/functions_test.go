@@ -38,8 +38,32 @@ var setupGoDescriptor = map[string]any{
 	},
 }
 
+// setupJavaDescriptor is a trimmed copy of setup-java's function.yaml, whose
+// flags belong to the command a bare step runs.
+var setupJavaDescriptor = map[string]any{
+	"name":    "setup-java",
+	"version": "v0.1.0",
+	"default": "install",
+	"commands": map[string]any{
+		"install": map[string]any{
+			"flags": []any{
+				map[string]any{"name": "distribution", "type": "string"},
+				map[string]any{"name": "cache", "type": "bool", "default": "true"},
+			},
+		},
+		"toolchain": map[string]any{
+			"default": "register",
+			"commands": map[string]any{
+				"register": map[string]any{
+					"flags": []any{map[string]any{"name": "vendor", "type": "string"}},
+				},
+			},
+		},
+	},
+}
+
 // functionDiagnostics validates a config against a fake that publishes
-// setup-go, and returns the messages of the given severity.
+// setup-go and setup-java, and returns the messages of the given severity.
 func functionDiagnostics(t *testing.T, severity protocol.DiagnosticSeverity, yamlContent string) []string {
 	t.Helper()
 	isolateOrbSources(t)
@@ -49,6 +73,9 @@ func functionDiagnostics(t *testing.T, severity protocol.DiagnosticSeverity, yam
 	fake.AddFunction("fn-setup-go", "github.com/circleci-functions/setup-go", "Install a Go toolchain.",
 		fakes.FunctionVersion{ID: "ver-setup-go-0-5-0", Version: "v0.5.0-aaaaaaa", Descriptor: map[string]any{"name": "setup-go"}},
 		fakes.FunctionVersion{ID: "ver-setup-go-0-5-1", Version: "v0.5.1-684fd5b", Descriptor: setupGoDescriptor},
+	)
+	fake.AddFunction("fn-setup-java", "github.com/circleci-functions/setup-java", "Install a JDK.",
+		fakes.FunctionVersion{ID: "ver-setup-java-0-1-0", Version: "v0.1.0", Descriptor: setupJavaDescriptor},
 	)
 
 	val := CreateValidateFromYAML(yamlContent)
@@ -313,6 +340,38 @@ workflows:
           with:
             key: v1
 `)), []string{}))
+	})
+
+	t.Run("a step takes the flags down its command's chain of defaults", func(t *testing.T) {
+		assert.Check(t, cmp.DeepEqual(functionWarnings(t, `version: 2.1
+
+functions:
+  setup-java: github.com/circleci-functions/setup-java@v0.1.0
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - setup-java:
+          with:
+            distribution: temurin
+            cache: sometimes
+            distro: temurin
+      - setup-java/toolchain:
+          with:
+            vendor: temurin
+            distribution: temurin
+
+workflows:
+  main:
+    jobs:
+      - build
+`), []string{
+			"Flag cache of setup-java takes true or false.",
+			"setup-java v0.1.0 takes no flag distro.",
+			"setup-java/toolchain v0.1.0 takes no flag distribution.",
+		}, anyOrder))
 	})
 
 	t.Run("a function that isn't published", func(t *testing.T) {
