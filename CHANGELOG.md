@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 0.52.1 (2026-10-16)
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+* fix: read the flags of a function's default command by @stiyyagura0901 in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/789
+
+
+**Full Changelog**: https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.52.0...0.52.1
+
 ## 0.52.0 (2026-10-13)
 
 <!-- Release notes generated using configuration in .github/release.yml at main -->
