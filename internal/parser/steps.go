@@ -364,6 +364,8 @@ func (doc *YamlDocument) parseRunStep(runNode *sitter.Node) ast.Run {
 				res.MaxAutoReruns = doc.GetNodeText(valueNode)
 			case "auto_rerun_delay":
 				res.AutoRerunDelay = doc.GetNodeText(valueNode)
+			case "teardown":
+				res.Teardown = doc.parseSteps(valueNode)
 			}
 		})
 		return res

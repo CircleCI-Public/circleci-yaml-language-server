@@ -215,3 +215,62 @@ jobs:
 	assert.Assert(t, ok, "second step is %T", job.Steps[1])
 	assert.Check(t, cmp.Equal(named.Name, "checkout"))
 }
+
+func TestYamlDocument_parseTeardownSteps(t *testing.T) {
+	tests := []struct {
+		name    string
+		content string
+		want    []string
+	}{
+		{
+			name: "a list of teardown steps",
+			content: `
+steps:
+    - run:
+        command: make build
+        teardown:
+            - run: ./save-cache.sh
+            - run:
+                command: ./report.sh
+                when: on_fail
+`,
+			want: []string{"./save-cache.sh", "./report.sh"},
+		},
+		{
+			name: "no teardown steps",
+			content: `
+steps:
+    - run:
+        command: make build
+`,
+			want: []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rootNode := rootNodeOf(t, []byte(tt.content))
+			stepsNode := getFirstChildOfType(rootNode, "block_sequence").Parent()
+			doc := &YamlDocument{Content: []byte(tt.content)}
+
+			steps := doc.parseSteps(stepsNode)
+			run, ok := steps[0].(ast.Run)
+			if !ok {
+				t.Fatalf("expected a run step, got %v", reflect.TypeOf(steps[0]))
+			}
+
+			got := []string{}
+			for _, teardown := range run.Teardown {
+				teardownRun, ok := teardown.(ast.Run)
+				if !ok {
+					t.Fatalf("expected a run step, got %v", reflect.TypeOf(teardown))
+				}
+				got = append(got, teardownRun.Command)
+			}
+
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("parsed teardown commands %v, expected %v", got, tt.want)
+			}
+		})
+	}
+}

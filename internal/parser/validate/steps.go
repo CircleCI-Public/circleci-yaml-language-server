@@ -31,6 +31,7 @@ func (val Validate) validateSteps(ctx context.Context, steps []ast2.Step, name s
 		switch step := step.(type) {
 		case ast2.Run:
 			val.validateRunCommand(step, jobOrCommandParameters)
+			val.validateSteps(ctx, step.Teardown, name, jobOrCommandParameters)
 		case ast2.NamedStep:
 			// Function steps are checked by ValidateFunctions.
 			if len(step.Siblings) > 0 {

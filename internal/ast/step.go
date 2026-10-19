@@ -85,6 +85,7 @@ type Run struct {
 	IsDeployStep     bool
 	MaxAutoReruns    string
 	AutoRerunDelay   string
+	Teardown         []Step
 }
 
 func (step Run) GetRange() protocol.Range {
