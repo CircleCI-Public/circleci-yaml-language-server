@@ -55,8 +55,7 @@ $ task build
 Note: `bin/start_server` is the entry point for the language server.
 
 To build every release target the way CI does, run `task snapshot`. It
-cross-compiles with a pinned Zig (downloaded once into `bin/zig`) through
-goreleaser, and leaves the release under its published names in
+cross-compiles with goreleaser, and leaves the release under its published names in
 `dist/release`.
 
 ### 4. Run tests

@@ -144,10 +144,8 @@ func (p *Parallel) compile(ctx context.Context, work Work) error {
 
 	cmd := exec.CommandContext(ctx, goBinary(), args...)
 	cmd.Dir = target
-	// Unlike the backplane services this was copied from, the language server
-	// cannot be built without cgo: its YAML parser is tree-sitter. So the
-	// environment is inherited rather than pinned to CGO_ENABLED=0.
-	cmd.Env = append(os.Environ(), work.Environment...)
+	cmd.Env = append(os.Environ(), "CGO_ENABLED=0")
+	cmd.Env = append(cmd.Env, work.Environment...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
