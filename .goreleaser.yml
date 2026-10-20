@@ -2,9 +2,6 @@
 # ci:release` tags the commit locally and runs `goreleaser release`, which
 # publishes to GitHub. Branch builds are a dry run, `goreleaser release
 # --snapshot` at 0.0.0-dev (see `task snapshot`), which publishes nowhere.
-#
-# The server needs cgo (go-tree-sitter compiles its C parser in), so every
-# target is cross-compiled from Linux with Zig as the C compiler.
 
 version: 2
 
@@ -17,11 +14,10 @@ builds:
   - binary: circleci-yaml-lsp
     main: ./cmd/server
     env:
-      - CGO_ENABLED=1
+      - CGO_ENABLED=0
     flags:
       - -trimpath
-    # Embeds only the YAML grammar, not all of gotreesitter's. The overrides
-    # replace this list, so they repeat it.
+    # Embeds only the YAML grammar, not all of gotreesitter's.
     tags: [grammar_subset, grammar_subset_yaml]
     goos:
       - linux
@@ -31,39 +27,7 @@ builds:
       - amd64
       - arm64
     ldflags:
-      # Anchored so the overrides, which replace the list, can repeat it.
-      - &ldflags -s -w -X github.com/CircleCI-Public/circleci-yaml-language-server/internal/version.Server={{ .Version }}
-    overrides:
-      # Static musl, so the binary runs on any distribution, old glibc (#266)
-      # and Alpine included.
-      - goos: linux
-        goarch: amd64
-        env: ['CC={{ .Env.ZIG }} cc -target x86_64-linux-musl']
-        tags: [grammar_subset, grammar_subset_yaml, netgo, osusergo]
-        ldflags: [*ldflags, "-linkmode=external '-extldflags=-static -s'"]
-      - goos: linux
-        goarch: arm64
-        env: ['CC={{ .Env.ZIG }} cc -target aarch64-linux-musl']
-        tags: [grammar_subset, grammar_subset_yaml, netgo, osusergo]
-        ldflags: [*ldflags, "-linkmode=external '-extldflags=-static -s'"]
-      # Zig can compile for macOS but not link (it has no Apple SDK), so Go's
-      # own linker does the link. netgo keeps the resolver off libresolv.
-      - goos: darwin
-        goarch: amd64
-        env: ['CC={{ .Env.ZIG }} cc -target x86_64-macos']
-        tags: [grammar_subset, grammar_subset_yaml, netgo]
-        ldflags: [*ldflags, -linkmode=internal]
-      - goos: darwin
-        goarch: arm64
-        env: ['CC={{ .Env.ZIG }} cc -target aarch64-macos']
-        tags: [grammar_subset, grammar_subset_yaml, netgo]
-        ldflags: [*ldflags, -linkmode=internal]
-      - goos: windows
-        goarch: amd64
-        env: ['CC={{ .Env.ZIG }} cc -target x86_64-windows-gnu']
-      - goos: windows
-        goarch: arm64
-        env: ['CC={{ .Env.ZIG }} cc -target aarch64-windows-gnu']
+      - -s -w -X github.com/CircleCI-Public/circleci-yaml-language-server/internal/version.Server={{ .Version }}
 
 # Signs and notarises the darwin binaries with quill, which runs on Linux.
 # Skipped when the macos-codesigning context isn't attached (branch builds).

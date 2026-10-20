@@ -14,7 +14,6 @@ require (
 	github.com/maypok86/otter/v2 v2.3.0
 	github.com/odvcencio/gotreesitter v0.56.0
 	github.com/rollbar/rollbar-go v1.4.8
-	github.com/ulikunitz/xz v0.5.17
 	github.com/xeipuuv/gojsonschema v1.2.0
 	go.lsp.dev/jsonrpc2 v1.0.1
 	go.lsp.dev/protocol v1.0.1

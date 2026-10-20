@@ -79,21 +79,6 @@ commands:
             sh "$CURL_HOME/install.sh" -d -b "$HOME/.local/bin"
             echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
 
-  # Wraps steps that use Zig (`task zig`) so its download is cached in bin/zig.
-  with-zig-cache:
-    parameters:
-      steps:
-        type: steps
-    steps:
-      - restore_cache:
-          keys:
-            - zig-{{ arch }}-{{ checksum "cmd/ci/install_zig/install_zig.go" }}
-      - steps: << parameters.steps >>
-      - save_cache:
-          key: zig-{{ arch }}-{{ checksum "cmd/ci/install_zig/install_zig.go" }}
-          paths:
-            - bin/zig
-
   store_results:
     steps:
       - store_test_results:
@@ -115,20 +100,7 @@ jobs:
     executor: << parameters.os >>
     steps:
       - setup
-      # Only Windows compiles with Zig. Elsewhere bin/zig is never made, and
-      # its cache would be saved empty under the key the other jobs restore.
-      - when:
-          condition:
-            equal: [windows, << parameters.os >>]
-          steps:
-            - with-zig-cache:
-                steps:
-                  - run: task ci:test
-      - unless:
-          condition:
-            equal: [windows, << parameters.os >>]
-          steps:
-            - run: task ci:test
+      - run: task ci:test
       - store_results
 
   coverage:
@@ -145,9 +117,7 @@ jobs:
     executor: linux
     steps:
       - setup
-      - with-zig-cache:
-          steps:
-            - run: task ci:build
+      - run: task ci:build
       - store_artifacts:
           path: dist/release
       - persist_to_workspace:
@@ -187,9 +157,7 @@ jobs:
     resource_class: xlarge.gen3
     steps:
       - setup
-      - with-zig-cache:
-          steps:
-            - run: task ci:release
+      - run: task ci:release
       - store_artifacts:
           path: dist
       - persist_to_workspace:

@@ -44,11 +44,6 @@ tasks:
   licenses:
     - go-licenses csv ./cmd/server >licenses.csv 2>licenses.errors
 
-  zig:
-    desc: Install the pinned Zig into bin/zig, and print its path
-    cmds:
-      - go run ./cmd/ci/install_zig
-
   release-check:
     desc: Check the goreleaser config
     cmds:
@@ -58,11 +53,8 @@ tasks:
     desc: Build and package every release target into dist/ (set VERSION=x.y.z)
     vars:
       VERSION: '{{default "0.0.0-dev" .VERSION}}'
-      ZIG:
-        sh: go run ./cmd/ci/install_zig
     env:
       VERSION: '{{.VERSION}}'
-      ZIG: '{{.ZIG}}'
     cmds:
       - go tool -modfile tools/go.mod goreleaser release --snapshot --clean
       - go run ./cmd/ci/stage_release -out {{.RELEASE_DIR}}
@@ -200,11 +192,6 @@ tasks:
     desc: Run tests with JUnit output
     vars:
       SUITE: '{{if eq OS "windows"}}windows tests{{else}}ci tests{{end}}'
-      # Windows has no C compiler for cgo, so it gets the pinned Zig.
-      CC:
-        sh: '{{if eq OS "windows"}}echo "$(go run ./cmd/ci/install_zig) cc -target x86_64-windows-gnu"{{else}}go env CC{{end}}'
-    env:
-      CC: '{{.CC}}'
     cmds:
       - mkdir -p "{{.RESULTS_DIR}}"
       - circleci testsuite run "{{.SUITE}}"
@@ -257,10 +244,7 @@ tasks:
       # Read after release-please has drafted, so it sees the draft.
       VERSION:
         sh: go run ./cmd/ci/release_version -repo {{.REPO}}
-      ZIG:
-        sh: go run ./cmd/ci/install_zig
     env:
-      ZIG: '{{.ZIG}}'
       # In case another tag points at this commit too.
       GORELEASER_CURRENT_TAG: '{{.VERSION}}'
     cmds:
