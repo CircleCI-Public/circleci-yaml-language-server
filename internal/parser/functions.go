@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	sitter "github.com/tree-sitter/go-tree-sitter"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/yamltree"
+	sitter "github.com/odvcencio/gotreesitter"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
@@ -35,7 +36,7 @@ func (doc *YamlDocument) parseFunctions(functionsNode *sitter.Node) {
 
 		if valueNode != nil {
 			function.ReferenceRange = doc.NodeToRange(valueNode)
-			if scalar := GetFirstChild(valueNode); scalar != nil && isStringScalar(scalar.Kind()) {
+			if scalar := GetFirstChild(valueNode); scalar != nil && isStringScalar(scalar.Type(yamltree.Language)) {
 				function.IsString = true
 				function.Reference = doc.GetNodeText(valueNode)
 			}

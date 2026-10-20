@@ -34,7 +34,8 @@ import (
 	"fmt"
 	"strings"
 
-	sitter "github.com/tree-sitter/go-tree-sitter"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/yamltree"
+	sitter "github.com/odvcencio/gotreesitter"
 	"go.lsp.dev/protocol"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
@@ -50,7 +51,7 @@ func (doc *YamlDocument) parseLocalOrb(name string, orbNode *sitter.Node) (*Loca
 		Name: name,
 	}
 
-	if orbNode.Kind() != "block_node" {
+	if orbNode.Type(yamltree.Language) != "block_node" {
 		return nil, fmt.Errorf("invalid orb body")
 	}
 

@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	sitter "github.com/tree-sitter/go-tree-sitter"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/yamltree"
+	sitter "github.com/odvcencio/gotreesitter"
 	"go.lsp.dev/protocol"
 
 	ast2 "github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
@@ -226,7 +227,7 @@ func (ch *CompletionHandler) addDockerImageCompletion(node *sitter.Node, namespa
 	}
 
 	// Special case
-	if node.Parent().Kind() == "double_quote_scalar" {
+	if node.Parent().Type(yamltree.Language) == "double_quote_scalar" {
 		node = node.Parent()
 	}
 

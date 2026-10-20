@@ -3,7 +3,8 @@ package parser
 import (
 	"strconv"
 
-	sitter "github.com/tree-sitter/go-tree-sitter"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/yamltree"
+	sitter "github.com/odvcencio/gotreesitter"
 	"go.lsp.dev/protocol"
 
 	ast2 "github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
@@ -68,7 +69,7 @@ func (doc *YamlDocument) parseSingleJob(jobNode *sitter.Node) ast2.Job {
 	keys := map[string]bool{}
 
 	doc.iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
-		if child.Kind() == "block_mapping_pair" || child.Kind() == "flow_pair" {
+		if child.Type(yamltree.Language) == "block_mapping_pair" || child.Type(yamltree.Language) == "flow_pair" {
 			keyNode, valueNode := doc.GetKeyValueNodes(child)
 			if keyNode != nil {
 				keys[doc.GetNodeText(keyNode)] = true

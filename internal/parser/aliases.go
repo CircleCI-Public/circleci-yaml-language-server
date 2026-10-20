@@ -5,7 +5,8 @@ import (
 	"context"
 	"strings"
 
-	sitter "github.com/tree-sitter/go-tree-sitter"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/yamltree"
+	sitter "github.com/odvcencio/gotreesitter"
 
 	ast2 "github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
@@ -23,10 +24,10 @@ func (doc *YamlDocument) parseAlias(entryNode *sitter.Node) (ast2.Alias, bool) {
 	}
 
 	scalar := doc.scalarOf(valueNode, 0)
-	switch scalar.Kind() {
+	switch scalar.Type(yamltree.Language) {
 	case "double_quote_scalar", "single_quote_scalar":
 	case "plain_scalar":
-		if child := GetFirstChild(scalar); child == nil || child.Kind() != "string_scalar" {
+		if child := GetFirstChild(scalar); child == nil || child.Type(yamltree.Language) != "string_scalar" {
 			return ast2.Alias{}, false
 		}
 	default:

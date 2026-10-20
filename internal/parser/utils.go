@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	sitter "github.com/tree-sitter/go-tree-sitter"
+	sitter "github.com/odvcencio/gotreesitter"
 	"go.lsp.dev/protocol"
 	"gopkg.in/yaml.v3"
 
@@ -19,9 +19,9 @@ func GetChildOfType(node *sitter.Node, typeName string) *sitter.Node {
 	if node == nil {
 		return nil
 	}
-	for i := uint(0); i < node.ChildCount(); i++ {
+	for i := 0; i < node.ChildCount(); i++ {
 		child := node.Child(i)
-		if child.Kind() == typeName {
+		if child.Type(yamltree.Language) == typeName {
 			return child
 		}
 	}
@@ -33,7 +33,7 @@ func GetFirstChild(node *sitter.Node) *sitter.Node {
 		return nil
 	}
 	if node.ChildCount() > 0 {
-		if node.Child(0).Kind() == "comment" || node.Child(0).Kind() == "anchor" {
+		if node.Child(0).Type(yamltree.Language) == "comment" || node.Child(0).Type(yamltree.Language) == "anchor" {
 			return node.Child(1)
 		}
 		return node.Child(0)
@@ -63,7 +63,7 @@ func GetChildSequence(node *sitter.Node) *sitter.Node {
 
 func GetBlockMappingNode(streamNode *sitter.Node) *sitter.Node {
 	documentNode := GetChildOfType(streamNode, "document")
-	if documentNode != nil && documentNode.Kind() != "document" {
+	if documentNode != nil && documentNode.Type(yamltree.Language) != "document" {
 		return nil
 	}
 	blockNode := GetChildOfType(documentNode, "block_node")
@@ -104,19 +104,19 @@ var scalarKinds = []string{"plain_scalar", "double_quote_scalar", "single_quote_
 // written before it, and the anchored scalar an alias names. Any other node is
 // returned as it is.
 func (doc *YamlDocument) scalarOf(node *sitter.Node, depth int) *sitter.Node {
-	if node.Kind() != "flow_node" && node.Kind() != "block_node" {
+	if node.Type(yamltree.Language) != "flow_node" && node.Type(yamltree.Language) != "block_node" {
 		return node
 	}
 
 	var scalar, alias *sitter.Node
-	for i := uint(0); i < node.NamedChildCount(); i++ {
+	for i := 0; i < node.NamedChildCount(); i++ {
 		child := node.NamedChild(i)
 		switch {
-		case child.Kind() == "alias":
+		case child.Type(yamltree.Language) == "alias":
 			alias = child
-		case slices.Contains(scalarKinds, child.Kind()):
+		case slices.Contains(scalarKinds, child.Type(yamltree.Language)):
 			scalar = child
-		case child.Kind() != "anchor" && child.Kind() != "tag" && child.Kind() != "comment":
+		case child.Type(yamltree.Language) != "anchor" && child.Type(yamltree.Language) != "tag" && child.Type(yamltree.Language) != "comment":
 			return node
 		}
 	}
@@ -127,7 +127,7 @@ func (doc *YamlDocument) scalarOf(node *sitter.Node, depth int) *sitter.Node {
 	if alias != nil && depth < 10 {
 		anchor, ok := doc.YamlAnchors[strings.TrimPrefix(doc.GetRawNodeText(alias), "*")]
 		if ok && anchor.ValueNode != nil {
-			if resolved := doc.scalarOf(anchor.ValueNode, depth+1); slices.Contains(scalarKinds, resolved.Kind()) {
+			if resolved := doc.scalarOf(anchor.ValueNode, depth+1); slices.Contains(scalarKinds, resolved.Type(yamltree.Language)) {
 				return resolved
 			}
 		}
@@ -182,7 +182,7 @@ func (doc *YamlDocument) getNodeTextArrayWithRange(valueNode *sitter.Node) []ast
 
 		// If blockSequence is a flow_sequence, then the child is
 		// directly a flow_node
-		if child.Kind() == "flow_node" {
+		if child.Type(yamltree.Language) == "flow_node" {
 			texts = append(texts, getText(child))
 		} else {
 			// But if the blockSequence is a block_sequence, then the child is
@@ -212,7 +212,7 @@ func (doc *YamlDocument) parseDictionary(valueNode *sitter.Node) map[string]stri
 	dictionary := make(map[string]string)
 
 	doc.iterateOnBlockMapping(valueNode, func(child *sitter.Node) {
-		if child.Kind() == "block_mapping_pair" || child.Kind() == "flow_pair" {
+		if child.Type(yamltree.Language) == "block_mapping_pair" || child.Type(yamltree.Language) == "flow_pair" {
 			keyNode, valueNode := doc.GetKeyValueNodes(child)
 
 			if keyNode != nil && valueNode != nil {
@@ -247,9 +247,9 @@ func (doc *YamlDocument) ScalarText(node *sitter.Node) string {
 }
 
 func (doc *YamlDocument) GetKeyValueNodes(node *sitter.Node) (keyNode *sitter.Node, valueNode *sitter.Node) {
-	if node != nil && (node.Kind() == "block_mapping_pair" || node.Kind() == "flow_pair") {
-		keyNode = node.ChildByFieldName("key")
-		valueNode = node.ChildByFieldName("value")
+	if node != nil && (node.Type(yamltree.Language) == "block_mapping_pair" || node.Type(yamltree.Language) == "flow_pair") {
+		keyNode = node.ChildByFieldName("key", yamltree.Language)
+		valueNode = node.ChildByFieldName("value", yamltree.Language)
 
 		aliasNode := GetChildOfType(valueNode, "alias")
 		if aliasNode != nil {
@@ -273,7 +273,7 @@ func (doc *YamlDocument) iterateOnBlockMapping(blockMappingNode *sitter.Node, fn
 // them is not merged again: an anchor that merges itself, directly or through
 // others, would otherwise be merged forever.
 func (doc *YamlDocument) iterateOnMergedBlockMapping(blockMappingNode *sitter.Node, fn func(child *sitter.Node), merging map[string]bool) {
-	if blockMappingNode == nil || (blockMappingNode.Kind() != "block_mapping" && blockMappingNode.Kind() != "flow_mapping") {
+	if blockMappingNode == nil || (blockMappingNode.Type(yamltree.Language) != "block_mapping" && blockMappingNode.Type(yamltree.Language) != "flow_mapping") {
 		return
 	}
 
@@ -284,20 +284,20 @@ func (doc *YamlDocument) iterateOnMergedBlockMapping(blockMappingNode *sitter.No
 	mappedKeys := map[string]bool{}
 	mergeKeys := map[string]bool{}
 
-	for i := uint(0); i < blockMappingNode.ChildCount(); i++ {
+	for i := 0; i < blockMappingNode.ChildCount(); i++ {
 		child := blockMappingNode.Child(i)
 
-		if child.Kind() == "comment" {
+		if child.Type(yamltree.Language) == "comment" {
 			continue
 		}
 
-		keyNode := child.ChildByFieldName("key")
+		keyNode := child.ChildByFieldName("key", yamltree.Language)
 		keyText := doc.GetNodeText(keyNode)
 
 		// When a merge key is encountered, skip it.
 		// it will be handled after other keys, to avoid potential falsy override
 		if keyText == "<<" {
-			valueNode := child.ChildByFieldName("value")
+			valueNode := child.ChildByFieldName("value", yamltree.Language)
 			anchorsToMerge := extractMergeAnchorNames(valueNode, doc)
 
 			for _, anchorName := range anchorsToMerge {
@@ -363,7 +363,7 @@ func extractMergeAnchorNames(node *sitter.Node, doc *YamlDocument) []string {
 
 	// One alias; just return the alias name
 	// example: <<: *myAlias
-	if child.Kind() == "alias" {
+	if child.Type(yamltree.Language) == "alias" {
 		txt := doc.GetNodeText(child)
 
 		return []string{txt[1:]}
@@ -371,10 +371,10 @@ func extractMergeAnchorNames(node *sitter.Node, doc *YamlDocument) []string {
 
 	// List of aliases; return all of em dude
 	// example: <<: [*alias1, *alias2, ..., *aliasN]
-	if child.Kind() == "flow_sequence" {
+	if child.Type(yamltree.Language) == "flow_sequence" {
 		names := []string{}
 
-		for i := uint(0); i < child.ChildCount(); i++ {
+		for i := 0; i < child.ChildCount(); i++ {
 			names = append(names, extractMergeAnchorNames(child.Child(i), doc)...)
 		}
 
@@ -386,13 +386,13 @@ func extractMergeAnchorNames(node *sitter.Node, doc *YamlDocument) []string {
 
 func iterateOnBlockSequence(blockSequenceNode *sitter.Node, fn func(child *sitter.Node)) {
 	if blockSequenceNode == nil ||
-		(blockSequenceNode.Kind() != "block_sequence" && blockSequenceNode.Kind() != "flow_sequence") {
+		(blockSequenceNode.Type(yamltree.Language) != "block_sequence" && blockSequenceNode.Type(yamltree.Language) != "flow_sequence") {
 		return
 	}
-	for i := uint(0); i < blockSequenceNode.ChildCount(); i++ {
+	for i := 0; i < blockSequenceNode.ChildCount(); i++ {
 		child := blockSequenceNode.Child(i)
 
-		if child.Kind() == "comment" {
+		if child.Type(yamltree.Language) == "comment" {
 			continue
 		}
 
@@ -417,17 +417,17 @@ func FindDeepestNode(rootNode *sitter.Node, content []byte, toFind []string) (*s
 	// into, so fall back to the first match anywhere below.
 	for node := range yamltree.Walk(rootNode) {
 		if intValue, err := strconv.Atoi(toFind[0]); err == nil && intValue >= 0 {
-			if node.Kind() == "block_sequence" {
-				if node.ChildCount() < uint(intValue+1) {
+			if node.Type(yamltree.Language) == "block_sequence" {
+				if node.ChildCount() < intValue+1 {
 					return nil, fmt.Errorf("index out of range: trying to access %d in array of size %d", intValue, node.ChildCount())
 				}
 
-				childNode := node.Child(uint(intValue))
+				childNode := node.Child(intValue)
 				return FindDeepestNode(childNode, content, toFind[1:])
 			}
 		}
-		if node.Kind() == "block_mapping_pair" {
-			if key := node.ChildByFieldName("key"); string(content[key.StartByte():key.EndByte()]) == toFind[0] {
+		if node.Type(yamltree.Language) == "block_mapping_pair" {
+			if key := node.ChildByFieldName("key", yamltree.Language); string(content[key.StartByte():key.EndByte()]) == toFind[0] {
 				return FindDeepestNode(node, content, toFind[1:])
 			}
 		}
@@ -445,11 +445,11 @@ func findChildNode(node *sitter.Node, content []byte, key string) (*sitter.Node,
 	index, err := strconv.Atoi(key)
 	isIndex := err == nil && index >= 0
 
-	for i := uint(0); i < node.ChildCount(); i++ {
+	for i := 0; i < node.ChildCount(); i++ {
 		child := node.Child(i)
-		switch child.Kind() {
+		switch child.Type(yamltree.Language) {
 		case "block_mapping_pair", "flow_pair":
-			if keyNode := child.ChildByFieldName("key"); !isIndex && keyNode != nil &&
+			if keyNode := child.ChildByFieldName("key", yamltree.Language); !isIndex && keyNode != nil &&
 				unquoteScalar(string(content[keyNode.StartByte():keyNode.EndByte()])) == key {
 				return child, nil
 			}
@@ -458,18 +458,18 @@ func findChildNode(node *sitter.Node, content []byte, key string) (*sitter.Node,
 			if !isIndex {
 				continue
 			}
-			if child.ChildCount() < uint(index+1) {
+			if child.ChildCount() < index+1 {
 				return nil, fmt.Errorf("index out of range: trying to access %d in array of size %d", index, child.ChildCount())
 			}
-			return child.Child(uint(index)), nil
+			return child.Child(index), nil
 		case "flow_sequence":
 			if !isIndex {
 				continue
 			}
 			// Its children also hold the brackets and commas.
 			items := []*sitter.Node{}
-			for j := uint(0); j < child.NamedChildCount(); j++ {
-				if item := child.NamedChild(j); item.Kind() != "comment" {
+			for j := 0; j < child.NamedChildCount(); j++ {
+				if item := child.NamedChild(j); item.Type(yamltree.Language) != "comment" {
 					items = append(items, item)
 				}
 			}
@@ -525,5 +525,5 @@ func (doc *YamlDocument) isNullValue(valueNode *sitter.Node) bool {
 		return true
 	}
 	scalar := doc.scalarOf(valueNode, 0)
-	return scalar.Kind() == "plain_scalar" && GetFirstChild(scalar) != nil && GetFirstChild(scalar).Kind() == "null_scalar"
+	return scalar.Type(yamltree.Language) == "plain_scalar" && GetFirstChild(scalar) != nil && GetFirstChild(scalar).Type(yamltree.Language) == "null_scalar"
 }

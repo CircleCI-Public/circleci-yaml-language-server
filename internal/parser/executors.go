@@ -3,7 +3,8 @@ package parser
 import (
 	"strings"
 
-	sitter "github.com/tree-sitter/go-tree-sitter"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/yamltree"
+	sitter "github.com/odvcencio/gotreesitter"
 	"go.lsp.dev/protocol"
 
 	ast2 "github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
@@ -144,7 +145,7 @@ func (doc *YamlDocument) parseSingleExecutorMachine(nameNode *sitter.Node, value
 		}
 		machineNode = blockNode
 
-		if blockNode.Kind() == "flow_node" {
+		if blockNode.Type(yamltree.Language) == "flow_node" {
 			machineBoolValueNode := GetChildOfType(
 				GetChildOfType(blockNode, "plain_scalar"),
 				"boolean_scalar",
@@ -255,7 +256,7 @@ func (doc *YamlDocument) parseSingleExecutorDocker(nameNode *sitter.Node, valueN
 		}
 
 		iterateOnBlockSequence(blockSequence, func(child *sitter.Node) {
-			if child.Kind() == "block_sequence_item" {
+			if child.Type(yamltree.Language) == "block_sequence_item" {
 				dockerImg := doc.parseDockerImage(child)
 				res.Image = append(res.Image, dockerImg)
 			}
@@ -339,8 +340,8 @@ func (doc *YamlDocument) parseExecutorRef(valueNode *sitter.Node, child *sitter.
 	}
 
 	// valueNode is either a flow_node or a block_node containing a block_mapping_pair
-	if flowNodeChild := GetFirstChild(valueNode); valueNode.Kind() == "flow_node" && flowNodeChild != nil && flowNodeChild.Kind() != "flow_mapping" {
-		if flowNodeChild != nil && flowNodeChild.Kind() == "anchor" {
+	if flowNodeChild := GetFirstChild(valueNode); valueNode.Type(yamltree.Language) == "flow_node" && flowNodeChild != nil && flowNodeChild.Type(yamltree.Language) != "flow_mapping" {
+		if flowNodeChild != nil && flowNodeChild.Type(yamltree.Language) == "anchor" {
 			flowNodeChild = flowNodeChild.NextSibling()
 		}
 
@@ -360,7 +361,7 @@ func (doc *YamlDocument) parseExecutorRef(valueNode *sitter.Node, child *sitter.
 		case "name":
 			flowNodeChild := GetFirstChild(valueNode)
 
-			if flowNodeChild != nil && flowNodeChild.Kind() == "anchor" {
+			if flowNodeChild != nil && flowNodeChild.Type(yamltree.Language) == "anchor" {
 				flowNodeChild = flowNodeChild.NextSibling()
 			}
 

@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	sitter "github.com/tree-sitter/go-tree-sitter"
+	sitter "github.com/odvcencio/gotreesitter"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/paramref"
@@ -53,7 +53,7 @@ func (val Validate) checkRegex(node *sitter.Node, pattern string) {
 }
 
 func isPair(node *sitter.Node) bool {
-	return node != nil && (node.Kind() == "block_mapping_pair" || node.Kind() == "flow_pair")
+	return node != nil && (node.Type(yamltree.Language) == "block_mapping_pair" || node.Type(yamltree.Language) == "flow_pair")
 }
 
 // enclosingPair returns the pair whose value holds pair.
@@ -87,12 +87,12 @@ func (val Validate) pairValues(pair *sitter.Node) []*sitter.Node {
 	}
 
 	values := []*sitter.Node{}
-	for i := uint(0); i < sequence.NamedChildCount(); i++ {
+	for i := 0; i < sequence.NamedChildCount(); i++ {
 		item := sequence.NamedChild(i)
-		if item.Kind() == "block_sequence_item" {
+		if item.Type(yamltree.Language) == "block_sequence_item" {
 			item = item.NamedChild(0)
 		}
-		if item != nil && item.Kind() != "comment" {
+		if item != nil && item.Type(yamltree.Language) != "comment" {
 			values = append(values, item)
 		}
 	}

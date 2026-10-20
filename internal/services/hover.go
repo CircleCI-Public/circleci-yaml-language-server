@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"slices"
 
-	sitter "github.com/tree-sitter/go-tree-sitter"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/yamltree"
+	sitter "github.com/odvcencio/gotreesitter"
 	"go.lsp.dev/protocol"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
@@ -67,11 +68,11 @@ func GetPathFromVisitedNodes(visitedNodes []*sitter.Node, doc parser.YamlDocumen
 	}
 
 	for _, node := range visitedNodes[1:] {
-		switch node.Kind() {
+		switch node.Type(yamltree.Language) {
 		case "block_mapping_pair":
 			// A pair whose key is yet to be typed, as `: value` is, has no
 			// name to go in the path.
-			key := node.ChildByFieldName("key")
+			key := node.ChildByFieldName("key", yamltree.Language)
 			if key == nil {
 				continue
 			}

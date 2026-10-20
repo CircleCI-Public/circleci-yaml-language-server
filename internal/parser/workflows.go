@@ -3,7 +3,8 @@ package parser
 import (
 	"strconv"
 
-	sitter "github.com/tree-sitter/go-tree-sitter"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/yamltree"
+	sitter "github.com/odvcencio/gotreesitter"
 	"go.lsp.dev/protocol"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
@@ -17,7 +18,7 @@ func (doc *YamlDocument) parseWorkflows(workflowsNode *sitter.Node) {
 	blockMappingNode := GetChildOfType(workflowsNode, "block_mapping")
 
 	doc.iterateOnBlockMapping(blockMappingNode, func(child *sitter.Node) {
-		keyName := doc.GetNodeText(child.ChildByFieldName("key"))
+		keyName := doc.GetNodeText(child.ChildByFieldName("key", yamltree.Language))
 
 		switch keyName {
 		case "version":
@@ -120,13 +121,13 @@ func (doc *YamlDocument) parseSingleWorkflow(workflowNode *sitter.Node) ast.Work
 func (doc *YamlDocument) parseWorkflowTriggers(triggersNode *sitter.Node) []ast.WorkflowTrigger {
 	triggers := []ast.WorkflowTrigger{}
 
-	if triggersNode == nil || triggersNode.Kind() != "block_node" {
+	if triggersNode == nil || triggersNode.Type(yamltree.Language) != "block_node" {
 		return triggers
 	}
 
 	sequence := triggersNode.Child(0)
 
-	if sequence == nil || sequence.Kind() != "block_sequence" {
+	if sequence == nil || sequence.Type(yamltree.Language) != "block_sequence" {
 		return triggers
 	}
 
@@ -138,7 +139,7 @@ func (doc *YamlDocument) parseWorkflowTriggers(triggersNode *sitter.Node) []ast.
 			return
 		}
 
-		if blockNode.Kind() == "-" {
+		if blockNode.Type(yamltree.Language) == "-" {
 			blockNode = blockNode.NextSibling()
 		}
 
@@ -153,7 +154,7 @@ func (doc *YamlDocument) parseWorkflowTriggers(triggersNode *sitter.Node) []ast.
 }
 
 func (doc *YamlDocument) parseSingleWorkflowTrigger(node *sitter.Node) *ast.WorkflowTrigger {
-	if node == nil || node.Kind() != "block_node" {
+	if node == nil || node.Type(yamltree.Language) != "block_node" {
 		return nil
 	}
 
@@ -163,17 +164,17 @@ func (doc *YamlDocument) parseSingleWorkflowTrigger(node *sitter.Node) *ast.Work
 		return nil
 	}
 
-	if child.Kind() == "-" {
+	if child.Type(yamltree.Language) == "-" {
 		child = child.NextSibling()
 	}
 
-	if child == nil || child.Kind() != "block_mapping" {
+	if child == nil || child.Type(yamltree.Language) != "block_mapping" {
 		return nil
 	}
 
 	child = child.Child(0)
 
-	if child == nil || child.Kind() != "block_mapping_pair" {
+	if child == nil || child.Type(yamltree.Language) != "block_mapping_pair" {
 		return nil
 	}
 
@@ -196,13 +197,13 @@ func (doc *YamlDocument) parseSingleWorkflowTrigger(node *sitter.Node) *ast.Work
 }
 
 func (doc *YamlDocument) parseSingleScheduleTrigger(node *sitter.Node) *ast.ScheduleTrigger {
-	if node == nil || node.Kind() != "block_node" {
+	if node == nil || node.Type(yamltree.Language) != "block_node" {
 		return nil
 	}
 
 	blockMapping := node.Child(0)
 
-	if blockMapping.Kind() != "block_mapping" {
+	if blockMapping.Type(yamltree.Language) != "block_mapping" {
 		return nil
 	}
 
@@ -238,13 +239,13 @@ func (doc *YamlDocument) parseSingleScheduleTrigger(node *sitter.Node) *ast.Sche
 }
 
 func (doc *YamlDocument) parseFilters(node *sitter.Node) *ast.WorkflowFilters {
-	if node == nil || node.Kind() != "block_node" {
+	if node == nil || node.Type(yamltree.Language) != "block_node" {
 		return nil
 	}
 
 	blockMapping := node.Child(0)
 
-	if blockMapping.Kind() != "block_mapping" {
+	if blockMapping.Type(yamltree.Language) != "block_mapping" {
 		return nil
 	}
 
@@ -269,13 +270,13 @@ func (doc *YamlDocument) parseFilters(node *sitter.Node) *ast.WorkflowFilters {
 }
 
 func (doc *YamlDocument) parseBranchFilter(node *sitter.Node) *ast.BranchesFilter {
-	if node == nil || node.Kind() != "block_node" {
+	if node == nil || node.Type(yamltree.Language) != "block_node" {
 		return nil
 	}
 
 	blockMapping := node.Child(0)
 
-	if blockMapping.Kind() != "block_mapping" {
+	if blockMapping.Type(yamltree.Language) != "block_mapping" {
 		return nil
 	}
 
@@ -313,20 +314,20 @@ func (doc *YamlDocument) parseBranchFilter(node *sitter.Node) *ast.BranchesFilte
 func (doc *YamlDocument) sequenceToStrings(node *sitter.Node) []string {
 	strs := []string{}
 
-	if node == nil || (node.Kind() != "block_sequence" && node.Kind() != "flow_sequence") {
+	if node == nil || (node.Type(yamltree.Language) != "block_sequence" && node.Type(yamltree.Language) != "flow_sequence") {
 		return strs
 	}
 
-	for i := uint(0); i < node.ChildCount(); i++ {
+	for i := 0; i < node.ChildCount(); i++ {
 		child := node.Child(i)
 
-		if child.Kind() == "block_sequence_item" {
+		if child.Type(yamltree.Language) == "block_sequence_item" {
 			child = child.Child(0)
 
-			if child.Kind() == "-" {
+			if child.Type(yamltree.Language) == "-" {
 				child = child.NextSibling()
 			}
-		} else if child.Kind() != "flow_node" {
+		} else if child.Type(yamltree.Language) != "flow_node" {
 			continue
 		}
 
@@ -358,6 +359,6 @@ func (doc *YamlDocument) addCondition(valueNode *sitter.Node) bool {
 // isScalarNode reports whether node is a flow node holding a scalar, rather
 // than a flow mapping or sequence, or an alias.
 func isScalarNode(node *sitter.Node) bool {
-	return node != nil && node.Kind() == "flow_node" && node.NamedChildCount() == 1 &&
-		isStringScalar(node.NamedChild(0).Kind())
+	return node != nil && node.Type(yamltree.Language) == "flow_node" && node.NamedChildCount() == 1 &&
+		isStringScalar(node.NamedChild(0).Type(yamltree.Language))
 }

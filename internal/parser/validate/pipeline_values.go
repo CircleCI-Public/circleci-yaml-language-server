@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	sitter "github.com/tree-sitter/go-tree-sitter"
+	sitter "github.com/odvcencio/gotreesitter"
 	"go.lsp.dev/protocol"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
@@ -24,7 +24,7 @@ func (val Validate) ValidatePipelineValues() {
 
 	inTags := func(match *sitter.QueryMatch) {
 		for _, capture := range match.Captures {
-			node := &capture.Node
+			node := capture.Node
 			if val.Doc.IsUnderUnreadTopLevelKey(node) {
 				continue
 			}
