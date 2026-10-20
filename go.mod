@@ -12,9 +12,8 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/hashicorp/go-retryablehttp v0.7.8
 	github.com/maypok86/otter/v2 v2.3.0
+	github.com/odvcencio/gotreesitter v0.56.0
 	github.com/rollbar/rollbar-go v1.4.8
-	github.com/tree-sitter-grammars/tree-sitter-yaml v0.7.2
-	github.com/tree-sitter/go-tree-sitter v0.24.1-0.20251112183152-c9492002f76e
 	github.com/ulikunitz/xz v0.5.17
 	github.com/xeipuuv/gojsonschema v1.2.0
 	go.lsp.dev/jsonrpc2 v1.0.1
@@ -50,7 +49,6 @@ require (
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/lucasb-eyer/go-colorful v1.4.1 // indirect
-	github.com/mattn/go-pointer v0.0.1 // indirect
 	github.com/mattn/go-runewidth v0.0.24 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
 	github.com/pjbgf/sha1cd v0.6.0 // indirect

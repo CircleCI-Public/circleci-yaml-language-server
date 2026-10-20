@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	sitter "github.com/tree-sitter/go-tree-sitter"
+	sitter "github.com/odvcencio/gotreesitter"
 	"go.lsp.dev/protocol"
 
 	ast2 "github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"

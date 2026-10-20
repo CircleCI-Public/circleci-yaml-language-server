@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	sitter "github.com/tree-sitter/go-tree-sitter"
+	sitter "github.com/odvcencio/gotreesitter"
 	"go.lsp.dev/protocol"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"

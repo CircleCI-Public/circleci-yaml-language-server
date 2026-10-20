@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	sitter "github.com/tree-sitter/go-tree-sitter"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/yamltree"
+	sitter "github.com/odvcencio/gotreesitter"
 	"go.lsp.dev/protocol"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/parser"
@@ -18,7 +19,7 @@ func (ch *CompletionHandler) completeOrbs(ctx context.Context) {
 	}
 
 	for _, orb := range ch.Doc.Orbs {
-		if orb.ValueNode == nil || !position.InRange(orb.ValueRange, ch.Params.Position) || orb.ValueNode.Kind() != "flow_node" {
+		if orb.ValueNode == nil || !position.InRange(orb.ValueRange, ch.Params.Position) || orb.ValueNode.Type(yamltree.Language) != "flow_node" {
 			continue
 		}
 

@@ -1,7 +1,8 @@
 package parser
 
 import (
-	sitter "github.com/tree-sitter/go-tree-sitter"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/yamltree"
+	sitter "github.com/odvcencio/gotreesitter"
 
 	ast2 "github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
 )
@@ -17,7 +18,7 @@ func (doc *YamlDocument) parseRetention(retentionNode *sitter.Node) ast2.Retenti
 	}
 
 	doc.iterateOnBlockMapping(blockMapping, func(child *sitter.Node) {
-		if child.Kind() == "block_mapping_pair" || child.Kind() == "flow_pair" {
+		if child.Type(yamltree.Language) == "block_mapping_pair" || child.Type(yamltree.Language) == "flow_pair" {
 			keyNode, valueNode := doc.GetKeyValueNodes(child)
 			if keyNode == nil || valueNode == nil {
 				return

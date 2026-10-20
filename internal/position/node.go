@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/yamltree"
-	sitter "github.com/tree-sitter/go-tree-sitter"
+	sitter "github.com/odvcencio/gotreesitter"
 	"go.lsp.dev/protocol"
 )
 
@@ -32,12 +32,12 @@ func InRange(rng protocol.Range, pos protocol.Position) bool {
 
 // Start is where node begins, as a protocol position.
 func Start(node *sitter.Node) protocol.Position {
-	point := node.StartPosition()
+	point := node.StartPoint()
 	return protocol.Position{Line: uint32(point.Row), Character: uint32(point.Column)}
 }
 
 // End is where node ends, as a protocol position.
 func End(node *sitter.Node) protocol.Position {
-	point := node.EndPosition()
+	point := node.EndPoint()
 	return protocol.Position{Line: uint32(point.Row), Character: uint32(point.Column)}
 }

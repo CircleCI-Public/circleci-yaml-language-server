@@ -6,7 +6,7 @@ import (
 	"slices"
 	"strings"
 
-	sitter "github.com/tree-sitter/go-tree-sitter"
+	sitter "github.com/odvcencio/gotreesitter"
 	"go.lsp.dev/protocol"
 
 	ast2 "github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
@@ -204,7 +204,7 @@ func (val Validate) checkParamUsedWithParam(param ast2.ParameterValue, stepName 
 func (val Validate) CheckIfParamsExist(ctx context.Context) {
 	checkOnNode := func(match *sitter.QueryMatch) {
 		for _, capture := range match.Captures {
-			node := &capture.Node
+			node := capture.Node
 			if val.Doc.IsUnderUnreadTopLevelKey(node) {
 				continue
 			}

@@ -6,7 +6,8 @@ import (
 	ast2 "github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 
-	sitter "github.com/tree-sitter/go-tree-sitter"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/yamltree"
+	sitter "github.com/odvcencio/gotreesitter"
 	"go.lsp.dev/protocol"
 )
 
@@ -20,7 +21,7 @@ func (doc *YamlDocument) parseJobInvocations(jobsInvocationsNode *sitter.Node) [
 	iterateOnBlockSequence(blockSequenceNode, func(child *sitter.Node) {
 		// A flow sequence, `jobs: [build, test]`, also holds its brackets and
 		// commas.
-		if child.Kind() == "block_sequence_item" || child.Kind() == "flow_node" {
+		if child.Type(yamltree.Language) == "block_sequence_item" || child.Type(yamltree.Language) == "flow_node" {
 			jobInvocations = append(jobInvocations, doc.parseSingleJobInvocation(child))
 		}
 	})
@@ -42,10 +43,10 @@ func (doc *YamlDocument) parseSingleJobInvocation(jobInvocationNode *sitter.Node
 		return res
 	}
 	res.JobInvocationRange = doc.NodeToRange(jobInvocationNode)
-	if jobInvocationNode.Kind() == "flow_node" {
+	if jobInvocationNode.Type(yamltree.Language) == "flow_node" {
 		return doc.parseJobInvocationName(res, jobInvocationNode)
 	}
-	if jobInvocationNode.Kind() != "block_sequence_item" {
+	if jobInvocationNode.Type(yamltree.Language) != "block_sequence_item" {
 		return res
 	}
 
@@ -78,7 +79,7 @@ func (doc *YamlDocument) parseSingleJobInvocation(jobInvocationNode *sitter.Node
 		element = anchor.ValueNode
 	}
 
-	if element != nil && element.Kind() == "flow_node" {
+	if element != nil && element.Type(yamltree.Language) == "flow_node" {
 		return doc.parseJobInvocationName(res, element)
 	} else { // block_node
 		blockMappingNode := GetChildOfType(element, "block_mapping")
@@ -179,7 +180,7 @@ func (doc *YamlDocument) parseContext(node *sitter.Node) []ast2.TextAndRange {
 		return []ast2.TextAndRange{}
 	}
 
-	if node.Kind() == "flow_node" && node.ChildCount() == 1 && node.Child(0).Kind() == "plain_scalar" {
+	if node.Type(yamltree.Language) == "flow_node" && node.ChildCount() == 1 && node.Child(0).Type(yamltree.Language) == "plain_scalar" {
 		return []ast2.TextAndRange{doc.GetNodeTextWithRange(node)}
 	}
 
@@ -221,14 +222,14 @@ func (doc *YamlDocument) parseSingleJobRequires(requiresNode *sitter.Node) []ast
 		}
 
 		// If blockSequenceNode is a flow_sequence, then requiresItemNode is directly a flow_node
-		if requiresItemNode.Kind() == "flow_node" {
+		if requiresItemNode.Type(yamltree.Language) == "flow_node" {
 			res = append(res, getRequire(requiresItemNode))
 		} else {
 			// But if blockSequenceNode is a block_sequence, then requiresItemNode is a block_sequence_item
 			// The first child of requiresItemNode is the hyphen node, the second child is what we need
 			element := requiresItemNode.Child(1)
 			// If the second child is a flow_node, then it is a simple require
-			if element != nil && element.Kind() == "flow_node" {
+			if element != nil && element.Type(yamltree.Language) == "flow_node" {
 				res = append(res, getRequire(element))
 			} else {
 				// Otherwise the second child is a block_mapping, then it is a require with status
@@ -239,7 +240,7 @@ func (doc *YamlDocument) parseSingleJobRequires(requiresNode *sitter.Node) []ast
 				if key == nil || value == nil {
 					return
 				}
-				if GetFirstChild(value).Kind() == "plain_scalar" {
+				if GetFirstChild(value).Type(yamltree.Language) == "plain_scalar" {
 					status := make([]string, 1)
 					status[0] = doc.GetNodeText(value)
 					res = append(res, ast2.Require{
@@ -253,10 +254,10 @@ func (doc *YamlDocument) parseSingleJobRequires(requiresNode *sitter.Node) []ast
 					status := make([]string, 0, statusesNode.ChildCount())
 					isBlockSequence := false
 					iterateOnBlockSequence(statusesNode, func(statusItemNode *sitter.Node) {
-						if statusItemNode.Kind() == "flow_node" {
+						if statusItemNode.Type(yamltree.Language) == "flow_node" {
 							status = append(status, doc.GetNodeText(statusItemNode))
 						}
-						if statusItemNode.Kind() == "block_sequence_item" {
+						if statusItemNode.Type(yamltree.Language) == "block_sequence_item" {
 							status = append(status, doc.GetNodeText(statusItemNode.Child(1)))
 							isBlockSequence = true
 						}
@@ -325,7 +326,7 @@ func (doc *YamlDocument) parseMatrixParam(node *sitter.Node) map[string][]ast2.P
 	res := make(map[string][]ast2.ParameterValue)
 
 	doc.iterateOnBlockMapping(blockMapping, func(child *sitter.Node) {
-		keyNode := child.ChildByFieldName("key")
+		keyNode := child.ChildByFieldName("key", yamltree.Language)
 		if keyNode == nil {
 			return
 		}

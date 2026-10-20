@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	sitter "github.com/tree-sitter/go-tree-sitter"
+	sitter "github.com/odvcencio/gotreesitter"
 	"go.lsp.dev/protocol"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
@@ -49,7 +49,7 @@ func SemanticTokens(params protocol.SemanticTokensParams, cache *cache.Cache, co
 	}
 
 	for node := range yamltree.Walk(doc.RootNode) {
-		if node.Kind() == "block_mapping_pair" {
+		if node.Type(yamltree.Language) == "block_mapping_pair" {
 			keyNode, valueNode := doc.GetKeyValueNodes(node)
 
 			if keyNode != nil {
@@ -64,7 +64,7 @@ func SemanticTokens(params protocol.SemanticTokensParams, cache *cache.Cache, co
 			}
 		}
 
-		if node.Kind() == "block_sequence_item" {
+		if node.Type(yamltree.Language) == "block_sequence_item" {
 			if child := parser2.GetChildOfType(node, "flow_node"); child != nil {
 				semanticTokens.highlightCacheKeys(child)
 				semanticTokens.highlightOrbs(child)
@@ -100,7 +100,7 @@ var ROOT_KEYWORDS = []string{
 
 func (sem SemanticTokenStruct) highlightBuiltInKeywords(keyNode *sitter.Node) {
 	keyName := sem.doc.GetNodeText(keyNode)
-	if keyNode.Kind() != "flow_node" {
+	if keyNode.Type(yamltree.Language) != "flow_node" {
 		return
 	}
 	if slices.Contains(KEYWORDS, keyName) {
@@ -131,7 +131,7 @@ func (sem SemanticTokenStruct) highlightBuiltInKeywords(keyNode *sitter.Node) {
 		return
 	}
 
-	if document.Kind() == "document" {
+	if document.Type(yamltree.Language) == "document" {
 		length := position.End(keyNode).Character - position.Start(keyNode).Character
 		sem.addToken(protocol.Position{Line: position.Start(keyNode).Line, Character: position.Start(keyNode).Character}, length, 0, 0)
 	}
@@ -148,13 +148,13 @@ func (sem SemanticTokenStruct) highlightCacheKeys(valueNode *sitter.Node) {
 }
 
 func (sem SemanticTokenStruct) highlightOrbs(valueNode *sitter.Node) {
-	if valueNode.Kind() != "flow_node" {
+	if valueNode.Type(yamltree.Language) != "flow_node" {
 		return
 	}
 
 	content := sem.doc.ScalarText(valueNode)
 	start := position.Start(valueNode)
-	if child := parser2.GetFirstChild(valueNode); child != nil && (child.Kind() == "double_quote_scalar" || child.Kind() == "single_quote_scalar") {
+	if child := parser2.GetFirstChild(valueNode); child != nil && (child.Type(yamltree.Language) == "double_quote_scalar" || child.Type(yamltree.Language) == "single_quote_scalar") {
 		start.Character++
 	}
 	orbs, orbsRange := sem.orbsInScope(start)
@@ -196,8 +196,8 @@ func (sem SemanticTokenStruct) orbsInScope(pos protocol.Position) (map[string]as
 
 func (sem SemanticTokenStruct) highlightWithRegex(valueNode *sitter.Node, regex *regexp.Regexp) {
 	child := parser2.GetFirstChild(valueNode)
-	isFlowNode := valueNode.Kind() == "flow_node"
-	isBlockScalar := valueNode.Kind() == "block_node" && child != nil && child.Kind() == "block_scalar"
+	isFlowNode := valueNode.Type(yamltree.Language) == "flow_node"
+	isBlockScalar := valueNode.Type(yamltree.Language) == "block_node" && child != nil && child.Type(yamltree.Language) == "block_scalar"
 
 	if !isFlowNode && !isBlockScalar {
 		return

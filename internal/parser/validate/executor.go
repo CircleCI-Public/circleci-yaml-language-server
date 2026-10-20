@@ -7,7 +7,7 @@ import (
 	"slices"
 	"strings"
 
-	sitter "github.com/tree-sitter/go-tree-sitter"
+	sitter "github.com/odvcencio/gotreesitter"
 	"go.lsp.dev/protocol"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
@@ -128,7 +128,7 @@ func (val Validate) checkOverriddenExecutorSettings(values map[string]int) {
 func (val Validate) valuesOutsideExecutors() map[string]int {
 	values := map[string]int{}
 	for node := range yamltree.Walk(val.Doc.RootNode) {
-		switch node.Kind() {
+		switch node.Type(yamltree.Language) {
 		case "plain_scalar", "single_quote_scalar", "double_quote_scalar":
 		default:
 			continue
@@ -147,11 +147,11 @@ func isKey(scalar *sitter.Node) bool {
 		return false
 	}
 	pair := node.Parent()
-	if pair == nil || (pair.Kind() != "block_mapping_pair" && pair.Kind() != "flow_pair") {
+	if pair == nil || (pair.Type(yamltree.Language) != "block_mapping_pair" && pair.Type(yamltree.Language) != "flow_pair") {
 		return false
 	}
-	key := pair.ChildByFieldName("key")
-	return key != nil && key.Id() == node.Id()
+	key := pair.ChildByFieldName("key", yamltree.Language)
+	return key != nil && key == node
 }
 
 // MacOSExecutor

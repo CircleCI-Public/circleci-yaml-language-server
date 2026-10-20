@@ -1,7 +1,7 @@
 package parser
 
 import (
-	sitter "github.com/tree-sitter/go-tree-sitter"
+	sitter "github.com/odvcencio/gotreesitter"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
 )

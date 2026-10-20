@@ -4,7 +4,8 @@ import (
 	"path"
 	"strings"
 
-	sitter "github.com/tree-sitter/go-tree-sitter"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/yamltree"
+	sitter "github.com/odvcencio/gotreesitter"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
 )
@@ -64,7 +65,7 @@ func (doc *YamlDocument) isYttTemplate() bool {
 	found := false
 	commentsQuery.Run(doc.RootNode, func(match *sitter.QueryMatch) {
 		for _, capture := range match.Captures {
-			if strings.HasPrefix(doc.GetNodeText(&capture.Node), "#@") {
+			if strings.HasPrefix(doc.GetNodeText(capture.Node), "#@") {
 				found = true
 			}
 		}
@@ -88,20 +89,20 @@ func (doc *YamlDocument) IsUnderUnreadTopLevelKey(node *sitter.Node) bool {
 
 // unreadTopLevelRanges finds the byte ranges of the top-level pairs the
 // compiler doesn't read.
-func (doc *YamlDocument) unreadTopLevelRanges() [][2]uint {
+func (doc *YamlDocument) unreadTopLevelRanges() [][2]uint32 {
 	rootMapping := GetBlockMappingNode(doc.RootNode)
 	if rootMapping == nil {
 		return nil
 	}
 
-	var ranges [][2]uint
-	for i := uint(0); i < rootMapping.NamedChildCount(); i++ {
+	var ranges [][2]uint32
+	for i := 0; i < rootMapping.NamedChildCount(); i++ {
 		pair := rootMapping.NamedChild(i)
-		if pair.Kind() != "block_mapping_pair" {
+		if pair.Type(yamltree.Language) != "block_mapping_pair" {
 			continue
 		}
 		if keyNode, _ := doc.GetKeyValueNodes(pair); keyNode != nil && !pipelineConfigKeys[doc.GetNodeText(keyNode)] {
-			ranges = append(ranges, [2]uint{pair.StartByte(), pair.EndByte()})
+			ranges = append(ranges, [2]uint32{pair.StartByte(), pair.EndByte()})
 		}
 	}
 	return ranges

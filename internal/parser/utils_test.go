@@ -4,7 +4,8 @@ import (
 	"reflect"
 	"testing"
 
-	sitter "github.com/tree-sitter/go-tree-sitter"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/yamltree"
+	sitter "github.com/odvcencio/gotreesitter"
 )
 
 const YamlFloat = "foo"
@@ -46,8 +47,8 @@ func TestGetChildOfType(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := GetChildOfType(tt.yamlNode, tt.typeName); !reflect.DeepEqual(got.Kind(), tt.typeName) {
-				t.Errorf("GetChildOfType() = %v, want %v", got.Kind(), tt.typeName)
+			if got := GetChildOfType(tt.yamlNode, tt.typeName); !reflect.DeepEqual(got.Type(yamltree.Language), tt.typeName) {
+				t.Errorf("GetChildOfType() = %v, want %v", got.Type(yamltree.Language), tt.typeName)
 			}
 		})
 	}
@@ -75,7 +76,7 @@ func Test_getBlockMappingNode(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := GetBlockMappingNode(tt.streamNode); !reflect.DeepEqual(got.Kind(), tt.want) {
+			if got := GetBlockMappingNode(tt.streamNode); !reflect.DeepEqual(got.Type(yamltree.Language), tt.want) {
 				t.Errorf("getBlockMappingNode() = %v, want %v", got, tt.want)
 			}
 		})
@@ -88,10 +89,10 @@ func getFirstChildOfType(rootNode *sitter.Node, typeName string) *sitter.Node {
 	for len(queue) > 0 {
 		node := queue[0]
 		queue = queue[1:]
-		if node.Kind() == typeName {
+		if node.Type(yamltree.Language) == typeName {
 			return node
 		}
-		for i := uint(0); i < node.ChildCount(); i++ {
+		for i := 0; i < node.ChildCount(); i++ {
 			queue = append(queue, node.Child(i))
 		}
 	}
@@ -127,15 +128,15 @@ func TestGetFirstChildOfType(t *testing.T) {
 			got := getFirstChildOfType(rootNodeOf(t, []byte(tt.yaml)), tt.typeName)
 			if tt.wantNil {
 				if got != nil {
-					t.Errorf("getFirstChildOfType() = %v, want nil", got.Kind())
+					t.Errorf("getFirstChildOfType() = %v, want nil", got.Type(yamltree.Language))
 				}
 				return
 			}
 			if got == nil {
 				t.Fatal("getFirstChildOfType() = nil, want non-nil")
 			}
-			if got.Kind() != tt.typeName {
-				t.Errorf("getFirstChildOfType() type = %v, want %v", got.Kind(), tt.typeName)
+			if got.Type(yamltree.Language) != tt.typeName {
+				t.Errorf("getFirstChildOfType() type = %v, want %v", got.Type(yamltree.Language), tt.typeName)
 			}
 		})
 	}
@@ -176,7 +177,7 @@ func TestYamlDocument_GetNodeText(t *testing.T) {
 			name:   "Subnode Text",
 			fields: fields{Content: []byte(YamlMap)},
 			args: args{
-				node: GetChildOfType(GetChildOfType(MapNode, "block_mapping"), "block_mapping_pair").ChildByFieldName("key"),
+				node: GetChildOfType(GetChildOfType(MapNode, "block_mapping"), "block_mapping_pair").ChildByFieldName("key", yamltree.Language),
 			},
 			want: "foo",
 		},

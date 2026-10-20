@@ -5,7 +5,8 @@ import (
 	"log/slog"
 	"strings"
 
-	sitter "github.com/tree-sitter/go-tree-sitter"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/yamltree"
+	sitter "github.com/odvcencio/gotreesitter"
 	"go.lsp.dev/protocol"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
@@ -105,7 +106,7 @@ func (doc *YamlDocument) parseSingleOrb(orbNode *sitter.Node) (*ast.Orb, *LocalO
 		return nil, nil
 	}
 
-	switch orbContent.Kind() {
+	switch orbContent.Type(yamltree.Language) {
 	case "flow_node":
 		if isEmptyFlowMapping(orbContent) {
 			return doc.placeholderOrb(orbName, orbNode, orbNameNode, orbContent), nil
@@ -181,7 +182,7 @@ func (doc *YamlDocument) placeholderOrb(orbName string, orbNode, orbNameNode, or
 
 func isEmptyFlowMapping(flowNode *sitter.Node) bool {
 	child := GetFirstChild(flowNode)
-	return child != nil && child.Kind() == "flow_mapping" && child.NamedChildCount() == 0
+	return child != nil && child.Type(yamltree.Language) == "flow_mapping" && child.NamedChildCount() == 0
 }
 
 func (doc *YamlDocument) getOrbURL(orbUrl string) ast.OrbURL {

@@ -4,7 +4,8 @@ import (
 	"reflect"
 	"testing"
 
-	sitter "github.com/tree-sitter/go-tree-sitter"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/yamltree"
+	sitter "github.com/odvcencio/gotreesitter"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
 )
@@ -13,7 +14,7 @@ func getNodeForString(commandString string) *sitter.Node {
 	rootNode := permanentRootOf([]byte(commandString))
 	documentNode := rootNode.Child(0)
 	blockNode := GetChildOfType(documentNode, "block_node")
-	blockNode = (GetChildOfType(blockNode, "block_mapping")).Child(0).ChildByFieldName("value")
+	blockNode = (GetChildOfType(blockNode, "block_mapping")).Child(0).ChildByFieldName("value", yamltree.Language)
 	return blockNode
 }
 

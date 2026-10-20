@@ -1,7 +1,7 @@
 package parser
 
 import (
-	sitter "github.com/tree-sitter/go-tree-sitter"
+	sitter "github.com/odvcencio/gotreesitter"
 	"go.lsp.dev/protocol"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/position"
@@ -22,7 +22,7 @@ func ParseYamlAnchors(doc *YamlDocument) map[string]YamlAnchor {
 	// Mapping all anchors
 	anchorsQuery.Run(rootNode, func(match *sitter.QueryMatch) {
 		for _, capture := range match.Captures {
-			node := &capture.Node
+			node := capture.Node
 			nameNode := GetChildOfType(node, "anchor_name")
 			name := doc.GetNodeText(nameNode)
 			valueNode := node.Parent()
@@ -38,7 +38,7 @@ func ParseYamlAnchors(doc *YamlDocument) map[string]YamlAnchor {
 	// Searching for all aliases
 	aliasesQuery.Run(rootNode, func(match *sitter.QueryMatch) {
 		for _, capture := range match.Captures {
-			node := &capture.Node
+			node := capture.Node
 			name := doc.GetNodeText(node)[1:]
 
 			aliasRange := doc.NodeToRange(node)

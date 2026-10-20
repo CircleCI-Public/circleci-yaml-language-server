@@ -7,7 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	sitter "github.com/tree-sitter/go-tree-sitter"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/yamltree"
+	sitter "github.com/odvcencio/gotreesitter"
 	"go.lsp.dev/protocol"
 
 	ast2 "github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
@@ -335,7 +336,7 @@ func (doc *YamlDocument) parseParameterValue(child *sitter.Node) (ast2.Parameter
 		return ast2.ParameterValue{}, fmt.Errorf("error while parsing parameter value")
 	}
 	rng := doc.NodeToRange(child)
-	switch flowNodeChild.Kind() {
+	switch flowNodeChild.Type(yamltree.Language) {
 	case "plain_scalar":
 		return doc.parseSimpleParameterValue(paramName, flowNodeChild, rng)
 	case "block_scalar":
@@ -366,7 +367,7 @@ func (doc *YamlDocument) parseParameterValue(child *sitter.Node) (ast2.Parameter
 
 	case "alias":
 		return ast2.ParameterValue{
-			Value:      valueNode.ChildByFieldName("value"),
+			Value:      valueNode.ChildByFieldName("value", yamltree.Language),
 			Name:       paramName,
 			ValueRange: doc.NodeToRange(flowNodeChild),
 			Type:       "alias",
@@ -414,10 +415,10 @@ func (doc *YamlDocument) parseArrayParameterValue(paramName string, arrayParamNo
 	// arrayParamNode is a flow_sequence or a block sequence
 	values := make([]ast2.ParameterValue, 0)
 	iterateOnBlockSequence(arrayParamNode, func(child *sitter.Node) {
-		if child.Kind() == "block_sequence_item" || child.Kind() == "flow_node" {
+		if child.Type(yamltree.Language) == "block_sequence_item" || child.Type(yamltree.Language) == "flow_node" {
 			if isStep(doc, child) || forceSteps {
 				steps := doc.parseSingleStep(child)
-				if child.Kind() == "flow_node" {
+				if child.Type(yamltree.Language) == "flow_node" {
 					steps = doc.parseFlowNodeStep(child)
 				}
 				values = append(values, ast2.ParameterValue{
@@ -447,10 +448,10 @@ func (doc *YamlDocument) parseArrayParameterValue(paramName string, arrayParamNo
 }
 
 func parseEnumParamValue(child *sitter.Node, doc *YamlDocument, paramName string, rng protocol.Range) (ast2.ParameterValue, error) {
-	if child.Kind() == "block_sequence_item" {
+	if child.Type(yamltree.Language) == "block_sequence_item" {
 		child = GetChildOfType(child, "flow_node")
 	}
-	if child != nil && child.Kind() == "flow_node" {
+	if child != nil && child.Type(yamltree.Language) == "flow_node" {
 		param, err := doc.parseSimpleParameterValue(paramName, child, rng)
 		if err != nil {
 			return ast2.ParameterValue{}, err
@@ -479,11 +480,11 @@ func (doc *YamlDocument) parseSimpleParameterValue(paramName string, simpleParam
 	// This is needed if a parameter is written such as :
 	//     param: >
 	//       value
-	if simpleParamNodeChild.Kind() == ">" || simpleParamNodeChild.Kind() == "|" {
+	if simpleParamNodeChild.Type(yamltree.Language) == ">" || simpleParamNodeChild.Type(yamltree.Language) == "|" {
 		simpleParamNodeChild = simpleParamNode
 	}
 
-	switch simpleParamNodeChild.Kind() {
+	switch simpleParamNodeChild.Type(yamltree.Language) {
 	case "double_quote_scalar":
 		return ast2.ParameterValue{
 			Value:      doc.GetNodeText(simpleParamNode),
@@ -627,11 +628,11 @@ func (doc *YamlDocument) defaultKind(valueNode *sitter.Node) string {
 		return "null"
 	}
 	node := doc.scalarOf(valueNode, 0)
-	switch node.Kind() {
+	switch node.Type(yamltree.Language) {
 	case "double_quote_scalar", "single_quote_scalar", "block_scalar":
 		return "string"
 	case "plain_scalar":
-		switch GetFirstChild(node).Kind() {
+		switch GetFirstChild(node).Type(yamltree.Language) {
 		case "integer_scalar":
 			return "integer"
 		case "float_scalar":
@@ -646,8 +647,8 @@ func (doc *YamlDocument) defaultKind(valueNode *sitter.Node) string {
 		}
 		return "string"
 	}
-	for i := uint(0); i < node.NamedChildCount(); i++ {
-		switch node.NamedChild(i).Kind() {
+	for i := 0; i < node.NamedChildCount(); i++ {
+		switch node.NamedChild(i).Type(yamltree.Language) {
 		case "block_mapping", "flow_mapping":
 			return "map"
 		case "block_sequence", "flow_sequence":

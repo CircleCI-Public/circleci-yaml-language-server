@@ -11,7 +11,7 @@ import (
 	"strings"
 	"sync"
 
-	sitter "github.com/tree-sitter/go-tree-sitter"
+	sitter "github.com/odvcencio/gotreesitter"
 	"github.com/xeipuuv/gojsonschema"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
@@ -106,13 +106,13 @@ func collectionKeyErrors(rootNode *sitter.Node) []protocol.Diagnostic {
 	diagnostics := []protocol.Diagnostic{}
 	for node := range yamltree.Walk(rootNode) {
 		var key *sitter.Node
-		switch node.Kind() {
+		switch node.Type(yamltree.Language) {
 		case "block_mapping_pair", "flow_pair":
-			key = node.ChildByFieldName("key")
+			key = node.ChildByFieldName("key", yamltree.Language)
 		case "flow_node":
 			// A key without a value, as in `{ a }`, is a flow_node of its
 			// flow_mapping rather than a flow_pair.
-			if parent := node.Parent(); parent != nil && parent.Kind() == "flow_mapping" {
+			if parent := node.Parent(); parent != nil && parent.Type(yamltree.Language) == "flow_mapping" {
 				key = node
 			}
 		}
@@ -120,7 +120,7 @@ func collectionKeyErrors(rootNode *sitter.Node) []protocol.Diagnostic {
 			continue
 		}
 
-		switch key.NamedChild(0).Kind() {
+		switch key.NamedChild(0).Type(yamltree.Language) {
 		case "flow_mapping", "block_mapping":
 			diagnostics = append(diagnostics, diagnostic.ErrorFromNode(key,
 				"A map can't be used as a key; quote it if it's meant as text"))
@@ -162,7 +162,7 @@ func handleYAMLErrors(err string, content []byte, rootNode *sitter.Node) ([]prot
 			// somewhere no node is, as where tree-sitter recovered from an
 			// error.
 			node, _, nodeErr := position.NodeAt(rootNode, rng.Start)
-			if nodeErr == nil && node.Kind() == "alias_name" {
+			if nodeErr == nil && node.Type(yamltree.Language) == "alias_name" {
 				diagnostics = append(diagnostics, diagnostic.Error(rng, err))
 			}
 		}
@@ -308,7 +308,7 @@ func (validator *JSONSchemaValidator) ValidateWithJSONSchema(rootNode *sitter.No
 
 			if name, ok := resErr.Details()["property"].(string); ok && resErr.Type() == "invalid_property_name" {
 				if nameNode, err := FindDeepestNode(node, content, []string{name}); err == nil {
-					node = nameNode.ChildByFieldName("key")
+					node = nameNode.ChildByFieldName("key", yamltree.Language)
 				}
 				jsonSchemaDiags = append(jsonSchemaDiags, diagnostic.ErrorFromNode(node,
 					invalidNameMessage(fields, name, namePatterns[resErr.Field()])))
@@ -316,14 +316,14 @@ func (validator *JSONSchemaValidator) ValidateWithJSONSchema(rootNode *sitter.No
 			}
 
 			if validator.isJobWithoutExecutor(resErr, fields, node, content) {
-				jsonSchemaDiags = append(jsonSchemaDiags, diagnostic.ErrorFromNode(node.ChildByFieldName("key"),
+				jsonSchemaDiags = append(jsonSchemaDiags, diagnostic.ErrorFromNode(node.ChildByFieldName("key", yamltree.Language),
 					"A job needs an executor: give it one of `docker`, `machine`, `macos` or `executor`."))
 				continue
 			}
 
 			if step, property, ok := ignoredStepProperty(resErr, fields); ok {
 				if propertyNode, err := FindDeepestNode(node, content, []string{property}); err == nil {
-					node = propertyNode.ChildByFieldName("key")
+					node = propertyNode.ChildByFieldName("key", yamltree.Language)
 				}
 				jsonSchemaDiags = append(jsonSchemaDiags, diagnostic.WarningFromNode(node,
 					fmt.Sprintf("%s has no %s option, so this is ignored.", step, property)+
@@ -406,7 +406,7 @@ func resolveYAML11Booleans(node *yaml.Node) {
 // yaml11Boolean is the text of a value that is a boolean only in YAML 1.1,
 // given it or the pair it is the value of.
 func (validator *JSONSchemaValidator) yaml11Boolean(node *sitter.Node) (string, bool) {
-	if node.Kind() == "block_mapping_pair" || node.Kind() == "flow_pair" {
+	if node.Type(yamltree.Language) == "block_mapping_pair" || node.Type(yamltree.Language) == "flow_pair" {
 		_, node = validator.Doc.GetKeyValueNodes(node)
 		if node == nil {
 			return "", false
@@ -455,7 +455,7 @@ func keyNode(node *sitter.Node, content []byte, property string) *sitter.Node {
 	if err != nil {
 		return node
 	}
-	if key := pair.ChildByFieldName("key"); key != nil {
+	if key := pair.ChildByFieldName("key", yamltree.Language); key != nil {
 		return key
 	}
 	return node
@@ -478,7 +478,7 @@ var executorKeys = []string{"docker", "machine", "macos", "executor"}
 func (validator *JSONSchemaValidator) isJobWithoutExecutor(err gojsonschema.ResultError, fields []string, job *sitter.Node, content []byte) bool {
 	property, _ := err.Details()["property"].(string)
 	if err.Type() != "required" || !slices.Contains(executorKeys, property) ||
-		len(fields) < 2 || fields[len(fields)-2] != "jobs" || job.ChildByFieldName("key") == nil {
+		len(fields) < 2 || fields[len(fields)-2] != "jobs" || job.ChildByFieldName("key", yamltree.Language) == nil {
 		return false
 	}
 
@@ -567,7 +567,7 @@ func onlyContainsDropped(combinator protocol.Diagnostic, dropped []protocol.Rang
 //	But in the JSON Schema, the `when` key is defined as an object, so the validation
 //	will fail if we don't ignore it.
 func (validator *JSONSchemaValidator) doesNodeUseParameter(node *sitter.Node) bool {
-	if node.Kind() == "block_mapping_pair" || node.Kind() == "flow_pair" {
+	if node.Type(yamltree.Language) == "block_mapping_pair" || node.Type(yamltree.Language) == "flow_pair" {
 		_, valueNode := validator.Doc.GetKeyValueNodes(node)
 		if valueNode == nil {
 			return false

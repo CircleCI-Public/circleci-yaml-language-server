@@ -20,6 +20,9 @@ builds:
       - CGO_ENABLED=1
     flags:
       - -trimpath
+    # Embeds only the YAML grammar, not all of gotreesitter's. The overrides
+    # replace this list, so they repeat it.
+    tags: [grammar_subset, grammar_subset_yaml]
     goos:
       - linux
       - darwin
@@ -36,24 +39,24 @@ builds:
       - goos: linux
         goarch: amd64
         env: ['CC={{ .Env.ZIG }} cc -target x86_64-linux-musl']
-        tags: [netgo, osusergo]
+        tags: [grammar_subset, grammar_subset_yaml, netgo, osusergo]
         ldflags: [*ldflags, "-linkmode=external '-extldflags=-static -s'"]
       - goos: linux
         goarch: arm64
         env: ['CC={{ .Env.ZIG }} cc -target aarch64-linux-musl']
-        tags: [netgo, osusergo]
+        tags: [grammar_subset, grammar_subset_yaml, netgo, osusergo]
         ldflags: [*ldflags, "-linkmode=external '-extldflags=-static -s'"]
       # Zig can compile for macOS but not link (it has no Apple SDK), so Go's
       # own linker does the link. netgo keeps the resolver off libresolv.
       - goos: darwin
         goarch: amd64
         env: ['CC={{ .Env.ZIG }} cc -target x86_64-macos']
-        tags: [netgo]
+        tags: [grammar_subset, grammar_subset_yaml, netgo]
         ldflags: [*ldflags, -linkmode=internal]
       - goos: darwin
         goarch: arm64
         env: ['CC={{ .Env.ZIG }} cc -target aarch64-macos']
-        tags: [netgo]
+        tags: [grammar_subset, grammar_subset_yaml, netgo]
         ldflags: [*ldflags, -linkmode=internal]
       - goos: windows
         goarch: amd64

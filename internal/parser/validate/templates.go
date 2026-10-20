@@ -1,7 +1,7 @@
 package validate
 
 import (
-	sitter "github.com/tree-sitter/go-tree-sitter"
+	sitter "github.com/odvcencio/gotreesitter"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/template"
@@ -16,7 +16,7 @@ func (val Validate) ValidateTemplates() {
 
 	check := func(match *sitter.QueryMatch) {
 		for _, capture := range match.Captures {
-			node := &capture.Node
+			node := capture.Node
 			// `<<` alone is a YAML merge key.
 			if val.Doc.IsUnderUnreadTopLevelKey(node) || val.Doc.GetRawNodeText(node) == "<<" {
 				continue

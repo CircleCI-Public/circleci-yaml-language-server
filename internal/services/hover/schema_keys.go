@@ -5,7 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	sitter "github.com/tree-sitter/go-tree-sitter"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/yamltree"
+	sitter "github.com/odvcencio/gotreesitter"
 	"go.lsp.dev/protocol"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/cache"
@@ -30,23 +31,23 @@ func keyPathAt(doc yamlparser.YamlDocument, pos protocol.Position) ([]string, bo
 	if doc.RootNode == nil {
 		return nil, false
 	}
-	offset := uint(position.ToIndex(pos, doc.Content))
+	offset := uint32(position.ToIndex(pos, doc.Content))
 	node := doc.RootNode.NamedDescendantForByteRange(offset, offset)
 
 	pair := enclosingPair(node)
 	if pair == nil {
 		return nil, false
 	}
-	key := pair.ChildByFieldName("key")
+	key := pair.ChildByFieldName("key", yamltree.Language)
 	if key == nil || offset < key.StartByte() || offset > key.EndByte() {
 		return nil, false
 	}
 
 	var path []string
 	for n := pair; n != nil; n = n.Parent() {
-		switch n.Kind() {
+		switch n.Type(yamltree.Language) {
 		case "block_mapping_pair", "flow_pair":
-			k := n.ChildByFieldName("key")
+			k := n.ChildByFieldName("key", yamltree.Language)
 			if k == nil {
 				return nil, false
 			}
@@ -67,7 +68,7 @@ func keyPathAt(doc yamlparser.YamlDocument, pos protocol.Position) ([]string, bo
 // enclosingPair is the closest mapping pair holding node, or nil.
 func enclosingPair(node *sitter.Node) *sitter.Node {
 	for n := node; n != nil; n = n.Parent() {
-		if kind := n.Kind(); kind == "block_mapping_pair" || kind == "flow_pair" {
+		if kind := n.Type(yamltree.Language); kind == "block_mapping_pair" || kind == "flow_pair" {
 			return n
 		}
 	}
@@ -82,19 +83,19 @@ func itemIndex(node *sitter.Node) (int, bool) {
 		return 0, false
 	}
 	switch {
-	case node.Kind() == "block_sequence_item" && parent.Kind() == "block_sequence":
-	case node.Kind() == "flow_node" && parent.Kind() == "flow_sequence":
+	case node.Type(yamltree.Language) == "block_sequence_item" && parent.Type(yamltree.Language) == "block_sequence":
+	case node.Type(yamltree.Language) == "flow_node" && parent.Type(yamltree.Language) == "flow_sequence":
 	default:
 		return 0, false
 	}
 
 	index := 0
-	for i := uint(0); i < parent.NamedChildCount(); i++ {
+	for i := 0; i < parent.NamedChildCount(); i++ {
 		sibling := parent.NamedChild(i)
-		if sibling.Id() == node.Id() {
+		if sibling == node {
 			return index, true
 		}
-		if sibling.Kind() == node.Kind() {
+		if sibling.Type(yamltree.Language) == node.Type(yamltree.Language) {
 			index++
 		}
 	}

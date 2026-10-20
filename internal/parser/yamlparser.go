@@ -10,7 +10,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	sitter "github.com/tree-sitter/go-tree-sitter"
+	sitter "github.com/odvcencio/gotreesitter"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 
@@ -167,7 +167,7 @@ func (doc *YamlDocument) SyntaxErrors() []protocol.Diagnostic {
 
 	errorsQuery.Run(rootNode, func(match *sitter.QueryMatch) {
 		for _, capture := range match.Captures {
-			diagnostics = append(diagnostics, diagnostic.ErrorFromNode(&capture.Node, "Error! Please fix your yaml file"))
+			diagnostics = append(diagnostics, diagnostic.ErrorFromNode(capture.Node, "Error! Please fix your yaml file"))
 		}
 	})
 
@@ -228,7 +228,7 @@ type YamlDocument struct {
 	RootNode *sitter.Node
 	// unreadRanges are the byte ranges of the top-level pairs the compiler
 	// doesn't read, for IsUnderUnreadTopLevelKey.
-	unreadRanges   [][2]uint
+	unreadRanges   [][2]uint32
 	Version        float32
 	Description    string
 	URI            uri.URI
@@ -555,7 +555,7 @@ func (doc *YamlDocument) ModifyTextForAutocomplete(pos protocol.Position) []Modi
 
 	// The node at the position is the root when nothing narrower holds it, as
 	// between the documents of a stream.
-	if parent := node.Parent(); parent != nil && parent.Kind() == "double_quote_scalar" {
+	if parent := node.Parent(); parent != nil && parent.Type(yamltree.Language) == "double_quote_scalar" {
 		// Fixes a crash, investigate later
 		// Autocompletion still works fine.
 		return []ModifiedYamlDocument{

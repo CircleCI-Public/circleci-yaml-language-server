@@ -4,7 +4,8 @@ import (
 	"context"
 	"strings"
 
-	sitter "github.com/tree-sitter/go-tree-sitter"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/yamltree"
+	sitter "github.com/odvcencio/gotreesitter"
 
 	ast2 "github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
 	yamlparser "github.com/CircleCI-Public/circleci-yaml-language-server/internal/parser"
@@ -73,7 +74,7 @@ func (ch *CompletionHandler) completeStepList(ctx context.Context, completionNod
 // cursor is on a key's colon.
 func (ch *CompletionHandler) nodeToComplete() *sitter.Node {
 	node, _, _ := position.NodeAt(ch.Doc.RootNode, ch.Params.Position)
-	if node.Kind() == ":" {
+	if node.Type(yamltree.Language) == ":" {
 		node = node.PrevSibling()
 	}
 	return node

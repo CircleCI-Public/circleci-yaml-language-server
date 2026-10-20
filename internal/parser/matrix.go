@@ -5,7 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	sitter "github.com/tree-sitter/go-tree-sitter"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/yamltree"
+	sitter "github.com/odvcencio/gotreesitter"
 )
 
 // MaxMatrixJobs is the compiler's limit on the jobs one matrix expands to,
@@ -102,7 +103,7 @@ func (doc *YamlDocument) parseMatrixCombinations(matrixNode *sitter.Node) ([]mat
 			})
 		case "exclude":
 			iterateOnBlockSequence(GetChildSequence(valueNode), func(item *sitter.Node) {
-				if item.Kind() == "block_sequence_item" {
+				if item.Type(yamltree.Language) == "block_sequence_item" {
 					item = item.Child(1)
 				}
 				exclude := map[string]string{}

@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/yamltree"
+
 	"go.lsp.dev/protocol"
 
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
@@ -48,17 +50,17 @@ func resourceClassAt(doc yamlparser.YamlDocument, pos protocol.Position) (string
 	if doc.RootNode == nil {
 		return "", 0, false
 	}
-	offset := uint(position.ToIndex(pos, doc.Content))
+	offset := uint32(position.ToIndex(pos, doc.Content))
 	pair := enclosingPair(doc.RootNode.NamedDescendantForByteRange(offset, offset))
 	if pair == nil {
 		return "", 0, false
 	}
-	key, value := pair.ChildByFieldName("key"), pair.ChildByFieldName("value")
+	key, value := pair.ChildByFieldName("key", yamltree.Language), pair.ChildByFieldName("value", yamltree.Language)
 	if key == nil || value == nil || keyName(doc.GetNodeText(key)) != "resource_class" ||
 		offset < value.StartByte() || offset > value.EndByte() {
 		return "", 0, false
 	}
-	return keyName(doc.GetNodeText(value)), uint32(key.StartPosition().Row), true
+	return keyName(doc.GetNodeText(value)), key.StartPoint().Row, true
 }
 
 // executorGivingResourceClassOn is the executor whose resource class is given
