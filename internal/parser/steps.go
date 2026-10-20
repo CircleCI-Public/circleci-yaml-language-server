@@ -14,9 +14,16 @@ import (
 func (doc *YamlDocument) parseSteps(stepsNode *sitter.Node) []ast.Step {
 	// stepsNode is a block_node
 	steps := make([]ast.Step, 0)
+	if doc.compile != nil {
+		doc.compile.openSteps()
+	}
 
 	blockSequenceNode := GetChildSequence(stepsNode)
 	iterateOnBlockSequence(blockSequenceNode, func(child *sitter.Node) {
+		read := len(steps)
+		if doc.compile != nil {
+			doc.compile.dropPending()
+		}
 		switch child.Type(yamltree.Language) {
 		case "block_sequence_item":
 			steps = append(steps, doc.parseSingleStep(child)...)
@@ -24,9 +31,17 @@ func (doc *YamlDocument) parseSteps(stepsNode *sitter.Node) []ast.Step {
 		// brackets and commas.
 		case "flow_node":
 			steps = append(steps, doc.parseFlowNodeStep(child)...)
+		default:
+			return
+		}
+		if doc.compile != nil {
+			doc.compile.addSteps(steps[read:])
 		}
 	})
 
+	if doc.compile != nil {
+		doc.compile.closeSteps(doc.NodeToRange(stepsNode))
+	}
 	return steps
 }
 
@@ -128,6 +143,12 @@ func (doc *YamlDocument) parseStep(blockMapping *sitter.Node) []ast.Step {
 	if valueNode == nil || (doc.IsBuiltIn(keyName) && doc.isNullValue(valueNode)) {
 		return doc.parseNullBodyStep(blockMapping, keyNode)
 	}
+	// Only a conditional step, or a merged one, stands in the list for its
+	// flat steps. Any steps read inside another, such as a run's teardown,
+	// are its own.
+	if doc.compile != nil && !isConditionalStep(keyName) && keyName != "<<" {
+		defer doc.compile.dropPending()
+	}
 	switch keyName {
 	case "deploy":
 		return []ast.Step{doc.parseDeployStep(valueNode)}
@@ -226,6 +247,10 @@ func (doc *YamlDocument) parseAnchorStep(blockNode *sitter.Node) []ast.Step {
 func (doc *YamlDocument) parseWhenUnlessStep(blockNode *sitter.Node) []ast.Step {
 	// blockNode is a block_node
 	steps := make([]ast.Step, 0)
+	var cond *Condition
+	if doc.compile != nil {
+		cond = &Condition{Kind: doc.GetNodeText(blockNode.Parent().ChildByFieldName("key", yamltree.Language)), Range: doc.NodeToRange(blockNode.Parent())}
+	}
 
 	blockMapping := GetChildMapping(blockNode)
 	doc.iterateOnBlockMapping(blockMapping, func(child *sitter.Node) {
@@ -237,14 +262,27 @@ func (doc *YamlDocument) parseWhenUnlessStep(blockNode *sitter.Node) []ast.Step 
 		switch doc.GetNodeText(key) {
 		case "steps":
 			steps = append(steps, doc.parseSteps(value)...)
+			if cond != nil {
+				cond.Steps = doc.compile.pending
+			}
 		case "condition":
 			if doc.addCondition(value) {
 				doc.StepConditions = append(doc.StepConditions, doc.Conditions[len(doc.Conditions)-1])
 			}
+			if cond != nil {
+				cond.Condition = doc.compileValue(child)
+			}
 		}
 	})
 
+	if cond != nil {
+		doc.compile.pending = []StepNode{{Cond: cond}}
+	}
 	return steps
+}
+
+func isConditionalStep(keyName string) bool {
+	return keyName == "when" || keyName == "unless" || keyName == "with_tool_cache"
 }
 
 func (doc *YamlDocument) parseNamedStepWithParameters(stepName string, namedStepWithParams *sitter.Node) ast.NamedStep {

@@ -95,9 +95,11 @@ func (doc *YamlDocument) parseSingleWorkflow(workflowNode *sitter.Node) ast.Work
 		case "when":
 			res.WhenRange = doc.NodeToRange(child)
 			doc.addCondition(valueNode)
+			doc.addWorkflowCondition(workflowName, keyName, child)
 		case "unless":
 			res.UnlessRange = doc.NodeToRange(child)
 			doc.addCondition(valueNode)
+			doc.addWorkflowCondition(workflowName, keyName, child)
 		case "triggers":
 			res.HasTrigger = true
 			res.TriggersRange = doc.NodeToRange(child)
@@ -354,6 +356,17 @@ func (doc *YamlDocument) addCondition(valueNode *sitter.Node) bool {
 		Range: doc.NodeToRange(valueNode),
 	})
 	return true
+}
+
+func (doc *YamlDocument) addWorkflowCondition(workflowName, kind string, pair *sitter.Node) {
+	if doc.compile == nil {
+		return
+	}
+	doc.compile.WorkflowConditions[workflowName] = append(doc.compile.WorkflowConditions[workflowName], Condition{
+		Kind:      kind,
+		Condition: doc.compileValue(pair),
+		Range:     doc.NodeToRange(pair),
+	})
 }
 
 // isScalarNode reports whether node is a flow node holding a scalar, rather

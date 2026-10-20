@@ -110,6 +110,9 @@ func (doc *YamlDocument) parseSingleJob(jobNode *sitter.Node) ast2.Job {
 			case "steps":
 				res.StepsRange = doc.NodeToRange(child)
 				res.Steps = doc.parseSteps(valueNode)
+				if doc.compile != nil {
+					doc.compile.JobSteps[res.Name] = doc.NodeToRange(valueNode)
+				}
 
 			case "executor":
 				res.Executor, res.ExecutorRange, res.ExecutorParameters = doc.parseExecutorRef(valueNode, child)
