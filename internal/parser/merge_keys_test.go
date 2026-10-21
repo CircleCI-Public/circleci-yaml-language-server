@@ -1,7 +1,10 @@
 package parser_test
 
 import (
+	"fmt"
+	"strings"
 	"testing"
+	"time"
 
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
@@ -57,5 +60,30 @@ jobs:
 		})
 
 		doc.Close()
+	}
+}
+
+func TestMergeKeyRepeatedAnchor(t *testing.T) {
+	// Each level merges the next twice, so merging every repeat would take
+	// 2^30 merges.
+	var b strings.Builder
+	b.WriteString("version: 2.1\nanchors:\n")
+	for i := range 30 {
+		fmt.Fprintf(&b, "  a%d: &a%d {<<: [*a%d, *a%d]}\n", i, i, i+1, i+1)
+	}
+	b.WriteString("  a30: &a30 {resource_class: small}\njobs:\n  build:\n    <<: *a0\n    steps: [checkout]\n")
+
+	parsed := make(chan parser.YamlDocument, 1)
+	go func() {
+		doc, _ := parser.ParseFromContent([]byte(b.String()), testHelpers.DefaultSettings(), uri.File(""), protocol.Position{})
+		parsed <- doc
+	}()
+
+	select {
+	case doc := <-parsed:
+		defer doc.Close()
+		assert.Check(t, cmp.Equal(doc.Jobs["build"].ResourceClass, "small"))
+	case <-time.After(10 * time.Second):
+		t.Fatal("a repeated anchor was merged again at every level")
 	}
 }

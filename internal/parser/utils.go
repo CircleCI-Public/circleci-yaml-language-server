@@ -299,7 +299,13 @@ func (doc *YamlDocument) iterateOnMergedBlockMapping(blockMappingNode *sitter.No
 		// it will be handled after other keys, to avoid potential falsy override
 		if keyText == "<<" {
 			valueNode := child.ChildByFieldName("value", yamltree.Language)
-			mergeKeys = append(mergeKeys, extractMergeAnchorNames(valueNode, doc)...)
+			// A repeat can't set a key, but would merge its anchor again,
+			// doubling the work at each level of nesting.
+			for _, anchorName := range extractMergeAnchorNames(valueNode, doc) {
+				if !slices.Contains(mergeKeys, anchorName) {
+					mergeKeys = append(mergeKeys, anchorName)
+				}
+			}
 
 			continue
 		}
