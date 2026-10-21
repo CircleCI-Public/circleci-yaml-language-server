@@ -19,7 +19,8 @@ type CompileInfo struct {
 	Source string
 
 	// Steps are the step lists as written, keyed by the range of the steps
-	// value.
+	// value. A list given as an argument, to a step or a job invocation, is
+	// keyed by its ParameterValue's ValueRange, its bare names read as steps.
 	Steps        map[protocol.Range][]StepNode
 	JobSteps     map[string]protocol.Range
 	CommandSteps map[string]protocol.Range

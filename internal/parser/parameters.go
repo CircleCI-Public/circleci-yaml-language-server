@@ -414,29 +414,52 @@ func (doc *YamlDocument) parseParameterValue(child *sitter.Node) (ast2.Parameter
 func (doc *YamlDocument) parseArrayParameterValue(paramName string, arrayParamNode *sitter.Node, rng protocol.Range, forceSteps bool) (ast2.ParameterValue, error) {
 	// arrayParamNode is a flow_sequence or a block sequence
 	values := make([]ast2.ParameterValue, 0)
+	if doc.compile != nil {
+		doc.compile.openSteps()
+	}
 	iterateOnBlockSequence(arrayParamNode, func(child *sitter.Node) {
-		if child.Type(yamltree.Language) == "block_sequence_item" || child.Type(yamltree.Language) == "flow_node" {
-			if isStep(doc, child) || forceSteps {
-				steps := doc.parseSingleStep(child)
-				if child.Type(yamltree.Language) == "flow_node" {
-					steps = doc.parseFlowNodeStep(child)
+		if child.Type(yamltree.Language) != "block_sequence_item" && child.Type(yamltree.Language) != "flow_node" {
+			return
+		}
+		if doc.compile != nil {
+			doc.compile.dropPending()
+		}
+		var steps []ast2.Step
+		if body := doc.conditionalBody(child); body != nil {
+			values = append(values, doc.parseConditionalArgument(paramName, body, rng, forceSteps)...)
+		} else if isStep(doc, child) || forceSteps {
+			steps = doc.parseSingleStep(child)
+			if child.Type(yamltree.Language) == "flow_node" {
+				steps = doc.parseFlowNodeStep(child)
+			}
+			values = append(values, ast2.ParameterValue{
+				Value:      steps,
+				ValueRange: doc.NodeToRange(child),
+				Name:       paramName,
+				Type:       "steps",
+			})
+		} else {
+			param, err := parseEnumParamValue(child, doc, paramName, rng)
+			if err != nil {
+				// TODO: error
+				return
+			}
+			values = append(values, param)
+			if doc.compile != nil {
+				name := child
+				if child.Type(yamltree.Language) == "block_sequence_item" {
+					name = GetChildOfType(child, "flow_node")
 				}
-				values = append(values, ast2.ParameterValue{
-					Value:      steps,
-					ValueRange: doc.NodeToRange(child),
-					Name:       paramName,
-					Type:       "steps",
-				})
-			} else {
-				param, err := parseEnumParamValue(child, doc, paramName, rng)
-				if err != nil {
-					// TODO: error
-					return
-				}
-				values = append(values, param)
+				steps = []ast2.Step{ast2.NamedStep{Name: doc.GetNodeText(name), Range: param.Range}}
 			}
 		}
+		if doc.compile != nil {
+			doc.compile.addSteps(steps)
+		}
 	})
+	if doc.compile != nil {
+		doc.compile.closeSteps(doc.NodeToRange(arrayParamNode))
+	}
 
 	return ast2.ParameterValue{
 		Name:       paramName,
@@ -445,6 +468,41 @@ func (doc *YamlDocument) parseArrayParameterValue(paramName string, arrayParamNo
 		Type:       "enum",
 		Range:      rng,
 	}, nil
+}
+
+// parseConditionalArgument reads a when, unless or with_tool_cache in a list
+// argument, whose body is blockNode. Its steps are returned as items of the
+// list, so that each is checked as one.
+func (doc *YamlDocument) parseConditionalArgument(paramName string, blockNode *sitter.Node, rng protocol.Range, forceSteps bool) []ast2.ParameterValue {
+	values := []ast2.ParameterValue{}
+	cond := doc.newCondition(blockNode)
+
+	doc.iterateOnBlockMapping(GetChildMapping(blockNode), func(child *sitter.Node) {
+		key, value := doc.GetKeyValueNodes(child)
+		if key == nil || value == nil {
+			return
+		}
+
+		switch doc.GetNodeText(key) {
+		case "steps":
+			sequence := GetChildSequence(value)
+			if sequence == nil {
+				return
+			}
+			steps, _ := doc.parseArrayParameterValue(paramName, sequence, rng, forceSteps)
+			values = append(values, steps.Value.([]ast2.ParameterValue)...)
+			if cond != nil {
+				cond.Steps = doc.compile.pending
+			}
+		case "condition":
+			doc.parseStepCondition(cond, child)
+		}
+	})
+
+	if cond != nil {
+		doc.compile.pending = []StepNode{{Cond: cond}}
+	}
+	return values
 }
 
 func parseEnumParamValue(child *sitter.Node, doc *YamlDocument, paramName string, rng protocol.Range) (ast2.ParameterValue, error) {
@@ -463,10 +521,7 @@ func parseEnumParamValue(child *sitter.Node, doc *YamlDocument, paramName string
 }
 
 func isStep(doc *YamlDocument, child *sitter.Node) bool {
-	blockNode := GetChildOfType(child, "block_node")
-	blockMappingNode := GetChildMapping(blockNode)
-	blockMappingPairNode := GetChildOfType(blockMappingNode, "block_mapping_pair")
-	return blockMappingPairNode != nil
+	return stepPair(child) != nil
 }
 
 func (doc *YamlDocument) parseSimpleParameterValue(paramName string, simpleParamNode *sitter.Node, rng protocol.Range) (ast2.ParameterValue, error) {
