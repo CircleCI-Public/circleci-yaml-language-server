@@ -282,7 +282,8 @@ func (doc *YamlDocument) iterateOnMergedBlockMapping(blockMappingNode *sitter.No
 	// the merged value does NOT override the parent block-mapping defined key
 	// For this reason, it is important to know which keys have already been evaluated or not
 	mappedKeys := map[string]bool{}
-	mergeKeys := map[string]bool{}
+	// In the order written: the first anchor to set a key wins.
+	mergeKeys := []string{}
 
 	for i := 0; i < blockMappingNode.ChildCount(); i++ {
 		child := blockMappingNode.Child(i)
@@ -298,11 +299,7 @@ func (doc *YamlDocument) iterateOnMergedBlockMapping(blockMappingNode *sitter.No
 		// it will be handled after other keys, to avoid potential falsy override
 		if keyText == "<<" {
 			valueNode := child.ChildByFieldName("value", yamltree.Language)
-			anchorsToMerge := extractMergeAnchorNames(valueNode, doc)
-
-			for _, anchorName := range anchorsToMerge {
-				mergeKeys[anchorName] = true
-			}
+			mergeKeys = append(mergeKeys, extractMergeAnchorNames(valueNode, doc)...)
 
 			continue
 		}
@@ -311,11 +308,11 @@ func (doc *YamlDocument) iterateOnMergedBlockMapping(blockMappingNode *sitter.No
 		mappedKeys[keyText] = true
 	}
 
-	for anchorName := range mergeKeys {
+	for _, anchorName := range mergeKeys {
 		anchor, ok := doc.YamlAnchors[anchorName]
 
 		if !ok || anchor.ValueNode == nil {
-			return
+			continue
 		}
 
 		if merging[anchorName] {
