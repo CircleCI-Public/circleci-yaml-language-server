@@ -38,6 +38,27 @@ For each config, `ParseFromContent` and `ParseForCompile` must:
   to a mapping, by line. That count must match the conditions reachable from
   `CompileInfo.Steps` and its inline orbs, each counted once by range.
 
+## templates
+
+```sh
+REFERENCE_CORPUS_DIR=<path-to-reference-corpus> go run ./cmd/dev/corpus templates > run.jsonl
+```
+
+Checks `internal/compile` against the reference compiler's own expectations:
+
+- each case of each `replacer/*.txt` fixture must render to its expected
+  output (`check: template`). A fixture is the template, a line of `=`, then
+  cases separated by lines of `-`: an EDN map of variables, a blank line, and
+  the expected output.
+- each workflow in a `logic/*/build.yml` that compiles must be kept in its
+  `config.yml` if, and only if, its `when` and `unless` allow it
+  (`check: condition`). The variables are the pipeline parameters'
+  defaults. Step conditions wait for the expander, as they sit inside jobs
+  and commands.
+
+`TestTemplates` runs the same checks, and skips when `REFERENCE_CORPUS_DIR`
+is unset.
+
 ## Planned
 
 - `compile`: for each case with a `config.yml`, compile `build.yml` and

@@ -162,10 +162,16 @@ func (doc *YamlDocument) compileNodeValue(pair *sitter.Node, name string, node *
 		value := map[string]ast.ParameterValue{}
 		doc.iterateOnBlockMapping(first, func(child *sitter.Node) {
 			key, valueNode := doc.GetKeyValueNodes(child)
-			if key == nil || valueNode == nil {
+			if key == nil {
 				return
 			}
-			value[doc.GetNodeText(key)] = doc.compileNodeValue(child, doc.GetNodeText(key), valueNode, doc.NodeToRange(child))
+			name := doc.GetNodeText(key)
+			if valueNode == nil {
+				// A key with no value, such as `and:`, is null.
+				value[name] = ast.ParameterValue{Name: name, Range: doc.NodeToRange(child)}
+				return
+			}
+			value[name] = doc.compileNodeValue(child, name, valueNode, doc.NodeToRange(child))
 		})
 		res.Value, res.Type = value, "map"
 		return res
