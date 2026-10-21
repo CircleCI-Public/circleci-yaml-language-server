@@ -7,6 +7,9 @@ version: 2.1
 #   context. Used by `task ci:release`.
 #
 
+functions:
+  setup-go: github.com/circleci-functions/setup-go@v0.6.0
+
 parameters:
   GHA_Event:
     type: string
@@ -20,12 +23,9 @@ parameters:
   GHA_Meta:
     type: string
     default: ""
-  setup_go:
-    type: string
-    default: github.com/circleci-functions/setup-go@v0.5.3-4edeb2a
 
 orbs:
-  snyk: snyk/snyk@2.2.0
+  snyk: snyk/snyk@2.2.2
 
 executors:
   default:
@@ -41,15 +41,16 @@ executors:
   linux-arm:
     machine:
       image: ubuntu-2604:current
-    resource_class: arm.medium
+    resource_class: arm.medium.gen2
 
   macos:
     macos:
       xcode: 26.5.0
 
   windows:
-    machine: true
-    resource_class: windows.medium
+    machine:
+      image: windows-server-2025:current
+    resource_class: windows.medium.gen2
 
 commands:
   setup:
@@ -61,11 +62,11 @@ commands:
   # Installs the toolchain and restores the module, build and lint caches, saved at job end.
   install-go:
     steps:
-      - run: circleci run << pipeline.parameters.setup_go >> --
-          --version-file go.mod
-          --golangci-lint-cache
-          --checksum '{{ checksum "go.sum" }}_{{ checksum "tools/go.sum" }}'
-      - run: go version
+      - setup-go:
+          with:
+            version-file: go.mod
+            golangci-lint-cache: true
+            checksum: '{{ checksum "go.sum" }}_{{ checksum "tools/go.sum" }}'
 
   install-task:
     steps:
@@ -115,6 +116,7 @@ jobs:
   # goreleaser at 0.0.0-dev, unsigned, leaving the release in dist/release.
   build:
     executor: linux
+    resource_class: 2xlarge.gen3
     steps:
       - setup
       - run: task ci:build
