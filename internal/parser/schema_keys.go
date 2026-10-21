@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/suggest"
 )
 
 // schemaKeys finds the keys a schema allows at a place in a config, so that a
@@ -221,55 +223,7 @@ func (keys *schemaKeys) resolve(ref string) map[string]any {
 // value wasn't meant for, so name itself is not suggested: in a lock job,
 // steps is refused but a build job allows it.
 func closestKey(name string, allowed []string) string {
-	limit := min(2, len(name)/3)
-	best, bestDistance, tied := "", limit+1, false
-
-	for _, candidate := range allowed {
-		if candidate == name {
-			continue
-		}
-		distance := editDistance(strings.ToLower(name), strings.ToLower(candidate))
-		switch {
-		case distance < bestDistance:
-			best, bestDistance, tied = candidate, distance, false
-		case distance == bestDistance:
-			tied = true
-		}
-	}
-
-	if tied || bestDistance > limit {
-		return ""
-	}
-	return best
-}
-
-// editDistance counts the insertions, deletions, substitutions and swaps of
-// adjacent characters that turn a into b.
-func editDistance(a, b string) int {
-	x, y := []rune(a), []rune(b)
-	rows := make([][]int, len(x)+1)
-	for i := range rows {
-		rows[i] = make([]int, len(y)+1)
-		rows[i][0] = i
-	}
-	for j := range rows[0] {
-		rows[0][j] = j
-	}
-
-	for i := 1; i <= len(x); i++ {
-		for j := 1; j <= len(y); j++ {
-			cost := 1
-			if x[i-1] == y[j-1] {
-				cost = 0
-			}
-			rows[i][j] = min(rows[i-1][j]+1, rows[i][j-1]+1, rows[i-1][j-1]+cost)
-			if i > 1 && j > 1 && x[i-1] == y[j-2] && x[i-2] == y[j-1] {
-				rows[i][j] = min(rows[i][j], rows[i-2][j-2]+1)
-			}
-		}
-	}
-
-	return rows[len(x)][len(y)]
+	return suggest.Closest(name, allowed)
 }
 
 func (keys *schemaKeys) pattern(pattern string) *regexp.Regexp {
