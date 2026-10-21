@@ -1,6 +1,6 @@
 module github.com/CircleCI-Public/circleci-yaml-language-server
 
-go 1.27.1
+go 1.27.3
 
 require (
 	charm.land/log/v2 v2.0.1
