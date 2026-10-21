@@ -2,26 +2,28 @@ package main
 
 import (
 	"io/fs"
+	"path"
 	"path/filepath"
 	"slices"
 	"strings"
 )
 
-// config is a file to check, named by its path under the directory it was
-// found in, so that runs from different checkouts compare.
+// config is a file to check, named by its slash-separated path under the
+// directory it was found in, so that runs from different checkouts and
+// platforms compare.
 type config struct {
 	dir  string
 	name string
 }
 
 func (c config) path() string {
-	return filepath.Join(c.dir, c.name)
+	return filepath.Join(c.dir, filepath.FromSlash(c.name))
 }
 
 // referenceConfigs are the build.yml files of the reference corpus.
 func referenceConfigs(dir string) ([]config, error) {
 	return walk(dir, func(name string) bool {
-		return filepath.Base(name) == "build.yml"
+		return path.Base(name) == "build.yml"
 	})
 }
 
@@ -32,14 +34,13 @@ func repoConfigs(dir string) ([]config, error) {
 		if !isYAML(name) {
 			return false
 		}
-		parts := strings.Split(filepath.ToSlash(name), "/")
-		return slices.Contains(parts, "testdata") || strings.HasPrefix(name, filepath.Join("bin", "survey")+string(filepath.Separator))
+		return slices.Contains(strings.Split(name, "/"), "testdata") || strings.HasPrefix(name, "bin/survey/")
 	})
 }
 
 func walk(dir string, keep func(name string) bool) ([]config, error) {
 	var res []config
-	err := filepath.WalkDir(dir, func(path string, entry fs.DirEntry, err error) error {
+	err := filepath.WalkDir(dir, func(file string, entry fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -49,10 +50,11 @@ func walk(dir string, keep func(name string) bool) ([]config, error) {
 			}
 			return nil
 		}
-		name, err := filepath.Rel(dir, path)
+		name, err := filepath.Rel(dir, file)
 		if err != nil {
 			return err
 		}
+		name = filepath.ToSlash(name)
 		if keep(name) {
 			res = append(res, config{dir, name})
 		}
