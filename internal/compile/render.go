@@ -284,3 +284,56 @@ func Unescape(s string) string {
 	}
 	return b.String()
 }
+
+// RenderPartial renders what it can of text, leaving each tag or section
+// that uses a variable env doesn't have as written, so text can be rendered
+// before all its variables are known. Text that isn't a valid template is
+// left as written.
+func RenderPartial(text string, env Env) string {
+	if !strings.Contains(text, "<<") {
+		return text
+	}
+	t, problem := template.Parse(text)
+	if problem != nil {
+		return text
+	}
+	refs := template.References(text)
+	var b strings.Builder
+	renderPartial(&b, t, text, refs, env)
+	return b.String()
+}
+
+func renderPartial(b *strings.Builder, t template.Template, text string, refs []template.Reference, env Env) {
+	known := func(start, end int) bool {
+		for _, ref := range refs {
+			if _, found := env[ref.Name]; ref.Start >= start && ref.End <= end && !found {
+				return false
+			}
+		}
+		return true
+	}
+	for _, block := range t {
+		switch block := block.(type) {
+		case template.Text:
+			b.WriteString(block.Value)
+		case template.Tag:
+			if known(block.Start, block.End) {
+				if v, err := evaluate(block, text, env, At{}); err == nil {
+					if s, err := textOf(v); err == nil {
+						b.WriteString(s)
+						continue
+					}
+				}
+			}
+			b.WriteString(text[block.Start:block.End])
+		case template.Section:
+			if _, found := env[block.Name]; !found {
+				b.WriteString(text[block.Start:block.End])
+				continue
+			}
+			if sectionTruthy(env[block.Name]) != block.Inverted {
+				renderPartial(b, block.Body, text, refs, env)
+			}
+		}
+	}
+}

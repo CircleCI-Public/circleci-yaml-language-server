@@ -1,10 +1,11 @@
 package parser
 
 import (
-	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/compile"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/yamltree"
 	sitter "github.com/odvcencio/gotreesitter"
 )
@@ -12,8 +13,6 @@ import (
 // MaxMatrixJobs is the compiler's limit on the jobs one matrix expands to,
 // before exclude.
 const MaxMatrixJobs = 128
-
-var matrixReferenceRegex = regexp.MustCompile(`<<\s*matrix\.([A-Za-z0-9_-]+)\s*>>`)
 
 type matrixParameter struct {
 	name   string
@@ -29,7 +28,8 @@ type matrixParameter struct {
 //  2. by any other `name:`, as written when only one combination survives
 //     `exclude`, and otherwise suffixed `-1`, `-2`, … in the order produced;
 //  3. by a matrix parameter called `name`;
-//  4. as `job-value1-value2`, in the parameters' declared order.
+//  4. as `job-value1-value2`, the values in order of their parameters'
+//     names.
 func (doc *YamlDocument) matrixMembers(matrixNode *sitter.Node, jobName, name string) ([]string, []map[string]string) {
 	parameters, excludes := doc.parseMatrixCombinations(matrixNode)
 
@@ -55,9 +55,15 @@ func (doc *YamlDocument) matrixMembers(matrixNode *sitter.Node, jobName, name st
 		case combination["name"] != "":
 			names = append(names, combination["name"])
 		default:
+			// The reference compiler sorts by name, not the order written.
+			keys := make([]string, 0, len(combination))
+			for key := range combination {
+				keys = append(keys, key)
+			}
+			slices.Sort(keys)
 			values := []string{jobName}
-			for _, parameter := range parameters {
-				values = append(values, combination[parameter.name])
+			for _, key := range keys {
+				values = append(values, combination[key])
 			}
 			names = append(names, strings.Join(values, "-"))
 		}
@@ -66,16 +72,14 @@ func (doc *YamlDocument) matrixMembers(matrixNode *sitter.Node, jobName, name st
 	return names, surviving
 }
 
-// ExpandMatrixReferences replaces each `<< matrix.x >>` in s with x's value in
-// combination, leaving references to parameters it doesn't have.
+// ExpandMatrixReferences renders s with combination's values as matrix.x,
+// leaving tags that use anything else as written.
 func ExpandMatrixReferences(s string, combination map[string]string) string {
-	return matrixReferenceRegex.ReplaceAllStringFunc(s, func(reference string) string {
-		parameter := matrixReferenceRegex.FindStringSubmatch(reference)[1]
-		if value, ok := combination[parameter]; ok {
-			return value
-		}
-		return reference
-	})
+	env := make(compile.Env, len(combination))
+	for name, value := range combination {
+		env["matrix."+name] = value
+	}
+	return compile.RenderPartial(s, env)
 }
 
 func (doc *YamlDocument) parseMatrixCombinations(matrixNode *sitter.Node) ([]matrixParameter, []map[string]string) {

@@ -27,7 +27,7 @@ workflows:
 		return invocations[0].MatrixAlias, invocations[0].MatrixNames
 	}
 
-	t.Run("the job name and each value, in declared order", func(t *testing.T) {
+	t.Run("the job name and each value, in order of parameter name", func(t *testing.T) {
 		alias, names := invocation(t, `      - test:
           matrix:
             parameters:
@@ -36,7 +36,7 @@ workflows:
 `)
 		assert.Check(t, cmp.Equal(alias, "test"))
 		assert.Check(t, cmp.DeepEqual(names, []string{
-			"test-linux-1.25", "test-linux-1.26", "test-windows-1.25", "test-windows-1.26",
+			"test-1.25-linux", "test-1.26-linux", "test-1.25-windows", "test-1.26-windows",
 		}))
 	})
 
@@ -95,6 +95,16 @@ workflows:
                 arch: arm64
 `)
 		assert.Check(t, cmp.Equal(alias, "all-tests"))
-		assert.Check(t, cmp.DeepEqual(names, []string{"test-linux-amd64", "test-linux-arm64", "test-windows-amd64"}))
+		assert.Check(t, cmp.DeepEqual(names, []string{"test-amd64-linux", "test-arm64-linux", "test-amd64-windows"}))
+	})
+
+	t.Run("a name template, with escapes and other variables", func(t *testing.T) {
+		_, names := invocation(t, `      - test:
+          name: '\<< matrix.os >>-<< matrix.os >>-<< pipeline.number >>'
+          matrix:
+            parameters:
+              os: [linux]
+`)
+		assert.Check(t, cmp.DeepEqual(names, []string{`\<< matrix.os >>-linux-<< pipeline.number >>`}))
 	})
 }
