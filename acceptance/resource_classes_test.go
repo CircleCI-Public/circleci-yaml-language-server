@@ -53,3 +53,71 @@ func TestResourceClassesFromCatalog(t *testing.T) {
 		}))
 	})
 }
+
+// xcodeConfig has an executor whose Xcode version is on line 5, and a job
+// with a deprecated one.
+const xcodeConfig = `version: 2.1
+
+executors:
+  mac:
+    macos:
+      xcode: "16.4"
+    resource_class: m4pro.medium
+
+jobs:
+  build:
+    macos:
+      xcode: 26.1.1
+    resource_class: m4pro.medium
+    steps:
+      - checkout
+  package:
+    executor: mac
+    steps:
+      - checkout
+
+workflows:
+  main:
+    jobs:
+      - build
+      - package
+`
+
+// TestXcodeVersionsFromCatalog checks that the Xcode versions the catalog
+// lists are offered, and the ones it deprecates are reported.
+func TestXcodeVersionsFromCatalog(t *testing.T) {
+	fake := linkedProjectFake(t)
+	fake.SetMachineOfferings(fakes.MachineOfferings{
+		Linux:      map[string][]string{"medium": {"ubuntu-2404:current"}},
+		MacOS:      map[string][]string{"m4pro.medium": {"xcode:16.4", "xcode:16.4.0", "xcode:26.0.1"}},
+		Deprecated: map[string][]string{"macos": {"xcode:26.1.1"}},
+	})
+
+	session := start(t, fake, xcodeConfig, testToken)
+	diagnostics := session.open(t, xcodeConfig)
+
+	t.Run("a deprecated version is reported", func(t *testing.T) {
+		assert.Check(t, cmp.DeepEqual(diagnostics, []string{`Xcode version "26.1.1" is deprecated`}))
+	})
+
+	t.Run("an executor's version is completed to the catalog's, replacing what is written", func(t *testing.T) {
+		end := position(5, uint32(len(`      xcode: "16.4`)))
+		list, err := session.client.Completion(session.workspace.URI(), end)
+		assert.NilError(t, err)
+		assert.Assert(t, list != nil, "no completion")
+
+		written := protocol.Range{Start: position(5, uint32(len(`      xcode: "`))), End: end}
+		got := []protocol.TextEdit{}
+		for _, item := range list.Items {
+			edit, ok := item.TextEdit.(*protocol.TextEdit)
+			if assert.Check(t, ok, "item %q has no text edit", item.Label) {
+				got = append(got, *edit)
+			}
+		}
+		assert.Check(t, cmp.DeepEqual(got, []protocol.TextEdit{
+			{Range: written, NewText: "26.0.1"},
+			{Range: written, NewText: "16.4.0"},
+			{Range: written, NewText: "16.4"},
+		}))
+	})
+}

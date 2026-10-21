@@ -33,6 +33,11 @@ func (ch *CompletionHandler) completeExecutors(ctx context.Context) {
 		return
 	}
 
+	lines := strings.Split(string(ch.Doc.Content), "\n")
+	if ch.completeMacOS(ctx, macOSLineIn(lines, int(executor.GetRange().Start.Line))) {
+		return
+	}
+
 	if _, parent := ch.keyParent(); parent != -1 && parent == int(executor.GetRange().Start.Line) {
 		present := ch.stepBodyKeys(parent)
 		for _, key := range executorKeys {
