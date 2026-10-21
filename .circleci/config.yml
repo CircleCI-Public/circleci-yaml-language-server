@@ -48,9 +48,8 @@ executors:
       xcode: 26.5.0
 
   windows:
-    machine:
-      image: windows-server-2025:current
-    resource_class: windows.medium.gen2
+    machine: true
+    resource_class: windows.medium
 
 commands:
   setup:
