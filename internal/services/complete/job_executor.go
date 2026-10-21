@@ -13,6 +13,10 @@ import (
 // completeJobExecutor completes a job's resource_class, and the body of its
 // machine or macos, and says whether the cursor was at one of them.
 func (ch *CompletionHandler) completeJobExecutor(ctx context.Context, job ast2.Job) bool {
+	if ch.completeMacOS(ctx, startLine(job.MacOSRange)) {
+		return true
+	}
+
 	key, _, parent := ch.valueAt()
 	if parent != -1 {
 		switch {
@@ -21,9 +25,6 @@ func (ch *CompletionHandler) completeJobExecutor(ctx context.Context, job ast2.J
 			return true
 		case parent == startLine(job.MachineRange) && key == "image":
 			ch.addCompletionItems(ch.Cache.Offerings(ctx, ch.Context.Client()).MachineImages())
-			return true
-		case parent == startLine(job.MacOSRange) && key == "xcode":
-			ch.addCompletionItems(ch.Cache.Offerings(ctx, ch.Context.Client()).XcodeVersions())
 			return true
 		}
 		return false
@@ -36,8 +37,6 @@ func (ch *CompletionHandler) completeJobExecutor(ctx context.Context, job ast2.J
 		return false
 	case startLine(job.MachineRange):
 		keys = []string{"image", "docker_layer_caching"}
-	case startLine(job.MacOSRange):
-		keys = []string{"xcode"}
 	default:
 		return false
 	}
