@@ -1,7 +1,7 @@
-// Package template finds the errors orb-service reports when it renders a
-// config value as a template: a `<< >>` tag, a `<<# >>` or `<<^ >>` section,
-// or the expression inside a tag. It follows orb-service's replacer, in
-// server/src-java/com/circleci/replacer.
+// Package template parses a config value as a template: `<< >>` tags,
+// `<<# >>` and `<<^ >>` sections, and the expressions inside tags. It finds
+// the errors the reference compiler reports when it renders one, and follows
+// that compiler's replacer.
 package template
 
 import (
@@ -17,7 +17,8 @@ import (
 	"github.com/CircleCI-Public/expr/tokens"
 )
 
-// maxExpressionLength is in characters, as orb-service counts them.
+// maxExpressionLength is in characters, as the reference compiler counts
+// them.
 const maxExpressionLength = 2048
 
 // Problem is what's wrong with a template, and where, as byte offsets into
@@ -27,10 +28,58 @@ type Problem struct {
 	Message    string
 }
 
-// Check returns the first problem in text, as orb-service stops at the first.
+// Template is a parsed template's blocks, in order.
+type Template []Block
+
+// Block is a Text, a Tag or a Section.
+type Block interface{ isBlock() }
+
+// Text is literal text, with its escapes as written.
+type Text struct {
+	Value string
+}
+
+// Tag is a `<< >>` tag, with Start and End as byte offsets into the
+// template. Name is set when the body is a bare name. Expr is nil when the
+// body is a name expressions don't allow, such as one shaped like a URL.
+type Tag struct {
+	Expr       parsers.Expr
+	Name       string
+	Start, End int
+}
+
+// Section is a `<<# >>` section, or a `<<^ >>` one when Inverted, from its
+// start tag to the end of its end tag.
+type Section struct {
+	Name       string
+	Inverted   bool
+	Body       Template
+	Start, End int
+}
+
+func (Text) isBlock()    {}
+func (Tag) isBlock()     {}
+func (Section) isBlock() {}
+
+// Parse parses text, stopping at its first problem.
+func Parse(text string) (Template, *Problem) {
+	p := parser{tokens: scan(text), text: text, tree: true}
+	t, err := p.parse()
+	if err == nil {
+		return t, nil
+	}
+	var problem Problem
+	if !errors.As(err, &problem) {
+		problem = Problem{Message: err.Error()}
+	}
+	return nil, &problem
+}
+
+// Check returns the first problem in text, as the reference compiler stops
+// at the first.
 func Check(text string) (Problem, bool) {
 	p := parser{tokens: scan(text), text: text}
-	err := p.parse()
+	_, err := p.parse()
 	if err == nil {
 		return Problem{}, false
 	}
@@ -67,7 +116,7 @@ func IsOnlyTag(text string) bool {
 // first problem.
 func References(text string) []Reference {
 	p := parser{tokens: scan(text), text: text}
-	_ = p.parse()
+	_, _ = p.parse()
 	return p.references
 }
 
@@ -91,8 +140,8 @@ type token struct {
 
 func (t token) end() int { return t.start + len(t.text) }
 
-// scan splits text as orb-service's replacer scanner does. `\<<` is text,
-// and `\\<<` is a `\` followed by a tag.
+// scan splits text as the reference compiler's replacer scanner does. `\<<`
+// is text, and `\\<<` is a `\` followed by a tag.
 func scan(text string) []token {
 	toks := []token{}
 	add := func(kind tokenType, start, end int) {
@@ -147,8 +196,8 @@ func scan(text string) []token {
 	return toks
 }
 
-// identifierPattern is how lax orb-service is about a section's name, and
-// about a tag that isn't an expression.
+// identifierPattern is how lax the reference compiler is about a section's
+// name, and about a tag that isn't an expression.
 var identifierPattern = regexp.MustCompile(`^[\w-]+(\.\S+)*$`)
 
 type parser struct {
@@ -156,60 +205,74 @@ type parser struct {
 	current    int
 	text       string
 	references []Reference
+	// tree is whether to build the blocks, which validating alone doesn't
+	// need.
+	tree bool
 }
 
-func (p *parser) parse() error {
-	for !p.check(eof) {
-		if err := p.block(); err != nil {
-			return err
+func (p *parser) parse() (Template, error) {
+	return p.blocks(func() bool { return false })
+}
+
+// blocks parses blocks until the end of the text, or until done.
+func (p *parser) blocks(done func() bool) (Template, error) {
+	var t Template
+	for !p.check(eof) && !done() {
+		b, err := p.block()
+		if err != nil {
+			return nil, err
+		}
+		if p.tree {
+			t = append(t, b)
 		}
 	}
-	return nil
+	return t, nil
 }
 
-func (p *parser) block() error {
+func (p *parser) block() (Block, error) {
 	switch {
 	case p.match(sectionStart, invertedSectionStart):
 		return p.section()
 	case p.match(tagStart):
 		return p.tag()
 	case p.match(sectionEnd):
-		return problemAt(p.previous(), "Expected section end tag to match start tag")
+		return nil, problemAt(p.previous(), "Expected section end tag to match start tag")
 	}
 	return p.textBlock()
 }
 
-func (p *parser) section() error {
+func (p *parser) section() (Block, error) {
 	op := p.previous()
 	name, err := p.identifier()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if _, err := p.consume(tagEnd, p.peek(), "Unclosed '<<' tag"); err != nil {
-		return err
+		return nil, err
 	}
 
-	for !p.check(eof) {
-		if p.check(sectionEnd) && p.current+1 < len(p.tokens) && strings.TrimSpace(p.tokens[p.current+1].text) == name {
-			break
-		}
-		if err := p.block(); err != nil {
-			return err
-		}
+	body, err := p.blocks(func() bool {
+		return p.check(sectionEnd) && p.current+1 < len(p.tokens) && strings.TrimSpace(p.tokens[p.current+1].text) == name
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	if _, err := p.consume(sectionEnd, op, "Unclosed section, expected '<</'"); err != nil {
-		return err
+		return nil, err
 	}
 	endName, err := p.identifier()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if endName != name {
-		return problemAt(p.previous(), "Expected section end tag to match start tag")
+		return nil, problemAt(p.previous(), "Expected section end tag to match start tag")
 	}
-	_, err = p.consume(tagEnd, p.peek(), "Unclosed '<<' tag")
-	return err
+	end, err := p.consume(tagEnd, p.peek(), "Unclosed '<<' tag")
+	if err != nil || !p.tree {
+		return nil, err
+	}
+	return Section{Name: name, Inverted: op.kind == invertedSectionStart, Body: body, Start: op.start, End: end.end()}, nil
 }
 
 func (p *parser) identifier() (string, error) {
@@ -225,21 +288,32 @@ func (p *parser) identifier() (string, error) {
 	return name, nil
 }
 
-func (p *parser) tag() error {
+func (p *parser) tag() (Block, error) {
 	start := p.previous()
 	body, err := p.consume(stringToken, start, "Expected expression after '<<'")
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if n := utf8.RuneCountInString(body.text); n > maxExpressionLength {
-		return problemAt(body, fmt.Sprintf("Expressions must be less than %d characters, this one is %d", maxExpressionLength, n))
+		return nil, problemAt(body, fmt.Sprintf("Expressions must be less than %d characters, this one is %d", maxExpressionLength, n))
 	}
-	if _, err := p.consume(tagEnd, start, "Unclosed '<<' tag ('<<' must be escaped as '\\<<')"); err != nil {
-		return err
+	end, err := p.consume(tagEnd, start, "Unclosed '<<' tag ('<<' must be escaped as '\\<<')")
+	if err != nil {
+		return nil, err
 	}
-	references, err := parseExpression(body, true)
+	expression, references, err := parseExpression(body, true)
 	p.references = append(p.references, references...)
-	return err
+	if err != nil || !p.tree {
+		return nil, err
+	}
+	tag := Tag{Expr: expression, Start: start.start, End: end.end()}
+	switch e := expression.(type) {
+	case nil:
+		tag.Name = strings.TrimSpace(body.text)
+	case parsers.Identifier:
+		tag.Name = e.Name.Lexeme
+	}
+	return tag, nil
 }
 
 // wholeReference is the name that's all of tok but the space around it.
@@ -257,7 +331,7 @@ func Expression(text string) ([]Reference, *Problem) {
 		problem := problemAt(body, fmt.Sprintf("Expressions must be less than %d characters, this one is %d", maxExpressionLength, n))
 		return nil, &problem
 	}
-	references, err := parseExpression(body, false)
+	_, references, err := parseExpression(body, false)
 	var problem Problem
 	if errors.As(err, &problem) {
 		return nil, &problem
@@ -265,23 +339,23 @@ func Expression(text string) ([]Reference, *Problem) {
 	return references, nil
 }
 
-// parseExpression parses a tag's body as an expression, and returns the names
-// it uses. In a tag, a body that uses a character expressions don't allow is
-// taken whole as a name, which is how orb-service still accepts pipeline
-// parameters named like URLs.
-func parseExpression(body token, inTag bool) ([]Reference, error) {
+// parseExpression parses a tag's body as an expression, and returns it with
+// the names it uses. In a tag, a body that uses a character expressions don't
+// allow is taken whole as a name, with no expression, which is how the
+// reference compiler still accepts pipeline parameters named like URLs.
+func parseExpression(body token, inTag bool) (parsers.Expr, []Reference, error) {
 	toks, err := scanners.New(body.text).Scan()
 	if err != nil {
 		var scanErr scanners.Error
 		if !errors.As(err, &scanErr) {
-			return nil, problemAt(body, "Invalid expression")
+			return nil, nil, problemAt(body, "Invalid expression")
 		}
 		if inTag && scanErr.Type == scanners.UNEXPECTED_CHARACTER && identifierPattern.MatchString(strings.TrimSpace(body.text)) {
-			return []Reference{wholeReference(body)}, nil
+			return nil, []Reference{wholeReference(body)}, nil
 		}
 		start := body.start + byteOffset(body.text, scanErr.Pos)
 		_, size := utf8.DecodeRuneInString(body.text[start-body.start:])
-		return nil, Problem{Start: start, End: start + size, Message: firstLine(scanErr.AsErrorMessage(body.text))}
+		return nil, nil, Problem{Start: start, End: start + size, Message: firstLine(scanErr.AsErrorMessage(body.text))}
 	}
 
 	expression, err := parsers.New(toks).Parse()
@@ -291,11 +365,11 @@ func parseExpression(body token, inTag bool) ([]Reference, error) {
 			start := body.start + byteOffset(body.text, name.CharPos)
 			references = append(references, Reference{Name: name.Lexeme, Start: start, End: start + len(name.Lexeme)})
 		}
-		return references, nil
+		return expression, references, nil
 	}
 	var parseErr parsers.Error
 	if !errors.As(err, &parseErr) {
-		return nil, problemAt(body, "Invalid expression")
+		return nil, nil, problemAt(body, "Invalid expression")
 	}
 	start := body.start + byteOffset(body.text, parseErr.Token.CharPos)
 	end := start + len(parseErr.Token.Lexeme)
@@ -305,7 +379,7 @@ func parseExpression(body token, inTag bool) ([]Reference, error) {
 		start, end = body.start, body.end()
 		message = strings.Replace(message, `found ""`, "found end of expression", 1)
 	}
-	return nil, Problem{Start: start, End: end, Message: message}
+	return nil, nil, Problem{Start: start, End: end, Message: message}
 }
 
 // identifiers are the names an expression uses, in order.
@@ -349,15 +423,18 @@ func problemAt(tok token, message string) Problem {
 	return Problem{Start: tok.start, End: tok.end(), Message: message}
 }
 
-func (p *parser) textBlock() error {
-	start := p.current
+func (p *parser) textBlock() (Block, error) {
+	start := p.peek()
 	for p.check(stringToken) || p.check(tagEnd) {
 		p.current++
 	}
-	if p.current == start {
-		return problemAt(p.peek(), "Expected string")
+	if p.peek() == start {
+		return nil, problemAt(start, "Expected string")
 	}
-	return nil
+	if !p.tree {
+		return nil, nil
+	}
+	return Text{Value: p.text[start.start:p.previous().end()]}, nil
 }
 
 func (p *parser) match(kinds ...tokenType) bool {
