@@ -1,5 +1,22 @@
 # CHANGELOG
 
+## 0.54.0 (2026-10-21)
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+* refactor: add the ir package for compiled config by @danmux in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/797
+* chore: add a corpus harness for the compile parse by @danmux in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/798
+* docs: note the anchor cases the parser gets wrong by @danmux in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/800
+* fix: name corpus configs with forward slashes on every platform by @danmux in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/802
+* fix: check the steps under a when in a steps argument by @danmux in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/803
+* test: compare contexts unordered in the corpus parse check by @danmux in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/804
+* feat: complete a declared function's name, and edit what is typed by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/805
+* fix: complete Xcode versions in executors, and edit what is typed by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/806
+
+
+**Full Changelog**: https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.53.0...0.54.0
+
 ## 0.53.0 (2026-10-21)
 
 <!-- Release notes generated using configuration in .github/release.yml at main -->
