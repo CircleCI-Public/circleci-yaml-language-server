@@ -56,10 +56,17 @@ func (doc *YamlDocument) parseLocalOrb(name string, orbNode *sitter.Node) (*Loca
 	}
 
 	orbContent := strings.Repeat(" ", int(orbRange.Start.Character)) + doc.GetNodeText(orbNode)
-	orbDoc, err := ParseFromContent([]byte(orbContent), doc.Context, doc.URI, protocol.Position{
+	offset := protocol.Position{
 		Line:      orbRange.Start.Line,
 		Character: 0,
-	})
+	}
+	var orbDoc YamlDocument
+	var err error
+	if doc.compile != nil {
+		orbDoc, err = parseForCompile([]byte(orbContent), doc.compile.Source, doc.Context, doc.URI, offset)
+	} else {
+		orbDoc, err = ParseFromContent([]byte(orbContent), doc.Context, doc.URI, offset)
+	}
 
 	if err != nil {
 		return nil, err
@@ -95,6 +102,9 @@ func (doc *YamlDocument) parseLocalOrb(name string, orbNode *sitter.Node) (*Loca
 	}
 
 	doc.LocalOrbInfo[name] = orbInfo
+	if doc.compile != nil {
+		doc.compile.Orbs[name] = orbDoc.compile
+	}
 
 	// Diagnostics
 	for _, diagnostic := range *orbDoc.Diagnostics {

@@ -282,6 +282,9 @@ type YamlDocument struct {
 	Offset       protocol.Position
 
 	SuppressionInfo *SuppressionInfo
+
+	// compile is set by ParseForCompile.
+	compile *CompileInfo
 }
 
 func (doc *YamlDocument) IsBuiltIn(commandName string) bool {

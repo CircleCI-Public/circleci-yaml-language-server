@@ -126,6 +126,9 @@ func (doc *YamlDocument) parseSingleJobInvocation(jobInvocationNode *sitter.Node
 							Range: doc.NodeToRange(valueNode),
 						})
 					}
+					if doc.compile != nil {
+						doc.compile.Filters[res.JobInvocationRange] = doc.compileValue(child)
+					}
 				case "branches":
 				case "tags":
 				case "matrix":
@@ -148,10 +151,16 @@ func (doc *YamlDocument) parseSingleJobInvocation(jobInvocationNode *sitter.Node
 				case "pre-steps":
 					res.PreStepsRange = doc.NodeToRange(child)
 					res.PreSteps = doc.parseSteps(valueNode)
+					if doc.compile != nil {
+						doc.compile.PreSteps[res.JobInvocationRange] = doc.NodeToRange(valueNode)
+					}
 
 				case "post-steps":
 					res.PostStepsRange = doc.NodeToRange(child)
 					res.PostSteps = doc.parseSteps(valueNode)
+					if doc.compile != nil {
+						doc.compile.PostSteps[res.JobInvocationRange] = doc.NodeToRange(valueNode)
+					}
 
 				default:
 					paramValue, err := doc.parseParameterValue(child)
