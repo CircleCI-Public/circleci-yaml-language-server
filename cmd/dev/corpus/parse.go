@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"go.lsp.dev/protocol"
 	"gopkg.in/yaml.v3"
 
@@ -105,6 +106,14 @@ func checkParse(file string, content []byte) []row {
 
 	// The protocol's Optional and DiagnosticTags hide their values.
 	protocolFields := cmp.Exporter(func(t reflect.Type) bool { return t.PkgPath() == "go.lsp.dev/protocol" })
+	// A job's and a command's contexts are gathered by ranging over the
+	// workflows map, so their order changes from one parse to the next.
+	contexts := cmp.FilterPath(func(p cmp.Path) bool {
+		return slices.ContainsFunc(p, func(s cmp.PathStep) bool {
+			f, ok := s.(cmp.StructField)
+			return ok && f.Name() == "Contexts"
+		})
+	}, cmpopts.SortSlices(func(a, b string) bool { return a < b }))
 	for _, field := range []struct {
 		name      string
 		got, want any
@@ -118,7 +127,7 @@ func checkParse(file string, content []byte) []row {
 		{"FlattenedSteps", got.FlattenedSteps, want.FlattenedSteps},
 		{"Diagnostics", *got.Diagnostics, *want.Diagnostics},
 	} {
-		if diff := cmp.Diff(field.want, field.got, protocolFields); diff != "" {
+		if diff := cmp.Diff(field.want, field.got, protocolFields, contexts); diff != "" {
 			report("equivalence", 0, fmt.Sprintf("ParseForCompile differs in %s (-ParseFromContent +ParseForCompile)\n%s", field.name, diff))
 		}
 	}
