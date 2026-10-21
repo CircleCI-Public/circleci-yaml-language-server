@@ -43,10 +43,94 @@ jobs:
 		}))
 	})
 
+	t.Run("a version just after the @ is offered them, inserted at the cursor", func(t *testing.T) {
+		const declaration = "  setup-go: github.com/circleci-functions/setup-go@"
+		lines := strings.Split(config, "\n")
+		lines[3] = declaration
+		pos := protocol.Position{Line: 3, Character: uint32(len(declaration))}
+		items := completionItemsWith(t, settings, cache.New(), strings.Join(lines, "\n"), pos)
+
+		edits := map[string]protocol.CompletionItemTextEdit{}
+		for _, item := range items {
+			edits[item.Label] = item.TextEdit
+		}
+		atCursor := protocol.Range{Start: pos, End: pos}
+		assert.Check(t, cmp.DeepEqual(edits, map[string]protocol.CompletionItemTextEdit{
+			"v0.5.1-684fd5b": &protocol.TextEdit{Range: atCursor, NewText: "v0.5.1-684fd5b"},
+			"v0.6.0-1a2b3c4": &protocol.TextEdit{Range: atCursor, NewText: "v0.6.0-1a2b3c4"},
+		}))
+	})
+
+	t.Run("a version replaces what is written of the version", func(t *testing.T) {
+		pos := protocol.Position{Line: 3, Character: uint32(len("  setup-go: github.com/circleci-functions/setup-go@v0"))}
+		items := completionItemsWith(t, settings, cache.New(), config, pos)
+
+		version := findItem(t, items, "v0.6.0-1a2b3c4")
+		assert.Check(t, cmp.DeepEqual(version.TextEdit, &protocol.TextEdit{
+			Range: protocol.Range{
+				Start: protocol.Position{Line: 3, Character: pos.Character - uint32(len("v0"))},
+				End:   pos,
+			},
+			NewText: "v0.6.0-1a2b3c4",
+		}))
+	})
+
 	t.Run("an unpublished function's is offered none", func(t *testing.T) {
 		pos := protocol.Position{Line: 4, Character: uint32(len("  unknown: github.com/circleci-functions/unknown@"))}
 		got := completionLabelsWith(t, settings, cache.New(), config, pos)
 		assert.Check(t, cmp.Len(got, 0))
+	})
+}
+
+func TestCompleteFunctionName(t *testing.T) {
+	fake := fakes.NewCircleCI(t)
+	fake.AddFunction("fn-setup-go", "github.com/circleci-functions/setup-go", "Install a Go toolchain.",
+		fakes.FunctionVersion{ID: "ver-1", Version: "v0.5.1-684fd5b", Descriptor: map[string]any{"name": "setup-go"}},
+		fakes.FunctionVersion{ID: "ver-2", Version: "v0.6.0-1a2b3c4", Descriptor: map[string]any{"name": "setup-go"}},
+	)
+	fake.AddFunction("fn-unreleased", "github.com/circleci-functions/unreleased", "",
+		fakes.FunctionVersion{ID: "ver-pseudo", Version: "v0.0.0-20261007152818-72ffa3f7a023", Descriptor: map[string]any{"name": "unreleased"}},
+	)
+	settings := testHelpers.SettingsForHost(fake.URL())
+
+	// The cursor goes at the end of the declaration.
+	withDeclaration := func(declaration string) (string, protocol.Position) {
+		config := "version: 2.1\n\nfunctions:\n" + declaration + "\n\njobs:\n  build:\n    docker:\n      - image: cimg/base:stable\n    steps:\n      - run: echo\n"
+		return config, protocol.Position{Line: 3, Character: uint32(len(declaration))}
+	}
+	want := []string{
+		"github.com/circleci-functions/setup-go@v0.6.0-1a2b3c4",
+		"github.com/circleci-functions/unreleased",
+	}
+
+	t.Run("a function with no name yet is offered every published function at its latest release", func(t *testing.T) {
+		config, pos := withDeclaration("  setup-go: ")
+		got := completionLabelsWith(t, settings, cache.New(), config, pos)
+		assert.Check(t, cmp.DeepEqual(got, want))
+	})
+
+	t.Run("a function's name being written is offered them too", func(t *testing.T) {
+		config, pos := withDeclaration("  setup-go: github.com/circ")
+		got := completionLabelsWith(t, settings, cache.New(), config, pos)
+		assert.Check(t, cmp.DeepEqual(got, want))
+	})
+
+	t.Run("a function replaces what is written of the name, and shows its description", func(t *testing.T) {
+		config, pos := withDeclaration("  setup-go: github.com/circ")
+		items := completionItemsWith(t, settings, cache.New(), config, pos)
+
+		setupGo := findItem(t, items, want[0])
+		assert.Check(t, cmp.DeepEqual(setupGo.TextEdit, &protocol.TextEdit{
+			Range: protocol.Range{
+				Start: protocol.Position{Line: 3, Character: uint32(len("  setup-go: "))},
+				End:   pos,
+			},
+			NewText: want[0],
+		}))
+		assert.Check(t, cmp.DeepEqual(setupGo.Documentation,
+			&protocol.MarkupContent{Kind: protocol.MarkupKindMarkdown, Value: "Install a Go toolchain."}))
+		unreleased := findItem(t, items, want[1])
+		assert.Check(t, cmp.Nil(unreleased.Documentation))
 	})
 }
 

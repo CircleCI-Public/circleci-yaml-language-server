@@ -93,6 +93,36 @@ func (flag FunctionFlag) DefaultValue() (string, bool) {
 	return value, value != ""
 }
 
+// functionPackageEntity is a function as GET /api/v3/function/packages
+// answers it.
+type functionPackageEntity struct {
+	Attributes struct {
+		Name          string `json:"name"`
+		Description   string `json:"description"`
+		LatestVersion string `json:"latest_version"`
+	} `json:"attributes"`
+	References struct {
+		Versions []struct {
+			ID         string `json:"id"`
+			Attributes struct {
+				Version string `json:"version"`
+			} `json:"attributes"`
+		} `json:"versions"`
+	} `json:"references"`
+}
+
+func (entity functionPackageEntity) toPackage() FunctionPackage {
+	function := FunctionPackage{
+		Name:          entity.Attributes.Name,
+		Description:   entity.Attributes.Description,
+		LatestVersion: entity.Attributes.LatestVersion,
+	}
+	for _, version := range entity.References.Versions {
+		function.Versions = append(function.Versions, FunctionVersion{ID: version.ID, Version: version.Attributes.Version})
+	}
+	return function
+}
+
 // FetchFunction returns the function a name such as
 // "github.com/circleci-functions/setup-go" names, with its versions. It
 // reports ErrFunctionNotPublished when no such function is published.
@@ -107,23 +137,7 @@ func FetchFunction(ctx context.Context, cl *Client, name string) (*FunctionPacka
 	// hints must not offer one.
 	query.Set("filter[pseudo]", "true")
 
-	type entity struct {
-		Attributes struct {
-			Name          string `json:"name"`
-			Description   string `json:"description"`
-			LatestVersion string `json:"latest_version"`
-		} `json:"attributes"`
-		References struct {
-			Versions []struct {
-				ID         string `json:"id"`
-				Attributes struct {
-					Version string `json:"version"`
-				} `json:"attributes"`
-			} `json:"versions"`
-		} `json:"references"`
-	}
-
-	entities, err := GetPaged[entity](ctx, cl, "function/packages", query)
+	entities, err := GetPaged[functionPackageEntity](ctx, cl, "function/packages", query)
 	if err != nil {
 		return nil, err
 	}
@@ -133,19 +147,29 @@ func FetchFunction(ctx context.Context, cl *Client, name string) (*FunctionPacka
 			continue
 		}
 
-		function := &FunctionPackage{
-			Name:          found.Attributes.Name,
-			Description:   found.Attributes.Description,
-			LatestVersion: found.Attributes.LatestVersion,
-		}
-		for _, version := range found.References.Versions {
-			function.Versions = append(function.Versions, FunctionVersion{ID: version.ID, Version: version.Attributes.Version})
-		}
-
-		return function, nil
+		function := found.toPackage()
+		return &function, nil
 	}
 
 	return nil, fmt.Errorf("function %s: %w", name, ErrFunctionNotPublished)
+}
+
+// ListFunctions returns every function published to the catalog, each with
+// its released versions but not its pseudo-versions.
+//
+// A host that doesn't serve the route, such as CircleCI Server, answers 404,
+// which is returned as an APIError.
+func ListFunctions(ctx context.Context, cl *Client) ([]FunctionPackage, error) {
+	entities, err := GetPaged[functionPackageEntity](ctx, cl, "function/packages", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	functions := make([]FunctionPackage, 0, len(entities))
+	for _, entity := range entities {
+		functions = append(functions, entity.toPackage())
+	}
+	return functions, nil
 }
 
 // FetchFunctionDescriptor returns the descriptor of a function version, by
