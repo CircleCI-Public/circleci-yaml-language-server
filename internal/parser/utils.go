@@ -353,6 +353,8 @@ func (doc *YamlDocument) iterateOnMergedBlockMapping(blockMappingNode *sitter.No
 
 }
 
+// extractMergeAnchorNames reads one alias or a flow sequence of them. A block
+// sequence (`<<:` then `- *a`) merges nothing; no surveyed config writes one.
 func extractMergeAnchorNames(node *sitter.Node, doc *YamlDocument) []string {
 	if node == nil {
 		return nil

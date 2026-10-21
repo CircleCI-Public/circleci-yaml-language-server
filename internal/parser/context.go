@@ -6,6 +6,8 @@ import (
 	ast2 "github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
 )
 
+// assignContexts collects the contexts each job and command can be run with,
+// in no particular order, since Workflows is a map.
 func (doc *YamlDocument) assignContexts() {
 	for _, workflow := range doc.Workflows {
 		for _, jobInvocation := range workflow.JobInvocations {

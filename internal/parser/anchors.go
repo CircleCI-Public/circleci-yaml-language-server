@@ -27,6 +27,9 @@ func ParseYamlAnchors(doc *YamlDocument) map[string]YamlAnchor {
 			name := doc.GetNodeText(nameNode)
 			valueNode := node.Parent()
 
+			// A redefined anchor keeps its last definition, so an alias
+			// written before the redefinition resolves to the wrong one. No
+			// surveyed config does that.
 			anchorMap[name] = YamlAnchor{
 				DefinitionRange: doc.NodeToRange(node),
 				References:      &[]protocol.Range{},
