@@ -83,7 +83,7 @@ func (ch *CompletionHandler) completeSection(ctx context.Context) {
 			ch.completeOrbs(ctx)
 		}
 	case position.InRange(ch.Doc.FunctionsRange, pos):
-		ch.completeFunctionVersion(ctx)
+		ch.completeFunctionDeclaration(ctx)
 	case position.InRange(ch.Doc.PipelineParametersRange, pos):
 		ch.completeParameterDefinitions(ctx, ch.Doc.PipelineParameters, pipelineParameterTypes)
 	}

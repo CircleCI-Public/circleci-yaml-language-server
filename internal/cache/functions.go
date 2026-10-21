@@ -19,6 +19,12 @@ type Functions struct {
 	// descriptors are keyed by version id. A version never changes once
 	// published.
 	descriptors *memo.Memo[*circleci.FunctionDescriptor]
+	// catalog holds every published function, under catalogKey.
+	catalog *memo.Memo[[]circleci.FunctionPackage]
+}
+
+func functionCatalogLifetime(functions []circleci.FunctionPackage) time.Duration {
+	return memo.Existence(len(functions) != 0)
 }
 
 func functionPackageLifetime(function *circleci.FunctionPackage) time.Duration {
@@ -44,5 +50,16 @@ func (c *Functions) Function(ctx context.Context, client *circleci.Client, name 
 func (c *Functions) Descriptor(ctx context.Context, client *circleci.Client, version circleci.FunctionVersion) (*circleci.FunctionDescriptor, error) {
 	return c.descriptors.Get(ctx, version.ID, func(ctx context.Context) (*circleci.FunctionDescriptor, error) {
 		return circleci.FetchFunctionDescriptor(ctx, client, version.ID)
+	})
+}
+
+// All returns every function published to the catalog. An error, such as
+// from a host that doesn't serve the catalog, is returned but not remembered.
+//
+// The listing leaves out pseudo-versions, which a declaration can pin, so it
+// doesn't stand in for Function.
+func (c *Functions) All(ctx context.Context, client *circleci.Client) ([]circleci.FunctionPackage, error) {
+	return c.catalog.Get(ctx, catalogKey, func(ctx context.Context) ([]circleci.FunctionPackage, error) {
+		return circleci.ListFunctions(ctx, client)
 	})
 }
