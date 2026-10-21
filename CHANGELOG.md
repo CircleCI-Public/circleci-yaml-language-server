@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## 0.54.1 (2026-10-21)
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+* refactor: parse templates into a tree of blocks by @danmux in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/807
+* refactor: evaluate templates and conditions as the reference does by @danmux in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/809
+* fix: name matrix jobs as the reference compiler does by @danmux in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/810
+
+
+**Full Changelog**: https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.54.0...0.54.1
+
 ## 0.54.0 (2026-10-21)
 
 <!-- Release notes generated using configuration in .github/release.yml at main -->
