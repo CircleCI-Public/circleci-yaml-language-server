@@ -11,12 +11,7 @@ import (
 
 // knownGaps are the problems parse finds in this repo's configs that the
 // parser has yet to fix, so that fixing one fails until it's removed here.
-var knownGaps = map[string][]string{
-	"internal/parser/testdata/conditional-steps/as-args/build.yml": {
-		"30: 1 when step(s) not in CompileInfo",
-		"34: 1 when step(s) not in CompileInfo",
-	},
-}
+var knownGaps = map[string][]string{}
 
 func TestParse(t *testing.T) {
 	t.Run("this repo's configs", func(t *testing.T) {

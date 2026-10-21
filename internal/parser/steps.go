@@ -247,10 +247,7 @@ func (doc *YamlDocument) parseAnchorStep(blockNode *sitter.Node) []ast.Step {
 func (doc *YamlDocument) parseWhenUnlessStep(blockNode *sitter.Node) []ast.Step {
 	// blockNode is a block_node
 	steps := make([]ast.Step, 0)
-	var cond *Condition
-	if doc.compile != nil {
-		cond = &Condition{Kind: doc.GetNodeText(blockNode.Parent().ChildByFieldName("key", yamltree.Language)), Range: doc.NodeToRange(blockNode.Parent())}
-	}
+	cond := doc.newCondition(blockNode)
 
 	blockMapping := GetChildMapping(blockNode)
 	doc.iterateOnBlockMapping(blockMapping, func(child *sitter.Node) {
@@ -266,12 +263,7 @@ func (doc *YamlDocument) parseWhenUnlessStep(blockNode *sitter.Node) []ast.Step 
 				cond.Steps = doc.compile.pending
 			}
 		case "condition":
-			if doc.addCondition(value) {
-				doc.StepConditions = append(doc.StepConditions, doc.Conditions[len(doc.Conditions)-1])
-			}
-			if cond != nil {
-				cond.Condition = doc.compileValue(child)
-			}
+			doc.parseStepCondition(cond, child)
 		}
 	})
 
@@ -279,6 +271,61 @@ func (doc *YamlDocument) parseWhenUnlessStep(blockNode *sitter.Node) []ast.Step 
 		doc.compile.pending = []StepNode{{Cond: cond}}
 	}
 	return steps
+}
+
+// newCondition starts the Condition of the conditional step whose body is
+// blockNode, or returns nil when not parsing for the compiler.
+func (doc *YamlDocument) newCondition(blockNode *sitter.Node) *Condition {
+	if doc.compile == nil {
+		return nil
+	}
+	return &Condition{Kind: doc.GetNodeText(blockNode.Parent().ChildByFieldName("key", yamltree.Language)), Range: doc.NodeToRange(blockNode.Parent())}
+}
+
+// parseStepCondition reads pair, the condition of a conditional step, into
+// cond if it isn't nil.
+func (doc *YamlDocument) parseStepCondition(cond *Condition, pair *sitter.Node) {
+	_, value := doc.GetKeyValueNodes(pair)
+	if doc.addCondition(value) {
+		doc.StepConditions = append(doc.StepConditions, doc.Conditions[len(doc.Conditions)-1])
+	}
+	if cond != nil {
+		cond.Condition = doc.compileValue(pair)
+	}
+}
+
+// conditionalBody returns the body of item, a list item, when it is a when,
+// unless or with_tool_cache step.
+func (doc *YamlDocument) conditionalBody(item *sitter.Node) *sitter.Node {
+	key, value := doc.GetKeyValueNodes(stepPair(item))
+	if key == nil || value == nil {
+		return nil
+	}
+	// Read as bytes, since a string would be allocated for every step.
+	key = doc.scalarOf(key, 0)
+	switch string(doc.Content[key.StartByte():key.EndByte()]) {
+	case "when", "unless", "with_tool_cache":
+	default:
+		return nil
+	}
+	if doc.isNullValue(value) {
+		return nil
+	}
+	return value
+}
+
+// stepPair returns the first pair of item, a list item, when it holds a
+// mapping, written in block or flow style.
+func stepPair(item *sitter.Node) *sitter.Node {
+	node := item
+	if item.Type(yamltree.Language) == "block_sequence_item" {
+		node = item.Child(1)
+	}
+	mapping := GetChildMapping(node)
+	if pair := GetChildOfType(mapping, "block_mapping_pair"); pair != nil {
+		return pair
+	}
+	return GetChildOfType(mapping, "flow_pair")
 }
 
 func isConditionalStep(keyName string) bool {
