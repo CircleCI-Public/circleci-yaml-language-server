@@ -1,5 +1,25 @@
 # CHANGELOG
 
+## 0.53.0 (2026-10-21)
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+* fix: read the flags of a function's default command by @stiyyagura0901 in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/789
+* feat: parse and validate a run step's teardown steps by @stiyyagura0901 in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/457
+* refactor: parse YAML with pure-Go gotreesitter by @danmux in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/791
+* build: drop cgo and Zig from release and CI by @danmux in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/792
+* test: pin AST sizes and benchmark parse allocations by @danmux in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/793
+* refactor: record compile-only facts in a parse side table by @danmux in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/794
+* chore: upgrade go to 1.27.3 by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/795
+* ci: revert the windows executor to machine: true by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/796
+* fix: merge a sequence of anchors in the order written by @danmux in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/799
+
+## New Contributors
+* @danmux made their first contribution in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/791
+
+**Full Changelog**: https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.52.0...0.53.0
+
 ## 0.52.0 (2026-10-13)
 
 <!-- Release notes generated using configuration in .github/release.yml at main -->
