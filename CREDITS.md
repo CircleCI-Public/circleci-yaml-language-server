@@ -28,6 +28,7 @@ Developer Experience team of CircleCI
 | github.com/cloudflare/circl                | BSD-3-Clause | https://github.com/cloudflare/circl/blob/HEAD/LICENSE                       |
 | github.com/davecgh/go-spew/spew            | ISC          | https://github.com/davecgh/go-spew/blob/HEAD/LICENSE                        |
 | github.com/emirpasic/gods                  | BSD-2-Clause | https://github.com/emirpasic/gods/blob/HEAD/LICENSE                         |
+| github.com/fxamacker/cbor/v2               | MIT          | https://github.com/fxamacker/cbor/blob/HEAD/LICENSE                         |
 | github.com/go-git/gcfg/v2                  | BSD-3-Clause | https://github.com/go-git/gcfg/blob/HEAD/LICENSE                            |
 | github.com/go-git/go-billy/v6              | Apache-2.0   | https://github.com/go-git/go-billy/blob/HEAD/LICENSE                        |
 | github.com/go-git/go-git/v6                | Apache-2.0   | https://github.com/go-git/go-git/blob/HEAD/LICENSE                          |
@@ -49,6 +50,7 @@ Developer Experience team of CircleCI
 | github.com/rollbar/rollbar-go              | MIT          | https://github.com/rollbar/rollbar-go/blob/HEAD/LICENSE                     |
 | github.com/sergi/go-diff/diffmatchpatch    | MIT          | https://github.com/sergi/go-diff/blob/HEAD/LICENSE                          |
 | github.com/stretchr/testify                | MIT          | https://github.com/stretchr/testify/blob/HEAD/LICENSE                       |
+| github.com/x448/float16                    | MIT          | https://github.com/x448/float16/blob/HEAD/LICENSE                           |
 | github.com/xeipuuv/gojsonpointer           | Apache-2.0   | https://github.com/xeipuuv/gojsonpointer/blob/HEAD/LICENSE-APACHE-2.0.txt   |
 | github.com/xeipuuv/gojsonreference         | Apache-2.0   | https://github.com/xeipuuv/gojsonreference/blob/HEAD/LICENSE-APACHE-2.0.txt |
 | github.com/xeipuuv/gojsonschema            | Apache-2.0   | https://github.com/xeipuuv/gojsonschema/blob/HEAD/LICENSE-APACHE-2.0.txt    |

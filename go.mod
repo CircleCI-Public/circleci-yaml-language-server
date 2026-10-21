@@ -8,6 +8,7 @@ require (
 	github.com/Masterminds/semver/v3 v3.5.0
 	github.com/bep/debounce v1.2.1
 	github.com/chainguard-dev/git-urls v1.0.2
+	github.com/fxamacker/cbor/v2 v2.9.6
 	github.com/go-git/go-git/v6 v6.0.0-alpha.5
 	github.com/google/go-cmp v0.7.0
 	github.com/hashicorp/go-retryablehttp v0.7.8
@@ -55,6 +56,7 @@ require (
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/sergi/go-diff v1.4.0 // indirect
 	github.com/stretchr/testify v1.11.1 // indirect
+	github.com/x448/float16 v0.8.4 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
