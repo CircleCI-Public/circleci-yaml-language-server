@@ -75,3 +75,70 @@ func TestFunctionDeclarationCompletion(t *testing.T) {
 		}))
 	})
 }
+
+// functionOutputsConfig has a function step with an id on line 11, and steps
+// that read its outputs on lines 12 and 13, the second not finished.
+const functionOutputsConfig = `version: 2.1
+
+functions:
+  build: github.com/circleci-functions/build@v0.1.0
+
+jobs:
+  deploy:
+    machine:
+      image: ubuntu-2404:current
+    steps:
+      - build:
+          id: image
+      - run: echo ${{ steps.image.outputs.digest }}
+      - run: echo ${{ steps.image.outputs.
+`
+
+// TestFunctionOutputs completes and hovers on the references a step makes to
+// the outputs of a function step before it.
+func TestFunctionOutputs(t *testing.T) {
+	fake := linkedProjectFake(t)
+	fake.AddFunction("fn-build", "github.com/circleci-functions/build", "Build an image.",
+		fakes.FunctionVersion{ID: "ver-build", Version: "v0.1.0", Descriptor: map[string]any{
+			"name": "build",
+			"outputs": []any{
+				map[string]any{"name": "digest", "type": "string", "description": "Digest of the pushed image.", "secret": true},
+				map[string]any{"name": "tags", "type": "list"},
+			},
+		}},
+	)
+
+	session := start(t, fake, functionOutputsConfig, testToken)
+	session.open(t, functionOutputsConfig)
+
+	t.Run("the id of an earlier function step is completed", func(t *testing.T) {
+		list, err := session.client.Completion(session.workspace.URI(), position(13, uint32(len("      - run: echo ${{ steps."))))
+		assert.NilError(t, err)
+		assert.Assert(t, list != nil, "no completion")
+		labels := []string{}
+		for _, item := range list.Items {
+			labels = append(labels, item.Label)
+		}
+		assert.Check(t, cmp.DeepEqual(labels, []string{"image"}))
+	})
+
+	t.Run("the outputs of the function are completed, with their type", func(t *testing.T) {
+		list, err := session.client.Completion(session.workspace.URI(), position(13, uint32(len("      - run: echo ${{ steps.image.outputs."))))
+		assert.NilError(t, err)
+		assert.Assert(t, list != nil, "no completion")
+		details := map[string]string{}
+		for _, item := range list.Items {
+			details[item.Label], _ = item.Detail.Get()
+		}
+		assert.Check(t, cmp.DeepEqual(details, map[string]string{"digest": "string, secret", "tags": "list"}))
+	})
+
+	t.Run("hovering on a reference shows the output", func(t *testing.T) {
+		hover, err := session.client.Hover(session.workspace.URI(), position(12, uint32(len("      - run: echo ${{ steps.image.outputs.dig"))))
+		assert.NilError(t, err)
+		assert.Assert(t, hover != nil, "no hover")
+		markup, ok := hover.Contents.(*protocol.MarkupContent)
+		assert.Assert(t, ok, "hover contents are %T, not markup", hover.Contents)
+		assert.Check(t, cmp.Equal(markup.Value, "**digest** output of **build**\n\n(string, secret): Digest of the pushed image."))
+	})
+}

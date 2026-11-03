@@ -37,6 +37,10 @@ func (ch *CompletionHandler) GetCompletionItems(ctx context.Context) {
 		return
 	}
 
+	if ch.completeStepOutputs(ctx) {
+		return
+	}
+
 	modifiedDocs := ch.Doc.ModifyTextForAutocomplete(ch.Params.Position)
 	// The variants are this handler's to close; the original belongs to
 	// whoever parsed it.

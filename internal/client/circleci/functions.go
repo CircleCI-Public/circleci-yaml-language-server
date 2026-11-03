@@ -29,7 +29,8 @@ type FunctionVersion struct {
 }
 
 // FunctionDescriptor is a function version's function.yaml: what it does, the
-// flags it takes, which a step passes under `with`, and the config that runs it.
+// flags it takes, which a step passes under `with`, the outputs it sets, and
+// the config that runs it.
 type FunctionDescriptor struct {
 	Name        string                     `json:"name"`
 	Description string                     `json:"description"`
@@ -37,6 +38,7 @@ type FunctionDescriptor struct {
 	Example     string                     `json:"example"`
 	Default     string                     `json:"default"`
 	Flags       []FunctionFlag             `json:"flags"`
+	Outputs     []FunctionOutput           `json:"outputs"`
 	Commands    map[string]FunctionCommand `json:"commands"`
 }
 
@@ -81,6 +83,24 @@ type FunctionFlag struct {
 	Type        string `json:"type"`
 	Default     any    `json:"default"`
 	Description string `json:"description"`
+}
+
+// FunctionOutput is a value a function sets for the steps after it to read,
+// shared by every command of the function. Its type is string, bool, int or
+// list, a list being a list of strings.
+type FunctionOutput struct {
+	Name        string `json:"name"`
+	Type        string `json:"type"`
+	Description string `json:"description"`
+	Secret      bool   `json:"secret"`
+}
+
+// DeclaredOutputs is the outputs the function declares. An output with no
+// name or no type isn't one.
+func (descriptor *FunctionDescriptor) DeclaredOutputs() []FunctionOutput {
+	return slices.DeleteFunc(slices.Clone(descriptor.Outputs), func(output FunctionOutput) bool {
+		return output.Name == "" || output.Type == ""
+	})
 }
 
 // DefaultValue is the flag's default written as a value, and whether it has
