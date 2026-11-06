@@ -16,6 +16,8 @@ import (
 )
 
 func TestNextVersion(t *testing.T) {
+	const commit = "5dc955656bd65e5e7a235220375e6ae155253d33"
+
 	testCases := []struct {
 		name     string
 		current  string
@@ -49,10 +51,10 @@ func TestNextVersion(t *testing.T) {
 			expected: "0.41.2-pre.1",
 		},
 		{
-			name:    "The manifest's version once release-please has drafted it",
+			name:    "The manifest's version once release-please has drafted it for this commit",
 			current: "0.42.0",
 			releases: []release{
-				{TagName: "0.42.0", Name: "v0.42.0", Draft: true},
+				{TagName: "0.42.0", Name: "v0.42.0", Draft: true, TargetCommitish: commit},
 				{TagName: "0.41.2-pre.2", Name: "v0.41.2-pre.2"},
 			},
 			expected: "0.42.0",
@@ -67,15 +69,23 @@ func TestNextVersion(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := nextVersion(tt.current, tt.releases)
+			got, err := nextVersion(tt.current, commit, tt.releases)
 			assert.NilError(t, err)
 			assert.Check(t, cmp.Equal(got, tt.expected))
 		})
 	}
 
 	t.Run("A manifest version that isn't semver", func(t *testing.T) {
-		_, err := nextVersion("v1", nil)
+		_, err := nextVersion("v1", commit, nil)
 		assert.Check(t, cmp.ErrorContains(err, "manifest version"))
+	})
+
+	t.Run("A release drafted for another commit isn't published from this one", func(t *testing.T) {
+		const releasePRMerge = "8677838d2b75d1bba7c5a58bc323c9ff7e21cdea"
+		releases := []release{{TagName: "0.54.1", Name: "v0.54.1", Draft: true, TargetCommitish: releasePRMerge}}
+
+		_, err := nextVersion("0.54.1", commit, releases)
+		assert.Check(t, cmp.ErrorContains(err, "rerun the Build and release workflow on "+releasePRMerge))
 	})
 }
 
