@@ -1,6 +1,8 @@
 package orburl_test
 
 import (
+	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -122,6 +124,107 @@ func TestFetchWithGitHubToken(t *testing.T) {
 		fake, found := fetch(t, "https://example.com/private.yml")
 		assert.Check(t, !found)
 		assert.Check(t, cmp.DeepEqual(fake.auth, []string{"example.com "}))
+	})
+}
+
+func TestFetchFromClient(t *testing.T) {
+	const raw = "https://raw.githubusercontent.com/acme/orbs/main"
+
+	// fromClient stands in for a client that fetches GitHub files: it serves
+	// private.yml, fails for broken.yml, and records what it is asked.
+	type fromClient struct{ asked []string }
+	newConfig := func(t *testing.T, token string) (orburl.Config, *gitHubFake, *fromClient) {
+		t.Helper()
+		fake := newGitHubFake(t)
+		client := &fromClient{}
+		return orburl.Config{
+			GitHubToken: token,
+			Transport:   fake,
+			FetchGitHubFile: func(_ context.Context, address string) (string, bool, error) {
+				client.asked = append(client.asked, address)
+				switch {
+				case strings.HasSuffix(address, "/private.yml"):
+					return "version: 2.1\n", true, nil
+				case strings.HasSuffix(address, "/broken.yml"):
+					return "", false, errors.New("the client failed")
+				default:
+					return "", false, nil
+				}
+			},
+		}, fake, client
+	}
+
+	t.Run("a private file without a token is fetched by the client", func(t *testing.T) {
+		cfg, fake, client := newConfig(t, "")
+		source, found, err := orburl.Fetch(t.Context(), cfg, raw+"/private.yml")
+		assert.Check(t, err)
+		assert.Check(t, found)
+		assert.Check(t, cmp.Equal(source, "version: 2.1\n"))
+		assert.Check(t, cmp.DeepEqual(fake.auth, []string{"raw.githubusercontent.com "}))
+		assert.Check(t, cmp.DeepEqual(client.asked, []string{raw + "/private.yml"}))
+	})
+
+	t.Run("a public file isn't asked of the client", func(t *testing.T) {
+		cfg, _, client := newConfig(t, "")
+		_, found, err := orburl.Fetch(t.Context(), cfg, raw+"/public.yml")
+		assert.Check(t, err)
+		assert.Check(t, found)
+		assert.Check(t, cmp.Len(client.asked, 0))
+	})
+
+	t.Run("a token is used rather than the client", func(t *testing.T) {
+		cfg, _, client := newConfig(t, "wrong")
+		_, found, err := orburl.Fetch(t.Context(), cfg, raw+"/private.yml")
+		assert.Check(t, err)
+		assert.Check(t, !found, "the token can't see it, and its answer stands")
+		assert.Check(t, cmp.Len(client.asked, 0))
+	})
+
+	t.Run("a file the client can't see isn't there", func(t *testing.T) {
+		cfg, _, _ := newConfig(t, "")
+		_, found, err := orburl.Fetch(t.Context(), cfg, raw+"/missing.yml")
+		assert.Check(t, err)
+		assert.Check(t, !found)
+	})
+
+	t.Run("the client failing is an error", func(t *testing.T) {
+		cfg, _, _ := newConfig(t, "")
+		_, found, err := orburl.Fetch(t.Context(), cfg, raw+"/broken.yml")
+		assert.Check(t, cmp.ErrorContains(err, "the client failed"))
+		assert.Check(t, !found)
+	})
+
+	t.Run("a file on a host that isn't GitHub is never asked of the client", func(t *testing.T) {
+		cfg, _, client := newConfig(t, "")
+		_, found, err := orburl.Fetch(t.Context(), cfg, "https://example.com/private.yml")
+		assert.Check(t, err)
+		assert.Check(t, !found)
+		assert.Check(t, cmp.Len(client.asked, 0))
+	})
+}
+
+func TestGitHubAt(t *testing.T) {
+	var paths []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		paths = append(paths, r.URL.Path)
+		_, _ = w.Write([]byte("version: 2.1\n"))
+	}))
+	t.Cleanup(srv.Close)
+
+	transport, err := orburl.GitHubAt(srv.URL)
+	assert.NilError(t, err)
+
+	t.Run("a file on GitHub is fetched from the fake", func(t *testing.T) {
+		_, found, err := orburl.Fetch(t.Context(), orburl.Config{Transport: transport}, "https://raw.githubusercontent.com/acme/orbs/main/go.yml")
+		assert.Check(t, err)
+		assert.Check(t, found)
+		assert.Check(t, cmp.DeepEqual(paths, []string{"/acme/orbs/main/go.yml"}))
+	})
+
+	t.Run("empty is GitHub itself", func(t *testing.T) {
+		transport, err := orburl.GitHubAt("")
+		assert.Check(t, err)
+		assert.Check(t, transport == nil)
 	})
 }
 

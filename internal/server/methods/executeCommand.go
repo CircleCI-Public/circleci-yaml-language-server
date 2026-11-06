@@ -32,6 +32,9 @@ func (methods *Methods) ExecuteCommand(ctx context.Context, params *protocol.Exe
 		}
 		methods.setGitHubToken(param)
 
+	case "gitHubAccountChanged":
+		methods.forgetURLOrbs()
+
 	case "setSelfHostedUrl":
 		param, ok := argument[string](arguments, 0)
 		if !ok {
@@ -137,11 +140,16 @@ func (methods *Methods) setGitHubToken(token string) {
 		return
 	}
 
-	methods.Cache.OrbCache.Clear()
 	methods.updateSettings(func(settings *session.Settings) {
 		settings.OrbURLs.GitHubToken = token
 	})
+	methods.forgetURLOrbs()
+}
 
+// forgetURLOrbs forgets every orb fetched, or found missing, and checks the
+// open documents again.
+func (methods *Methods) forgetURLOrbs() {
+	methods.Cache.OrbCache.Clear()
 	for _, file := range methods.Cache.FileCache.GetFiles() {
 		go methods.notificationMethods(methods.Ctx, file.TextDocument)
 	}

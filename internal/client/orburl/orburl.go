@@ -5,7 +5,8 @@
 // only from the https prefixes in an organization's URL orb allow-list, with
 // the credential each prefix is given there. That list isn't something the
 // server can read, so it fetches a URL as it stands, and a file on GitHub that
-// isn't public with the user's GitHub token, when it has one.
+// isn't public with the user's GitHub token, when it has one, or else by asking
+// the client to fetch it, when the client can.
 package orburl
 
 import (
@@ -32,6 +33,11 @@ type Config struct {
 	// GitHubToken, when set, is used to fetch a file on GitHub that can't be
 	// fetched without it, as for a private repository.
 	GitHubToken string
+	// FetchGitHubFile, when set, fetches a file on GitHub that can't be
+	// fetched without credentials, when there is no GitHubToken. found and err
+	// mean what they do for Fetch. It is only ever given an https URL on a
+	// GitHub host.
+	FetchGitHubFile func(ctx context.Context, address string) (source string, found bool, err error)
 	// Transport carries every request. Nil means http.DefaultTransport. It
 	// exists so that a test can point Fetch at a fake host.
 	Transport http.RoundTripper
@@ -50,9 +56,9 @@ func NeedsGitHubToken(cfg Config, address string) bool {
 // goes wrong is an error, because the host didn't say.
 //
 // A URL is fetched without credentials first, and only then, if it is on
-// GitHub, with the GitHub token. The compiler does the same with its
-// allow-list, because GitHub answers 404 for a public file when a token is
-// sent that can't see it.
+// GitHub, with the GitHub token, or, when there is none, with FetchGitHubFile.
+// The compiler does the same with its allow-list, because GitHub answers 404
+// for a public file when a token is sent that can't see it.
 func Fetch(ctx context.Context, cfg Config, address string) (source string, found bool, err error) {
 	parsed, err := url.Parse(address)
 	if err != nil {
@@ -63,11 +69,45 @@ func Fetch(ctx context.Context, cfg Config, address string) (source string, foun
 	}
 
 	source, found, err = get(ctx, cfg, address, "")
-	if err != nil || found || cfg.GitHubToken == "" || !slices.Contains(gitHubHosts, parsed.Hostname()) {
+	if err != nil || found || !slices.Contains(gitHubHosts, parsed.Hostname()) {
 		return source, found, err
 	}
 
-	return get(ctx, cfg, address, cfg.GitHubToken)
+	switch {
+	case cfg.GitHubToken != "":
+		return get(ctx, cfg, address, cfg.GitHubToken)
+	case cfg.FetchGitHubFile != nil:
+		return cfg.FetchGitHubFile(ctx, address)
+	default:
+		return "", false, nil
+	}
+}
+
+// GitHubAt returns a transport that sends each request for a file on GitHub to
+// baseURL instead, keeping its path, and every other request as it is. It
+// exists so that a test can point the server at a fake GitHub; an empty
+// baseURL is GitHub itself, and nil.
+func GitHubAt(baseURL string) (http.RoundTripper, error) {
+	if baseURL == "" {
+		return nil, nil
+	}
+	base, err := url.Parse(baseURL)
+	if err != nil {
+		return nil, err
+	}
+	return gitHubAt{base: base}, nil
+}
+
+type gitHubAt struct{ base *url.URL }
+
+func (g gitHubAt) RoundTrip(r *http.Request) (*http.Response, error) {
+	if slices.Contains(gitHubHosts, r.URL.Hostname()) {
+		r = r.Clone(r.Context())
+		r.URL.Scheme = g.base.Scheme
+		r.URL.Host = g.base.Host
+		r.Host = ""
+	}
+	return http.DefaultTransport.RoundTrip(r)
 }
 
 // get fetches an orb URL, sending token, when it isn't empty, as a GitHub

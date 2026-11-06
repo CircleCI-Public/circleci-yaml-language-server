@@ -7,6 +7,7 @@ import (
 	"io"
 	"log/slog"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"strings"
@@ -48,7 +49,7 @@ func (server JSONRPCServer) serve(stream jsonrpc2.Stream) error {
 	conn := jsonrpc2.NewConn(stream, jsonrpc2.WithCodec(lspcodec.Codec{}))
 	// Each client gets settings of its own: one setting a token should not
 	// sign every other client in with it.
-	lsp := methods.New(ctx, protocol.ClientDispatcher(conn), cache.New(), *server.lsContext, server.SchemaLocation)
+	lsp := methods.New(ctx, conn, cache.New(), *server.lsContext, server.SchemaLocation)
 	handler := protocol.ServerHandler(lsp, jsonrpc2.MethodNotFoundHandler)
 	conn.Go(ctx, recoverPanics(dropFailedNotifications(logMethods(servedDocuments(lsp, releaseQueries(ctx, handler))))))
 
@@ -308,8 +309,9 @@ func getJsonRpcServer(ctx context.Context, schemaLocation string) JSONRPCServer 
 				HostUrl: circleci.DefaultHostURL,
 				Token:   "",
 			},
-			// An editor can set this over the protocol too (setGitHubToken).
-			OrbURLs: orburl.Config{GitHubToken: gitHubTokenFromEnv()},
+			// An editor can set the token over the protocol too
+			// (setGitHubToken).
+			OrbURLs: orburl.Config{GitHubToken: gitHubTokenFromEnv(), Transport: gitHubTransportFromEnv()},
 			// Empty is the public Docker Hub. The acceptance tests set it to
 			// point the server at a fake.
 			DockerHub:      dockerhub.Config{BaseURL: os.Getenv("LSP_DOCKER_HUB_URL")},
@@ -317,6 +319,17 @@ func getJsonRpcServer(ctx context.Context, schemaLocation string) JSONRPCServer 
 		},
 		SchemaLocation: schemaLocation,
 	}
+}
+
+// gitHubTransportFromEnv is the transport that sends requests for files on
+// GitHub to LSP_GITHUB_URL, or nil, for GitHub itself, when it isn't set.
+func gitHubTransportFromEnv() http.RoundTripper {
+	transport, err := orburl.GitHubAt(os.Getenv("LSP_GITHUB_URL"))
+	if err != nil {
+		slog.Warn("ignoring LSP_GITHUB_URL", "err", err)
+		return nil
+	}
+	return transport
 }
 
 // gitHubTokenFromEnv is the GitHub token in the environment, under the names

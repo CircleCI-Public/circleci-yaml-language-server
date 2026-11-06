@@ -41,10 +41,14 @@ func (methods *Methods) Initialize(_ context.Context, params *protocol.Initializ
 		schemaHovers = !isCciExtension
 	}
 	gitHubSignInCommand, _ := options["gitHubSignInCommand"].(string)
+	fetchesGitHubFiles := options["fetchesGitHubFiles"] == true
 	methods.updateSettings(func(settings *session.Settings) {
 		settings.IsCciExtension = settings.IsCciExtension || isCciExtension
 		settings.SchemaHovers = schemaHovers
 		settings.GitHubSignInCommand = gitHubSignInCommand
+		if fetchesGitHubFiles {
+			settings.OrbURLs.FetchGitHubFile = methods.fetchGitHubFile
+		}
 		settings.DefinitionLinks = definitionLinks(params.Capabilities)
 	})
 	if userAgent, ok := options["userAgent"].(string); ok {
