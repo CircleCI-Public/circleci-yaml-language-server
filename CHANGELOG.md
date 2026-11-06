@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 0.54.2 (2026-11-06)
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+* fix: only publish a drafted release from its release PR's merge by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/816
+
+
+**Full Changelog**: https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.54.1...0.54.2
+
 ## 0.54.1 (2026-10-21)
 
 <!-- Release notes generated using configuration in .github/release.yml at main -->
