@@ -18,6 +18,7 @@ import (
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/codeaction"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/paramref"
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/stepoutputs"
 )
 
 // These follow the compiler's config_compilation/functions.clj, and its
@@ -501,7 +502,7 @@ func isNumericArgument(argument ast.ParameterValue, kind string) bool {
 		return true
 	case "string":
 		value := strings.Trim(fmt.Sprint(argument.Value), `"'`)
-		if isReference, _ := paramref.IsPartiallyReferenced(value); isReference {
+		if isReference, _ := paramref.IsPartiallyReferenced(value); isReference || stepoutputs.Contains(value) {
 			return true
 		}
 		if strings.HasPrefix(kind, "float") {
@@ -521,7 +522,7 @@ func isBooleanArgument(argument ast.ParameterValue) bool {
 	case "string":
 		value := fmt.Sprint(argument.Value)
 		isReference, _ := paramref.IsPartiallyReferenced(value)
-		return isReference || value == "true" || value == "false"
+		return isReference || stepoutputs.Contains(value) || value == "true" || value == "false"
 	}
 	return false
 }
