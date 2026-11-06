@@ -123,6 +123,8 @@ Green builds on the `main` branch will create a new release PR. These need to be
 
 Important note: Release-please will only create a release PR for PRs that have a `feat` or `fix` commit message. If your PR starts with `chore` , your changes will NOT be released.
 
+The release is published by the pipeline on the release PR's merge commit, and only that one. If that pipeline doesn't run, for example because whoever merged the PR can't use the release workflow's restricted contexts, every later release job on `main` fails and names the commit. Someone who can use those contexts then needs to rerun that commit's `Build and release` workflow from failed.
+
 This is a project in active development, and we target a release frequency of
 one release per week on average. However, we reserve the right of releasing more
 or less frequently when necessary.

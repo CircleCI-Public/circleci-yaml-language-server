@@ -3,6 +3,13 @@
 // else a prerelease whose tag has never been used, so no tag moves and no
 // asset is replaced.
 //
+// A drafted release is only published from the commit release-please drafted
+// it for, the merge of its release PR. Built from any other commit, as when
+// the release PR's own pipeline didn't run, it would ship that commit's
+// changes under notes that don't list them, and release-please would then
+// count them as released. So it fails instead, until the release PR's merge
+// is built.
+//
 // Drafts are only listed for a token that can push, so GITHUB_TOKEN must be
 // set.
 package main
@@ -26,19 +33,21 @@ import (
 
 // release is the part of a GitHub release this command reads.
 type release struct {
-	TagName string `json:"tag_name"`
-	Name    string `json:"name"`
-	Draft   bool   `json:"draft"`
+	TagName         string `json:"tag_name"`
+	Name            string `json:"name"`
+	Draft           bool   `json:"draft"`
+	TargetCommitish string `json:"target_commitish"`
 }
 
 func main() {
 	api := flag.String("api", "https://api.github.com", "GitHub API URL")
 	repo := flag.String("repo", "CircleCI-Public/circleci-yaml-language-server", "repository to release")
 	manifest := flag.String("manifest", ".circleci/release/release-please-manifest.json", "release-please manifest")
+	commit := flag.String("commit", os.Getenv("CIRCLE_SHA1"), "the commit being built")
 	flag.Parse()
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	err := run(ctx, *api, *repo, *manifest)
+	err := run(ctx, *api, *repo, *manifest, *commit)
 	stop()
 	if err != nil {
 		_, _ = fmt.Fprintln(os.Stderr, "release_version:", err)
@@ -46,7 +55,10 @@ func main() {
 	}
 }
 
-func run(ctx context.Context, api, repo, manifest string) error {
+func run(ctx context.Context, api, repo, manifest, commit string) error {
+	if commit == "" {
+		return fmt.Errorf("no commit: pass -commit, or set CIRCLE_SHA1")
+	}
 	token := os.Getenv("GITHUB_TOKEN")
 	if token == "" {
 		return fmt.Errorf("GITHUB_TOKEN is not set, and without it drafts aren't listed")
@@ -60,7 +72,7 @@ func run(ctx context.Context, api, repo, manifest string) error {
 	if err != nil {
 		return err
 	}
-	version, err := nextVersion(current, releases)
+	version, err := nextVersion(current, commit, releases)
 	if err != nil {
 		return err
 	}
@@ -108,17 +120,24 @@ func listReleases(ctx context.Context, cl *httpcl.Client, repo string) ([]releas
 
 var prereleaseNumber = regexp.MustCompile(`^pre\.(\d+)$`)
 
-// nextVersion is the manifest's version if release-please has drafted it,
-// and otherwise the patch after it at one more than its highest pre.N.
-func nextVersion(current string, releases []release) (string, error) {
+// nextVersion is the manifest's version if release-please has drafted it for
+// commit, an error if it has drafted it for another, and otherwise the patch
+// after it at one more than its highest pre.N.
+func nextVersion(current, commit string, releases []release) (string, error) {
 	v, err := semver.StrictNewVersion(current)
 	if err != nil {
 		return "", fmt.Errorf("manifest version: %w", err)
 	}
 	for _, r := range releases {
-		if r.Draft && r.Name == "v"+v.String() {
-			return v.String(), nil
+		if !r.Draft || r.Name != "v"+v.String() {
+			continue
 		}
+		if r.TargetCommitish != commit {
+			return "", fmt.Errorf("release %s is drafted for %s, the merge of its release PR, not for this commit, %s:"+
+				" rerun the Build and release workflow on %s from failed to publish it",
+				v, r.TargetCommitish, commit, r.TargetCommitish)
+		}
+		return v.String(), nil
 	}
 
 	next := v.IncPatch()
