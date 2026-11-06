@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/bep/debounce"
+	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 
@@ -28,8 +29,11 @@ type Methods struct {
 
 	// Ctx is the session's. A request's context ends once it is answered, so
 	// what runs on after that, such as validation, runs under this one.
-	Ctx            context.Context
-	Client         protocol.Client
+	Ctx    context.Context
+	Client protocol.Client
+	// conn is the connection Client sends over, for the requests to the
+	// client that aren't LSP's, such as circleci/fetchGitHubFile.
+	conn           jsonrpc2.Conn
 	Cache          *cache.Cache
 	SchemaLocation string
 
@@ -62,10 +66,11 @@ var _ protocol.Server = (*Methods)(nil)
 // that a burst of keystrokes is checked once.
 const defaultEditDebounce = time.Second
 
-func New(ctx context.Context, client protocol.Client, cache *cache.Cache, settings session.Settings, schemaLocation string) *Methods {
+func New(ctx context.Context, conn jsonrpc2.Conn, cache *cache.Cache, settings session.Settings, schemaLocation string) *Methods {
 	methods := &Methods{
 		Ctx:                  ctx,
-		Client:               client,
+		Client:               protocol.ClientDispatcher(conn),
+		conn:                 conn,
 		Cache:                cache,
 		SchemaLocation:       schemaLocation,
 		editDebounce:         defaultEditDebounce,

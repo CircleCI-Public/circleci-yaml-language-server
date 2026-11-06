@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"slices"
 	"sync"
 	"testing"
 	"time"
@@ -46,6 +47,12 @@ type Client struct {
 	// inlayHintRefreshes counts the times the server has asked for inlay
 	// hints again.
 	inlayHintRefreshes int
+	// answerGitHubFile answers circleci/fetchGitHubFile, which is sent only to
+	// a client that fetches GitHub files for the server; nil answers that the
+	// method isn't one this client has. gitHubFilesAsked are the URLs asked
+	// for.
+	answerGitHubFile func(url string) (any, error)
+	gitHubFilesAsked []string
 }
 
 // publication is the diagnostics last published for a document, and how many
@@ -335,6 +342,25 @@ func (c *Client) handle(ctx context.Context, req *jsonrpc2.Request) (any, error)
 
 		return nil, nil
 
+	case "circleci/fetchGitHubFile":
+		// Decoded as the server documents it, rather than with its types,
+		// so that a change to what it sends shows up here.
+		var params struct {
+			URL string `json:"url"`
+		}
+		if err := protocol.Unmarshal(req.Params(), &params); err != nil {
+			return nil, err
+		}
+		c.mu.Lock()
+		answer := c.answerGitHubFile
+		c.gitHubFilesAsked = append(c.gitHubFilesAsked, params.URL)
+		c.mu.Unlock()
+		if answer == nil {
+			return jsonrpc2.MethodNotFoundHandler(ctx, req)
+		}
+
+		return answer(params.URL)
+
 	case protocol.MethodWorkspaceInlayHintRefresh:
 		c.mu.Lock()
 		c.inlayHintRefreshes++
@@ -345,6 +371,23 @@ func (c *Client) handle(ctx context.Context, req *jsonrpc2.Request) (any, error)
 	default:
 		return jsonrpc2.MethodNotFoundHandler(ctx, req)
 	}
+}
+
+// AnswerGitHubFiles has the client answer each circleci/fetchGitHubFile the
+// server sends with what answer returns for its URL, as a client does that
+// fetches GitHub files for the server.
+func (c *Client) AnswerGitHubFiles(answer func(url string) (any, error)) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.answerGitHubFile = answer
+}
+
+// GitHubFilesAsked are the URLs the server has asked the client for with
+// circleci/fetchGitHubFile, in the order it asked.
+func (c *Client) GitHubFilesAsked() []string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return slices.Clone(c.gitHubFilesAsked)
 }
 
 // InlayHintRefreshes is how many times the server has asked for inlay hints

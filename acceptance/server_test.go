@@ -160,12 +160,13 @@ func startIn(t *testing.T, fake *fakes.CircleCI, project *workspace.Workspace, t
 }
 
 // startWithOptions is startIn for a client that sends other
-// initializationOptions than the extension does.
-func startWithOptions(t *testing.T, fake *fakes.CircleCI, project *workspace.Workspace, token string, options map[string]any) *session {
+// initializationOptions than the extension does, with the server's
+// environment added to as environment says.
+func startWithOptions(t *testing.T, fake *fakes.CircleCI, project *workspace.Workspace, token string, options map[string]any, environment ...string) *session {
 	t.Helper()
 
 	dockerHub := fakes.NewDockerHub(t)
-	server := runner.StartStdio(t, serverBinary, dockerHubEnv(dockerHub))
+	server := runner.StartStdio(t, serverBinary, append([]string{dockerHubEnv(dockerHub)}, environment...)...)
 	client := lspclient.New(t, t.Context(), server.Stream())
 
 	_, err := client.InitializeWithOptions(project.RootURI(), options)

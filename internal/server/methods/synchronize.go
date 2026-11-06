@@ -24,11 +24,13 @@ func (methods *Methods) setChangeInFileCache(textDocument protocol.TextDocumentI
 
 func (methods *Methods) DidOpen(ctx context.Context, params *protocol.DidOpenTextDocumentParams) error {
 	methods.setChangeInFileCache(params.TextDocument)
-	methods.parsingMethods(ctx, params.TextDocument)
 	methods.updateOrbFile([]byte(params.TextDocument.Text), params.TextDocument.URI)
 	// The notification's context ends once it is handled, so what runs on
 	// after it runs under the session's.
 	go (func() {
+		// Resolving remote orbs can ask the client for one, and the client's
+		// answer can't be read while this notification holds the connection.
+		methods.parsingMethods(methods.Ctx, params.TextDocument)
 		methods.notificationMethods(methods.Ctx, params.TextDocument)
 		methods.SetResourceClassOfFile(methods.Ctx, *params)
 		methods.SendTelemetryEvent(TelemetryEvent{
