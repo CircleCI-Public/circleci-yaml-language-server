@@ -155,6 +155,7 @@ jobs:
   build:
     docker:
       - image: cimg/base:current
+        prefer_same_region: true
     shell:
       - /bin/bash
       - -eo

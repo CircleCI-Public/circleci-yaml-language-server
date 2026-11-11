@@ -37,7 +37,7 @@ jobs:
 
 	t.Run("an executor's image is offered the keys it doesn't have", func(t *testing.T) {
 		assert.Check(t, cmp.DeepEqual(below("user: circleci", 8), []string{
-			"name", "entrypoint", "command", "environment", "auth", "aws_auth",
+			"name", "entrypoint", "command", "environment", "auth", "aws_auth", "prefer_same_region",
 		}))
 	})
 

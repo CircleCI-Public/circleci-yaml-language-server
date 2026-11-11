@@ -10,7 +10,9 @@ var (
 )
 
 // dockerEntryKeys are the keys an image of a docker executor takes.
-var dockerEntryKeys = []string{"image", "name", "entrypoint", "command", "user", "environment", "auth", "aws_auth"}
+var dockerEntryKeys = []string{
+	"image", "name", "entrypoint", "command", "user", "environment", "auth", "aws_auth", "prefer_same_region",
+}
 
 // dockerAuthKeys are the keys of each of a docker image's credentials.
 var dockerAuthKeys = map[string][]string{
