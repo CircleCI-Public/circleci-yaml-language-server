@@ -8,6 +8,7 @@ import (
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
 
+	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/ast"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/codeaction"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/diagnostic"
 	"github.com/CircleCI-Public/circleci-yaml-language-server/internal/testing/fakes"
@@ -421,6 +422,16 @@ workflows:
 `)), []string{}))
 	})
 
+	t.Run("a reference to a step's output gets no warning", func(t *testing.T) {
+		assert.Check(t, cmp.DeepEqual(functionWarnings(t, config("github.com/circleci-functions/setup-go@v0.5.1-684fd5b", `      - setup-go:
+          id: first
+      - setup-go:
+          with:
+            retries: ${{ steps.first.outputs.count }}
+            golangci-lint-cache: ${{ steps.first.outputs.cache }}
+`)), []string{}))
+	})
+
 	t.Run("a numeric flag that isn't given a number", func(t *testing.T) {
 		assert.Check(t, cmp.DeepEqual(functionWarnings(t, config("github.com/circleci-functions/setup-go@v0.5.1-684fd5b", `      - setup-go:
           with:
@@ -589,4 +600,31 @@ workflows:
 			"The command 'twice' has more than one function step with id: go",
 		}))
 	})
+}
+
+func TestFunctionArgumentsHoldingOutputReferences(t *testing.T) {
+	text := func(value string) ast.ParameterValue { return ast.ParameterValue{Type: "string", Value: value} }
+
+	tests := []struct {
+		name     string
+		argument ast.ParameterValue
+		number   bool
+		boolean  bool
+	}{
+		{name: "a reference", argument: text("${{ steps.build.outputs.count }}"), number: true, boolean: true},
+		{name: "a reference with no spaces", argument: text("${{steps.build.outputs.count}}"), number: true, boolean: true},
+		{name: "a reference to a list item", argument: text("${{ steps.build.outputs.counts[0] }}"), number: true, boolean: true},
+		{name: "a reference in text", argument: text("v${{ steps.build.outputs.count }}"), number: true, boolean: true},
+		{name: "a parameter reference", argument: text("<< parameters.count >>"), number: true, boolean: true},
+		{name: "another expression", argument: text("${{ github.sha }}")},
+		{name: "the singular form", argument: text("${{ step.build.output.count }}")},
+		{name: "steps without outputs", argument: text("${{ steps.build.count }}")},
+		{name: "plain text", argument: text("lots")},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			assert.Check(t, cmp.Equal(isNumericArgument(test.argument, "int"), test.number), "takes a number")
+			assert.Check(t, cmp.Equal(isBooleanArgument(test.argument), test.boolean), "takes true or false")
+		})
+	}
 }
