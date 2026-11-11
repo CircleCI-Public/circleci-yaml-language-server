@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 0.55.0 (2026-11-11)
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+* feat: accept prefer_same_region on docker images by @pete-woods in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/818
+
+
+**Full Changelog**: https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.54.2...0.55.0
+
 ## 0.54.2 (2026-11-06)
 
 <!-- Release notes generated using configuration in .github/release.yml at main -->
