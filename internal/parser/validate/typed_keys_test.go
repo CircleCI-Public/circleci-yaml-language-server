@@ -86,10 +86,21 @@ jobs:
       - setup_remote_docker:
           prefer_same_region: << parameters.b >>
       - checkout
+  image:
+    parameters:
+      b:
+        type: string
+        default: "true"
+    docker:
+      - image: cimg/base:current
+        prefer_same_region: << parameters.b >>
+    steps:
+      - checkout
 workflows:
   workflow:
     jobs:
       - build
+      - image
 `,
 			OnlyErrors: true,
 			Diagnostics: []protocol.Diagnostic{
@@ -99,6 +110,8 @@ workflows:
 					"circleci_ip_ranges must be a boolean, but parameter b is of type string"),
 				diagnostic.Error(span(16, 30, 48),
 					"setup_remote_docker: prefer_same_region must be a boolean, but parameter b is of type string"),
+				diagnostic.Error(span(25, 28, 46),
+					"docker: prefer_same_region must be a boolean, but parameter b is of type string"),
 			},
 		},
 		{

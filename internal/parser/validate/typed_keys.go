@@ -93,6 +93,12 @@ var typedKeys = []typedKey{
 		message: "setup_remote_docker: prefer_same_region must be a boolean",
 	},
 	{
+		under:   "docker",
+		name:    "prefer_same_region",
+		fits:    "boolean",
+		message: "docker: prefer_same_region must be a boolean",
+	},
+	{
 		under:   "checkout",
 		name:    "method",
 		fits:    "string",
