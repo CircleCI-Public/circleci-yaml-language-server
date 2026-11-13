@@ -172,13 +172,13 @@ server. It's also published on
 such as Red Hat's for VS Code, get basic validation and hover docs for
 CircleCI config even without this server.
 
-## <a name="contributing"></a>Contributing
+## Contributing
 
-Please feel free to contribute to this project, we update our Hall of fame -
-[CONTRIBUTORS.md](./CONTRIBUTORS.md) with all contributors who helped us fix a
-bug. You can find all the contribution guidelines and useful information in
-[CONTRIBUTING.md](./CONTRIBUTING.md). Development instructions for the CircleCI
-YAML Language Server can be found in [HACKING.md](HACKING.md).
+Bug reports, feature requests and pull requests are welcome. See
+[CONTRIBUTING.md](./CONTRIBUTING.md) for how to report issues and open PRs, and
+[HACKING.md](./HACKING.md) for building, testing and debugging the server
+locally. Everyone is expected to follow the
+[code of conduct](./CODE_OF_CONDUCT.md).
 
 ## Architecture
 
@@ -210,12 +210,13 @@ flowchart LR
     clients --> github
 ```
 
-## <a name="quicklinks"></a>Quick links
+## Links
 
-- [Install the VS Code extension using our language server](https://marketplace.visualstudio.com/items?itemName=circleci.circleci)
+- [CircleCI configuration reference](https://circleci.com/docs/reference/configuration-reference/)
+- [How the language server powers the VS Code extension](https://youtu.be/Sdi7ctAXe2A) (video)
+- [CircleCI community forum](https://discuss.circleci.com/)
 
-- [Discover how the language server was leveraged for the VS Code extension](https://youtu.be/Sdi7ctAXe2A)
+## License
 
-- [Learn more about CircleCI](https://circleci.com/)
-
-- [Do you have questions? Ask the circleCI community Discuss](https://discuss.circleci.com/)
+[Apache 2.0](./LICENSE.md). Third-party licenses are listed in
+[CREDITS.md](./CREDITS.md).
