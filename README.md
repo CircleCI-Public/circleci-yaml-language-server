@@ -12,7 +12,8 @@ hover documentation, navigation and refactoring for `.circleci/config.yml` to
 any editor with an LSP client.
 
 It powers the config helper in CircleCI's
-[VS Code extension](https://marketplace.visualstudio.com/items?itemName=circleci.circleci),
+[VS Code extension](https://marketplace.visualstudio.com/items?itemName=circleci.circleci)
+and [JetBrains plugin](https://plugins.jetbrains.com/plugin/34719-circleci),
 and it's open source so that it can be used from any other editor, and so that
 the community can see how it works and help improve it.
 
@@ -90,6 +91,87 @@ pipeline value.
     <img src="./assets/go-to-def.gif" alt="Go to definition" width="50%"/>
 </p>
 
+## Installation
+
+### VS Code and JetBrains IDEs
+
+Install the CircleCI
+[VS Code extension](https://marketplace.visualstudio.com/items?itemName=circleci.circleci)
+or [JetBrains plugin](https://plugins.jetbrains.com/plugin/34719-circleci).
+Both run the language server for you.
+
+### Other editors
+
+Download the archive for your platform from the
+[latest release](https://github.com/CircleCI-Public/circleci-yaml-language-server/releases/latest),
+such as `circleci-yaml-language-server_<version>_darwin_arm64.tar.gz`. Put the
+`circleci-yaml-lsp` binary inside it on your `PATH`, then point your editor's
+LSP client at it with the `-stdio` flag:
+
+```sh
+circleci-yaml-lsp -stdio
+```
+
+The server only handles files in a `.circleci` directory, so it's safe to
+attach it to every YAML file. Other YAML files, such as GitHub workflows and
+Kubernetes manifests, are left alone.
+
+| Flag | Meaning |
+| --- | --- |
+| `-stdio` | Talk LSP over stdin and stdout. This is what most editors expect. |
+| `-host`, `-port` | Listen on a TCP socket instead. They can also be set with `LSP_SERVER_HOST` and `PORT`. |
+| `-debug=false` | Only log at info and above. Logs go to stderr. |
+| `-schema <path>` | Use this JSON schema instead of the one built in. Also `SCHEMA_LOCATION`. |
+| `-version` | Print the version and exit. |
+
+## Editor setup
+
+| Editor | Client |
+| --- | --- |
+| VS Code | [CircleCI extension](https://marketplace.visualstudio.com/items?itemName=circleci.circleci) |
+| JetBrains IDEs | [CircleCI plugin](https://plugins.jetbrains.com/plugin/34719-circleci) ([source](https://github.com/CircleCI-Public/circleci-jetbrains-plugin)) |
+| Emacs | [circleci-yaml-mode](./editors/emacs/circleci-yaml-mode.el), for eglot or lsp-mode. It downloads the server too. |
+| Neovim | [circleci.nvim](https://github.com/tomoakley/circleci.nvim) (community), or the built-in client below |
+
+### Neovim (0.11+)
+
+```lua
+vim.lsp.config('circleci', {
+  cmd = { 'circleci-yaml-lsp', '-stdio' },
+  filetypes = { 'yaml' },
+  root_markers = { '.circleci', '.git' },
+})
+vim.lsp.enable('circleci')
+```
+
+### Writing a client
+
+To integrate the server with another editor or a coding agent, see
+[ADD_A_CLIENT.md](./ADD_A_CLIENT.md). It covers initialization options,
+authentication commands and the custom requests the server makes. If you
+publish a client, open an issue and we'll add it here.
+
+## Authentication
+
+Most features work without credentials. Some need them:
+
+- **CircleCI**: private orbs, contexts and project settings need a
+  [personal API token](https://app.circleci.com/settings/user/tokens). The VS
+  Code extension and JetBrains plugin send it when you sign in. Other clients send it with the
+  `setToken` command. CircleCI Server users also send their host with
+  `setSelfHostedUrl`.
+- **GitHub**: orbs referenced by the URL of a file in a private GitHub
+  repository are fetched with `GH_TOKEN` or `GITHUB_TOKEN` from the server's
+  environment, or a token the client sends with `setGitHubToken`.
+
+## JSON schema
+
+The validation schema, [`schema.json`](./schema.json), is built into the
+server. It's also published on
+[SchemaStore](https://www.schemastore.org/), so editors with a YAML extension,
+such as Red Hat's for VS Code, get basic validation and hover docs for
+CircleCI config even without this server.
+
 ## <a name="contributing"></a>Contributing
 
 Please feel free to contribute to this project, we update our Hall of fame -
@@ -101,16 +183,6 @@ YAML Language Server can be found in [HACKING.md](HACKING.md).
 ## <a name="architecture"></a>Architecture diagram
 
 ![alt text](./assets/diagram.jpg)
-
-## Language Server clients
-
-- VSCode:
-  [CircleCI VSCode extension](https://marketplace.visualstudio.com/items?itemName=circleci.circleci)
-- Neovim: [tomoakley Neovim plugin](https://github.com/tomoakley/circleci.nvim)
-- Emacs: [circleci-yaml-mode](./editors/emacs/)
-
-If you wish to implement a client for your editor, please take a look at
-[ADD_A_CLIENT.md](./ADD_A_CLIENT.md)
 
 ## <a name="quicklinks"></a>Quick links
 
