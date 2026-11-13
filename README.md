@@ -145,17 +145,3 @@ If you wish to implement a client for your editor, please take a look at
 - [Learn more about CircleCI](https://circleci.com/)
 
 - [Do you have questions? Ask the circleCI community Discuss](https://discuss.circleci.com/)
-
-## Social media links
-
-<a href="https://twitter.com/intent/tweet?text=Take%20a%20look%20at%20the%20open%20sourced%20CircleCI%20Language%20Server%20on%20GitHub%20https%3A//github.com/CircleCI-Public/circleci-yaml-language-server%23readme%20via%20%40CircleCI" style="align:center; margin-right:15px">
-    <img src="./assets/social/tw.png" alt="twitter-link" width="60px"/>
-</a>
-<a href="https://www.facebook.com/sharer/sharer.php?u=https%3A//github.com/CircleCI-Public/circleci-yaml-language-server%23readme" style="align:center; margin-right:15px">
-    <img src="./assets/social/fb.png" alt="facebook-link" width="60px"/>
-</a>
-<a href="https://www.linkedin.com/shareArticle?mini=true&url=https%3A//github.com/CircleCI-Public/circleci-yaml-language-server%23readme" style="align:center">
-    <img src="./assets/social/ln.png" alt="linkedin-link" width="60px"/>
-</a>
-
-Help us get the word out! Share our project.
