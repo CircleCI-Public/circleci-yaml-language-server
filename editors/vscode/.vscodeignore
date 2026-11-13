@@ -4,5 +4,4 @@
 !dist/
 !bin/
 !package.json
-!package-lock.json
 !schema.json

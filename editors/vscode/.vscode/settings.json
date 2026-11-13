@@ -8,6 +8,8 @@
         "out": true, // set this to false to include "out" folder in search results
         "dist": true // set this to false to include "dist" folder in search results
     },
-    // Turn off tsc task auto detection since we have the necessary tasks as npm scripts
-    "typescript.tsc.autoDetect": "off"
+    // Turn off tsc task auto detection since we have the necessary tasks as package.json scripts
+    "typescript.tsc.autoDetect": "off",
+    // Run the package.json script tasks with pnpm
+    "npm.packageManager": "pnpm"
 }

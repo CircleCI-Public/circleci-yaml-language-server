@@ -1,0 +1,4 @@
+# keytar is a native module that vsce pulls in to store publishing
+# credentials. The dev extension is never published, so it isn't built.
+allowBuilds:
+  keytar: false
