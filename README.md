@@ -16,68 +16,78 @@ It powers the config helper in CircleCI's
 and it's open source so that it can be used from any other editor, and so that
 the community can see how it works and help improve it.
 
-## <a name="features"></a>Features
+## Features
 
-<!-- Copied from circleci-vscode-extension/README.md, please keep sync! -->
+### Validation
 
-This project provides in-file assistance to writing, editing and navigating
-CircleCI Configuration files. It offers:
-
-- **Rich code navigation through “go-to-definition” and “go-to-reference”
-  commands**. This is especially convenient when working on large configuration
-  files, to verify the definition of custom jobs, executors parameters, or in
-  turn view where any of them are referenced in the file. Assisted code
-  navigation also works for Orbs, allowing to explore their definition directly
-  in the IDE when using the go-to-definition feature on an orb-defined command
-  or parameter.
+Errors and warnings as you type: unknown keys, wrong types, missing
+parameters, undefined jobs, commands and executors, unused definitions,
+deprecated keys and images, Docker image tags and orb versions that don't
+exist, and more. Orbs are fetched so that what they define is checked too.
 
 <p align="center">
-    <img src="./assets/go-to-def.gif" alt="circleci-vscode-go-to-definition" width="50%"/>
+    <img src="./assets/syntax-validation.gif" alt="Syntax validation" width="50%"/>
 </p>
 
-- **Contextual documentation and usage hints when hovering on specific keys**,
-  so to avoid you having to continuously switch to your browser to check the
-  docs whenever you are editing your configuration. That said, links to the
-  official CircleCI documentation are also provided on hover - for easier
-  navigation.
-
 <p align="center">
-    <img src="./assets/hover-hints.png" alt="circleci-vscode-documentation-on-hover" width="50%"/>
+    <img src="./assets/warnings.png" alt="Usage warnings" width="50%"/>
 </p>
 
-- **Syntax validation** - which makes it much easier to identify typos,
-  incorrect use of parameters, incomplete definitions, wrong types, invalid or
-  deprecated machine versions, etc.
+### Quick fixes
+
+Code actions fix common problems, such as updating an orb to its latest
+version, replacing a deprecated machine image, or moving a Docker image to a
+tag that exists.
+
+Any diagnostic can also be suppressed with a comment, and a quick fix inserts
+it for you:
+
+- `# cci-ignore`: on the same line
+- `# cci-ignore-next-line`: on the next line
+- `# cci-ignore-start` / `# cci-ignore-end`: in a range
+- `# cci-ignore-file`: in the whole file
 
 <p align="center">
-    <img src="./assets/syntax-validation.gif" alt="circleci-vscode-syntax-validation" width="50%"/>
+    <img src="./assets/ignore.gif" alt="Suppressing a diagnostic with cci-ignore-next-line" width="50%"/>
 </p>
 
-- **Usage warnings** - which can help identify deprecated parameters, unused
-  jobs or executors, or missing keys that prevent you from taking advantage of
-  CircleCI’s full capabilities
+### Completion
+
+Built-in keys and their values, and the names the config defines: jobs,
+commands, executors, parameters, orbs and their commands, plus contexts,
+pipeline values, Docker images, resource classes, machine images and Xcode
+versions.
 
 <p align="center">
-    <img src="./assets/warnings.png" alt="circleci-vscode-usage-warnings" width="50%"/>
+    <img src="./assets/auto-complete.png" alt="Completion" width="50%"/>
 </p>
 
-- **Auto completion**, available both on built-in keys and parameters and on
-  user-defined variables
+### Hover
+
+On a key, its documentation from the
+[configuration reference](https://circleci.com/docs/reference/configuration-reference/).
+On a name, what it refers to: a job, command, executor, orb, parameter or
+pipeline value.
 
 <p align="center">
-    <img src="./assets/auto-complete.png" alt="circleci-vscode-autocomplete" width="50%"/>
+    <img src="./assets/hover-hints.png" alt="Documentation on hover" width="50%"/>
 </p>
 
-- **Diagnostic suppression** - allows you to suppress specific warnings and errors using special comments:
-  - `# cci-ignore` - suppress diagnostic on the same line
-  - `# cci-ignore-next-line` - suppress diagnostic on the next line
-  - `# cci-ignore-start` / `# cci-ignore-end` - suppress diagnostics in a range
-  - `# cci-ignore-file` - suppress all diagnostics in the file
+### Navigation and refactoring
 
-  Quick-fix code actions are available to automatically insert suppression comments.
+- Go to definition and find references for jobs, commands, executors and
+  parameters, including into the source of orbs
+- Rename a job, command or executor everywhere it's used
+- Highlight every use of the name under the cursor
+- Document and workspace symbols, for outlines and "go to symbol"
+- Links from orbs and Docker images to their pages in the orb registry and on
+  Docker Hub
+- Inlay hints showing the version an orb resolves to, and how many jobs a
+  matrix expands to
+- Semantic highlighting of keywords, parameters and orbs
 
 <p align="center">
-    <img src="./assets/ignore.gif" alt="circleci-ignore-comments" width="50%"/>
+    <img src="./assets/go-to-def.gif" alt="Go to definition" width="50%"/>
 </p>
 
 ## <a name="contributing"></a>Contributing
