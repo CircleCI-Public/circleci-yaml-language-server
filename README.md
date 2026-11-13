@@ -180,9 +180,35 @@ bug. You can find all the contribution guidelines and useful information in
 [CONTRIBUTING.md](./CONTRIBUTING.md). Development instructions for the CircleCI
 YAML Language Server can be found in [HACKING.md](HACKING.md).
 
-## <a name="architecture"></a>Architecture diagram
+## Architecture
 
-![alt text](./assets/diagram.jpg)
+```mermaid
+flowchart LR
+    editor[Editor / LSP client]
+
+    subgraph server[circleci-yaml-lsp]
+        methods[LSP methods]
+        services[Services<br/>diagnostics, completion,<br/>hover, navigation]
+        parser[Parser and validation<br/>tree-sitter YAML]
+        compile[Compiler<br/>templates, matrices]
+        cache[(Cache<br/>documents, orbs,<br/>remote data)]
+        clients[API clients]
+    end
+
+    circleci[CircleCI API<br/>orbs, contexts,<br/>resource classes]
+    dockerhub[Docker Hub]
+    github[GitHub<br/>orbs by URL]
+
+    editor <-- JSON-RPC over<br/>stdio or TCP --> methods
+    methods --> services
+    services --> parser
+    parser --> compile
+    services & parser --> cache
+    services & parser & cache --> clients
+    clients --> circleci
+    clients --> dockerhub
+    clients --> github
+```
 
 ## <a name="quicklinks"></a>Quick links
 
