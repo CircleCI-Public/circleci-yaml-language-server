@@ -120,8 +120,8 @@ tasks:
   prepare:vscode:
     dir: editors/vscode
     cmds:
-      - yarn install --immutable
-      - yarn run build
+      - npm ci
+      - npm run build
 
   test:
     desc: Run unit and acceptance tests

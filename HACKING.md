@@ -12,7 +12,7 @@ good places to start.
 -   [Go](https://go.dev/doc/install), at the version in `go.mod`
 -   [Task](https://taskfile.dev/installation/), which runs the commands in
     `Taskfile.yml`
--   [Node.js](https://nodejs.org/) and [Yarn](https://yarnpkg.com/), only to
+-   [Node.js](https://nodejs.org/), with npm, only to
     [test within VS Code](#testing-within-vscode)
 
 ## Getting set up
