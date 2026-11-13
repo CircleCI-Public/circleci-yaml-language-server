@@ -67,7 +67,7 @@ CircleCI Configuration files. It offers:
   or parameter.
 
 <p align="center">
-    <img src="https://images.ctfassets.net/il1yandlcjgk/3JVSu8rTDQRJcIMGF866oJ/444091930e6c64dc9d52f17755e16af9/config_helper_go-to-definition-optimised.gif" alt="circleci-vscode-go-to-definition" width="50%"/>
+    <img src="./assets/go-to-def.gif" alt="circleci-vscode-go-to-definition" width="50%"/>
 </p>
 
 - **Contextual documentation and usage hints when hovering on specific keys**,
@@ -77,7 +77,7 @@ CircleCI Configuration files. It offers:
   navigation.
 
 <p align="center">
-    <img src="https://images.ctfassets.net/il1yandlcjgk/6bloAnI35jXou9Q91aGFgU/356b1554d42c77fb2708fac980a8d592/config_helper_on-hover-documentation.png" alt="circleci-vscode-documentation-on-hover" width="50%"/>
+    <img src="./assets/hover-hints.png" alt="circleci-vscode-documentation-on-hover" width="50%"/>
 </p>
 
 - **Syntax validation** - which makes it much easier to identify typos,
@@ -85,7 +85,7 @@ CircleCI Configuration files. It offers:
   deprecated machine versions, etc.
 
 <p align="center">
-    <img src="https://images.ctfassets.net/il1yandlcjgk/1dF1ic2cUczaMYdxnSUZuF/fbc1eb5d5894a803caf297c57e808738/config_helper_syntax-validation.gif" alt="circleci-vscode-syntax-validation" width="50%"/>
+    <img src="./assets/syntax-validation.gif" alt="circleci-vscode-syntax-validation" width="50%"/>
 </p>
 
 - **Usage warnings** - which can help identify deprecated parameters, unused
@@ -93,14 +93,14 @@ CircleCI Configuration files. It offers:
   CircleCI’s full capabilities
 
 <p align="center">
-    <img src="https://images.ctfassets.net/il1yandlcjgk/404bGppmtCgvE0WOmPk0E/0a92e373929d6d19c8f5a742f1097511/config_helper_usage-warning.png" alt="circleci-vscode-usage-warnings" width="50%"/>
+    <img src="./assets/warnings.png" alt="circleci-vscode-usage-warnings" width="50%"/>
 </p>
 
 - **Auto completion**, available both on built-in keys and parameters and on
   user-defined variables
 
 <p align="center">
-    <img src="https://images.ctfassets.net/il1yandlcjgk/3jXaQvhOQgayhV9O4nfAhZ/b6d55e689ddfcf7673ab7e9b76ba0a53/config_helper_autocomplete.png" alt="circleci-vscode-autocomplete" width="50%"/>
+    <img src="./assets/auto-complete.png" alt="circleci-vscode-autocomplete" width="50%"/>
 </p>
 
 - **Diagnostic suppression** - allows you to suppress specific warnings and errors using special comments:
@@ -112,7 +112,7 @@ CircleCI Configuration files. It offers:
   Quick-fix code actions are available to automatically insert suppression comments.
 
 <p align="center">
-    <img src="https://images.ctfassets.net/il1yandlcjgk/2HsFnWKVRDavrKYN6gns6T/f30a25920e1a0c47fc7beaa2e81b93a0/cci-ignore-next-line.gif" alt="circleci-ignore-comments" width="50%"/>
+    <img src="./assets/ignore.gif" alt="circleci-ignore-comments" width="50%"/>
 </p>
 
 ## <a name="platforms"></a>Platforms, Deployment and Package Managers
