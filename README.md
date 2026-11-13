@@ -39,7 +39,6 @@ server that handles different calls (specified by the LSP spec).
 ## Summary
 
 - [Features](./README.md#features)
-- [Platforms, Deployment and Package Managers](./README.md#platforms)
 - [Contributing](./README.md#contributing)
 - [Architecture Diagram](./README.md#architecture)
 - [Code of Conduct](./CODE_OF_CONDUCT.md)
@@ -114,20 +113,6 @@ CircleCI Configuration files. It offers:
 <p align="center">
     <img src="./assets/ignore.gif" alt="circleci-ignore-comments" width="50%"/>
 </p>
-
-## <a name="platforms"></a>Platforms, Deployment and Package Managers
-
-The tool is deployed through
-[GitHub Releases](https://github.com/CircleCI-Public/circleci-yaml-language-server/releases).
-Green builds on the `main` branch will create a new release PR. These need to be approved and merged manually, and will publish binaries for macOS, Linux and Windows.
-
-Important note: Release-please will only create a release PR for PRs that have a `feat` or `fix` commit message. If your PR starts with `chore` , your changes will NOT be released.
-
-The release is published by the pipeline on the release PR's merge commit, and only that one. If that pipeline doesn't run, for example because whoever merged the PR can't use the release workflow's restricted contexts, every later release job on `main` fails and names the commit. Someone who can use those contexts then needs to rerun that commit's `Build and release` workflow from failed.
-
-This is a project in active development, and we target a release frequency of
-one release per week on average. However, we reserve the right of releasing more
-or less frequently when necessary.
 
 ## <a name="contributing"></a>Contributing
 

@@ -299,3 +299,21 @@ flag or the `SCHEMA_LOCATION` environment variable for development purposes.
 
 - **GitHub Releases**: `schema.json` is included in every release for reference
   and for tools that consume it directly.
+
+## Releasing
+
+Releases are cut by [release-please](https://github.com/googleapis/release-please)
+and published to
+[GitHub Releases](https://github.com/CircleCI-Public/circleci-yaml-language-server/releases)
+with binaries for macOS, Linux and Windows.
+
+- Green builds on `main` open or update a release PR. It has to be approved
+  and merged by hand.
+- Only `feat` and `fix` commits trigger a release. A PR made only of `chore`,
+  `docs`, `refactor` and so on is not released until something else is.
+- The release is published by the pipeline on the release PR's merge commit,
+  and only that one. If that pipeline doesn't run, for example because whoever
+  merged the PR can't use the release workflow's restricted contexts, every
+  later release job on `main` fails and names the commit. Someone who can use
+  those contexts then needs to rerun that commit's `Build and release`
+  workflow from failed.
