@@ -1,12 +1,16 @@
 # Add a client
 
-Implementations of Language Server clients are always welcome, if you happen to
-create one, please open an issue so that we can
-[reference your work](/README.md#language-server-clients)! However please read
-this document before starting implementation as there are some specifities to be
-aware of.
+Language Server clients are always welcome. If you write one, please open an
+issue so that we can [list it](/README.md#editor-setup)! Please read this
+document before you start, as there are some specifics to be aware of.
 
-### Which files the server serves
+## Running the server
+
+Start the binary with `-stdio` and speak LSP over its stdin and stdout. Logs go
+to stderr. See the [README](/README.md#installation) for where to get the
+binary and the other flags.
+
+## Which files the server serves
 
 The server only answers for files in a `.circleci` directory, such as
 `.circleci/config.yml` or a config under `.circleci/continue/`, and for the orb
@@ -18,7 +22,7 @@ So a client that can only pick a server by file extension, as Claude Code and
 other coding agents do, can send it every `.yml` and `.yaml` file. GitHub
 workflows, Compose files and Kubernetes manifests won't get false errors.
 
-### `schema.json`
+## `schema.json`
 
 The [`schema.json`](/schema.json) used for YAML validation is **embedded in the
 binary** at compile time. No external schema file is needed to run the language
@@ -28,7 +32,7 @@ If you need to override the built-in schema (e.g., for development), you can
 pass `-schema /path/to/schema.json` to the LS executable. The schema file is
 also included in every GitHub release for reference.
 
-### Hover
+## Hover
 
 The server answers
 [`textDocument/hover`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_hover)
@@ -44,19 +48,19 @@ A client that already shows the schema's descriptions itself, from
 `schema.json`, can turn the key hovers off with the `schemaHovers`
 initialization option, so that each isn't shown twice.
 
-### Initialization options
+## Initialization options
 
 The server reads these from the `initialize` request's
 `initializationOptions`:
 
-| Option           | Type    | Meaning                                                                                                                                                                                                                      |
-| ---------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `schemaHovers`   | boolean | Whether hovering a key shows the schema's description of it. On by default, except with `isCciExtension`.                                                                                                                    |
-| `isCciExtension` | boolean | Set by CircleCI's VS Code extension: an orb that can't be found tells the user to sign in there. Without `schemaHovers`, it also turns the key hovers off, as versions of the extension that don't send it show them itself. |
-| `userAgent`      | string  | Appended to the server's user agent in its requests to CircleCI.                                                                                                                                                             |
-| `gitHubSignInCommand` | string | A command of the client's that signs the user in to GitHub, and then sends the server a token with `setGitHubToken` or, with `fetchesGitHubFiles`, runs `gitHubAccountChanged`. An orb on GitHub that can't be fetched without a token then tells the user to sign in, with a quick fix that runs the command, rather than to set `GH_TOKEN`. |
-| `fetchesGitHubFiles` | boolean | Set by a client that can fetch files from GitHub as the user, but can't give the server a token: the server asks it for a private orb on GitHub with [`circleci/fetchGitHubFile`](#circlecifetchgithubfile). Off by default. |
-| `editDebounceMs` | number  | How many milliseconds after a change the document is checked, 1000 by default, so that a burst of keystrokes is checked once. A client whose changes each carry a whole edit, as an agent's do, can set it to 0 to have each checked at once. |
+| Option                | Type    | Meaning                                                                                                                                                                                                                                                                                                                                       |
+| --------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `schemaHovers`        | boolean | Whether hovering a key shows the schema's description of it. On by default, except with `isCciExtension`.                                                                                                                                                                                                                                     |
+| `isCciExtension`      | boolean | Set by CircleCI's VS Code extension: an orb that can't be found tells the user to sign in there. Without `schemaHovers`, it also turns the key hovers off, as versions of the extension that don't send it show them itself.                                                                                                                  |
+| `userAgent`           | string  | Appended to the server's user agent in its requests to CircleCI.                                                                                                                                                                                                                                                                              |
+| `gitHubSignInCommand` | string  | A command of the client's that signs the user in to GitHub, and then sends the server a token with `setGitHubToken` or, with `fetchesGitHubFiles`, runs `gitHubAccountChanged`. An orb on GitHub that can't be fetched without a token then tells the user to sign in, with a quick fix that runs the command, rather than to set `GH_TOKEN`. |
+| `fetchesGitHubFiles`  | boolean | Set by a client that can fetch files from GitHub as the user, but can't give the server a token: the server asks it for a private orb on GitHub with [`circleci/fetchGitHubFile`](#circlecifetchgithubfile). Off by default.                                                                                                                  |
+| `editDebounceMs`      | number  | How many milliseconds after a change the document is checked, 1000 by default, so that a burst of keystrokes is checked once. A client whose changes each carry a whole edit, as an agent's do, can set it to 0 to have each checked at once.                                                                                                 |
 
 Example Typescript usage:
 
@@ -66,12 +70,12 @@ const clientOptions: LanguageClientOptions = {
 };
 ```
 
-### Configuration
+## Configuration
 
 To better handle the usage of private orbs, self-hosted runners or even contexts
 you can authenticate to the Language Server with custom LS commands.
 
-##### `setToken`
+### `setToken`
 
 The `setToken` command takes a CircleCI API token as only argument. Users can
 get API token from
@@ -87,7 +91,7 @@ await lsClient.sendRequest(`workspace/executeCommand`, {
 });
 ```
 
-##### `setSelfHostedUrl`
+### `setSelfHostedUrl`
 
 For users using [CircleCI Server](https://circleci.com/pricing/server/), you can
 set the URL of the self-hosted Server with this command.
@@ -101,7 +105,7 @@ await lsClient.sendRequest(`workspace/executeCommand`, {
 });
 ```
 
-##### `setGitHubToken`
+### `setGitHubToken`
 
 An orb can be referenced by the URL of its source, such as
 `https://raw.githubusercontent.com/acme/orbs/main/go.yml`. The language server
@@ -121,7 +125,7 @@ await lsClient.sendRequest(`workspace/executeCommand`, {
 });
 ```
 
-##### `circleci/fetchGitHubFile`
+### `circleci/fetchGitHubFile`
 
 A client that can fetch files from GitHub as the user, but can't hand the
 server a token, as the JetBrains plugin can't since IntelliJ 2026.3, can fetch
@@ -162,7 +166,7 @@ lsClient.onRequest('circleci/fetchGitHubFile', async ({ url }) => {
 });
 ```
 
-##### `gitHubAccountChanged`
+### `gitHubAccountChanged`
 
 Tells a server the client fetches GitHub files for that the GitHub account has
 changed: signed in, signed out or switched. The server forgets the orbs it has

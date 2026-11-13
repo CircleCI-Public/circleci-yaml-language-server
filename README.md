@@ -1,4 +1,4 @@
-![](./assets/header.png)
+![CircleCI YAML Language Server](./assets/header.png)
 
 # CircleCI YAML Language Server
 
@@ -6,171 +6,217 @@
 [![GitHub release](https://img.shields.io/github/v/release/circleci-public/circleci-yaml-language-server)](https://github.com/circleci-public/circleci-yaml-language-server/releases)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE.md)
 
-## This is CircleCI's YAML Language Server.
+A [Language Server Protocol](https://microsoft.github.io/language-server-protocol/)
+server for CircleCI configuration files. It brings validation, completion,
+hover documentation, navigation and refactoring for `.circleci/config.yml` to
+any editor with an LSP client.
 
-The official CircleCI extension for Visual Studio Code is available
-[on the VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=circleci.circleci).
-This extension was developed by the Developer Experience team of CircleCI and it
-includes two sets of features: the pipeline manager and the config helper.
+It powers the config helper in CircleCI's
+[VS Code extension](https://marketplace.visualstudio.com/items?itemName=circleci.circleci)
+and [JetBrains plugin](https://plugins.jetbrains.com/plugin/34719-circleci),
+and it's open source so that it can be used from any other editor, and so that
+the community can see how it works and help improve it.
 
-**The CircleCI config helper is based on a Language Server.** It provides
-language support for CircleCI YAML files. Thanks to the new VS Code extension,
-developers and DevOps engineers have access to direct feedback about the Config
-file they are editing, through features such as syntax validation and
-highlighting, rich navigation, on-hover documentation, autocompletion and usage
-hints.
+## Features
 
-In our case the Language Server is an implementation of the Language Server
-Protocol for CircleCI YAML config files that we have open sourced in order to
-provide more transparency to our community regarding the way the config helper
-works under the hood and by providing access for our community to take the
-language server capabilities to the IDE of their liking.
+### Validation
 
-We believe that the CircleCI community is best placed to say what features are
-truly important or what bugs are the most annoying. We hope that the whole
-community will contribute to improving this tool by pointing out or addressing
-issues we might have overlooked. And we hope the value of this language server
-will be accessible to a great number of CircleCI users regardless of the IDE
-they choose to use.
-
-The Language Server is implemented in Go 1.19+ and is, at its core, a JSON-RPC
-server that handles different calls (specified by the LSP spec).
-
-## Summary
-
-- [Features](./README.md#features)
-- [Platforms, Deployment and Package Managers](./README.md#platforms)
-- [Contributing](./README.md#contributing)
-- [Architecture Diagram](./README.md#architecture)
-- [Code of Conduct](./CODE_OF_CONDUCT.md)
-- [Contribution Guidelines](./CONTRIBUTING.md)
-- [Contributors](./README.md#contributor)
-- [Language clients](./README.md#language-server-clients)
-- [Quick Links](./README.md#quicklinks)
-- [Credits](./README.md#credits)
-- [Hacking](./HACKING.md)
-- [License](./README.md#licence)
-
-## <a name="features"></a>Features
-
-<!-- Copied from circleci-vscode-extension/README.md, please keep sync! -->
-
-This project provides in-file assistance to writing, editing and navigating
-CircleCI Configuration files. It offers:
-
-- **Rich code navigation through “go-to-definition” and “go-to-reference”
-  commands**. This is especially convenient when working on large configuration
-  files, to verify the definition of custom jobs, executors parameters, or in
-  turn view where any of them are referenced in the file. Assisted code
-  navigation also works for Orbs, allowing to explore their definition directly
-  in the IDE when using the go-to-definition feature on an orb-defined command
-  or parameter.
+Errors and warnings as you type: unknown keys, wrong types, missing
+parameters, undefined jobs, commands and executors, unused definitions,
+deprecated keys and images, Docker image tags and orb versions that don't
+exist, and more. Orbs are fetched so that what they define is checked too.
 
 <p align="center">
-    <img src="https://images.ctfassets.net/il1yandlcjgk/3JVSu8rTDQRJcIMGF866oJ/444091930e6c64dc9d52f17755e16af9/config_helper_go-to-definition-optimised.gif" alt="circleci-vscode-go-to-definition" width="50%"/>
+    <img src="./assets/syntax-validation.gif" alt="Syntax validation" width="50%"/>
 </p>
-
-- **Contextual documentation and usage hints when hovering on specific keys**,
-  so to avoid you having to continuously switch to your browser to check the
-  docs whenever you are editing your configuration. That said, links to the
-  official CircleCI documentation are also provided on hover - for easier
-  navigation.
 
 <p align="center">
-    <img src="https://images.ctfassets.net/il1yandlcjgk/6bloAnI35jXou9Q91aGFgU/356b1554d42c77fb2708fac980a8d592/config_helper_on-hover-documentation.png" alt="circleci-vscode-documentation-on-hover" width="50%"/>
+    <img src="./assets/warnings.png" alt="Usage warnings" width="50%"/>
 </p>
 
-- **Syntax validation** - which makes it much easier to identify typos,
-  incorrect use of parameters, incomplete definitions, wrong types, invalid or
-  deprecated machine versions, etc.
+### Quick fixes
+
+Code actions fix common problems, such as updating an orb to its latest
+version, replacing a deprecated machine image, or moving a Docker image to a
+tag that exists.
+
+Any diagnostic can also be suppressed with a comment, and a quick fix inserts
+it for you:
+
+- `# cci-ignore`: on the same line
+- `# cci-ignore-next-line`: on the next line
+- `# cci-ignore-start` / `# cci-ignore-end`: in a range
+- `# cci-ignore-file`: in the whole file
 
 <p align="center">
-    <img src="https://images.ctfassets.net/il1yandlcjgk/1dF1ic2cUczaMYdxnSUZuF/fbc1eb5d5894a803caf297c57e808738/config_helper_syntax-validation.gif" alt="circleci-vscode-syntax-validation" width="50%"/>
+    <img src="./assets/ignore.gif" alt="Suppressing a diagnostic with cci-ignore-next-line" width="50%"/>
 </p>
 
-- **Usage warnings** - which can help identify deprecated parameters, unused
-  jobs or executors, or missing keys that prevent you from taking advantage of
-  CircleCI’s full capabilities
+### Completion
+
+Built-in keys and their values, and the names the config defines: jobs,
+commands, executors, parameters, orbs and their commands, plus contexts,
+pipeline values, Docker images, resource classes, machine images and Xcode
+versions.
 
 <p align="center">
-    <img src="https://images.ctfassets.net/il1yandlcjgk/404bGppmtCgvE0WOmPk0E/0a92e373929d6d19c8f5a742f1097511/config_helper_usage-warning.png" alt="circleci-vscode-usage-warnings" width="50%"/>
+    <img src="./assets/auto-complete.png" alt="Completion" width="50%"/>
 </p>
 
-- **Auto completion**, available both on built-in keys and parameters and on
-  user-defined variables
+### Hover
+
+On a key, its documentation from the
+[configuration reference](https://circleci.com/docs/reference/configuration-reference/).
+On a name, what it refers to: a job, command, executor, orb, parameter or
+pipeline value.
 
 <p align="center">
-    <img src="https://images.ctfassets.net/il1yandlcjgk/3jXaQvhOQgayhV9O4nfAhZ/b6d55e689ddfcf7673ab7e9b76ba0a53/config_helper_autocomplete.png" alt="circleci-vscode-autocomplete" width="50%"/>
+    <img src="./assets/hover-hints.png" alt="Documentation on hover" width="50%"/>
 </p>
 
-- **Diagnostic suppression** - allows you to suppress specific warnings and errors using special comments:
-  - `# cci-ignore` - suppress diagnostic on the same line
-  - `# cci-ignore-next-line` - suppress diagnostic on the next line
-  - `# cci-ignore-start` / `# cci-ignore-end` - suppress diagnostics in a range
-  - `# cci-ignore-file` - suppress all diagnostics in the file
+### Navigation and refactoring
 
-  Quick-fix code actions are available to automatically insert suppression comments.
+- Go to definition and find references for jobs, commands, executors and
+  parameters, including into the source of orbs
+- Rename a job, command or executor everywhere it's used
+- Highlight every use of the name under the cursor
+- Document and workspace symbols, for outlines and "go to symbol"
+- Links from orbs and Docker images to their pages in the orb registry and on
+  Docker Hub
+- Inlay hints showing the version an orb resolves to, and how many jobs a
+  matrix expands to
+- Semantic highlighting of keywords, parameters and orbs
 
 <p align="center">
-    <img src="https://images.ctfassets.net/il1yandlcjgk/2HsFnWKVRDavrKYN6gns6T/f30a25920e1a0c47fc7beaa2e81b93a0/cci-ignore-next-line.gif" alt="circleci-ignore-comments" width="50%"/>
+    <img src="./assets/go-to-def.gif" alt="Go to definition" width="50%"/>
 </p>
 
-## <a name="platforms"></a>Platforms, Deployment and Package Managers
+## Installation
 
-The tool is deployed through
-[GitHub Releases](https://github.com/CircleCI-Public/circleci-yaml-language-server/releases).
-Green builds on the `main` branch will create a new release PR. These need to be approved and merged manually, and will publish binaries for macOS, Linux and Windows.
+### VS Code and JetBrains IDEs
 
-Important note: Release-please will only create a release PR for PRs that have a `feat` or `fix` commit message. If your PR starts with `chore` , your changes will NOT be released.
+Install the CircleCI
+[VS Code extension](https://marketplace.visualstudio.com/items?itemName=circleci.circleci)
+or [JetBrains plugin](https://plugins.jetbrains.com/plugin/34719-circleci).
+Both run the language server for you.
 
-The release is published by the pipeline on the release PR's merge commit, and only that one. If that pipeline doesn't run, for example because whoever merged the PR can't use the release workflow's restricted contexts, every later release job on `main` fails and names the commit. Someone who can use those contexts then needs to rerun that commit's `Build and release` workflow from failed.
+### Other editors
 
-This is a project in active development, and we target a release frequency of
-one release per week on average. However, we reserve the right of releasing more
-or less frequently when necessary.
+Download the archive for your platform from the
+[latest release](https://github.com/CircleCI-Public/circleci-yaml-language-server/releases/latest),
+such as `circleci-yaml-language-server_<version>_darwin_arm64.tar.gz`. Put the
+`circleci-yaml-lsp` binary inside it on your `PATH`, then point your editor's
+LSP client at it with the `-stdio` flag:
 
-## <a name="contributing"></a>Contributing
+```sh
+circleci-yaml-lsp -stdio
+```
 
-Please feel free to contribute to this project, we update our Hall of fame -
-[CONTRIBUTORS.md](./CONTRIBUTORS.md) with all contributors who helped us fix a
-bug. You can find all the contribution guidelines and useful information in
-[CONTRIBUTING.md](./CONTRIBUTING.md). Development instructions for the CircleCI
-YAML Language Server can be found in [HACKING.md](HACKING.md).
+The server only handles files in a `.circleci` directory, so it's safe to
+attach it to every YAML file. Other YAML files, such as GitHub workflows and
+Kubernetes manifests, are left alone.
 
-## <a name="architecture"></a>Architecture diagram
+| Flag | Meaning |
+| --- | --- |
+| `-stdio` | Talk LSP over stdin and stdout. This is what most editors expect. |
+| `-host`, `-port` | Listen on a TCP socket instead. They can also be set with `LSP_SERVER_HOST` and `PORT`. |
+| `-debug=false` | Only log at info and above. Logs go to stderr. |
+| `-schema <path>` | Use this JSON schema instead of the one built in. Also `SCHEMA_LOCATION`. |
+| `-version` | Print the version and exit. |
 
-![alt text](./assets/diagram.jpg)
+## Editor setup
 
-## Language Server clients
+| Editor | Client |
+| --- | --- |
+| VS Code | [CircleCI extension](https://marketplace.visualstudio.com/items?itemName=circleci.circleci) |
+| JetBrains IDEs | [CircleCI plugin](https://plugins.jetbrains.com/plugin/34719-circleci) ([source](https://github.com/CircleCI-Public/circleci-jetbrains-plugin)) |
+| Emacs | [circleci-yaml-mode](./editors/emacs/circleci-yaml-mode.el), for eglot or lsp-mode. It downloads the server too. |
+| Neovim | [circleci.nvim](https://github.com/tomoakley/circleci.nvim) (community), or the built-in client below |
 
-- VSCode:
-  [CircleCI VSCode extension](https://marketplace.visualstudio.com/items?itemName=circleci.circleci)
-- Neovim: [tomoakley Neovim plugin](https://github.com/tomoakley/circleci.nvim)
-- Emacs: [circleci-yaml-mode](./editors/emacs/)
+### Neovim (0.11+)
 
-If you wish to implement a client for your editor, please take a look at
-[ADD_A_CLIENT.md](./ADD_A_CLIENT.md)
+```lua
+vim.lsp.config('circleci', {
+  cmd = { 'circleci-yaml-lsp', '-stdio' },
+  filetypes = { 'yaml' },
+  root_markers = { '.circleci', '.git' },
+})
+vim.lsp.enable('circleci')
+```
 
-## <a name="quicklinks"></a>Quick links
+### Writing a client
 
-- [Install the VS Code extension using our language server](https://marketplace.visualstudio.com/items?itemName=circleci.circleci)
+To integrate the server with another editor or a coding agent, see
+[ADD_A_CLIENT.md](./ADD_A_CLIENT.md). It covers initialization options,
+authentication commands and the custom requests the server makes. If you
+publish a client, open an issue and we'll add it here.
 
-- [Discover how the language server was leveraged for the VS Code extension](https://youtu.be/Sdi7ctAXe2A)
+## Authentication
 
-- [Learn more about CircleCI](https://circleci.com/)
+Most features work without credentials. Some need them:
 
-- [Do you have questions? Ask the circleCI community Discuss](https://discuss.circleci.com/)
+- **CircleCI**: private orbs, contexts and project settings need a
+  [personal API token](https://app.circleci.com/settings/user/tokens). The VS
+  Code extension and JetBrains plugin send it when you sign in. Other clients send it with the
+  `setToken` command. CircleCI Server users also send their host with
+  `setSelfHostedUrl`.
+- **GitHub**: orbs referenced by the URL of a file in a private GitHub
+  repository are fetched with `GH_TOKEN` or `GITHUB_TOKEN` from the server's
+  environment, or a token the client sends with `setGitHubToken`.
 
-## Social media links
+## JSON schema
 
-<a href="https://twitter.com/intent/tweet?text=Take%20a%20look%20at%20the%20open%20sourced%20CircleCI%20Language%20Server%20on%20GitHub%20https%3A//github.com/CircleCI-Public/circleci-yaml-language-server%23readme%20via%20%40CircleCI" style="align:center; margin-right:15px">
-    <img src="./assets/social/tw.png" alt="twitter-link" width="60px"/>
-</a>
-<a href="https://www.facebook.com/sharer/sharer.php?u=https%3A//github.com/CircleCI-Public/circleci-yaml-language-server%23readme" style="align:center; margin-right:15px">
-    <img src="./assets/social/fb.png" alt="facebook-link" width="60px"/>
-</a>
-<a href="https://www.linkedin.com/shareArticle?mini=true&url=https%3A//github.com/CircleCI-Public/circleci-yaml-language-server%23readme" style="align:center">
-    <img src="./assets/social/ln.png" alt="linkedin-link" width="60px"/>
-</a>
+The validation schema, [`schema.json`](./schema.json), is built into the
+server. It's also published on
+[SchemaStore](https://www.schemastore.org/), so editors with a YAML extension,
+such as Red Hat's for VS Code, get basic validation and hover docs for
+CircleCI config even without this server.
 
-Help us get the word out! Share our project.
+## Contributing
+
+Bug reports, feature requests and pull requests are welcome. See
+[CONTRIBUTING.md](./CONTRIBUTING.md) for how to report issues and open PRs, and
+[HACKING.md](./HACKING.md) for building, testing and debugging the server
+locally. Everyone is expected to follow the
+[code of conduct](./CODE_OF_CONDUCT.md).
+
+## Architecture
+
+```mermaid
+flowchart LR
+    editor[Editor / LSP client]
+
+    subgraph server[circleci-yaml-lsp]
+        methods[LSP methods]
+        services[Services<br/>diagnostics, completion,<br/>hover, navigation]
+        parser[Parser and validation<br/>tree-sitter YAML]
+        compile[Compiler<br/>templates, matrices]
+        cache[(Cache<br/>documents, orbs,<br/>remote data)]
+        clients[API clients]
+    end
+
+    circleci[CircleCI API<br/>orbs, contexts,<br/>resource classes]
+    dockerhub[Docker Hub]
+    github[GitHub<br/>orbs by URL]
+
+    editor <-- JSON-RPC over<br/>stdio or TCP --> methods
+    methods --> services
+    services --> parser
+    parser --> compile
+    services & parser --> cache
+    services & parser & cache --> clients
+    clients --> circleci
+    clients --> dockerhub
+    clients --> github
+```
+
+## Links
+
+- [CircleCI configuration reference](https://circleci.com/docs/reference/configuration-reference/)
+- [How the language server powers the VS Code extension](https://youtu.be/Sdi7ctAXe2A) (video)
+- [CircleCI community forum](https://discuss.circleci.com/)
+
+## License
+
+[Apache 2.0](./LICENSE.md). Third-party licenses are listed in
+[CREDITS.md](./CREDITS.md).
