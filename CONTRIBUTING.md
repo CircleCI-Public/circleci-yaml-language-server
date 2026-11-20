@@ -1,69 +1,68 @@
 # Contributing Guidelines
 
-Contributions are always welcome; however, please read this document in its
-entirety before submitting a Pull Request or Reporting a bug.
+Contributions are always welcome. Please read this document before reporting a
+bug or opening a pull request.
 
-### Table of Contents
+- [Setting up the project](#setting-up-the-project)
+- [Reporting a bug](#reporting-a-bug)
+- [Opening a pull request](#opening-a-pull-request)
+- [Hall of Fame](#hall-of-fame)
+- [Code of Conduct](#code-of-conduct)
+- [License](#license)
 
--   [Reporting a bug](#reporting-a-bug)
-    -   [Security disclosure](#security-disclosure)
--   [Creating an issue](#creating-an-issue)
--   [Opening a pull request](#opening-a-pull-request)
--   [Hall of Fame](#hall-of-fame)
--   [Code of Conduct](#code-of-conduct)
--   [License](#license)
+## Setting up the project
 
----
+See [HACKING.md](./HACKING.md).
 
-# Setting up the project
-
-Please read [HACKING.md](./HACKING.md)
-
-# Reporting a Bug
+## Reporting a bug
 
 Think you've found a bug? Let us know!
 
+Before opening an issue:
+
+- Check you're on the latest version. We may already have fixed it.
+- [Search the issue tracker](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues?q=is%3Aissue)
+  in case someone has already reported it.
+
+A good report includes the server version (`circleci-yaml-lsp -version`, or the
+CircleCI extension's version), your editor, and the smallest config that shows
+the problem.
+
 ### Security disclosure
 
-Security is a top priority for us. If you have encountered a security issue
-please responsibly disclose it by following our
-[security disclosure](https://circleci.com/docs/2.0/security/) document.
+Please don't report security issues in public. Follow the
+[responsible disclosure policy](https://circleci.com/security/) instead; see
+[SECURITY.md](./SECURITY.md).
 
-# Creating an Issue
-
-Your issue must follow these guidelines for it to be considered:
-
-#### Before submitting
-
--   Check you’re on the latest version, we may have already fixed your bug!
--   [Search our issue tracker](https://github.com/CircleCI-Public/circleci-yaml-language-server/issues/search&type=issues)
-    for your problem, someone may have already reported it
-
-# Opening a Pull Request
+## Opening a pull request
 
 To contribute,
-[fork](https://docs.github.com/en/get-started/quickstart/fork-a-repo)
+[fork](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/fork-a-repo)
 `circleci-yaml-language-server`, commit your changes, and
-[open a pull request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests).
+[open a pull request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request).
 
-Your request will be reviewed as soon as possible. You may be asked to make
-changes to your submission during the review process.
+- Run `task test` and `task check` before you push.
+- Add tests for what you change: acceptance tests for new behavior, and the
+  package's own tests for edge cases and errors.
+- Use [Conventional Commits](https://www.conventionalcommits.org/) for commit
+  messages and the PR title, such as `fix: ...` or `feat: ...`. Only `feat`
+  and `fix` changes trigger a release.
 
-# Hall of Fame
+Your pull request will be reviewed as soon as possible, and you may be asked to
+make changes to it.
 
-Have you reported a bug that was fixed or even sent a patch that fixed one?
+## Hall of Fame
 
-First of all, you rock! Thank you so much for your help!
+Have you reported a bug that was fixed, or sent a patch that fixed one? Thank
+you! Send us a pull request adding yourself to
+[CONTRIBUTORS.md](./CONTRIBUTORS.md).
 
-Please send us a pull request and add yourself to the
-[CONTRIBUTORS.md](./CONTRIBUTORS.md) hall of fame.
+## Code of Conduct
 
-# Code of Conduct
-
-All community members are expected to adhere to our
+All community members are expected to follow our
 [code of conduct](./CODE_OF_CONDUCT.md).
 
-# License
+## License
 
 CircleCI's `circleci-yaml-language-server` is released under the
 [Apache License 2.0](./LICENSE.md).

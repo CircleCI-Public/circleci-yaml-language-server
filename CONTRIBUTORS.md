@@ -1,7 +1,7 @@
 # Contributors
 
-We are very grateful to the following people have helped us to build the
-CircleCI YAML Language Server: tool.
+We are very grateful to the following people who have helped us build the
+CircleCI YAML Language Server.
 
 -   [Adib Baziz](https://github.com/adibbaziz)
 -   [Renaud Legan](https://github.com/rlegan)
