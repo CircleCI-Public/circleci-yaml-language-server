@@ -26,7 +26,12 @@ var (
 	functionIDPattern               = regexp.MustCompile(`^[a-z][a-z\d_-]*$`)
 	functionReferencePathPattern    = regexp.MustCompile(`^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}(/[A-Za-z0-9._-]+){2,}$`)
 	functionReferenceVersionPattern = regexp.MustCompile(`^v\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$`)
+	functionRerunSecondsPattern     = regexp.MustCompile(`^([1-9][0-9]*)s$`)
+	functionRerunMinutesPattern     = regexp.MustCompile(`^([1-9]|10)m$`)
 )
+
+// functionStepOptions are the keys a function step takes beside `with`.
+var functionStepOptions = []string{"id", "max_auto_reruns", "auto_rerun_delay"}
 
 const functionReferenceExample = "github.com/circleci-functions/setup-go@v0.1.0-abc1234"
 
@@ -253,7 +258,7 @@ func (val Validate) validateFunctionCommand(step ast.NamedStep, where, command s
 func (val Validate) validateFunctionStepBody(step ast.NamedStep, where string) (string, bool) {
 	var unexpected []string
 	for key := range step.Parameters {
-		if key != "id" && key != "with" {
+		if key != "with" && !slices.Contains(functionStepOptions, key) {
 			unexpected = append(unexpected, key)
 		}
 	}
@@ -268,6 +273,7 @@ func (val Validate) validateFunctionStepBody(step ast.NamedStep, where string) (
 	if with, ok := step.Parameters["with"]; ok {
 		val.validateFunctionArguments(with, where)
 	}
+	val.validateFunctionReruns(step, where)
 
 	id, ok := step.Parameters["id"]
 	if !ok {
@@ -284,6 +290,58 @@ func (val Validate) validateFunctionStepBody(step ast.NamedStep, where string) (
 	}
 
 	return value, true
+}
+
+// validateFunctionReruns checks max_auto_reruns and auto_rerun_delay. A
+// templated value is checked once its parameters are replaced.
+func (val Validate) validateFunctionReruns(step ast.NamedStep, where string) {
+	reruns, hasReruns := step.Parameters["max_auto_reruns"]
+	if hasReruns && !isTemplatedValue(reruns) {
+		if n, ok := reruns.Value.(int); reruns.Type != "integer" || !ok || n < 1 || n > 5 {
+			val.addDiagnostic(diagnostic.Error(
+				reruns.ValueRange,
+				fmt.Sprintf("`max_auto_reruns` in the %s must be a whole number from 1 to 5.", where),
+			))
+		}
+	}
+
+	delay, ok := step.Parameters["auto_rerun_delay"]
+	if !ok {
+		return
+	}
+	if !hasReruns {
+		val.addDiagnostic(diagnostic.Error(
+			delay.ValueRange,
+			fmt.Sprintf("`auto_rerun_delay` in the %s needs `max_auto_reruns`.", where),
+		))
+	}
+	if !isTemplatedValue(delay) && !isRerunDelay(delay) {
+		val.addDiagnostic(diagnostic.Error(
+			delay.ValueRange,
+			fmt.Sprintf("`auto_rerun_delay` in the %s must be from 1s to 10m, in seconds (30s) or minutes (5m).", where),
+		))
+	}
+}
+
+func isTemplatedValue(value ast.ParameterValue) bool {
+	s, ok := value.Value.(string)
+	return value.Type == "string" && ok && strings.Contains(s, "<<")
+}
+
+func isRerunDelay(delay ast.ParameterValue) bool {
+	value, ok := delay.Value.(string)
+	if delay.Type != "string" || !ok {
+		return false
+	}
+	if functionRerunMinutesPattern.MatchString(value) {
+		return true
+	}
+	match := functionRerunSecondsPattern.FindStringSubmatch(value)
+	if match == nil {
+		return false
+	}
+	seconds, err := strconv.Atoi(match[1])
+	return err == nil && seconds <= 600
 }
 
 func (val Validate) validateFunctionArguments(with ast.ParameterValue, where string) {
@@ -468,10 +526,11 @@ func (val Validate) validateFunctionStepAgainst(step functionStep, descriptor *c
 	for name, argument := range arguments {
 		index := slices.IndexFunc(flags, func(flag circleci.FunctionFlag) bool { return flag.Name == name })
 		if index == -1 {
-			val.addDiagnostic(diagnostic.Warning(
-				argument.Range,
-				fmt.Sprintf("%s %s takes no flag %s.", step.step.Name, descriptor.Version, name),
-			))
+			message := fmt.Sprintf("%s %s takes no flag %s.", step.step.Name, descriptor.Version, name)
+			if slices.Contains(functionStepOptions, name) {
+				message = fmt.Sprintf("'%s' is a step option, not an argument. Put it beside `with`, not under it.", name)
+			}
+			val.addDiagnostic(diagnostic.Warning(argument.Range, message))
 			continue
 		}
 

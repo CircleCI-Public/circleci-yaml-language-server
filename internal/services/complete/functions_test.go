@@ -174,6 +174,8 @@ jobs:
 		step string
 		want []string
 	}{
+		{"a function step's keys", "      - setup-go:\n          ", []string{"id", "with", "max_auto_reruns", "auto_rerun_delay"}},
+		{"the keys it doesn't have yet", "      - setup-go:\n          max_auto_reruns: 3\n          ", []string{"id", "with", "auto_rerun_delay"}},
 		{"a function's flags", "      - setup-go:\n          with:\n            ", []string{"version", "cache", "key"}},
 		{"the flags it doesn't pass yet", "      - setup-go:\n          with:\n            version: \"1.27\"\n            ", []string{"cache", "key"}},
 		{"a command's flags", "      - setup-go/lint:\n          with:\n            ", []string{"fix"}},
