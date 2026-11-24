@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 0.56.0 (2026-11-24)
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+* chore: use pnpm for the VS Code dev extension by @parkuman in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/821
+* feat: accept auto reruns on function steps (PIE-313) by @stiyyagura0901 in https://github.com/CircleCI-Public/circleci-yaml-language-server/pull/824
+
+
+**Full Changelog**: https://github.com/CircleCI-Public/circleci-yaml-language-server/compare/0.55.1...0.56.0
+
 ## 0.55.1 (2026-11-20)
 
 <!-- Release notes generated using configuration in .github/release.yml at main -->
