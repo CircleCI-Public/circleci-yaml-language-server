@@ -145,7 +145,7 @@ workflows:
 `), []string{}, anyOrder))
 	})
 
-	t.Run("a step body takes only id and with", func(t *testing.T) {
+	t.Run("a step body takes only id, with and the rerun options", func(t *testing.T) {
 		assert.Check(t, cmp.DeepEqual(functionErrors(t, `version: 2.1
 
 functions:
@@ -172,6 +172,91 @@ workflows:
 			"Unexpected key(s) in function step 'setup-go' in job 'build': version. Pass arguments under `with`.",
 			`The function step 'setup-go' in job 'build' has an invalid id: "Go"`,
 			"Argument(s) in the function step 'setup-go' in job 'build' must be a single value, not a list or map: versions",
+		}, anyOrder))
+	})
+
+	t.Run("automatic reruns are accepted", func(t *testing.T) {
+		assert.Check(t, cmp.DeepEqual(functionErrors(t, `version: 2.1
+
+functions:
+  setup-go: github.com/circleci-functions/setup-go@v0.5.1
+
+commands:
+  setup:
+    parameters:
+      reruns:
+        type: integer
+        default: 2
+      delay:
+        type: string
+        default: 30s
+    steps:
+      - setup-go:
+          max_auto_reruns: << parameters.reruns >>
+          auto_rerun_delay: << parameters.delay >>
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - setup
+      - setup-go:
+          max_auto_reruns: 3
+          auto_rerun_delay: 5s
+          with:
+            version-file: go.mod
+      - setup-go:
+          max_auto_reruns: 5
+          auto_rerun_delay: 600s
+      - setup-go:
+          max_auto_reruns: 1
+          auto_rerun_delay: 10m
+      - setup-go:
+          max_auto_reruns: 2
+
+workflows:
+  main:
+    jobs:
+      - build
+`), []string{}, anyOrder))
+	})
+
+	t.Run("automatic reruns out of range", func(t *testing.T) {
+		assert.Check(t, cmp.DeepEqual(functionErrors(t, `version: 2.1
+
+functions:
+  setup-go: github.com/circleci-functions/setup-go@v0.5.1
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - setup-go:
+          max_auto_reruns: 6
+          auto_rerun_delay: 601s
+      - setup-go:
+          max_auto_reruns: "3"
+          auto_rerun_delay: 11m
+      - setup-go:
+          max_auto_reruns: 0
+          auto_rerun_delay: 5
+      - setup-go:
+          auto_rerun_delay: 30s
+
+workflows:
+  main:
+    jobs:
+      - build
+`), []string{
+			"`max_auto_reruns` in the function step 'setup-go' in job 'build' must be a whole number from 1 to 5.",
+			"`max_auto_reruns` in the function step 'setup-go' in job 'build' must be a whole number from 1 to 5.",
+			"`max_auto_reruns` in the function step 'setup-go' in job 'build' must be a whole number from 1 to 5.",
+			"`auto_rerun_delay` in the function step 'setup-go' in job 'build' must be from 1s to 10m, in seconds (30s) or minutes (5m).",
+			"`auto_rerun_delay` in the function step 'setup-go' in job 'build' must be from 1s to 10m, in seconds (30s) or minutes (5m).",
+			"`auto_rerun_delay` in the function step 'setup-go' in job 'build' must be from 1s to 10m, in seconds (30s) or minutes (5m).",
+			"`auto_rerun_delay` in the function step 'setup-go' in job 'build' needs `max_auto_reruns`.",
 		}, anyOrder))
 	})
 
@@ -404,6 +489,19 @@ workflows:
 			"setup-go v0.5.1-684fd5b takes no flag versoin.",
 			"Flag golangci-lint-cache of setup-go takes true or false.",
 			"setup-go/cache v0.5.1-684fd5b takes no flag version.",
+		}, anyOrder))
+	})
+
+	t.Run("a step option under with is pointed beside it", func(t *testing.T) {
+		assert.Check(t, cmp.DeepEqual(functionWarnings(t, config("github.com/circleci-functions/setup-go@v0.5.1-684fd5b", `      - setup-go:
+          with:
+            id: go
+            max_auto_reruns: 3
+            auto_rerun_delay: 5s
+`)), []string{
+			"'id' is a step option, not an argument. Put it beside `with`, not under it.",
+			"'max_auto_reruns' is a step option, not an argument. Put it beside `with`, not under it.",
+			"'auto_rerun_delay' is a step option, not an argument. Put it beside `with`, not under it.",
 		}, anyOrder))
 	})
 

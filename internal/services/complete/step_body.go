@@ -74,7 +74,7 @@ func isInTeardown(lines []string, line int) bool {
 }
 
 // functionStepKeys are the keys a function step takes.
-var functionStepKeys = []string{"id", "with"}
+var functionStepKeys = []string{"id", "with", "max_auto_reruns", "auto_rerun_delay"}
 
 // stepPosition is where in a list of steps the cursor is.
 type stepPosition int
